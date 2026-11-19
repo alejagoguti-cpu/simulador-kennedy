@@ -66,7 +66,9 @@ function ceder() {
 // ceder hasta el próximo cuadro (para que el navegador pinte la barra de progreso); sin requestAnimationFrame, como ceder()
 const cederCuadro = () => typeof requestAnimationFrame === 'undefined' ? ceder() : new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
 
-export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, presupuestoMs = 14, retenido = false } = {}) {
+// liviano por defecto: el día arranca a 1× (carros y animales a velocidad real casi no cuestan) y la lógica usa como máximo 6 ms por cuadro,
+// así siempre queda tiempo para dibujar; los años avanzan aparte con el modelo semanal (antes: 60× y 14 ms, la página se sentía pesada)
+export function crearReloj({ semilla = 1, t0 = T0, vel = 1, topePasos = 3600, presupuestoMs = 6, retenido = false } = {}) {
   const ahoraMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   const S = [], M = [], DIB = [], OYE = [], PREP = [], MAN = {}, PROG = [];
   const R = {
