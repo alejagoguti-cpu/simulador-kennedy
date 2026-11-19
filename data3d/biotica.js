@@ -170,6 +170,13 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const PCH = PAT.map(p => ({ n: p.n, tipo: 'parche', pro: true, poly: p.poly, borde: p.poly.concat([p.poly[0]]), x0: p.x0, x1: p.x1, z0: p.z0, z1: p.z1, cx: p.c[0], cz: p.c[1], ag: {}, k: 1, cnt: FAUNA_PARCHE }));
   for (const h of HUE) h.pro = true; for (const h of EXTRA) if (h.tipo === 'huerta') h.pro = true;
   const HAB = HUM.concat(PAR, HUE, EXTRA, PCH);
+  /* LA FAUNA LLEGA A CADA HUERTA CUANDO ESA HUERTA SE ABRE: las huertas, el distrito de Bavaria y los parches de árboles de la propuesta se abren
+     desde Bavaria Común hacia afuera (el mismo orden de las huertas del mapa: data3d/huertas_barrio.js y huertas_hidro.js); cada hábitat recibe su
+     puesto h.ord en [0, 1] y sus especies (abejas, colibríes, copetones, mirlas, lombrices…) aparecen cuando la fracción abierta (ESTADO.proFrac)
+     lo alcanza. Así las interacciones crecen justo donde van saliendo huertas. Determinista: solo depende del orden y de proFrac. */
+  const HPRO = []; // hábitats de la propuesta en orden de apertura
+  { const BAVC = [4136, 96], PROH = HAB.filter(h => h.pro && !h.soloHoy).map(h => [h, Math.hypot(h.cx - BAVC[0], h.cz - BAVC[1])]).sort((a, b) => a[1] - b[1] || (a[0].n < b[0].n ? -1 : 1));
+    PROH.forEach(([h], i) => { h.ord = PROH.length > 1 ? i / (PROH.length - 1) : 0; h.abierta = false; }); HPRO.push(...PROH.map(p => p[0])); }
   // árboles reales (censo SIGAU) en toda la zona, en un índice espacial único
   const CEL = 20, GRID = new Map(), gk = (i, j) => i * 100003 + j;
   for (const t of TR.t) {
@@ -921,10 +928,14 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     tPaso = t;
     if (t % 60 === 0) actualizarAC(); // actividad por especie: cada minuto simulado
     VER_PRO = ESTADO.escenario !== 'hoy';
+    if (t % 30 === 0) for (const h of HPRO) { // cuando una huerta se abre llegan sus animales: pulso de luz en ella (solo visual; no cambia el estado)
+      const ab = VER_PRO && h.ord <= (ESTADO.proFrac ?? 1);
+      if (ab && !h.abierta && !RELOJ.saltando) import('./resaltes.js?v=4').then(m => m.resaltes(T3).pulso(h.cx, GY, h.cz, h.tipo === 'parche' ? 40 : 55)).catch(() => {});
+      h.abierta = ab; }
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
       a.x0 = a.x; a.y0 = a.y; a.z0 = a.z; // posición al empezar el paso (el dibujo interpola)
       if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
-      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id))) > (ESTADO.proFrac ?? 1)) { /* la fauna de las huertas llega año a año (proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a.h.ord != null ? a.h.ord : (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id)))) > (ESTADO.proFrac ?? 1)) { /* la fauna llega a cada huerta cuando esa huerta se abre (h.ord vs proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
       // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden (sorteo fijo por id)
       if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = RELOJ.azarDe('bio-fauna', a.id)), fuera = r > ESTADO.fauna;
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }

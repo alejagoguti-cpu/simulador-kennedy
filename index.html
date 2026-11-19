@@ -3749,7 +3749,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=11');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=38'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(() => Promise.all([import('./data3d/biotica.js?v=39'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
     .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=30').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=10')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));
