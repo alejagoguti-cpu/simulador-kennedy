@@ -111,17 +111,30 @@ export async function iniciarSimulacion(cfg = {}) {
   const R_SIM = 2900; // radio de la simulación de movimiento alrededor del giro [m]
   const enRadio = (p) => Math.hypot(p[0], p[1]) < R_SIM;
   function enTramo(s, d) { let k = 1; while (k < s.cum.length - 1 && s.cum[k] < d) k++; const a = s.p[k - 1], b = s.p[k], f = (d - s.cum[k - 1]) / ((s.cum[k] - s.cum[k - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, Math.atan2(b[1] - a[1], b[0] - a[0])]; }
-  function rumboSalida(s, desdeA) { const p = s.p; return desdeA ? Math.atan2(p[1][1] - p[0][1], p[1][0] - p[0][0]) : Math.atan2(p[p.length - 2][1] - p[p.length - 1][1], p[p.length - 2][0] - p[p.length - 1][0]); }
+  // la misma interpolación de enTramo, escrita directo en el agente (sin arreglo nuevo ni atan2): un paso mueve ~1.750 agentes de la red
+  // los tramos de la red copiados (mismos números) a arreglos planos: SOF[j] = primer punto del tramo j en SPX/SPY/SCU (x, y, distancia
+  // acumulada) y SLEN[j] = s.len. Un paso recorre ~1.750 agentes repartidos en 19.000 tramos: leer de memoria contigua es mucho más rápido.
+  const SOF = new Int32Array(S.length + 1); { let n = 0; for (let j = 0; j < S.length; j++) { SOF[j] = n; n += S[j].p.length; } SOF[S.length] = n; }
+  const SPX = new Float64Array(SOF[S.length]), SPY = new Float64Array(SOF[S.length]), SCU = new Float64Array(SOF[S.length]), SLEN = new Float64Array(S.length);
+  for (let j = 0; j < S.length; j++) { const s = S[j], o = SOF[j]; SLEN[j] = s.len; for (let k = 0; k < s.p.length; k++) { SPX[o + k] = s.p[k][0]; SPY[o + k] = s.p[k][1]; SCU[o + k] = s.cum[k]; } }
+  // = enTramo(S[j], d)[0..1] con la misma aritmética (y el mismo k), escrito en el agente; los tramos tienen ≥ 2 puntos
+  function ponerEnTramo(ag, j, d) { const o = SOF[j], n = SOF[j + 1] - o; let k = 1; while (k < n - 1 && SCU[o + k] < d) k++; const i0 = o + k - 1, i1 = o + k, f = (d - SCU[i0]) / ((SCU[i1] - SCU[i0]) || 1); ag.x = SPX[i0] + (SPX[i1] - SPX[i0]) * f; ag.y = SPY[i0] + (SPY[i1] - SPY[i0]) * f; }
+  function rumboSalida0(s, desdeA) { const p = s.p; return desdeA ? Math.atan2(p[1][1] - p[0][1], p[1][0] - p[0][0]) : Math.atan2(p[p.length - 2][1] - p[p.length - 1][1], p[p.length - 2][0] - p[p.length - 1][0]); }
+  // datos fijos de la red, calculados una vez (mismos valores): rumbo de salida de cada tramo por cada extremo y si cada nodo está en el radio
+  // (en arreglos aparte: agregar campos a los tramos les cambiaría la forma y volvería lentos todos los accesos a s.len, s.cum…)
+  const RS_A = new Float64Array(S.length), RS_B = new Float64Array(S.length), RS_OK = new Uint8Array(S.length);
+  const rumboSalida = (j, desdeA) => { const s = S[j]; if (desdeA) { if (!(RS_OK[j] & 1)) { RS_A[j] = rumboSalida0(s, true); RS_OK[j] |= 1; } return RS_A[j]; } if (!(RS_OK[j] & 2)) { RS_B[j] = rumboSalida0(s, false); RS_OK[j] |= 2; } return RS_B[j]; };
+  const EN_R = new Int8Array(N.length); const enRadioN = (i) => { let v = EN_R[i]; if (!v) EN_R[i] = v = enRadio(N[i]) ? 1 : 2; return v === 1; };
   // movimiento natural: en el cruce elige el tramo siguiente según sintaxis espacial y continuidad del giro
   function siguiente(ag, nodo, rumbo) {
     const op = ADJ[nodo]; let tot = 0; const w = [];
     for (const j of op) {
       const s = S[j]; if (j === ag.s && op.length > 1) { w.push(0); continue; }
       if (ag.veh && !s.v) { w.push(0); continue; }
-      const desdeA = s.a === nodo, r = rumboSalida(s, desdeA), giro = Math.abs(((r - rumbo + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
-      const val = ag.veh ? s.c : s.i, otro = N[desdeA ? s.b : s.a];
+      const desdeA = s.a === nodo, r = rumboSalida(j, desdeA), giro = Math.abs(((r - rumbo + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      const val = ag.veh ? s.c : s.i, otro = desdeA ? s.b : s.a;
       let p = Math.pow(0.05 + val, ag.beta) * Math.exp(-giro / ag.giro) * (ag.tipo === 'camion' ? 1 + s.j * s.j : 1);
-      if (!enRadio(otro)) p *= 0.04;
+      if (!enRadioN(otro)) p *= 0.04;
       w.push(p); tot += p;
     }
     if (tot <= 0) return ag.s;
@@ -154,7 +167,8 @@ export async function iniciarSimulacion(cfg = {}) {
   const A = []; const IND = { rondas: 0, residuos: 0, registros: 0, huidas: 0, sustrato: 0, hongos: 0, entregado: 0, degust: 0, visitas: 0, polen: 0, cosecha: 0, humus: 0, lombricesComidas: 0 };
   const CNT = {}; const contar = (t, n) => { CNT[t] = (CNT[t] || 0) + n; };
   // tráfico y peatones (movimiento natural sobre la sintaxis espacial)
-  const red = (tipo, n, veh, vel, beta, giro) => { for (let k = 0; k < n; k++) { const s = (veh ? sorteoVeh : sorteoPea)(); A.push({ tipo, red: true, veh, s, dir: rnd() < 0.5 ? 1 : -1, d: rnd() * S[s].len, vel: vel * (0.8 + rnd() * 0.4), beta, giro, vis: true }); } contar(tipo, n); };
+  const red = (tipo, n, veh, vel, beta, giro) => { for (let k = 0; k < n; k++) { const s = (veh ? sorteoVeh : sorteoPea)(); A.push({ tipo, red: true, veh, s, dir: rnd() < 0.5 ? 1 : -1, d: rnd() * S[s].len, vel: vel * (0.8 + rnd() * 0.4), beta, giro, vis: true,
+    x0: undefined, y0: undefined, x: undefined, y: undefined, px: undefined, py: undefined, rot: undefined }); } contar(tipo, n); }; // campos que se agregan después, ya declarados (undefined = igual que no tenerlos): forma fija
   red('carro', 520, true, 9, 1.6, 0.6); red('moto', 180, true, 11, 1.4, 0.8); red('camion', 60, true, 7, 1.2, 0.5); red('bici', 90, false, 4.5, 1.6, 0.7); red('peaton', 900, false, 1.3, 2.2, 0.9); // [SUP]
   // P1: habitantes y colectivos ambientales en el borde de cada humedal
   const HUM = D.humedales.map(h => ({ ...h, l: linea(h.borde) }));
@@ -367,18 +381,26 @@ export async function iniciarSimulacion(cfg = {}) {
   const mover2 = (a, vel, dt) => { const dx = a.obj[0] - a.x, dy = a.obj[1] - a.y, d = Math.hypot(dx, dy); if (d < 0.6) return true; const s = Math.min(d, vel * dt); a.x += dx / d * s; a.y += dy / d * s; return false; };
   // un paso del reloj universal: dtPaso segundos simulados (fijo, 1 s) desde el segundo tSeg. Antes los agentes se movían con un tiempo
   // «visual» propio (hasta ×8 del real); ahora todo va en segundos simulados: a más velocidad, más pasos por segundo real
+  const CHG = 40, HG_N = 4096, HG_CAB = new Int32Array(HG_N); let HG_SIG = new Int32Array(2048); // rejilla de humanos (cercaHumano)
+  const hgCubo = (i, j) => ((Math.imul(i, 73856093) ^ Math.imul(j, 19349663)) >>> 0) & (HG_N - 1);
+  let nRed = 0, nRedA = -1;
+  function pasoRed(a, dt, humanos) { // tráfico y peatones (cuerpo idéntico al de antes dentro de paso)
+    a.x0 = a.x; a.y0 = a.y; // posición al empezar el paso: el dibujo interpola entre esta y la nueva
+    a.d += a.vel * dt;
+    while (a.d > SLEN[a.s]) { FLUJO[a.veh ? 'v' : 'p'][a.s]++; const s = S[a.s], nodo = a.dir > 0 ? s.b : s.a, r = enTramo(s, a.dir > 0 ? s.len : 0)[2] + (a.dir > 0 ? 0 : Math.PI); a.d -= s.len; const j = siguiente(a, nodo, r); a.dir = S[j].a === nodo ? 1 : -1; a.s = j; }
+    const j = a.s; ponerEnTramo(a, j, a.dir > 0 ? a.d : SLEN[j] - a.d); // = enTramo(...)[0..1] sin crear el arreglo ni calcular el rumbo
+    if (a.tipo === 'peaton') humanos.push(a);
+  }
   function paso(dtPaso, tSeg) {
     const T = (tSeg % DIA) / 60, dtS = dtPaso / 60, dt = dtPaso, dtT = dtPaso; // T: minuto del día al empezar el paso · dtS en minutos · dt y dtT en segundos simulados
     const humanos = [];
-    for (const a of A) {
+    // los agentes de la red (todos con la misma forma) van primero en A: se corren en su propio bucle (accesos monomórficos), en el MISMO
+    // orden; si A dejara de empezar con ellos, todos van por el bucle general (mismo resultado)
+    if (A.length !== nRedA) { nRedA = A.length; nRed = 0; while (nRed < A.length && A[nRed].red) nRed++; for (let i = nRed; i < A.length; i++) if (A[i].red) { nRed = 0; break; } }
+    for (let i = 0; i < nRed; i++) pasoRed(A[i], dt, humanos);
+    for (let i = nRed; i < A.length; i++) { const a = A[i];
+      if (a.red) { pasoRed(a, dt, humanos); continue; } // tráfico y peatones
       a.x0 = a.x; a.y0 = a.y; // posición al empezar el paso: el dibujo interpola entre esta y la nueva
-      if (a.red) { // tráfico y peatones
-        a.d += a.vel * dt;
-        while (a.d > S[a.s].len) { FLUJO[a.veh ? 'v' : 'p'][a.s]++; const s = S[a.s], nodo = a.dir > 0 ? s.b : s.a, r = enTramo(s, a.dir > 0 ? s.len : 0)[2] + (a.dir > 0 ? 0 : Math.PI); a.d -= s.len; const j = siguiente(a, nodo, r); a.dir = S[j].a === nodo ? 1 : -1; a.s = j; }
-        const s = S[a.s], p = enTramo(s, a.dir > 0 ? a.d : s.len - a.d); a.x = p[0]; a.y = p[1];
-        if (a.tipo === 'peaton') humanos.push(a);
-        continue;
-      }
       switch (a.tipo) {
         case 'hab': case 'col': {
           const on = enJornada('P1', T - a.ini); a.vis = on; if (!on) break;
@@ -420,7 +442,15 @@ export async function iniciarSimulacion(cfg = {}) {
       }
     }
     // no humanos: reaccionan a las personas cercanas
-    const cercaHumano = (x, y, r) => { for (const h of humanos) if (h.vis !== false && Math.abs(h.x - x) < r && Math.abs(h.y - y) < r && Math.hypot(h.x - x, h.y - y) < r) return h; return null; };
+    // cercaHumano: el PRIMERO de «humanos» (en su orden) a menos de r. Antes recorría los ~1.000 humanos por cada ave; ahora una rejilla
+    // de celdas de CHG m (tabla hash con listas enlazadas, sin asignar memoria por paso) da los candidatos y se elige el de menor índice
+    // que cumple la MISMA prueba: el resultado es idéntico (todo humano a menos de r cae en alguna celda del rango consultado).
+    const NH = humanos.length; if (HG_SIG.length < NH) HG_SIG = new Int32Array(NH * 2); HG_CAB.fill(-1);
+    for (let i = NH - 1; i >= 0; i--) { const h = humanos[i], b = hgCubo(Math.floor(h.x / CHG), Math.floor(h.y / CHG)); HG_SIG[i] = HG_CAB[b]; HG_CAB[b] = i; }
+    const cercaHumano = (x, y, r) => { let mejor = -1; const i0 = Math.floor((x - r) / CHG), i1 = Math.floor((x + r) / CHG), j0 = Math.floor((y - r) / CHG), j1 = Math.floor((y + r) / CHG);
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) for (let k = HG_CAB[hgCubo(i, j)]; k >= 0; k = HG_SIG[k]) { if (mejor >= 0 && k >= mejor) continue; const h = humanos[k];
+        if (h.vis !== false && Math.abs(h.x - x) < r && Math.abs(h.y - y) < r && Math.hypot(h.x - x, h.y - y) < r) mejor = k; }
+      return mejor >= 0 ? humanos[mejor] : null; };
     for (const a of A) {
       switch (a.tipo) {
         case 'tingua': case 'garza': case 'pato': case 'monjita': {

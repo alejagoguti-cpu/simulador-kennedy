@@ -193,7 +193,55 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   // cuántos árboles hay hoy y cuántos nativos nuevos trae la propuesta (panel Agentes, data3d/giro_sim.js)
   const ARBOLES = { hoy: 0, nuevos: 0, porEsp: {} };
   for (const g of GRID.values()) for (const a of g) { if (a.pro) { ARBOLES.nuevos++; ARBOLES.porEsp[a.n] = (ARBOLES.porEsp[a.n] || 0) + 1; } else ARBOLES.hoy++; }
-  const arbolesCerca = (h, x, z, r) => { const L = [], c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const g = GRID.get(gk(i, j)); if (g) for (const a of g) if ((VER_PRO || !a.pro) && Math.hypot(a.x - x, a.z - z) < r) L.push(a); } return L; };
+  /* Búsqueda de árboles cercanos (optimizada para el salto de 1 día; MISMO resultado y MISMO orden que el recorrido anterior por el Map):
+     · GN: las mismas listas de GRID en un arreglo denso por celda (sin claves ni Map.get por celda); se recorre igual (i, luego j, luego
+       el orden de inserción). Las celdas fuera del rango con árboles no tienen nada, y las que quedan enteras fuera del círculo se saltan.
+     · distancia: d² contra r² con un margen relativo de 1e-9; solo en la franja dudosa se usa Math.hypot (la prueba original), así que
+       entra exactamente el mismo conjunto de árboles.
+     · REL_M: máscara por árbol de las especies de fauna con las que tiene relación en la red (t.fl ∩ REL[k].flora ≠ ∅); reemplaza el
+       t.fl.some(...) de alcanzables y deja que conexiones solo mire los árboles que pueden contar (los demás no cambiaban nada). */
+  const GN = (() => { if (!GRID.size) return null; let i0 = Infinity, i1 = -Infinity, j0 = Infinity, j1 = -Infinity; const E = [];
+    for (const L of GRID.values()) { const i = Math.floor(L[0].x / CEL), j = Math.floor(L[0].z / CEL); E.push([i, j, L]); if (i < i0) i0 = i; if (i > i1) i1 = i; if (j < j0) j0 = j; if (j > j1) j1 = j; }
+    const nj = j1 - j0 + 1, C = new Array((i1 - i0 + 1) * nj).fill(null); for (const [i, j, L] of E) C[(i - i0) * nj + (j - j0)] = L; return { i0, i1, j0, j1, nj, C }; })();
+  const ESPK = Object.keys(ESP), BIT = {}; ESPK.forEach((k, n) => { BIT[k] = n < 31 ? (1 << n) : 0; });
+  const REL_M = ESPK.length <= 31; // con más de 31 especies no cabe en un entero: se usa el filtro original
+  for (const L of GRID.values()) for (const t of L) { let m = 0; if (REL_M) for (const k of ESPK) if (t.fl.some(f => REL[k].flora.has(f))) m |= BIT[k]; t.rm = m; t._kb = undefined; } // _kb (clave de la red) declarado ya: forma fija
+  // CSR por máscara (0 = todos los árboles; BIT[k] = solo los relacionados con la especie k): por celda, sus árboles EN EL MISMO ORDEN
+  // de GRID, en un arreglo plano (A) con desplazamientos (O). Se arma la primera vez que se pide cada máscara (solo depende de datos fijos).
+  const CSR = new Map();
+  const csr = (m) => { let R = CSR.get(m); if (R) return R; const G = GN, n = G.C.length, O = new Int32Array(n + 1), A = [];
+    for (let c = 0; c < n; c++) { O[c] = A.length; const g = G.C[c]; if (g) for (const t of g) if (!m || (t.rm & m)) A.push(t); } O[n] = A.length;
+    CSR.set(m, R = { O, A }); return R; };
+  const cercanos = (x, z, r, L, m) => {
+    const G = GN; if (!G) return L;
+    let c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL);
+    if (c0 < G.i0) c0 = G.i0; if (c1 > G.i1) c1 = G.i1; if (r0 < G.j0) r0 = G.j0; if (r1 > G.j1) r1 = G.j1;
+    if (c0 > c1 || r0 > r1) return L;
+    const rr = r + 1e-6, rr2 = rr * rr, r2 = r * r, lo = r2 * (1 - 1e-9), hi = r2 * (1 + 1e-9), verPro = VER_PRO, { O, A } = csr(m);
+    for (let i = c0; i <= c1; i++) {
+      const xa = i * CEL, ddx = x < xa ? xa - x : x > xa + CEL ? x - xa - CEL : 0; if (ddx > rr) continue;
+      const base = (i - G.i0) * G.nj - G.j0;
+      for (let j = r0; j <= r1; j++) {
+        const c = base + j, k0 = O[c], k1 = O[c + 1]; if (k0 === k1) continue;
+        const za = j * CEL, ddz = z < za ? za - z : z > za + CEL ? z - za - CEL : 0; if (ddx * ddx + ddz * ddz > rr2) continue;
+        // celda entera dentro del círculo (con 1e-6 m de margen): todos sus árboles cumplen d < r, sin medir uno por uno
+        const mx = Math.max(Math.abs(x - xa), Math.abs(x - xa - CEL)) + 1e-6, mz = Math.max(Math.abs(z - za), Math.abs(z - za - CEL)) + 1e-6;
+        if (mx * mx + mz * mz < lo) { for (let k = k0; k < k1; k++) { const a = A[k]; if (a.pro && !verPro) continue; L.push(a); } continue; }
+        for (let k = k0; k < k1; k++) { const a = A[k];
+          if (a.pro && !verPro) continue;
+          const dx = a.x - x, dz = a.z - z, s = dx * dx + dz * dz; if (s >= hi) continue;
+          if (s < lo || Math.hypot(dx, dz) < r) L.push(a); }
+      }
+    }
+    return L;
+  };
+  // los k primeros de L ordenada por distancia a (x, z) con el mismo orden que L.sort((p, q) => hypot(p) - hypot(q)) (sort estable: empates
+  // en el orden de L), sin ordenar toda la lista: el elemento i de L entra antes que los ya puestos solo si su distancia es MENOR (estricto)
+  const primeros = (L, x, z, k) => { const T = [], D = [];
+    for (let i = 0; i < L.length; i++) { const t = L[i], d = Math.hypot(t.x - x, t.z - z); if (T.length === k && !(d < D[k - 1])) continue;
+      let p = T.length; while (p > 0 && d < D[p - 1]) p--; T.splice(p, 0, t); D.splice(p, 0, d); if (T.length > k) { T.pop(); D.pop(); } }
+    return T; };
+  const arbolesCerca = (h, x, z, r) => cercanos(x, z, r, [], 0);
   const puntoEn = (h) => { for (let k = 0; k < 200; k++) { const x = h.x0 + rnd() * (h.x1 - h.x0), z = h.z0 + rnd() * (h.z1 - h.z0); if (dentro(x, z, h.poly)) return [x, z]; } return [h.cx, h.cz]; };
   const puntoBorde = (h, off = 0) => { const b = h.borde, i = Math.floor(rnd() * (b.length - 1)), f = rnd(), p = [b[i][0] + (b[i + 1][0] - b[i][0]) * f, b[i][1] + (b[i + 1][1] - b[i][1]) * f]; return off ? [p[0] + gauss() * off, p[1] + gauss() * off] : p; };
   const bordeCercano = (h, x, z) => { let best = null, bd = 1e18; const b = h.borde; for (let i = 0; i < b.length - 1; i++) { const ax = b[i][0], az = b[i][1], dx = b[i + 1][0] - ax, dz = b[i + 1][1] - az, l = dx * dx + dz * dz || 1, f = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l)), px = ax + dx * f, pz = az + dz * f, d = (px - x) ** 2 + (pz - z) ** 2; if (d < bd) { bd = d; best = [px, pz]; } } return [best, Math.sqrt(bd)]; };
@@ -274,7 +322,12 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       else if (e.mov === 'suelo') p = puntoBorde(h, 25);
       else if (e.mov === 'rapaz') { p = [h.cx + gauss() * 60, h.cz + gauss() * 60]; y = GY + e.alt[0] + rnd() * (e.alt[1] - e.alt[0]); }
       else { const L = arbolesCerca(h, h.cx, h.cz, Math.max(60, Math.hypot(h.x1 - h.x0, h.z1 - h.z0) / 2)), a = L.length ? L[Math.floor(rnd() * L.length)] : null; p = a ? [a.x, a.z] : puntoEn(h); y = a ? a.y : GY; }
-      const a = { id: id++, e: k, h, x: p[0], y, z: p[1], rot: rnd() * 6.28, pitch: 0, st: 'quieto', t: rnd() * 6, vis: true, flap: rnd() * 6.28, vel: 0, links: [], hx: p[0], hz: p[1], ang: rnd() * 6.28, ev: 0 };
+      const a = { id: id++, e: k, h, x: p[0], y, z: p[1], rot: rnd() * 6.28, pitch: 0, st: 'quieto', t: rnd() * 6, vis: true, flap: rnd() * 6.28, vel: 0, links: [], hx: p[0], hz: p[1], ang: rnd() * 6.28, ev: 0,
+        // campos que la lógica agrega después, declarados aquí (sin valor: undefined = lo mismo que no tenerlos para todo lo que los lee):
+        // así todos los agentes tienen la misma forma y el paso no paga accesos megamórficos (optimización del salto de 1 día; no cambia nada)
+        x0: p[0], y0: y, z0: p[1], /* = posición inicial: el dibujo interpola entre x0 y x (iguales: mismo cuadro que con x0 sin definir) */ huye: undefined, f: undefined, arb: undefined, duerme: undefined, presa: undefined, cool: undefined, caza: undefined,
+        salto: undefined, obj: undefined, flores: undefined, vuelta: undefined, cx: undefined, cz: undefined, rad: undefined, alt: undefined, w: undefined, colmena: undefined,
+        _fuera: undefined, _rp: undefined, _r: undefined, _sim: undefined, _kb: undefined };
       if (e.mov === 'rapaz') Object.assign(a, { st: 'planea', cx: a.x, cz: a.z, rad: 60 + rnd() * 60, alt: a.y - GY, w: (rnd() < 0.5 ? 1 : -1) * e.v / 90 });
       if (e.mov === 'vuela' || e.mov === 'colibri') a.st = 'posado';
       if (e.mov === 'abeja') Object.assign(a, { st: 'colmena', t: rnd() * 25, colmena: [p[0], p[1]], vis: false });
@@ -282,9 +335,14 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     }
   }
   // índice espacial de los animales por especie (celdas de 100 m), para unir cada uno con el más cercano de cada especie relacionada
-  const CA = 100; let GA = new Map();
-  const indexar = () => { GA = new Map(); for (const a of AG) { if (!a.vis) continue; const g = a.e + ':' + gk(Math.floor(a.x / CA), Math.floor(a.z / CA)); let L = GA.get(g); if (!L) GA.set(g, L = []); L.push(a); } };
-  const masCercano = (k, x, z, R, no) => { let best = null, bd = R; const c0 = Math.floor((x - R) / CA), c1 = Math.floor((x + R) / CA), r0 = Math.floor((z - R) / CA), r1 = Math.floor((z + R) / CA); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const L = GA.get(k + ':' + gk(i, j)); if (L) for (const b of L) { if (b === no) continue; const d = Math.hypot(b.x - x, b.z - z); if (d < bd) { bd = d; best = b; } } } return best ? [best, bd] : null; };
+  // GA: especie -> (celda -> agentes, en el orden de AG). Antes una clave de texto «especie:celda» por celda consultada; mismo recorrido y
+  // mismo resultado. Ojo: el índice se rehace cada 2 s y los agentes se mueven entre tanto, así que NO se puede saltar celdas por geometría.
+  const CA = 100; let GA = new Map(); const TMP_A = [];
+  const indexar = () => { for (const M of GA.values()) for (const L of M.values()) L.length = 0; /* se vacían y se reusan (una lista vacía = celda sin agentes) */ for (const a of AG) { if (!a.vis) continue; let M = GA.get(a.e); if (!M) GA.set(a.e, M = new Map()); const g = gk(Math.floor(a.x / CA), Math.floor(a.z / CA)); let L = M.get(g); if (!L) M.set(g, L = []); L.push(a); } };
+  const masCercano = (k, x, z, R, no) => { const M = GA.get(k); if (!M) return null; let best = null, bd = R; const c0 = Math.floor((x - R) / CA), c1 = Math.floor((x + R) / CA), r0 = Math.floor((z - R) / CA), r1 = Math.floor((z + R) / CA);
+    for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const L = M.get(gk(i, j)); if (!L) continue;
+      for (let n = 0; n < L.length; n++) { const b = L[n]; if (b === no) continue; const d = Math.hypot(b.x - x, b.z - z); if (d < bd) { bd = d; best = b; } } }
+    return best ? [best, bd] : null; };
 
   /* ---------- mallas instanciadas (cuerpo y alas) ---------- */
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0, side: THREE.DoubleSide });
@@ -302,7 +360,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const girarA = (a, dx, dz, dt, max = 4) => { if (dx * dx + dz * dz < 1e-8) return; const obj = Math.atan2(-dz, dx); let d = ((obj - a.rot + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = Math.max(-max * dt, Math.min(max * dt, d)); a.rot += d; };
   const alPunto = (a, x, z, v, dt) => { const dx = x - a.x, dz = z - a.z, d = Math.hypot(dx, dz); if (d < 1e-3) return true; const s = Math.min(d, v * dt); a.x += dx / d * s; a.z += dz / d * s; girarA(a, dx, dz, dt, 6); a.vel = v; return d <= v * dt + 0.05; };
   const vuelo = (a, x1, y1, z1, v, arco) => { y1 = Math.max(GY, y1); const d = Math.hypot(x1 - a.x, z1 - a.z); a.st = 'vuelo'; a.f = { x0: a.x, y0: a.y, z0: a.z, x1, y1, z1, d: Math.max(1, d), s: 0, v, arco: arco ?? Math.min(18, 3 + d * 0.12), off: gauss() * 0.4 }; };
-  const alcanzables = (a, R) => { const h = a.h, L = []; for (const t of arbolesCerca(h, a.x, a.z, R)) if (t.fl.some(f => REL[a.e].flora.has(f))) L.push(t); return L; };
+  const alcanzables = (a, R) => { if (REL_M) return BIT[a.e] ? cercanos(a.x, a.z, R, [], BIT[a.e]) : []; const h = a.h, L = []; for (const t of arbolesCerca(h, a.x, a.z, R)) if (t.fl.some(f => REL[a.e].flora.has(f))) L.push(t); return L; };
   const huir = (a, de, t = 4) => { a.huye = { x: de.x, z: de.z, t }; };
   function elegirPercha(a) {
     const e = ESP[a.e], h = a.h;
@@ -338,7 +396,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       if (!despierta(a)) { a.st = 'posado'; a.t = 4 + rnd() * 8; return; }
       let L = alcanzables(a, 150).filter(t => t !== a.arb); if (!L.length) L = arbolesCerca(a.h, a.x, a.z, 120);
       if (!L.length) { a.t = 3; return; }
-      L.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z)); const t = L[Math.floor(rnd() * Math.min(5, L.length))];
+      const t = primeros(L, a.x, a.z, 5)[Math.floor(rnd() * Math.min(5, L.length))]; // = L ordenada por distancia (sort estable), elemento al azar de los 5 primeros
       a.arb = t; a.ang = rnd() * 6.28; vuelo(a, t.x + Math.cos(a.ang) * 1.3, t.y - 0.4, t.z + Math.sin(a.ang) * 1.3, ESP.colibri.v, 1.5 + rnd() * 2); return;
     }
     const f = a.f; f.s += f.v * dt; const u = Math.min(1, f.s / f.d), px = a.x, pz = a.z;
@@ -417,7 +475,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const otraFlor = () => {
       let L = alcanzables(a, 220).filter(t => t !== a.arb); if (!L.length) L = arbolesCerca(a.h, a.x, a.z, 120);
       if (!L.length) { a.vuelta = true; vuelo(a, a.colmena[0], GY + 1, a.colmena[1], 5, 2); return; }
-      L.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z)); const t = L[Math.floor(rnd() * Math.min(6, L.length))];
+      const t = primeros(L, a.x, a.z, 6)[Math.floor(rnd() * Math.min(6, L.length))]; // = L ordenada por distancia (sort estable), elemento al azar de los 6 primeros
       a.arb = t; a.ang = rnd() * 6.28; vuelo(a, t.x + Math.cos(a.ang) * 1.4, t.y - 0.3 + gauss() * 0.6, t.z + Math.sin(a.ang) * 1.4, ESP.abeja.v * (0.8 + rnd() * 0.4), 1 + rnd() * 2);
     };
     if (a.st === 'colmena') { a.vel = 0; a.vis = false; if ((a.t -= dt) > 0) return; if (!despierta(a)) { a.t = 5 + rnd() * 10; return; } a.vis = true; a.flores = 3 + Math.floor(rnd() * 3); otraFlor(); return; }
@@ -449,7 +507,9 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       const mejor = new Map(); // especie de flora relacionada -> árbol más cercano (una sola pasada, sin ordenar)
       const ver = (t, d) => { for (const f of t.fl) { const r = R.flora.get(f); if (!r) continue; const m = mejor.get(f); if (!m || d < m.d) mejor.set(f, { b: t, t: r.t, f, r: r.r, d }); } };
       if (a.arb && Math.hypot(a.arb.x - a.x, a.arb.z - a.z) < 4) ver(a.arb, 0);
-      for (const t of arbolesCerca(a.h, a.x, a.z, R_ARBOL)) if (t.fl.length) ver(t, Math.hypot(t.x - a.x, t.z - a.z));
+      // solo los árboles con alguna flora relacionada (máscara REL_M): con los demás ver() no hacía nada; mismo orden de recorrido
+      const AT = REL_M ? cercanos(a.x, a.z, R_ARBOL, (TMP_A.length = 0, TMP_A), BIT[a.e]) : arbolesCerca(a.h, a.x, a.z, R_ARBOL);
+      for (let i = 0; i < AT.length; i++) { const t = AT[i]; if (t.fl.length) ver(t, Math.hypot(t.x - a.x, t.z - a.z)); }
       const F = [...mejor.values()].sort((p, q) => p.d - q.d); for (let i = 0; i < Math.min(2, F.length); i++) L.push(F[i]);
     }
     // fauna: el individuo más cercano de cada especie relacionada (como actor; la otra especie dibuja su lado)
@@ -475,12 +535,13 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     for (let k = 0; k < n; k++) {
       const a = AG[iEnc++ % AG.length], claves = [];
       for (const v of conexiones(a)) {
-        const kb = v.b.id !== undefined ? 'a' + v.b.id : 'f' + v.b.x.toFixed(1) + v.b.z.toFixed(1), key = a.id + '|' + kb; claves.push(key);
+        const kb = v.b._kb || (v.b._kb = v.b.id !== undefined ? 'a' + v.b.id : 'f' + v.b.x.toFixed(1) + v.b.z.toFixed(1)), key = a.id + '|' + kb; claves.push(key); // _kb: la misma clave, calculada una vez (los árboles no se mueven; el id no cambia)
         const L = LINKS.get(key); if (L) L.vivo = VIDA_LINK; else LINKS.set(key, { a, b: v.b, t: v.t, al: 0, vivo: VIDA_LINK, r: v.r, f: v.f });
       }
       a.links = claves;
     }
-    for (const [k, L] of LINKS) { L.vivo -= dt; const meta = L.vivo > 0 && L.a.vis && (L.b.vis !== false) ? 1 : 0; L.al += (meta - L.al) * Math.min(1, dt * 3); if (L.vivo < -0.8 && L.al < 0.02) LINKS.delete(k); }
+    const kAl = Math.min(1, dt * 3); // forEach en vez de for…of [k, L]: el mismo recorrido (orden de inserción; borrar la entrada actual es seguro) sin un arreglo por entrada
+    LINKS.forEach((L, k) => { L.vivo -= dt; const meta = L.vivo > 0 && L.a.vis && (L.b.vis !== false) ? 1 : 0; L.al += (meta - L.al) * kAl; if (L.vivo < -0.8 && L.al < 0.02) LINKS.delete(k); });
   }
 
   /* ---------- líneas en arco con grosor real (LineSegments2) + pulsos (del actor al objetivo) + marca de cada animal ---------- */
