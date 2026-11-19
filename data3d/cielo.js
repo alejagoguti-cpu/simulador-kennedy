@@ -6,7 +6,7 @@
    hora dorada, día): colores del cielo, franja cálida del horizonte del lado del sol, nubes (cobertura que cambia y que crece en
    las tardes, como en Bogotá; iluminadas, rosadas al atardecer, oscuras de noche), estrellas, luna, sol y luz de cielo, niebla,
    exposición, agua y brillo de la foto 3D de Google. La tarde es un poco más rosada que la mañana. */
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 const LAT = 4.63 * Math.PI / 180, DEC = -16 * Math.PI / 180, NOON = 11.75;
 
 // fotogramas clave por elevación del sol (grados)

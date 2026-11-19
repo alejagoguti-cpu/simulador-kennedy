@@ -1,4 +1,4 @@
-import { RELOJ } from './reloj.js?v=4'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
+import { RELOJ } from './reloj.js?v=5'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
 /* Red de colegios de Kennedy («conectografía escolar») — escenario «Con la propuesta», leyenda «Colegios».
    Datos: data3d/colegios_red.json (tools/colegios_red_build.py) + data3d/colegios.json (marco mundo).
    1. enlaces colegio–colegio: árbol de expansión mínima + vecinos cercanos, ≤ 1,5 km y sin cruces

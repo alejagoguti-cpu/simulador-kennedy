@@ -6,7 +6,7 @@
    de la simulación (T3.TRAF.vis) que están a menos de 2,6 km de Corabastos y se acercan a él. No hay líneas en el aire.
    Horario: la carga entra de noche (6 p. m. a 11 p. m.; la venta mayorista abre a las 2 a. m.; Corabastos recibe 900 a 1.200 vehículos de carga al día).
    TIEMPO: los botones de hora AVANZAN el reloj universal hasta esa hora (data3d/reloj.js); se dibuja en el bucle maestro. */
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 export function crearOrigenes({ T3, izq, despues }) {
   const THREE = T3.THREE, CORA = [1132.1, 948.6], CEL = 150;
   const grupo = new THREE.Group(); grupo.name = 'origenes'; grupo.visible = false; T3.scene.add(grupo);

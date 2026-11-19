@@ -7,7 +7,7 @@
    - En 3D: cinta sobre la vía (roja hoy si se mira el tráfico; verde con la propuesta) y una etiqueta con el cambio en vivo.
    Datos: data3d/alivio_cali.json (tools/alivio_cali_build.py, OSM). Marco del mundo.
    TIEMPO: la descongestión (alivio.rampa) avanza con los pasos del reloj universal (data3d/reloj.js), en tiempo simulado. */
-import { RELOJ, hashNum } from './reloj.js?v=4';
+import { RELOJ, hashNum } from './reloj.js?v=5';
 const RAMPA_SUBE = 25 * 60, RAMPA_BAJA = 6 * 60; // segundos simulados: 25 min para descongestionarse con la propuesta, 6 min para volver a llenarse (a 60× ≈ 25 s y 6 s, como antes)
 export function crearAlivioCali({ T3, D }) {
   const THREE = T3.THREE, KEEP = 0.60, KEEP_CAM = 0.30, ANCHO = 16;

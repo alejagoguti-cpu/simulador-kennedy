@@ -98,7 +98,7 @@ const PANEL_DER = `
   <div class="p-nota">Modelo exploratorio: las cifras marcadas [SUP] en data3d/propuesta.js son supuestos para discutir, no datos medidos.</div>
 </div>`;
 
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 export function crearPropuesta(ctx) {
   const T3 = ctx.T3(), THREE = T3.THREE, D = ctx.datos;
   const $ = (id) => document.getElementById(id);

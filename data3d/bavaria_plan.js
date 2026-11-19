@@ -6,7 +6,7 @@
    - convención de AGENTES HUMANOS (figuras que se mueven entre los espacios de su rol)
    - convención de INTERACCIONES BIÓTICAS que llegan al predio (arcos animados con los colores de la red biótica)
    Ubicación del programa: sobre la imagen satelital y las huellas de OSM (data3d/bavaria.json). Todo son hipótesis de diseño. */
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 
 const PROGRAMA = [ // e: índice del edificio en bavaria.json; z: zona abierta de bavaria.json
   { k: 'mercado', n: 'Mercado de proximidad', c: '#f59e0b', e: 2, d: 'Edificio central: se recupera la estructura de ladrillo y se le pone cubierta nueva.', din: 'Puestos pequeños con cupos rotativos y tope de volumen: los productores locales venden directo a los vecinos y arman pedidos por barrio. Ningún productor ni comprador depende solo de Bavaria.' },

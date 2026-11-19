@@ -26,12 +26,24 @@
    · ENTRADAS: todo lo que cambia la corrida se anota con entrada(tipo, datos) en el t en que se aplica (siempre entre dos pasos). Para
      reproducirla en otra corrida: manejar(tipo, fn) registra cómo se aplica y programar(t, tipo, datos) la aplica justo antes del paso t,
      sea dibujando, sin dibujar o a cualquier velocidad.
-   · ?reloj=quieto en la URL: el reloj no arranca solo (las pruebas lo arrancan con arrancar(true) cuando todo cargó: mismo estado inicial). */
+   · ?reloj=quieto en la URL: el reloj no arranca solo (las pruebas lo arrancan con arrancar(true) cuando todo cargó: mismo estado inicial).
+
+   DOS ESCALAS DE UN MISMO RELOJ (el tic oficial del modelo es la SEMANA):
+   · ESCALA DEL MODELO = semanas (sem). El modelo semanal (data3d/sim_vida.js: huertas, Corabastos, compost, humedal, colapso) se registra
+     con onSemana y avanza de a una semana entera (pasoSemana), a una velocidad de años propia: pausa o 1, 4, 13, 26, 52 semanas por
+     segundo real (velSem). No corre los segundos de esas semanas: una semana del modelo cuesta lo mismo que una regla de paso (< 1 ms).
+     Es determinista por semilla: la semana N da el mismo estado a cualquier velocidad de años, con pausas o sin ellas, y sin importar lo
+     que haga el día (los controles del modelo son entradas que rigen desde la semana en que se aplican). SIMST.t = semanas.
+   · ESCALA DEL DÍA = segundos (t, DT = 1 s). Carros, fauna, aves, agentes y cielo corren paso a paso (step) y muestran UN DÍA TÍPICO de
+     la semana en que va el modelo: leen su estado (huertas abiertas, proFrac, dependencia de Corabastos…) pero nunca simulan los
+     604.800 segundos de cada semana. El día tiene su propia velocidad (1×…3600×, pausa, +2 h) y su hash (hash()) no incluye el modelo
+     (hashModelo()). Si el modelo está quieto, el día es determinista como antes (+2 h = correrlo dibujando). */
 
 export const DT = 1;                                   // segundos simulados por paso
 export const DIA = 86400, SEMANA = 7 * DIA, AÑO = 52 * SEMANA; // en pasos (DT = 1 s)
 export const T0 = 6 * 3600 + 30 * 60;                  // arranque: año 1 · semana 1 · lunes 06:30
 export const VELOCIDADES = [1, 60, 600, 3600];
+export const VEL_AÑOS = [1, 4, 13, 26, 52];             // semanas del modelo por segundo real (52 = un año por segundo)
 export const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 const ANIM_MAX = 8;                                    // las animaciones decorativas aceleran hasta ×8 (más rápido solo producía parpadeo)
 
@@ -56,17 +68,20 @@ const cederCuadro = () => typeof requestAnimationFrame === 'undefined' ? ceder()
 
 export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, presupuestoMs = 14, retenido = false } = {}) {
   const ahoraMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  const S = [], DIB = [], OYE = [], PREP = [], MAN = {}, PROG = [];
+  const S = [], M = [], DIB = [], OYE = [], PREP = [], MAN = {}, PROG = [];
   const R = {
-    DT, DIA, SEMANA, AÑO, T0: t0, VELOCIDADES,
+    DT, DIA, SEMANA, AÑO, T0: t0, VELOCIDADES, VEL_AÑOS,
     semilla, t: t0, vel, pausa: false, arrancado: false,
+    quieto: retenido,    // ?reloj=quieto (no cambia): el modelo tampoco arranca solo al pasar a «Con la propuesta»
+    // escala del MODELO (semanas): sem = semanas enteras corridas (0 = año 1 · semana 1); velSem = semanas por segundo real
+    sem: 0, velSem: 26, pausaSem: true, acumSem: 0, detenerSemEn: null, statsSem: { ms: 0, porSeg: 0 },
     acum: 0, alfa: 0, tAnim: 0, dtAnim: 0, dtReal: 0, dtSim: 0,
     topePasos, presupuestoMs,
     // registro de lo que pasa en cada cuadro (para la interfaz y la medición)
     stats: { pasosCuadro: 0, msCuadro: 0, velEfectiva: 0, recortes: 0, ultimoRecorte: -1, motivo: '' },
     destino: null,       // «ir a»: corre a la máxima velocidad sostenible hasta este t y vuelve a la velocidad anterior
     entradas: [],        // bitácora de entradas del usuario que cambian la corrida (t, tipo, datos): para reproducirla (programar)
-    sistemas: S,
+    get sistemas() { return S.concat(M); }, // los del día (S) y los del modelo semanal (M)
     salto: null,         // salto sin dibujo en curso: { desde, hasta, t, pasos, fase, cancelado, ms… } (saltar)
     ultimoSalto: null,   // el último salto terminado o cancelado (para la interfaz y las pruebas)
     detenerEn: null,     // pruebas: al llegar a este t, en cualquier modo, el reloj se pausa justo antes de correr ese paso
@@ -80,13 +95,17 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
     get diaN() { return Math.floor(R.t / DIA); },                       // días enteros desde el origen (0 = primer lunes)
     get dia() { return R.diaN + 1; },                                   // día 1, 2, 3…
     get diaSemana() { return R.diaN % 7; },                             // 0 = lunes
-    get semana() { return Math.floor(R.t / SEMANA); },                  // semanas enteras desde el origen (0 = semana 1 del año 1)
-    get semanas() { return R.t / SEMANA; },                             // semanas con fracción (SIMST.t)
-    get semanaDelAño() { return (R.semana % 52) + 1; },
-    get año() { return Math.floor(R.semana / 52) + 1; },
+    // semana, año: los del MODELO (no salen de t: el día solo muestra un día típico de esa semana)
+    get semana() { return R.sem; },                                     // semanas enteras del modelo (0 = semana 1 del año 1)
+    get semanas() { return R.sem + (R.corriendoAños ? Math.min(0.999, R.acumSem) : 0); }, // con fracción, para las barras (SIMST.t; floor = sem)
+    get semanaDelAño() { return (R.sem % 52) + 1; },
+    get año() { return Math.floor(R.sem / 52) + 1; },
     get corriendo() { return R.arrancado && !R.pausa; },
+    get corriendoAños() { return R.arrancado && !R.pausaSem && !R.salto; },
     hhmm(seg = R.t) { const m = Math.floor((seg % DIA) / 60); return pad(Math.floor(m / 60)) + ':' + pad(m % 60); },
-    texto() { return `Año ${R.año} · semana ${R.semanaDelAño} · ${DIAS[R.diaSemana]} · ${R.hhmm()}`; },
+    textoAños() { return `Año ${R.año} · semana ${R.semanaDelAño}`; },
+    textoDia() { return `${DIAS[R.diaSemana]} · ${R.hhmm()}`; },
+    texto() { return `${R.textoAños()} · ${R.textoDia()}`; },
 
     /* ---------- azar con semilla ---------- */
     azar(nombre) { return mulberry32(mezclar(R.semilla >>> 0, hashTexto(nombre))); },
@@ -100,9 +119,15 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
        · ponerAlDia (por defecto true): si se registra tarde corre sus pasos desde T0 hasta ahora. */
     registrar(sis, { ponerAlDia = true, desde = t0 } = {}) {
       const s = Object.assign({ orden: 50, ms: 0, n: 0 }, sis);
+      // escala del MODELO: un sistema con onSemana y sin step es del modelo semanal (va en M: avanza con pasoSemana, no con los segundos)
+      if (s.onSemana && !s.step && !s.onDia) {
+        if (ponerAlDia && R.sem > 0) for (let w = 1; w <= R.sem; w++) s.onSemana(w);
+        M.push(s); M.sort((a, b) => a.orden - b.orden || (a.nombre < b.nombre ? -1 : 1)); avisar('sistemas');
+        return () => { const i = M.indexOf(s); if (i >= 0) M.splice(i, 1); };
+      }
       if (ponerAlDia && R.t > desde) {
         const m0 = ahoraMs();
-        for (let tt = desde; tt < R.t; tt++) { if (s.step) s.step(DT, tt); const t1 = tt + 1; if (t1 % DIA === 0) { if (s.onDia) s.onDia(t1 / DIA); if (t1 % SEMANA === 0 && s.onSemana) s.onSemana(t1 / SEMANA); } }
+        for (let tt = desde; tt < R.t; tt++) { if (s.step) s.step(DT, tt); const t1 = tt + 1; if (t1 % DIA === 0 && s.onDia) s.onDia(t1 / DIA); }
         s.puestoAlDia = { pasos: R.t - desde, ms: ahoraMs() - m0 };
       }
       S.push(s); S.sort((a, b) => a.orden - b.orden || (a.nombre < b.nombre ? -1 : a.nombre > b.nombre ? 1 : 0)); // orden fijo: no depende de cuál cargó primero
@@ -117,8 +142,21 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
       if (PROG.length && PROG[0].t <= t) aplicarProgramadas(t); // entradas reproducidas: justo antes del paso t, en cualquier modo
       for (let i = 0; i < S.length; i++) { const s = S[i]; if (s.step) { s.step(DT, t); } }
       R.t = t + 1;
-      if (R.t % DIA === 0) { const d = R.t / DIA; for (const s of S) if (s.onDia) s.onDia(d); if (R.t % SEMANA === 0) { const w = R.t / SEMANA; for (const s of S) if (s.onSemana) s.onSemana(w); } }
+      if (R.t % DIA === 0) { const d = R.t / DIA; for (const s of S) if (s.onDia) s.onDia(d); } // las semanas ya no salen de los segundos: las lleva pasoSemana
     },
+    /* ---------- escala del MODELO: una semana entera ----------
+       sem sube ANTES de llamar a onSemana(w): quien lea SIMST.t dentro del tic ya ve la semana nueva. */
+    pasoSemana() {
+      const w = R.sem + 1; R.sem = w;
+      for (let i = 0; i < M.length; i++) { try { M[i].onSemana(w); } catch (e) { console.warn('reloj · semana ' + w + ' · ' + M[i].nombre + ':', e); } }
+    },
+    // avanzarSemanas(n): n semanas del modelo seguidas, sin esperar (pruebas, «ir a un año»)
+    avanzarSemanas(n) { const m0 = ahoraMs(); for (let k = 0; k < n; k++) R.pasoSemana(); avisar('semana'); return { semanas: n, ms: ahoraMs() - m0 }; },
+    // volver a la semana 0 con la misma semilla (cada sistema del modelo se reinicia con su reiniciar())
+    reiniciarModelo() { R.sem = 0; R.acumSem = 0; for (const s of M) if (s.reiniciar) s.reiniciar(); R.entrada('modelo-reinicio', 0); avisar('semana'); },
+    hashModelo() { let h = mezclar(R.sem >>> 0, R.semilla >>> 0); const det = {}; for (const s of M) if (s.hash) { const v = s.hash() >>> 0; det[s.nombre] = v; h = mezclar(h, v); } return { sem: R.sem, h, sistemas: det }; },
+    ponerVelAños(v) { R.velSem = Math.max(0, +v || 0); R.pausaSem = false; R.acumSem = Math.min(R.acumSem, 1); R.entrada('vel-años', R.velSem); avisar('vel-años'); },
+    pausarAños(on = true) { R.pausaSem = !!on; R.acumSem = Math.min(R.acumSem, 1); R.entrada('pausa-años', R.pausaSem); avisar('pausa-años'); },
     // avanzar(n): corre n pasos seguidos sin dibujar (base del salto en segundo plano de la fase 2). Devuelve ms por sistema.
     avanzar(n, { medir = false } = {}) {
       const m0 = ahoraMs(); let porSis = null;
@@ -128,7 +166,7 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
         const t = R.t;
         for (const s of S) if (s.step) { const a = ahoraMs(); s.step(DT, t); porSis[s.nombre] += ahoraMs() - a; }
         R.t = t + 1;
-        if (R.t % DIA === 0) { const d = R.t / DIA; for (const s of S) if (s.onDia) { const a = ahoraMs(); s.onDia(d); porSis[s.nombre] += ahoraMs() - a; } if (R.t % SEMANA === 0) { const w = R.t / SEMANA; for (const s of S) if (s.onSemana) { const a = ahoraMs(); s.onSemana(w); porSis[s.nombre] += ahoraMs() - a; } } }
+        if (R.t % DIA === 0) { const d = R.t / DIA; for (const s of S) if (s.onDia) { const a = ahoraMs(); s.onDia(d); porSis[s.nombre] += ahoraMs() - a; } }
       }
       R.alfa = 1; avisar('avance');
       return { pasos: n, ms: ahoraMs() - m0, porSistema: porSis };
@@ -189,7 +227,7 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
     // la próxima vez que el reloj marque este minuto del día (0 … 1439); si ya pasó hoy, mañana
     irAMinuto(min, motivo = '') { min = ((Math.round(min) % 1440) + 1440) % 1440; const hoy = R.diaN * DIA + min * 60; return R.irA(hoy > R.t ? hoy : hoy + DIA, motivo || ('las ' + R.hhmm(min * 60))); },
     cancelarDestino() { if (!R.destino) return; const d = R.destino; R.destino = null; R.pausa = d.pausa; avisar('destino'); },
-    entrada(tipo, datos) { R.entradas.push({ t: R.t, tipo, datos }); if (R.entradas.length > 5000) R.entradas.shift(); },
+    entrada(tipo, datos) { R.entradas.push({ t: R.t, sem: R.sem, tipo, datos }); if (R.entradas.length > 5000) R.entradas.shift(); },
 
     /* ---------- un cuadro: lo llama el ÚNICO requestAnimationFrame maestro (flight, en index.html) ----------
        cuadro(ms) = avanzarCuadro(ms) (lógica: los pasos que tocan) + dibujar() (los dibujos registrados). El bucle maestro puede
@@ -202,7 +240,20 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
     },
     avanzarCuadro(ms) {
       const ahora = ms != null ? ms : ahoraMs();
-      const dtReal = R._ult == null ? 1 / 60 : Math.min(0.25, Math.max(0, (ahora - R._ult) / 1000)); R._ult = ahora; R.dtReal = dtReal;
+      R._dtCrudo = R._ult == null ? 1 / 60 : Math.max(0, (ahora - R._ult) / 1000);
+      const dtReal = Math.min(0.25, R._dtCrudo); R._ult = ahora; R.dtReal = dtReal;
+      // 1) escala del MODELO: semanas enteras a velSem semanas por segundo real (antes que el día: el día lee el estado de la semana)
+      if (R.corriendoAños) {
+        // una semana del modelo cuesta ~1-2 ms: aunque el dibujo vaya a pocos cuadros por segundo, los años siguen a la velocidad pedida
+        // (se mide el tiempo real hasta 1 s por cuadro, no los 0,25 s del día)
+        R.acumSem += Math.min(1, R._dtCrudo || dtReal) * R.velSem; const ms0 = ahoraMs(); let k = 0;
+        while (R.acumSem >= 1) {
+          if (R.detenerSemEn != null && R.sem >= R.detenerSemEn) { R.detenerSemEn = null; R.pausaSem = true; R.acumSem = 0; R.entrada('pausa-años', true); avisar('pausa-años'); break; }
+          if (k >= 60 || (k && ahoraMs() - ms0 > 30)) { R.acumSem = Math.min(R.acumSem, 1); break; } // sin deuda: si el equipo no alcanza, los años van algo más lento
+          R.pasoSemana(); R.acumSem -= 1; k++;
+        }
+        if (k) { R.statsSem.ms = ahoraMs() - ms0; avisar('semana'); }
+      }
       const st = R.stats, t0c = R.t, m0 = ahoraMs();
       let pasos = 0, recorte = '';
       if (R.arrancado && !R.pausa && !R.salto) { // durante un salto los pasos los corre saltar(), no el cuadro
@@ -241,7 +292,7 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
   return R;
 }
 
-// el reloj de la página (uno solo: todos los módulos lo importan con la MISMA url, ./reloj.js?v=4)
+// el reloj de la página (uno solo: todos los módulos lo importan con la MISMA url, ./reloj.js?v=5)
 const QUIETO = typeof location !== 'undefined' && /[?&]reloj=quieto\b/.test(location.search || '');
 export const RELOJ = crearReloj({ retenido: QUIETO });
 if (typeof window !== 'undefined') window.KEN_RELOJ = RELOJ;

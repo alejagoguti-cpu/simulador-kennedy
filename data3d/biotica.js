@@ -20,7 +20,7 @@
    TIEMPO: sistema del reloj universal (data3d/reloj.js). step(1 s) mueve la fauna y rehace la red con azar con semilla, SIEMPRE
    (también con la red oculta: el estado no depende de si se dibuja). El dibujo solo lee e interpola posiciones; el aleteo y los
    pulsos usan el tiempo de animación del reloj (se detienen en pausa). */
-import { RELOJ, hashNum } from './reloj.js?v=4';
+import { RELOJ, hashNum } from './reloj.js?v=5';
 
 const SVG = { // íconos de los tipos de interacción (mismo orden que la red)
   0: '<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',

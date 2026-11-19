@@ -7,7 +7,7 @@
    La velocidad depende de SIM-03: la tasa de recuperación del humedal (P3.rec), la densidad de árboles (P3.arboles) y el escenario
    (B sin criterio de ubicación, C con corredores). Las cifras de ensanche, siembra y especies son supuestos de escala [SUP].
    Forma del humedal: data3d/water_bodies.json (sectores norte y sur de La Vaca), al marco del mundo con lw(). */
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 export async function iniciarHumedalVaca({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y];
   const W = await cj('data3d/water_bodies.json').catch(() => []);

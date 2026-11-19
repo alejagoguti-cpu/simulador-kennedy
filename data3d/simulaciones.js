@@ -13,8 +13,8 @@
    SIM-02 Orgánicos y compostaje: A ruta actual · B estación de compostaje barrial · C compostaje en Bavaria Común
    SIM-03 Hábitat y fauna: A sin huertas · B huertas sin criterio de ubicación · C huertas con corredores; con y sin medida antitrampa
    Los valores de partida que no da el documento están marcados [SUP] (supuestos para discutir con el grupo). */
-import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=5';
-import { RELOJ } from './reloj.js?v=4';
+import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=6';
+import { RELOJ } from './reloj.js?v=5';
 export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const { P1, P2, P3 } = PAR; // los mismos parámetros que el panel de escenarios del mapa (data3d/sim_modelos.js)
   // colores fijos de los escenarios (los mismos en el mapa): A hoy azul grisáceo, B morado, C ámbar (la propuesta)

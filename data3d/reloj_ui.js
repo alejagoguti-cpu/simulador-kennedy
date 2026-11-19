@@ -1,11 +1,13 @@
 /* ============ CONTROL DE TIEMPO (interfaz del reloj universal, data3d/reloj.js) ============
-   Un solo control en pantalla para toda la simulación: pausa/reanudar, velocidad (1×, 60×, 600×, 3600×) y la fecha de la simulación
-   «Año N · semana S · día de la semana · HH:MM». Si el equipo no alcanza la velocidad pedida, muestra la velocidad efectiva (sin acumular deuda).
+   Un solo control en pantalla para las dos escalas del mismo reloj:
+   · AÑOS (modelo semanal): ▶/pausa y semanas por segundo (1, 4, 13, 26, 52) · «Año N · semana S».
+   · DÍA (segundos: carros, fauna, aves, cielo): ▶/pausa, 1×, 60×, 600×, 3600×, +2 h · «día de la semana · HH:MM».
+   Si el equipo no alcanza la velocidad del día pedida, muestra la velocidad efectiva (sin acumular deuda).
    Las demás interfaces de tiempo (dial del día, botones de hora, gráfica del tablero, botones 22:00/02:00) mandan al MISMO reloj:
    piden «avanzar hasta esa hora» (RELOJ.irAMinuto) y aquí se ve el avance con un botón para cancelarlo.
    «+2 h»: salto sin dibujo (RELOJ.saltar): la lógica de todos los sistemas corre paso a paso sin dibujar la escena; mientras tanto una
    capa bloquea la interfaz (nada cambia la corrida a mitad del salto) y muestra el progreso, la fecha simulada y Cancelar (también Esc). */
-import { RELOJ as R0, VELOCIDADES } from './reloj.js?v=4';
+import { RELOJ as R0, VELOCIDADES, VEL_AÑOS } from './reloj.js?v=5';
 export const SALTO_PASOS = 2 * 3600; // +2 horas simuladas (pasos de 1 s)
 
 const CSS = `
@@ -23,6 +25,13 @@ const CSS = `
 #trafficHud .rt-salto{padding:0 10px;height:30px;font-size:12px;font-weight:600;border-radius:9px;cursor:pointer;font-variant-numeric:tabular-nums;background:transparent;color:#e2e8f0;border:1px solid rgba(186,230,253,.45);white-space:nowrap}
 #trafficHud .rt-salto:hover{background:rgba(186,230,253,.1)}#trafficHud .rt-salto:disabled{opacity:.4;cursor:default}
 #trafficHud .rt-info .rt-ok{color:#a7f3d0}
+#trafficHud .rt-fila+.rt-fila{margin-top:6px}
+#trafficHud .rt-et{width:34px;font:600 9.5px var(--ui-mono,'JetBrains Mono',ui-monospace,monospace);letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;text-align:left}
+#trafficHud .rt-años .rt-fecha{min-width:128px}#trafficHud .rt-dia .rt-fecha{min-width:112px}
+#trafficHud .rt-años .rt-vel button{min-width:36px;padding:0 6px}
+#trafficHud .rt-años .rt-vel button.on{background:linear-gradient(100deg,#d9f99d,#bef264);color:#132004}
+#trafficHud .rt-u{font-size:11px;color:#94a3b8;margin-left:-4px}
+#trafficHud .rt-exp{margin:6px 0 0;font-size:11px;line-height:1.35;color:#94a3b8;text-align:center}
 #rt-velo{position:fixed;inset:0;z-index:2147483000;display:none;align-items:flex-end;justify-content:center;padding:0 16px 150px;box-sizing:border-box;background:rgba(5,8,12,.42);cursor:progress}
 #rt-velo.on{display:flex}
 #rt-velo .rs-c{width:min(380px,100%);box-sizing:border-box;padding:16px 18px 14px;border-radius:14px;background:rgba(13,16,20,.94);border:1px solid rgba(255,255,255,.09);box-shadow:0 16px 40px rgba(0,0,0,.4);color:#e5e7eb;font:400 12px/1.45 var(--ui-sans,Inter,system-ui,sans-serif);font-variant-numeric:tabular-nums;cursor:default}
@@ -42,6 +51,9 @@ const CSS = `
 @media (max-width:760px){#trafficHud{top:58px!important;bottom:auto!important;width:calc(100vw - 16px)!important;max-width:none;padding:6px 8px!important}#toast{top:196px!important}
   #trafficHud .rt-fila{gap:6px 8px;justify-content:space-between}#trafficHud .rt-fecha{flex:1 1 auto;text-align:left;font-size:12px}#trafficHud .rt-vel{flex:1 1 auto}#trafficHud .rt-vel button{flex:1;min-width:0;padding:0 4px}#trafficHud .rt-salto{flex:none}
   #trafficHud .rt-info{margin-top:4px;flex-wrap:wrap}
+  #trafficHud .rt-et{width:auto;font-size:9px;letter-spacing:.08em}#trafficHud .rt-u{display:none}#trafficHud .rt-fila+.rt-fila{margin-top:4px}
+  #trafficHud .rt-años .rt-fecha,#trafficHud .rt-dia .rt-fecha{min-width:0;flex:1 1 auto}#trafficHud .rt-años .rt-vel button{min-width:0;padding:0 2px}
+  #trafficHud .rt-exp{margin-top:4px;font-size:10px}
   /* el salto sin dibujo: la tarjeta va abajo (sobre el selector de escenarios, que queda bloqueado), nunca sobre la fila de velocidades ni sobre el panel de escenarios */
   #rt-velo{align-items:flex-end;padding:0 8px 78px}#rt-velo .rs-c{padding:12px 14px 10px}#rt-velo .rs-n{display:none}#rt-velo .rs-t{margin:2px 0 6px}#rt-velo .rs-a{margin-top:8px}}
 `;
@@ -53,19 +65,31 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
   host = host || document.getElementById('trafficHud'); if (!host) return null;
   if (!document.getElementById('rt-css')) { const s = document.createElement('style'); s.id = 'rt-css'; s.textContent = CSS; document.head.appendChild(s); }
   host.setAttribute('aria-label', 'Control de tiempo de la simulación');
-  host.innerHTML = `<div class="rt-fila"><span class="rt-fecha" id="rt-fecha" role="timer" aria-live="off">Año 1 · semana 1 · lunes · 06:30</span>
-      <button type="button" class="rt-play" id="rt-play" aria-label="Pausar simulación">❚❚</button>
-      <div class="rt-vel" id="rt-vel" role="group" aria-label="Velocidad de la simulación">${VELOCIDADES.map(v => `<button type="button" data-v="${v}" aria-label="Velocidad ${v} veces">${v}×</button>`).join('')}</div>
-      <button type="button" class="rt-salto" id="rt-salto" title="Calcula las próximas 2 horas simuladas sin dibujar la escena" aria-label="Avanzar 2 horas simuladas sin dibujar">+2 h</button></div>
+  // dos filas, un solo reloj: AÑOS (escala del modelo semanal) y DÍA (escala de segundos: carros, fauna, aves, cielo)
+  host.innerHTML = `<div class="rt-fila rt-años"><span class="rt-et">Años</span><button type="button" class="rt-play" id="rt-playA" aria-label="Pausar los años">❚❚</button>
+      <span class="rt-fecha" id="rt-fechaA" role="timer" aria-live="off">Año 1 · semana 1</span>
+      <div class="rt-vel" id="rt-velA" role="group" aria-label="Semanas por segundo">${VEL_AÑOS.map(v => `<button type="button" data-v="${v}" aria-label="${v} semanas por segundo" title="${v} ${v === 1 ? 'semana' : 'semanas'} por segundo${v === 52 ? ' (un año por segundo)' : ''}">${v}</button>`).join('')}</div><span class="rt-u">sem/s</span></div>
+    <div class="rt-fila rt-dia"><span class="rt-et">Día</span><button type="button" class="rt-play" id="rt-play" aria-label="Pausar el día">❚❚</button>
+      <span class="rt-fecha" id="rt-fecha" role="timer" aria-live="off">lunes · 06:30</span>
+      <div class="rt-vel" id="rt-vel" role="group" aria-label="Velocidad del día">${VELOCIDADES.map(v => `<button type="button" data-v="${v}" aria-label="Velocidad ${v} veces">${v}×</button>`).join('')}</div>
+      <button type="button" class="rt-salto" id="rt-salto" title="Calcula las próximas 2 horas del día sin dibujar la escena" aria-label="Avanzar 2 horas del día sin dibujar">+2 h</button></div>
+    <p class="rt-exp">Los años los mueve el modelo semanal; los carros y animales muestran un día de esa semana.</p>
     <div class="rt-info vacio" id="rt-info"><span id="rt-msg"></span></div>`;
   const $ = (id) => host.querySelector('#' + id), fecha = $('rt-fecha'), play = $('rt-play'), vel = $('rt-vel'), msg = $('rt-msg'), info = $('rt-info'), bSalto = $('rt-salto');
+  const fechaA = $('rt-fechaA'), playA = $('rt-playA'), velA = $('rt-velA');
   play.onclick = () => { if (!RELOJ.arrancado) { RELOJ.arrancar(); return; } if (RELOJ.destino) RELOJ.cancelarDestino(); RELOJ.alternar(); };
   vel.querySelectorAll('button').forEach(b => b.onclick = () => { RELOJ.ponerVel(+b.dataset.v); });
+  playA.onclick = () => { if (RELOJ.saltando) return; RELOJ.pausarAños(!RELOJ.pausaSem); };
+  velA.querySelectorAll('button').forEach(b => b.onclick = () => { if (!RELOJ.saltando) RELOJ.ponerVelAños(+b.dataset.v); });
   const pintar = () => {
     play.textContent = RELOJ.pausa || !RELOJ.arrancado ? '▶' : '❚❚';
-    play.setAttribute('aria-label', RELOJ.pausa ? 'Reanudar simulación' : 'Pausar simulación');
+    play.setAttribute('aria-label', RELOJ.pausa ? 'Reanudar el día' : 'Pausar el día');
     vel.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausa && +b.dataset.v === RELOJ.vel));
     bSalto.disabled = !RELOJ.arrancado || RELOJ.saltando;
+    playA.textContent = RELOJ.pausaSem ? '▶' : '❚❚';
+    playA.setAttribute('aria-label', RELOJ.pausaSem ? 'Correr los años' : 'Pausar los años');
+    velA.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausaSem && +b.dataset.v === RELOJ.velSem));
+    fechaA.textContent = RELOJ.textoAños();
   };
   RELOJ.alCambiar(pintar); pintar();
 
@@ -88,7 +112,7 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
   const pintarSalto = () => {
     const J = RELOJ.salto; if (!J) return;
     const hecho = J.t - J.desde, frac = J.n ? hecho / J.n : 0;
-    rsF.textContent = fecha.textContent = RELOJ.texto(); rsM.textContent = '→ ' + RELOJ.hhmm(J.hasta);
+    rsF.textContent = RELOJ.texto(); fecha.textContent = RELOJ.textoDia(); rsM.textContent = '→ ' + RELOJ.hhmm(J.hasta);
     if (J.fase === 'preparando') { rsB.classList.add('ind'); rsI.style.width = ''; rsP.textContent = 'Descargando la grabación de tráfico…'; rsQ.textContent = ''; }
     else { rsB.classList.remove('ind'); rsI.style.width = (frac * 100).toFixed(1) + '%'; rsB.setAttribute('aria-valuenow', Math.round(frac * 100));
       rsP.textContent = Math.floor(frac * 100) + ' % · ' + durTxt(hecho) + ' de ' + durTxt(J.n) + ' simuladas';
@@ -102,7 +126,7 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
       velo.classList.remove('on'); const J = RELOJ.ultimoSalto, hecho = J ? J.t - J.desde : 0;
       if (J) aviso = J.cancelado ? { txt: 'Salto cancelado en ' + RELOJ.hhmm() + ' · ' + durTxt(hecho) + ' simuladas en ' + realTxt(J.msTotal), ok: false, hasta: 7 }
         : { txt: 'Avanzó ' + durTxt(hecho) + ' simuladas en ' + realTxt(J.msTotal) + (J.avisos.length ? ' · ' + J.avisos[0] : ''), ok: true, hasta: 7 };
-      fecha.textContent = RELOJ.texto(); tUi = 0;
+      fecha.textContent = RELOJ.textoDia(); tUi = 0;
       try { if (focoAntes && focoAntes.focus) focoAntes.focus(); } catch (e) {}
     }
   });
@@ -113,7 +137,7 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
   RELOJ.alDibujar((i) => {
     if (aviso) aviso.hasta -= i.dtReal;
     if ((tUi -= i.dtReal) > 0) return; tUi = 0.25;
-    fecha.textContent = RELOJ.texto();
+    fecha.textContent = RELOJ.textoDia(); fechaA.textContent = RELOJ.textoAños();
     const st = RELOJ.stats, d = RELOJ.destino; let txt = '', alerta = false;
     if (aviso && aviso.hasta > 0 && !d) { msg.textContent = aviso.txt; msg.className = aviso.ok ? 'rt-ok' : 'rt-alerta'; info.classList.remove('vacio'); if (cancelar) { cancelar.remove(); cancelar = null; } return; }
     aviso = null;
@@ -125,7 +149,7 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
       if (cancelar) { cancelar.remove(); cancelar = null; }
       const pedida = RELOJ.vel, ef = st.velEfectiva;
       if (RELOJ.corriendo && isFinite(pedida) && pedida > 1 && ef < pedida * 0.85 && st.motivo) { txt = 'El equipo no alcanza ' + pedida + '×: corre a ~' + Math.max(1, Math.round(ef)) + '×'; alerta = true; }
-      else if (RELOJ.pausa) txt = 'En pausa';
+      else if (RELOJ.pausa) txt = 'Día en pausa';
       else if (!RELOJ.arrancado) txt = 'Cargando…';
     }
     msg.textContent = txt; msg.className = alerta ? 'rt-alerta' : ''; info.classList.toggle('vacio', !txt);

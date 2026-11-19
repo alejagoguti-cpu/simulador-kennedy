@@ -3,7 +3,7 @@
    central se vuelve un parque humedal: pasto, una laguna que recoge el agua lluvia de las cubiertas que quedan y árboles nativos de borde de agua
    (aliso, sauco, chicalá, arrayán, caucho sabanero y arbustos de flor), con los mismos modelos escaneados de los parches (data3d/parches_arboles.js).
    Solo existe con la propuesta; las bodegas desmontadas se esconden. Hipótesis de diseño para discutir con el grupo. */
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 export async function crearParqueCorabastos({ T3, lw, cj }) {
   const THREE = T3.THREE;
   const C = await cj('data3d/corabastos.json?v=3'); if (!C || !C.naves) return null;

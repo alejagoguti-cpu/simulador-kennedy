@@ -9,7 +9,7 @@ const CLASE = { 'Rol previo': '#f59e0b', 'Rol humano propuesto': '#60a5fa', 'Org
 const TAGC = { INF: '#7dd3fc', CONS: '#a78bfa', AUT: '#f472b6', CTRL: '#fbbf24', RET: '#34d399', DEP: '#fb923c', BIO: '#86efac', AMB: '#cbd5e1', MAT: '#22d3ee' };
 const ALTO = { 'Rol previo': 46, 'Rol humano propuesto': 34, 'Organismo': 20, 'Entorno': 24, 'Recurso': 22, 'Infraestructura': 22 };
 
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 const azarAct = RELOJ.azar('actores'); // azar con semilla del reloj universal (data3d/reloj.js)
 export async function iniciarActores({ THREE, T3, lw, OX = 0, OZ = 0, Y0 = 2.0 } = {}) {
   let e = 'E1';

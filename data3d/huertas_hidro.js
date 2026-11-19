@@ -8,7 +8,7 @@
      Cada visita une la planta visitada con la anterior: la red de interacciones que conecta los edificios.
    Para que cargue rápido: las instalaciones se calculan una vez y se dibujan solo las cercanas a lo que mira la cámara
    (instancias), los techos lejanos conservan su capa verde. */
-import { RELOJ, hashNum } from './reloj.js?v=4';
+import { RELOJ, hashNum } from './reloj.js?v=5';
 export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   const grupo = new THREE.Group(); grupo.name = 'huertas-hidroponicas'; grupo.visible = false; T3.scene.add(grupo);
   const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
@@ -378,7 +378,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     grupo, total, flores: FLORES.length, techos: ORD.size,
     // f en [0, 1]: fracción de cubiertas con huerta; las que se abren en este paso disparan un pulso de luz (data3d/resaltes.js)
     fraccion(f) { f = Math.max(0, Math.min(1, f)); if (Math.abs(f - frac) < 0.002) return; const antes = frac; frac = f; uFrac.value = f;
-      if (f > antes && grupo.visible) import('./resaltes.js?v=3').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
+      if (f > antes && grupo.visible) import('./resaltes.js?v=4').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
       sucioFrac = true; if (grupo.visible && performance.now() - tFrac > 330) { tFrac = performance.now(); sucioFrac = false; ultimo = null; recalcular(); } }, // tope ~3 veces/s; el resto lo hace el tick de cuadro()
     get frac() { return frac; },
     centros: () => [...ORD].map(([ti, o]) => [TCEN.get(ti), o]), // [centro, orden] de cada cubierta con huerta

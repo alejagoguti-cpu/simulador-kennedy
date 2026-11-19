@@ -3,7 +3,7 @@
    para ver el antes y el después en el mismo sitio. La tarjeta dice el número de hoy y el de la propuesta (en la semana en que va el reloj universal),
    qué mirar en el mapa y por qué mejora. Los números salen del mismo modelo del tablero (data3d/sim_modelos.js) y del
    panel de escenarios (window.KEN_ESIM). Se puede pasar de hoy a propuesta a mano y repetir el cambio. */
-import { SEM, SIMST } from './sim_modelos.js?v=5';
+import { SEM, SIMST } from './sim_modelos.js?v=6';
 export function iniciarMejoraTour({ T3 }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });

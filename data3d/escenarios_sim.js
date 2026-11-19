@@ -8,11 +8,12 @@
              con partículas proporcionales a los kilos y la ocupación de cada estación
    · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
              trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
-import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=5';
-/* TIEMPO: un solo reloj (data3d/reloj.js). La semana de la simulación sale del reloj (1 semana = 7 días del reloj) y las reglas
-   semanales de sim_vida corren cada vez que el reloj cruza una semana (onSemana). Ya no hay play, velocidades ni línea de tiempo
-   propios, ni saltos al año 10: los sliders rigen desde la semana en que se mueven y la corrida sigue desde donde va. */
-import { RELOJ } from './reloj.js?v=4';
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=6';
+/* TIEMPO: un solo reloj (data3d/reloj.js) con dos escalas. Este modelo va en la escala del MODELO: una semana entera por tic
+   (RELOJ.pasoSemana → onSemana), a la velocidad de años del control «Años» (pausa, 1…52 semanas por segundo). No corre los segundos
+   de la semana: carros, fauna y aves muestran un día típico de la semana en que va y leen lo que aquí se aplica (aplicar()).
+   Sin saltos al año 10: los sliders rigen desde la semana en que se mueven y la corrida sigue desde donde va. */
+import { RELOJ } from './reloj.js?v=5';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con perturbaciones al azar (semilla = SIMST.semilla) y reglas de colapso fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
 import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE } from './sim_vida.js?v=1';
@@ -218,7 +219,7 @@ body.tb-abierto #esim{display:none}
 <p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta abierta (se cierran si la red se cae)</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Kennedy hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Nodo central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Clúster rotativo</button></div>
 <div class="tl"><div class="tlb" role="progressbar" aria-label="Semana del año de la simulación" aria-valuemin="1" aria-valuemax="52" data-t><i></i></div><output data-año></output></div>
-<p class="exp tlr">El tiempo lo lleva el reloj de la simulación (control de arriba): una semana del modelo = 7 días del reloj.</p>
+<p class="exp tlr">Los años los mueve el modelo semanal (control de tiempo, fila «Años»); los carros y animales muestran un día de esa semana.</p>
 <div class="vida" data-vida aria-live="polite"></div>
 <div class="vctl"><span class="sem">Semilla<button type="button" data-sd="-1" aria-label="Semilla anterior">‹</button><b data-seed>${VIDA.seed}</b><button type="button" data-sd="1" aria-label="Semilla siguiente">›</button></span><button type="button" data-eval>Evaluar 30 corridas</button><button type="button" data-como aria-expanded="false">Cómo funciona</button></div>
 <div class="como" data-como-txt hidden><ol>
@@ -273,7 +274,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   };
   // Humedal La Vaca: se recupera a lo largo de los 10 años (data3d/humedal_vaca.js)
   let VACA = null;
-  import('./humedal_vaca.js?v=3').then(m => m.iniciarHumedalVaca({ T3, cj })).then(v => { VACA = v; window.KEN_VACA = v; aplicar(); }).catch(e => console.warn('La Vaca:', e));
+  import('./humedal_vaca.js?v=4').then(m => m.iniciarHumedalVaca({ T3, cj })).then(v => { VACA = v; window.KEN_VACA = v; aplicar(); }).catch(e => console.warn('La Vaca:', e));
   const GRUPO = { 1: ['huertas', 'trafico'], 2: ['compost'], 3: ['humedal'] };
   let tAviso = 0;
   const avisar2 = (txt, lugar) => { const d = $('[data-aviso]'); d.hidden = false; d.innerHTML = `<span>${txt}: mira ${LUGAR[lugar].n}.</span><button type="button" data-ir="${lugar}">Ver en el mapa</button>`; clearTimeout(tAviso); tAviso = setTimeout(() => { d.hidden = true; }, 9000); };
@@ -394,8 +395,10 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   }
 
   /* ---------------- eventos ---------------- */
-  // las reglas semanales corren cuando el reloj universal cruza una semana (onSemana): A, B y C avanzan juntos, con su azar con semilla
+  // las reglas semanales corren en cada tic semanal del reloj (onSemana): A, B y C avanzan juntos, con su azar con semilla
+  // escala del MODELO del reloj (onSemana sin step): avanza de a una semana entera con RELOJ.pasoSemana, a la velocidad de años elegida
   RELOJ.registrar({ nombre: 'sim_vida', orden: 60, onSemana: (w) => { avanzarA(w); enPaso = true; try { aplicar(); } finally { enPaso = false; } },
+    reiniciar: () => { reiniciarVida(); aplicar(); },
     hash: () => { let h = 0x811c9dc5; for (const k of 'ABC') { const o = VIDA.S[k].o; h = Math.imul((h ^ (VIDA.S[k].t | 0)) >>> 0, 0x01000193) >>> 0; for (const q of ['act', 'dep', 'pers', 'aves', 'hum', 'relleno']) h = Math.imul((h ^ (Math.round((o[q] || 0) * 1000) | 0)) >>> 0, 0x01000193) >>> 0; } return h; } });
   const arrancar = () => {}, parar = () => {}; // compatibilidad: el tiempo lo controla el reloj universal
   // otra semilla = otra réplica: la historia de A, B y C se recalcula con esa semilla hasta la semana actual del reloj (el reloj no se mueve)
@@ -436,7 +439,11 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   // hoy ⇄ propuesta: cambia lo que se mira, el tiempo sigue. aplicar() fija parámetros de la lógica (fauna, huertas del proyecto, tráfico
   // a Corabastos): corre YA, en el mismo instante de la entrada «escenario» (antes 60 ms reales después: según la velocidad, varios pasos
   // simulados con los valores viejos); a los 60 ms se repite (idempotente) para los módulos que terminan de cargar
-  addEventListener('escenario', () => { ultHB = -1; aplicar(); setTimeout(() => { ultHB = -1; aplicar(); }, 60); });
+  addEventListener('escenario', () => { ultHB = -1; aplicar(); setTimeout(() => { ultHB = -1; aplicar(); }, 60); arrancarAños(); });
+  // al pasar a «Con la propuesta» los años arrancan solos (como el simulador original): se ve pasar el tiempo, el estado y las huertas
+  // abriéndose. No vuelve a la semana 0: sigue desde donde va. Con ?reloj=quieto (pruebas) no arranca solo.
+  function arrancarAños() { if (T3.escenario === 'proyecto' && !RELOJ.quieto && RELOJ.pausaSem) { RELOJ.pausarAños(false); } }
+  arrancarAños();
   // la huerta de barrio carga después: se aplica cuando aparece
   const espera = setInterval(() => { if (window.KEN_HBAR && window.KEN_HBAR.fraccion) { clearInterval(espera); ultHB = -1; aplicar(); } }, 800);
 
@@ -462,8 +469,8 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   RELOJ.alDibujar(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./mejora_tour.js?v=8').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=8').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./mejora_tour.js?v=9').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./capas_escenario.js?v=9').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }

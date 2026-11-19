@@ -1,4 +1,4 @@
-import { RELOJ } from './reloj.js?v=4'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
+import { RELOJ } from './reloj.js?v=5'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
 /* ============ BAVARIA COMÚN · DISTRITO DE TECNOLOGÍAS CONVERGENTES (NBIC) ============
    Se prende al escoger «Bavaria Común» en la leyenda de «Con la propuesta» (data3d/escenario.js). Al prenderse, en secuencia:
    1. los edificios se levantan como volúmenes de luz de su uso (programa NBIC en 12 edificios: nano, bio, info, cogno + aulas,

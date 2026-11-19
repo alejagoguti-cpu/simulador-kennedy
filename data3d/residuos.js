@@ -34,7 +34,7 @@ export async function crearResiduos({ THREE, T3 }) {
   const S = new Map(); for (const p of D.p) { if (p[2]) continue; const k = Math.floor(p[0] / 600) + ',' + Math.floor(p[1] / 600); const s = S.get(k) || { x: 0, z: 0, n: 0 }; s.x += p[0]; s.z += p[1]; s.n++; S.set(k, s); }
   const sec = [...S.values()], ap = new Float32Array(sec.length * 6), ac = new Float32Array(sec.length * 6), cv = COL[0];
   sec.forEach((s, k) => { const x = s.x / s.n, z = s.z / s.n; ap.set([x, Y(x, z) + 4, z, DJ[0], 2, DJ[1]], k * 6); ac.set([cv.r, cv.g, cv.b, cv.r, cv.g, cv.b], k * 6); });
-  g.add(await (await import('./red_resaltada.js?v=4')).redResaltada({ THREE, T3, pos: ap, colores: ac, ancho: 1.6, arco: 0.05 }));
+  g.add(await (await import('./red_resaltada.js?v=5')).redResaltada({ THREE, T3, pos: ap, colores: ac, ancho: 1.6, arco: 0.05 }));
   const n1 = D.p.filter(p => p[2]).length;
   return { grupo: g, total: D.p.length, aprov: n1, noAprov: D.p.length - n1, ver(on) { g.visible = on; } };
 }

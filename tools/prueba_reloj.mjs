@@ -19,6 +19,10 @@
      b) CAMBIOS DE VELOCIDAD: 1× → 3600× → pausa → 60× dibujando, hasta T0+1200: mismo hash que sin cambios.
      d) CANCELAR: un salto «+2 h» cancelado a los pocos segundos queda en un paso entero; la corrida dibujada pasa por ese mismo t y da el
         mismo hash (cancelar = haber corrido hasta ahí).
+     e) ESCALA DEL MODELO (semanas): N semanas (SEMANAS, 260 = 5 años por defecto) de sim_vida dan el mismo hash a 52 semanas por segundo,
+        a 1 → 13 → pausa → 4 → 52 con el día cambiando de velocidad y en pausa, de un tirón (avanzarSemanas) y con las reglas corridas
+        directo sin reloj. Desde que el modelo tiene su propia escala (semanas), sim_vida ya no entra en el hash del día (RELOJ.hash):
+        en a, b y d el modelo está quieto en la semana 0 (?reloj=quieto no lo arranca), así que esas pruebas comparan lo mismo que antes.
      m) solo capturas del control en tamaño de celular (390×844).
      c) RELOJES PROPIOS: grep de requestAnimationFrame, performance.now, Date.now, new Date, setInterval y Math.random en data3d/*.js e
         index.html; cada archivo con usos tiene que estar clasificado abajo (USOS) y no puede tener más usos que los revisados.
@@ -32,7 +36,7 @@ import { fileURLToPath } from 'node:url';
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = process.argv[2] || 'http://127.0.0.1:8780/index.html';
 const OUT = process.argv[3] || join(REPO, 'tools', 'prueba_reloj_out');
-const CRIT = (process.argv[4] || 'c,d,a,b,m').split(',');
+const CRIT = (process.argv[4] || 'c,d,a,b,e,m').split(',');
 const CH = process.env.CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const T0 = 6 * 3600 + 30 * 60, ENTRADA_T = T0 + 900, CORTO = !!process.env.CORTO; // CORTO=1: solo los 10 min (diagnóstico rápido)
 mkdirSync(OUT, { recursive: true });
@@ -183,6 +187,29 @@ try {
     if (H.cancel) { const c = H['d' + (H.cancel.t - T0)]; if (c) cmp('d · cancelar deja el estado de un paso entero', H.cancel, c, ` · canceló tras ${H.cancel.salto.pasos} pasos`); else linea('d · cancelar', Number.isInteger(H.cancel.t), 'sin punto de comparación'); }
     }
   }
+  if (CRIT.includes('e')) { // 4) escala del MODELO (semanas): mismo hash de sim_vida a cualquier velocidad de años, con pausas y con el día corriendo
+    const P = await abrir('modelo');
+    const N = +(process.env.SEMANAS || 260); // 5 años
+    const esperar = `new Promise(r=>{const R=KEN_RELOJ; const i=setInterval(()=>{ if(R.pausaSem && R.sem===${N}){ clearInterval(i); const h=R.hashModelo(); r({sem:h.sem, h:h.sistemas.sim_vida, ms:Math.round(performance.now()-window.__m0), dia:R.t}); } },50); })`;
+    // referencia sin reloj: las reglas de sim_vida corridas directo, N semanas, misma semilla y mismos parámetros (mismo módulo de la página)
+    H.mRef = await P.ev(`(async()=>{const V=await import('./data3d/sim_vida.js?v=1'), Mo=await import('./data3d/sim_modelos.js?v=6'); const seed=Mo.SIMST.semilla||1; const S={A:V.crear('A',seed),B:V.crear('B',seed),C:V.crear('C',seed)};
+      while(S.A.t<${N}){V.paso(S.A,Mo.PAR);V.paso(S.B,Mo.PAR);V.paso(S.C,Mo.PAR);}
+      let h=0x811c9dc5; for(const k of 'ABC'){const o=S[k].o; h=Math.imul((h^(S[k].t|0))>>>0,0x01000193)>>>0; for(const q of ['act','dep','pers','aves','hum','relleno']) h=Math.imul((h^(Math.round((o[q]||0)*1000)|0))>>>0,0x01000193)>>>0;} return {sem:${N}, h:h>>>0}})()`);
+    // A) 52 semanas por segundo, el día a 600×
+    H.mA = await P.ev(`(()=>{const R=KEN_RELOJ; R.reiniciarModelo(); window.__m0=performance.now(); R.detenerSemEn=${N}; R.ponerVel(600); R.ponerVelAños(52); return 1})()`).then(() => P.ev(esperar));
+    // B) 1 → 13 → pausa → 4 → 52 semanas por segundo; el día cambia de 1× a 3600× y se pausa a la mitad
+    H.mB = await P.ev(`(async()=>{const R=KEN_RELOJ, w=(ms)=>new Promise(q=>setTimeout(q,ms)); R.reiniciarModelo(); window.__m0=performance.now(); R.detenerSemEn=${N}; R.ponerVel(1); R.ponerVelAños(1); await w(2500); const a=R.sem;
+      R.ponerVelAños(13); R.ponerVel(3600); await w(2000); const b=R.sem; R.pausarAños(true); R.pausar(true); await w(1500); const c=R.sem; R.ponerVelAños(4); R.ponerVel(60); await w(2000); const d=R.sem; R.ponerVelAños(52); window.__tramos=[a,b,c,d]; return 1})()`).then(() => P.ev(esperar));
+    H.mB.tramos = await P.ev('window.__tramos');
+    // C) de un tirón, sin esperar (avanzarSemanas)
+    H.mC = await P.ev(`(()=>{const R=KEN_RELOJ; R.pausarAños(true); R.reiniciarModelo(); window.__m0=performance.now(); R.avanzarSemanas(${N}); const h=R.hashModelo(); return {sem:h.sem, h:h.sistemas.sim_vida, ms:Math.round(performance.now()-window.__m0)}})()`);
+    console.log(`   modelo: ${N} semanas · A (52/s) ${H.mA.ms} ms · B (1→13→pausa→4→52, semanas en los cambios ${H.mB.tramos.join(', ')}) ${H.mB.ms} ms · C de un tirón ${H.mC.ms} ms`);
+    resultado.excepciones_modelo = P.logs.slice(0, 10); P.cerrar();
+    const cmpM = (n, A, B) => linea(n, A.sem === B.sem && A.h === B.h, `semana ${A.sem} · ${A.h} vs ${B.h}`);
+    cmpM('e · modelo: 52 sem/s vs. reglas corridas sin reloj', H.mA, H.mRef);
+    cmpM('e · modelo: 1→13→pausa→4→52 sem/s (día cambiando) vs. 52 sem/s', H.mB, H.mA);
+    cmpM('e · modelo: de un tirón (avanzarSemanas) vs. 52 sem/s', H.mC, H.mA);
+  }
   if (CRIT.includes('b')) { // 3) cambios de velocidad
     const P = await abrir('velocidades');
     H.v1200 = await P.ev(`new Promise(async r=>{const R=KEN_RELOJ, w=(ms)=>new Promise(q=>setTimeout(q,ms)); R.detenerEn=${T0 + 1200}; R.ponerVel(1); await w(5000); const a=R.t; R.ponerVel(3600); await w(3000); const b=R.t; R.pausar(true); await w(3000); const c=R.t; R.ponerVel(60);
@@ -192,7 +219,7 @@ try {
     cmp('b · 1× → 3600× → pausa → 60× vs. sin cambios (saltos)', H.v1200, H.s1200);
     if (H.d1200) cmp('b · 1× → 3600× → pausa → 60× vs. sin cambios (dibujada)', H.v1200, H.d1200);
   }
-  const exc = ['excepciones_celular', 'excepciones_cancelar', 'excepciones_salto', 'excepciones_dibujada', 'excepciones_velocidades'].flatMap(k => resultado[k] || []);
+  const exc = ['excepciones_celular', 'excepciones_cancelar', 'excepciones_salto', 'excepciones_dibujada', 'excepciones_velocidades', 'excepciones_modelo'].flatMap(k => resultado[k] || []);
   linea('página sin excepciones', !exc.length, exc.length ? exc.slice(0, 3).join(' | ') : 'ninguna excepción en las corridas');
 } catch (e) { linea('ejecución', false, String(e && e.stack || e)); }
 resultado.hashes = H;

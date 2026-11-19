@@ -4,7 +4,7 @@
    2. Flujo del día: encuentros de cada tipo a lo largo de las 24 h (se va construyendo con el reloj de la simulación).
    3. Pulso: cada encuentro nuevo es un punto en la franja de su tipo; los puntos corren hacia la izquierda (últimos 90 s).
    Encuentro: dos agentes relacionados en la red a menos de 18 m (la interacción está ocurriendo). */
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 export function iniciarTablero({ T3, bio }) {
   const { AG, ESP, LINKS, TIPOS, CAT, ENC, CERCA, flora, ESTADO } = bio, ENCL = bio.ENCL || ENC; // ENCL: encuentros contados en el paso del reloj (lógica); ENC: los que se dibujan
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -585,6 +585,6 @@ body.tb-abierto #dock{display:none}
   let nT = 0; tick(); setInterval(() => { pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
   // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Kennedy hoy / Con la propuesta
-  import('./simulaciones.js?v=13').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
+  import('./simulaciones.js?v=14').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

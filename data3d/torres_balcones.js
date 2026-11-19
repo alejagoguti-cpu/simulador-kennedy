@@ -5,7 +5,7 @@
    jardinera colgada por fuera y una matera grande en la esquina.
    Uso: const T = crearTorres(THREE, T3, { liviano }); T.agregar([{ W: [[x, z], ...], h, y0 }]); T.actualizar(camara) en cada cuadro. */
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { RELOJ } from './reloj.js?v=4';
+import { RELOJ } from './reloj.js?v=5';
 
 export function crearTorres(THREE, T3, opt = {}) {
   const LIV = !!opt.liviano, PISO = 3, PX = 64; // 3 m por piso; 64 px por metro en las texturas
