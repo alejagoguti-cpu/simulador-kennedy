@@ -9,6 +9,8 @@ const CLASE = { 'Rol previo': '#f59e0b', 'Rol humano propuesto': '#60a5fa', 'Org
 const TAGC = { INF: '#7dd3fc', CONS: '#a78bfa', AUT: '#f472b6', CTRL: '#fbbf24', RET: '#34d399', DEP: '#fb923c', BIO: '#86efac', AMB: '#cbd5e1', MAT: '#22d3ee' };
 const ALTO = { 'Rol previo': 46, 'Rol humano propuesto': 34, 'Organismo': 20, 'Entorno': 24, 'Recurso': 22, 'Infraestructura': 22 };
 
+import { RELOJ } from './reloj.js?v=2';
+const azarAct = RELOJ.azar('actores'); // azar con semilla del reloj universal (data3d/reloj.js)
 export async function iniciarActores({ THREE, T3, lw, OX = 0, OZ = 0, Y0 = 2.0 } = {}) {
   let e = 'E1';
   const abrir = (id) => { if (id) e = id; window.open('actores.html?e=' + encodeURIComponent(e), 'red-actores'); };
@@ -90,30 +92,30 @@ export async function iniciarActores({ THREE, T3, lw, OX = 0, OZ = 0, Y0 = 2.0 }
     // caminar: de un punto a otro dentro de los lugares de su estrategia, con pausas (como los animales)
     const mover = (n, dt) => {
       if (n.pausa > 0) { n.pausa -= dt; return; }
-      if (!n.obj) { const pol = n.P[Math.floor(Math.random() * n.P.length)]; n.obj = pol.length > 12 || n.P.length < 6 ? puntoEn(pol) : centro(pol); if (Math.hypot(n.obj[0] - n.x, n.obj[1] - n.z) > 260) n.obj = [n.x + (Math.random() - 0.5) * 80, n.z + (Math.random() - 0.5) * 80]; }
+      if (!n.obj) { const pol = n.P[Math.floor(azarAct() * n.P.length)]; n.obj = pol.length > 12 || n.P.length < 6 ? puntoEn(pol) : centro(pol); if (Math.hypot(n.obj[0] - n.x, n.obj[1] - n.z) > 260) n.obj = [n.x + (azarAct() - 0.5) * 80, n.z + (azarAct() - 0.5) * 80]; }
       const dx = n.obj[0] - n.x, dz = n.obj[1] - n.z, d = Math.hypot(dx, dz);
-      if (d < 1) { n.obj = null; n.pausa = 2 + Math.random() * 10; return; }
-      const s = Math.min(d, n.v * dt * 8); n.x += dx / d * s; n.z += dz / d * s; n.rot = Math.atan2(dx, dz);
+      if (d < 1) { n.obj = null; n.pausa = 2 + azarAct() * 10; return; }
+      const s = Math.min(d, n.v * dt); n.x += dx / d * s; n.z += dz / d * s; n.rot = Math.atan2(dx, dz);
     };    // nodo bajo el puntero
     const tip = document.createElement('div'); tip.id = 'at-tip'; document.body.appendChild(tip);
     const cvs = T3.renderer.domElement, v = new THREE.Vector3();
     const cercano = (ev) => { const rc = cvs.getBoundingClientRect(); let best = null, bd = 12; for (const n of NOD) { v.set(n.x, n.humano ? n.y + n.r : n.y, n.z).project(T3.camera); if (v.z > 1) continue; const x = (v.x + 1) / 2 * rc.width + rc.left, y = (1 - v.y) / 2 * rc.height + rc.top, d = Math.hypot(x - ev.clientX, y - ev.clientY); if (d < bd) { bd = d; best = n; } } return best; };
     cvs.addEventListener('pointermove', (ev) => { if (!on) return; const n = cercano(ev); if (!n) { tip.style.display = 'none'; return; } tip.style.display = 'block'; tip.style.left = (ev.clientX + 14) + 'px'; tip.style.top = (ev.clientY + 12) + 'px'; tip.innerHTML = `<b>${n.n}</b><small>${n.E} · ${n.cl} · ${n.proc}</small><small>${n.g} relaciones · doble clic: ver su red</small>`; });
     cvs.addEventListener('dblclick', (ev) => { if (!on) return; const n = cercano(ev); if (n) abrir(n.E); });
-    let ult = performance.now();
-    const bucle = () => {
-      const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+    // figuras ilustrativas de la red de actores (no agentes del mundo simulado): tiempo de animación del reloj universal (hasta ×8, se
+    // detienen en pausa), azar con semilla y dibujo en el bucle maestro
+    const bucle = (info) => {
+      const dt = Math.min(1, info.dtAnim);
       if (on) {
-        const t = ahora / 1000;
+        const t = info.tAnim;
         for (const M of MALLAS) if (M.hum) { M.L.forEach((n, i) => { mover(n, dt); o3.position.set(n.x, n.y, n.z); o3.rotation.set(0, n.rot, 0); o3.scale.setScalar(n.r); o3.updateMatrix(); M.m.setMatrixAt(i, o3.matrix); }); M.m.instanceMatrix.needsUpdate = true; }
         arcos(); lg.attributes.position.needsUpdate = true;
         REL.forEach((r, k) => { const u = (t * 0.3 + k * 0.137) % 1, ya = ancla(r.a), yb = ancla(r.b); pp[k * 3] = r.a.x + (r.b.x - r.a.x) * u; pp[k * 3 + 1] = ya + (yb - ya) * u + Math.sin(Math.PI * u) * r.h; pp[k * 3 + 2] = r.a.z + (r.b.z - r.a.z) * u; });
         pg.attributes.position.needsUpdate = true;
         for (const x of ET) { v.copy(x.p).project(T3.camera); const fuera = v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05; x.d.style.display = fuera ? 'none' : 'block'; if (!fuera) { x.d.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; x.d.style.top = ((1 - v.y) / 2 * innerHeight) + 'px'; } }
       }
-      requestAnimationFrame(bucle);
     };
-    requestAnimationFrame(bucle);
+    RELOJ.alDibujar(bucle);
     return { grupo, ET, tip };
   }
   // misma interfaz que antes: la leyenda de estrategias llama ver(id) y alternar(true)

@@ -5,10 +5,12 @@
    jardinera colgada por fuera y una matera grande en la esquina.
    Uso: const T = crearTorres(THREE, T3, { liviano }); T.agregar([{ W: [[x, z], ...], h, y0 }]); T.actualizar(camara) en cada cuadro. */
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RELOJ } from './reloj.js?v=2';
 
 export function crearTorres(THREE, T3, opt = {}) {
   const LIV = !!opt.liviano, PISO = 3, PX = 64; // 3 m por piso; 64 px por metro en las texturas
   let sem = 11; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
+  const az = RELOJ.azar('torres_balcones'); // azar con semilla del reloj universal (polinizadores)
   const lienzo = (w, h, f, alfa) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; if (alfa) { t.wrapS = THREE.RepeatWrapping; } return t; };
 
   /* ---------- atlas de fachada: 4 variantes x 3 tipos (ladrillo, panel gris, fondo de balcón); cada celda = 3 m x 1 piso ---------- */
@@ -167,31 +169,41 @@ export function crearTorres(THREE, T3, opt = {}) {
       { n: 90, cuerpo: cuerpoA, mat: matA, ala: geoAlaA, hombro: [0.003, 0.004, 0.002], esc: 2.0, vel: 2.6, aleteo: 230, gusta: 'fresa', radio: 6, flota: [1.5, 5], lejos: 0.025 } ];
     const E = especies.map(e => { const cu = new THREE.InstancedMesh(e.cuerpo, e.mat, e.n), aI = new THREE.InstancedMesh(e.ala, matAla, e.n), aD = new THREE.InstancedMesh(e.ala, matAla, e.n);
       for (const m of [cu, aI, aD]) { m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); G.add(m); }
-      const A = []; for (let i = 0; i < e.n; i++) { const f = FL[Math.floor(Math.random() * FL.length)]; A.push({ p: new THREE.Vector3(f.x + f.ox * 3, f.y + 1, f.z + f.oz * 3), a: new THREE.Vector3(), c: new THREE.Vector3(), b: new THREE.Vector3(), t: 1, dur: 0, flor: f, hasta: 0, yaw: Math.random() * 6.3, fase: Math.random() * 100 }); }
+      const A = []; for (let i = 0; i < e.n; i++) { const f = FL[Math.floor(az() * FL.length)]; A.push({ p: new THREE.Vector3(f.x + f.ox * 3, f.y + 1, f.z + f.oz * 3), a: new THREE.Vector3(), c: new THREE.Vector3(), b: new THREE.Vector3(), t: 1, t0: 1, dur: 0, flor: f, hasta: 0, yaw: az() * 6.3, fase: az() * 100 }); }
       return { e, cu, aI, aD, A }; });
-    const elegir = (e, desde) => { let mejor = null; for (let k = 0; k < 30; k++) { const f = FL[Math.floor(Math.random() * FL.length)], d = Math.hypot(f.x - desde.x, f.y - desde.y, f.z - desde.z); if (d > 0.15 && d < e.radio && (f.tipo === e.gusta || Math.random() < 0.35)) { mejor = f; break; } if (!mejor && d < e.radio * 2) mejor = f; } return mejor || FL[Math.floor(Math.random() * FL.length)]; };
-    const M4 = new THREE.Matrix4(), MA = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), EU = new THREE.Euler(), O = new THREE.Vector3();
-    let tPrev = performance.now();
-    return { G, centro, E, actualizar(visible) {
-      G.visible = visible; const ahora = performance.now(), dt = Math.min(0.05, (ahora - tPrev) / 1000), T = ahora / 1000; tPrev = ahora; if (!visible) return;
-      for (const { e, cu, aI, aD, A } of E) {
-        for (let i = 0; i < A.length; i++) { const s = A[i];
-          const pf = O.set(s.flor.x + s.flor.ox * e.lejos, s.flor.y + 0.005, s.flor.z + s.flor.oz * e.lejos); // punto frente a la flor
+    const elegir = (e, desde) => { let mejor = null; for (let k = 0; k < 30; k++) { const f = FL[Math.floor(az() * FL.length)], d = Math.hypot(f.x - desde.x, f.y - desde.y, f.z - desde.z); if (d > 0.15 && d < e.radio && (f.tipo === e.gusta || az() < 0.35)) { mejor = f; break; } if (!mejor && d < e.radio * 2) mejor = f; } return mejor || FL[Math.floor(az() * FL.length)]; };
+    const M4 = new THREE.Matrix4(), MA = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), EU = new THREE.Euler(), O = new THREE.Vector3(), MT = new THREE.Matrix4(), MS = new THREE.Matrix4().makeScale(-1, 1, 1);
+    const curva = (s, e, t, out) => { const pf = O.set(s.flor.x + s.flor.ox * e.lejos, s.flor.y + 0.005, s.flor.z + s.flor.oz * e.lejos), u = 1 - t, k = t * t * (3 - 2 * t); // vuelo en curva hacia la flor (Bézier cuadrática con avance suave)
+      return out.set(u * u * s.a.x + 2 * u * k * s.c.x + k * k * pf.x, u * u * s.a.y + 2 * u * k * s.c.y + k * k * pf.y, u * u * s.a.z + 2 * u * k * s.c.z + k * k * pf.z); };
+    /* TIEMPO (data3d/reloj.js): paso(dt, t) es la lógica (vuelos y esperas, con azar con semilla) y se corre en los pasos fijos del reloj; actualizar(visible)
+       solo DIBUJA (interpola el vuelo dentro del paso; el temblor y el aleteo usan el tiempo de animación). El enjambre solo se mueve cerca de la
+       cámara (G.visible): su lógica depende de la cámara (dependeCamara) y no corre sin dibujo. */
+    const P0 = new THREE.Vector3();
+    return { G, centro, E,
+      paso(dt, T) {
+        if (!G.visible) return;
+        for (const { e, A } of E) for (let i = 0; i < A.length; i++) { const s = A[i]; s.t0 = s.t;
           if (s.t < 1) { // vuelo en curva hacia la flor
-            s.t = Math.min(1, s.t + dt / s.dur); const t = s.t, u = 1 - t, k = t * t * (3 - 2 * t);
-            const nx = u * u * s.a.x + 2 * u * k * s.c.x + k * k * pf.x, ny = u * u * s.a.y + 2 * u * k * s.c.y + k * k * pf.y, nz = u * u * s.a.z + 2 * u * k * s.c.z + k * k * pf.z;
-            if (Math.hypot(nx - s.p.x, nz - s.p.z) > 1e-5) s.yaw = Math.atan2(nx - s.p.x, nz - s.p.z);
-            s.p.set(nx, ny, nz); if (s.t >= 1) s.hasta = T + e.flota[0] + Math.random() * (e.flota[1] - e.flota[0]);
-          } else if (T < s.hasta) { // suspendido frente a la flor, con temblor de vuelo estacionario
-            s.p.set(pf.x + Math.sin(T * 7 + s.fase) * 0.006 * e.esc, pf.y + Math.sin(T * 9 + s.fase) * 0.005 * e.esc, pf.z + Math.cos(T * 6 + s.fase) * 0.006 * e.esc);
-            s.yaw = Math.atan2(-s.flor.ox, -s.flor.oz); // mirando la flor
+            s.t = Math.min(1, s.t + dt / s.dur); curva(s, e, s.t, P0); if (Math.hypot(P0.x - s.p.x, P0.z - s.p.z) > 1e-5) s.yaw = Math.atan2(P0.x - s.p.x, P0.z - s.p.z); s.p.copy(P0);
+            if (s.t >= 1) s.hasta = T + e.flota[0] + az() * (e.flota[1] - e.flota[0]);
+          } else if (T < s.hasta) { // suspendido frente a la flor (el temblor se agrega al dibujar)
+            O.set(s.flor.x + s.flor.ox * e.lejos, s.flor.y + 0.005, s.flor.z + s.flor.oz * e.lejos); s.p.copy(O); s.yaw = Math.atan2(-s.flor.ox, -s.flor.oz); // mirando la flor
           } else { // a la siguiente flor
             const f = elegir(e, s.p); s.a.copy(s.p); s.flor = f; const d = Math.hypot(f.x - s.p.x, f.y - s.p.y, f.z - s.p.z);
-            s.c.set((s.p.x + f.x) / 2 + f.ox * Math.min(3, d * 0.3) + (Math.random() - 0.5) * d * 0.2, (s.p.y + f.y) / 2 + d * 0.15, (s.p.z + f.z) / 2 + f.oz * Math.min(3, d * 0.3) + (Math.random() - 0.5) * d * 0.2);
-            s.dur = Math.max(0.4, d / e.vel); s.t = 0; }
-          EU.set(s.t < 1 ? -0.25 : 0.15, s.yaw, 0); Q.setFromEuler(EU); M4.compose(s.p, Q, S.set(e.esc, e.esc, e.esc)); cu.setMatrixAt(i, M4);
+            s.c.set((s.p.x + f.x) / 2 + f.ox * Math.min(3, d * 0.3) + (az() - 0.5) * d * 0.2, (s.p.y + f.y) / 2 + d * 0.15, (s.p.z + f.z) / 2 + f.oz * Math.min(3, d * 0.3) + (az() - 0.5) * d * 0.2);
+            s.dur = Math.max(0.4, d / e.vel); s.t = 0; s.t0 = 0; }
+        } },
+      hash() { let h = 0x811c9dc5; for (const { A } of E) for (const s of A) { h = Math.imul((h ^ (Math.round(s.p.x * 1000) | 0)) >>> 0, 0x01000193) >>> 0; h = Math.imul((h ^ (Math.round(s.p.z * 1000) | 0)) >>> 0, 0x01000193) >>> 0; } return h; },
+      actualizar(visible, alfa = 1, T = 0) {
+      G.visible = visible; if (!visible) return;
+      for (const { e, cu, aI, aD, A } of E) {
+        for (let i = 0; i < A.length; i++) { const s = A[i];
+          let vuela = s.t < 1 || s.t0 < 1; const pos = V;
+          if (vuela) { curva(s, e, Math.max(0, Math.min(1, s.t0 + (s.t - s.t0) * alfa)), pos); }
+          else pos.set(s.p.x + Math.sin(T * 7 + s.fase) * 0.006 * e.esc, s.p.y + Math.sin(T * 9 + s.fase) * 0.005 * e.esc, s.p.z + Math.cos(T * 6 + s.fase) * 0.006 * e.esc); // suspendido, con temblor de vuelo estacionario
+          EU.set(vuela ? -0.25 : 0.15, s.yaw, 0); Q.setFromEuler(EU); M4.compose(pos, Q, S.set(e.esc, e.esc, e.esc)); cu.setMatrixAt(i, M4);
           const flap = Math.sin(T * e.aleteo * 6.283 + s.fase) * 1.1;
-          for (const [m, sd] of [[aI, 1], [aD, -1]]) { MA.makeRotationZ(sd * flap); MA.premultiply(new THREE.Matrix4().makeTranslation(sd * e.hombro[0], e.hombro[1], e.hombro[2])); if (sd < 0) MA.multiply(new THREE.Matrix4().makeScale(-1, 1, 1)); m.setMatrixAt(i, M4.clone().multiply(MA)); }
+          for (const [m, sd] of [[aI, 1], [aD, -1]]) { MA.makeRotationZ(sd * flap); MT.makeTranslation(sd * e.hombro[0], e.hombro[1], e.hombro[2]); MA.premultiply(MT); if (sd < 0) MA.multiply(MS); m.setMatrixAt(i, MT.copy(M4).multiply(MA)); }
         }
         cu.instanceMatrix.needsUpdate = aI.instanceMatrix.needsUpdate = aD.instanceMatrix.needsUpdate = true;
       }
@@ -211,7 +223,8 @@ export function crearTorres(THREE, T3, opt = {}) {
   let conHuerta = true; // escenario «hoy» (data3d/escenario.js): las torres existen, la huerta hidropónica de los balcones es propuesta
   api.huertas = (on) => { conHuerta = on; for (const m of HIDRO) m.visible = on; if (!on) { for (const c of cercanas) c.m.visible = false; for (const P of polinizadores) P.actualizar(false); } };
   api.actualizar = (cam) => { if (!conHuerta) return; for (const c of cercanas) { const v = Math.hypot(c.x - cam.position.x, c.z - cam.position.z, c.y - cam.position.y) < CERCA + 120; if (c.m.visible !== v) c.m.visible = v; }
-    for (const P of polinizadores) P.actualizar(Math.hypot(P.centro.x - cam.position.x, P.centro.z - cam.position.z, P.centro.y - cam.position.y) < CERCA + 120); };
+    for (const P of polinizadores) P.actualizar(Math.hypot(P.centro.x - cam.position.x, P.centro.z - cam.position.z, P.centro.y - cam.position.y) < CERCA + 120, RELOJ.alfa, RELOJ.tAnim); };
+  RELOJ.registrar({ nombre: 'torres_polinizadores', orden: 45, dependeCamara: true, step: (dt, t) => { if (conHuerta) for (const P of polinizadores) P.paso(dt, t); }, hash: () => { let h = 0; for (const P of polinizadores) h = (h ^ P.hash()) >>> 0; return h; } }, { ponerAlDia: false });
 
   api.agregar = (lista) => {
     const B = { fachada: [], concreto: [], baranda: [], partes: [], blanco: [], tanque: [], led: [] };

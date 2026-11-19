@@ -236,7 +236,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     // (difusión de lo que se aprende allá) y se cierran en el orden contrario si hay abandono por carga
     fraccion(f) { f = Math.max(0, Math.min(1, f)); const n = Math.round(f * HORD.length); let cambio = false;
       const nuevas = []; HORD.forEach((h, i) => { const v = i < n; if (h.g.visible !== v) { h.g.visible = v; cambio = true; if (v) nuevas.push(h); } });
-      if (nuevas.length && grupo.visible) import('./resaltes.js?v=1').then(m => { const R2 = m.resaltes(T3); nuevas.slice(0, 30).forEach(h => R2.pulso(h.h.c[0], (h.g.position.y || 0) + YG, h.h.c[1], 70)); }).catch(() => {}); // pulso de luz en cada huerta que se abre
+      if (nuevas.length && grupo.visible) import('./resaltes.js?v=2').then(m => { const R2 = m.resaltes(T3); nuevas.slice(0, 30).forEach(h => R2.pulso(h.h.c[0], (h.g.position.y || 0) + YG, h.h.c[1], 70)); }).catch(() => {}); // pulso de luz en cada huerta que se abre
       const lo = f > 0.06; if (lo !== lotesOn) { lotesOn = lo; MODMESH.forEach(m => { m.visible = lo; }); cambio = true; }
       if (cambio) { ux = 1e9; actualizarTodo(true); } return { abiertas: n + (lotesOn ? D.huertas.filter(h => h.m).length : 0), total: HORD.length + D.huertas.filter(h => h.m).length }; },
     // polígonos de cada huerta (módulo principal) para la red biótica

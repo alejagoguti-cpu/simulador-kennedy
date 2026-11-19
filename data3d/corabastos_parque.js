@@ -3,6 +3,7 @@
    central se vuelve un parque humedal: pasto, una laguna que recoge el agua lluvia de las cubiertas que quedan y árboles nativos de borde de agua
    (aliso, sauco, chicalá, arrayán, caucho sabanero y arbustos de flor), con los mismos modelos escaneados de los parches (data3d/parches_arboles.js).
    Solo existe con la propuesta; las bodegas desmontadas se esconden. Hipótesis de diseño para discutir con el grupo. */
+import { RELOJ } from './reloj.js?v=2';
 export async function crearParqueCorabastos({ T3, lw, cj }) {
   const THREE = T3.THREE;
   const C = await cj('data3d/corabastos.json?v=3'); if (!C || !C.naves) return null;
@@ -22,7 +23,7 @@ export async function crearParqueCorabastos({ T3, lw, cj }) {
   /* agua propia y OPACA (la del río es transparente y dejaba ver la foto de Google por debajo): verde-azulada, refleja el cielo y tiene oleaje suave */
   const nrm = new THREE.TextureLoader().load('data3d/waternormals.jpg'); nrm.wrapS = nrm.wrapT = THREE.RepeatWrapping;
   const mAgua = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.08, metalness: 0, envMap: T3.env || null, envMapIntensity: 0.6, clearcoat: 1, clearcoatRoughness: 0.05, normalMap: nrm, normalScale: new THREE.Vector2(0.35, 0.35) });
-  { const t0 = performance.now(); const mover = () => { requestAnimationFrame(mover); if (!grupo.visible) return; const s = (performance.now() - t0) / 1000; nrm.offset.set(s * 0.012, s * 0.007); }; requestAnimationFrame(mover); }
+  RELOJ.alDibujar((info) => { if (!grupo.visible) return; const s = info.tAnim; nrm.offset.set(s * 0.012, s * 0.007); }); // agua: tiempo de animación del reloj universal (se detiene en pausa)
   const mJunco = new THREE.MeshStandardMaterial({ color: 0x6f8a3c, roughness: 0.9, side: THREE.DoubleSide });
   const PARQUES = [], ARB = [];
   let PM = null; try { PM = await import('./parches_arboles.js?v=7'); } catch (e) { console.warn('parque Corabastos (especies):', e); }

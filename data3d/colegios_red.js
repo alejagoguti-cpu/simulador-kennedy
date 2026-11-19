@@ -1,3 +1,4 @@
+import { RELOJ } from './reloj.js?v=2'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
 /* Red de colegios de Kennedy («conectografía escolar») — escenario «Con la propuesta», leyenda «Colegios».
    Datos: data3d/colegios_red.json (tools/colegios_red_build.py) + data3d/colegios.json (marco mundo).
    1. enlaces colegio–colegio: árbol de expansión mínima + vecinos cercanos, ≤ 1,5 km y sin cruces
@@ -377,9 +378,9 @@ body.cr-on #dock{display:none!important}
     if (cv) { cv.addEventListener('pointerdown', pd); cv.addEventListener('pointerup', pu); }
 
     /* ================= ANIMACIÓN ================= */
-    let raf = 0, ult = performance.now(), tt = 0; const V = new THREE.Vector3();
-    function cuadro() {
-      raf = requestAnimationFrame(cuadro); const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+    let tt = 0; const V = new THREE.Vector3();
+    function cuadro(info) { // se dibuja en el bucle maestro del reloj universal
+      const ahora = info.tAnim * 1000, dt = Math.min(0.1, info.dtAnim);
       const mov = !RMQ.matches; if (mov) { TU.value += dt; tt += dt; tFauna(tt); }
       if (mov) anillos.forEach((m, i) => { const s = 1 + 0.12 * Math.sin(ahora / 420 + i); m.scale.set(s, 1, s); });
       const cam = T3.camera, Wd = innerWidth, Hh = innerHeight;
@@ -388,11 +389,12 @@ body.cr-on #dock{display:none!important}
         V.set(e.pos[0], e.pos[1], e.pos[2]).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 1.02 && Math.abs(V.y) < 1.02; e.d.style.display = ok ? 'block' : 'none';
         if (ok) e.d.style.transform = `translate(${((V.x + 1) / 2 * Wd - 10).toFixed(1)}px,${((1 - V.y) / 2 * Hh - e.d.offsetHeight - 18).toFixed(1)}px)`; }
     }
+    RELOJ.alDibujar((info) => { if (grupo.visible) cuadro(info); });
     return {
       mostrar(v) {
         grupo.visible = v; pan.classList.toggle('on', v); document.body.classList.toggle('cr-on', v);
-        if (v) { pan.classList.toggle('min', innerWidth < 760); tab = 'red'; pintar(); ult = performance.now(); if (!raf) cuadro(); }
-        else { cancelAnimationFrame(raf); raf = 0; cancelAnimationFrame(vuelo); ETQ.forEach(e => { e.d.style.display = 'none'; }); }
+        if (v) { pan.classList.toggle('min', innerWidth < 760); tab = 'red'; pintar(); }
+        else { cancelAnimationFrame(vuelo); ETQ.forEach(e => { e.d.style.display = 'none'; }); }
       },
       general, enfocarHuerta, huertas: H, colorDe: (i) => CG[R.asig[i][0]]
     };

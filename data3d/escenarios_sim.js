@@ -8,7 +8,11 @@
              con partículas proporcionales a los kilos y la ocupación de cada estación
    · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
              trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
-import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=3';
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=4';
+/* TIEMPO: un solo reloj (data3d/reloj.js). La semana de la simulación sale del reloj (1 semana = 7 días del reloj) y las reglas
+   semanales de sim_vida corren cada vez que el reloj cruza una semana (onSemana). Ya no hay play, velocidades ni línea de tiempo
+   propios, ni saltos al año 10: los sliders rigen desde la semana en que se mueven y la corrida sigue desde donde va. */
+import { RELOJ } from './reloj.js?v=2';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con perturbaciones al azar (semilla = SIMST.semilla) y reglas de colapso fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
 import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE } from './sim_vida.js?v=1';
@@ -19,7 +23,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   if (P1.pares == null) P1.pares = 3;
   const R = correrTodo(); // solo para la referencia fija REF (modelo de 10 años del documento, valores por defecto)
   /* ---------- estado vivo: A, B y C con la misma semilla (viven los mismos eventos) ---------- */
-  const VIDA = { seed: SIMST.semilla || 1, S: null, vel: 0, maxT: SEM - 1, avisado: {} };
+  const VIDA = { seed: SIMST.semilla || 1, S: null, maxT: SEM - 1, avisado: {} };
   const reiniciarVida = () => { VIDA.S = { A: crearVida('A', VIDA.seed), B: crearVida('B', VIDA.seed), C: crearVida('C', VIDA.seed) }; VIDA.avisado = {}; };
   const avanzarA = (w) => { w = Math.max(0, Math.floor(w)); if (!VIDA.S || VIDA.S.A.t > w) reiniciarVida(); const S = VIDA.S; while (S.A.t < w) { pasoVida(S.A, PAR); pasoVida(S.B, PAR); pasoVida(S.C, PAR); } if (w > VIDA.maxT) VIDA.maxT = w; };
   // vista compatible con el formato viejo (R.S1[e].act[t] …) para los módulos que lo leen (capas_escenario.js, mejora_tour.js): cualquier semana da el valor vivo
@@ -155,7 +159,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
 #esim .seg button[aria-pressed=true]{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c);color:#fff}
 #esim .seg button b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:var(--c)}
 #esim .tl{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}#esim .tl button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e2a55b;color:#1a1208;font-size:12px;flex:none}
-#esim .tl input{flex:1;accent-color:#e2a55b;min-width:0}#esim .tl output{width:58px;text-align:right;font-variant-numeric:tabular-nums;color:#d5dadd;font-size:11px}
+#esim .tl .tlb{flex:1;min-width:0;height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}#esim .tl .tlb i{display:block;height:100%;width:0;background:#e2a55b}#esim .tlr{margin-top:0;font-size:10px}#esim .tl output{width:58px;text-align:right;font-variant-numeric:tabular-nums;color:#d5dadd;font-size:11px}
 #esim .cuerpo{overflow:auto;padding:2px 12px 12px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
 #esim ul{list-style:none;margin:4px 0 8px;padding:0;display:grid;gap:4px}#esim li{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04)}
 #esim li span{color:#c3cace;font-size:11px}#esim li strong{font-weight:600;font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}#esim li small{grid-column:1/-1;color:#949da3;font-size:10.5px}
@@ -209,10 +213,11 @@ body.tb-abierto #esim{display:none}
   const FMT = { alcance: pct, auto: pct, frac: pct, sust: pct, precio: (v) => '$' + fmt(v), zona: fmtK, reac: (v) => fmt(v, 2), arboles: (v) => fmt(v, 2), luz: (v) => fmt(v, 2), rec: (v) => fmt(v, 3), dist: (v) => fmt(v, 1), pares: (v) => fmt(v, 2) };
   const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
   el.innerHTML = `<div class="cab"><b>Escenarios · simulación sin fin</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
-<p class="exp">Escoge un escenario y dale ▶: corre año tras año, sin final, con sequías, bloqueos y recortes que llegan al azar. Las reglas de colapso están fijas antes de correr: mira si la propuesta se sostiene y cuándo se cae.</p>
+<p class="exp">Escoge un escenario: corre semana tras semana con el reloj de la simulación, sin final, con sequías, bloqueos y recortes que llegan al azar. Las reglas de colapso están fijas antes de correr: mira si la propuesta se sostiene y cuándo se cae.</p>
 <p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta abierta (se cierran si la red se cae)</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Kennedy hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Nodo central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Clúster rotativo</button></div>
-<div class="tl"><button type="button" data-play aria-label="Correr o pausar">▶</button><button type="button" class="vel" data-vel aria-label="Velocidad" title="Velocidad">×1</button><input type="range" min="0" max="${SEM - 1}" value="${Math.floor(SIMST.t)}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
+<div class="tl"><div class="tlb" role="progressbar" aria-label="Semana del año de la simulación" aria-valuemin="1" aria-valuemax="52" data-t><i></i></div><output data-año></output></div>
+<p class="exp tlr">El tiempo lo lleva el reloj de la simulación (control de arriba): una semana del modelo = 7 días del reloj.</p>
 <div class="vida" data-vida aria-live="polite"></div>
 <div class="vctl"><span class="sem">Semilla<button type="button" data-sd="-1" aria-label="Semilla anterior">‹</button><b data-seed>${VIDA.seed}</b><button type="button" data-sd="1" aria-label="Semilla siguiente">›</button></span><button type="button" data-eval>Evaluar 30 corridas</button><button type="button" data-como aria-expanded="false">Cómo funciona</button></div>
 <div class="como" data-como-txt hidden><ol>
@@ -222,7 +227,7 @@ body.tb-abierto #esim{display:none}
 <li>Las 5 reglas de colapso (abajo) se fijaron antes de correr y no cambian. Empiezan a contar en el año 3, cuando la propuesta ya está montada.</li>
 <li>Funciona si ninguna regla se cumple y se recupera tras cada golpe; está en riesgo si un indicador está cerca del límite; colapsa cuando una regla se cumple las semanas seguidas que dice.</li>
 <li>Una corrida sola no prueba nada: «Evaluar» corre 30 semillas fijas por 100 años y muestra todas, también las que colapsan, comparadas con Kennedy hoy.</li>
-<li>Si mueves un control, la corrida vuelve a empezar con la misma semilla y avanza rápido hasta el año en que ibas.</li></ol></div>
+<li>Si mueves un control, rige desde la semana en que lo mueves: la corrida sigue desde donde va, sin volver a empezar ni saltar.</li></ol></div>
 <div class="mapa" data-mapa aria-live="polite"></div><div class="aviso" data-aviso hidden></div><div class="cuerpo">
 <details class="reglas" open><summary>Reglas de colapso · fijas antes de correr</summary><div data-reglas></div><canvas data-spark height="56" aria-label="Hogares con huerta a lo largo de la corrida" role="img"></canvas><div class="senales" data-senales></div></details>
 <ul data-kpi></ul>
@@ -267,7 +272,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   };
   // Humedal La Vaca: se recupera a lo largo de los 10 años (data3d/humedal_vaca.js)
   let VACA = null;
-  import('./humedal_vaca.js?v=1').then(m => m.iniciarHumedalVaca({ T3, cj })).then(v => { VACA = v; window.KEN_VACA = v; aplicar(); }).catch(e => console.warn('La Vaca:', e));
+  import('./humedal_vaca.js?v=2').then(m => m.iniciarHumedalVaca({ T3, cj })).then(v => { VACA = v; window.KEN_VACA = v; aplicar(); }).catch(e => console.warn('La Vaca:', e));
   const GRUPO = { 1: ['huertas', 'trafico'], 2: ['compost'], 3: ['humedal'] };
   let tAviso = 0;
   const avisar2 = (txt, lugar) => { const d = $('[data-aviso]'); d.hidden = false; d.innerHTML = `<span>${txt}: mira ${LUGAR[lugar].n}.</span><button type="button" data-ir="${lugar}">Ver en el mapa</button>`; clearTimeout(tAviso); tAviso = setTimeout(() => { d.hidden = true; }, 9000); };
@@ -336,7 +341,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       ${VACA && VACA.ESTADO.on ? (() => { const V = VACA.ESTADO; return `<button type="button" data-ir="vaca"><i class="sw p" style="background:#8fd18a"></i><span><b>Humedal La Vaca se recupera</b>: +${fmt(V.ha, 1)} ha de humedal · ${fmt(V.arboles)} árboles nativos (${fmt(V.grandes)} grandes) · ${V.especies} especies de aves</span></button>`; })() : ''}
       <button type="button" data-ir="humedal"><i class="sw p" style="background:#7fb3d5"></i><span>Pájaros en el humedal El Burro: <b>${fmt(o.aves)} aves</b>${e === 'A' ? '' : ` (${o.aves >= oA.aves ? '+' : '−'}${fmt(Math.abs(o.aves - oA.aves))} frente a hoy)`}</span></button>`; }
     // panel
-    const inp = $('[data-t]'); inp.max = Math.max(SEM - 1, VIDA.maxT); inp.value = t;
+    { const bar = $('[data-t]'); bar.setAttribute('aria-valuenow', t % AÑO + 1); bar.firstElementChild.style.width = (((RELOJ.semanas % AÑO) / AÑO) * 100).toFixed(2) + '%'; } // avance dentro del año (solo muestra; el tiempo es del reloj)
     $('[data-año]').innerHTML = `${2026 + año}<span class="yr">año ${año} · sem ${t % AÑO + 1}</span>`;
     pintarVida(e, t, sv, dg);
     const d = (v, a, menos, f2) => { if (e === 'A' || !isFinite(a) || Math.abs(v - a) < 1e-9) return ''; const mej = menos ? v < a : v > a; return ` · <em style="color:${mej ? '#8fd18a' : '#ff8a80'}">${v >= a ? '+' : '−'}${f2(Math.abs(v - a))} frente a hoy</em>`; };
@@ -388,61 +393,52 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   }
 
   /* ---------------- eventos ---------------- */
-  let play = 0, prev = 0;
-  const parar = () => { if (play) cancelAnimationFrame(play); play = 0; $('[data-play]').textContent = '▶'; };
-  let tEnt = -1; // aplicar() solo cuando cambia el semana entera (los efectos dependen de Math.floor(SIMST.t)); a velocidad alta, una vez por cuadro
-  const VEL = [1, 4, 16, 52]; // ×1 = 22 semanas por segundo (≈ 2,4 s por año); ×52 ≈ 22 años por segundo
-  const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; SIMST.t += dt * 22 * VEL[VIDA.vel]; // sin final: corre hasta que se pausa
-    const ent = Math.floor(SIMST.t); if (ent !== tEnt) { tEnt = ent; enPaso = true; try { aplicar(); } finally { enPaso = false; } }
-    play = requestAnimationFrame(paso); };
-  const arrancar = () => { if (play) cancelAnimationFrame(play); prev = performance.now(); $('[data-play]').textContent = '❚❚'; play = requestAnimationFrame(paso); };
-  // un cambio de parámetros: la corrida vuelve a empezar desde el año 0 con la misma semilla y avanza rápido hasta la semana en que iba
-  const rehacer = () => { reiniciarVida(); avanzarA(Math.floor(SIMST.t)); };
-  const ponerSemilla = (s, e) => { VIDA.seed = SIMST.semilla = Math.max(1, Math.min(999, s)); $('[data-seed]').textContent = VIDA.seed; VIDA.maxT = SEM - 1;
+  // las reglas semanales corren cuando el reloj universal cruza una semana (onSemana): A, B y C avanzan juntos, con su azar con semilla
+  RELOJ.registrar({ nombre: 'sim_vida', orden: 60, onSemana: (w) => { avanzarA(w); enPaso = true; try { aplicar(); } finally { enPaso = false; } },
+    hash: () => { let h = 0x811c9dc5; for (const k of 'ABC') { const o = VIDA.S[k].o; h = Math.imul((h ^ (VIDA.S[k].t | 0)) >>> 0, 0x01000193) >>> 0; for (const q of ['act', 'dep', 'pers', 'aves', 'hum', 'relleno']) h = Math.imul((h ^ (Math.round((o[q] || 0) * 1000) | 0)) >>> 0, 0x01000193) >>> 0; } return h; } });
+  const arrancar = () => {}, parar = () => {}; // compatibilidad: el tiempo lo controla el reloj universal
+  // otra semilla = otra réplica: la historia de A, B y C se recalcula con esa semilla hasta la semana actual del reloj (el reloj no se mueve)
+  const ponerSemilla = (s, e) => { VIDA.seed = SIMST.semilla = Math.max(1, Math.min(999, s)); $('[data-seed]').textContent = VIDA.seed; VIDA.maxT = SEM - 1; RELOJ.entrada('semilla-vida', VIDA.seed);
     if (e && e !== 'A') { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
     else if (e === 'A' && T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click();
-    SIMST.t = 0; reiniciarVida(); aplicar(); arrancar(); };
+    reiniciarVida(); avanzarA(Math.floor(SIMST.t)); aplicar(); };
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.ir) { LUGAR[b.dataset.ir].ir(); return; }
     if (b.dataset.guia !== undefined) { import('./guia.js?v=2').then(m => m.abrirGuia(true)); return; }
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; pintarPanel(); return; }
-    if (b.dataset.play !== undefined) { play ? parar() : arrancar(); return; }
-    if (b.dataset.vel !== undefined) { VIDA.vel = (VIDA.vel + 1) % VEL.length; b.textContent = '×' + VEL[VIDA.vel]; return; }
     if (b.dataset.sd) { ponerSemilla(VIDA.seed + +b.dataset.sd); return; }
     if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
     if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=1').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
     if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); }
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
-      SIMST.t = 0; aplicar(); arrancar(); }
+      RELOJ.entrada('escenario-vida', e); aplicar(); } // A, B y C ya corren juntos: escoger uno solo cambia lo que se mira (sin volver a la semana 0)
   });
   el.addEventListener('input', (ev) => { const i = ev.target;
-    if (i.dataset.t !== undefined) { parar(); SIMST.t = +i.value; aplicar(); return; }
-    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value;
+    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value; RELOJ.entrada('param', { g: i.dataset.g, k: i.dataset.k, v: +i.value });
       if (esc() === 'A') { SIMST.esc = SIMST.esc && SIMST.esc !== 'A' ? SIMST.esc : 'C'; document.querySelector('.sw button[data-e="proyecto"]')?.click(); } // en «Kennedy hoy» los sliders no cambian nada: se pasa a la propuesta
-      // [SIN FIN] ya no salta al año 10: la corrida se rehace desde el año 0 con la misma semilla y avanza rápido hasta la semana en que iba (sigue corriendo si corría)
-      if (SIMST.t < 1 && !play) SIMST.t = SEM - 1; // si estaba en la semana 0 y en pausa, se muestra el año 10 para que el cambio se vea
+      // sin saltos ni rehacer: el parámetro rige desde la semana actual del reloj y la corrida sigue desde donde va
       setTimeout(() => dispatchEvent(new Event('cora-cambio')), 30); // los indicadores en 3D se recalculan con la nueva dependencia de Corabastos
       if (i.dataset.k === 'arboles' && window.KEN_PARCHES && window.KEN_PARCHES.densidad) window.KEN_PARCHES.densidad(Math.max(0.15, +i.value)); /* densidad de árboles: más o menos árboles en los parches */
-      const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); rehacer(); aplicar(); avisar('mapa');
-      const lab = i.closest('label').firstChild.textContent.trim(); GRUPO[i.dataset.g].forEach((l, j) => { if (!j) avisar2(`Cambiaste «${lab}»`, i.dataset.g === '1' && /zona|regional|reac|precio/.test(i.dataset.k) ? 'trafico' : l); }); }
+      const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); aplicar(); avisar('mapa');
+      const lab = i.closest('label').firstChild.textContent.trim(); GRUPO[i.dataset.g].forEach((l, j) => { if (!j) avisar2(`Cambiaste «${lab}» (rige desde esta semana)`, i.dataset.g === '1' && /zona|regional|reac|precio/.test(i.dataset.k) ? 'trafico' : l); }); }
   });
   el.addEventListener('change', (ev) => { const i = ev.target;
-    if (i.dataset.b) { P1[i.dataset.b] = i.checked; rehacer(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Activaste un estrés forzado' : 'Quitaste un estrés forzado', 'huertas'); }
-    if (i.dataset.anti !== undefined) { P3.anti = i.checked; rehacer(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Con medida antitrampa' : 'Sin medida antitrampa', 'humedal'); } });
+    if (i.dataset.b) { P1[i.dataset.b] = i.checked; RELOJ.entrada('param', { g: '1', k: i.dataset.b, v: i.checked }); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Activaste un estrés forzado' : 'Quitaste un estrés forzado', 'huertas'); }
+    if (i.dataset.anti !== undefined) { P3.anti = i.checked; RELOJ.entrada('param', { g: '3', k: 'anti', v: i.checked }); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Con medida antitrampa' : 'Sin medida antitrampa', 'humedal'); } });
   el.addEventListener('toggle', (ev) => { if (ev.target.classList && ev.target.classList.contains('reglas') && ev.target.open) pintarPanel(); }, true);
-  addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; rehacer(); el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); });
-  addEventListener('escenario', () => setTimeout(() => { SIMST.t = 0; ultHB = -1; aplicar(); arrancar(); }, 60));
+  addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); }); // cambios desde el tablero: también rigen desde ahora
+  addEventListener('escenario', () => setTimeout(() => { ultHB = -1; aplicar(); }, 60)); // hoy ⇄ propuesta: cambia lo que se mira, el tiempo sigue
   // la huerta de barrio carga después: se aplica cuando aparece
   const espera = setInterval(() => { if (window.KEN_HBAR && window.KEN_HBAR.fraccion) { clearInterval(espera); ultHB = -1; aplicar(); } }, 800);
 
   /* ---------------- cuadro: partículas y etiquetas ---------------- */
   const V = new THREE.Vector3();
-  function cuadro(now) {
-    requestAnimationFrame(cuadro);
+  function cuadro(info) { // dibujo en el bucle maestro (después de los pasos del reloj)
     if (sucioPan && performance.now() - tPan > 250) pintarPanel(); // paneles a ~4 Hz
-    const tt = RMQ ? 0 : now / 1000, e = esc();
+    else if (performance.now() - tPan > 1000) { const b = $('[data-t]'); if (b) b.firstElementChild.style.width = (((RELOJ.semanas % AÑO) / AÑO) * 100).toFixed(2) + '%'; } // la barra de la semana avanza con el reloj
+    const tt = RMQ ? 0 : info.tAnim, e = esc();
     for (let i = 0; i < NP; i++) { const p = PART[i]; if (!p.on || !EST.length) { PP[i * 3 + 1] = -999; continue; }
       const rutas = RUTAS[p.r], cv = rutas[p.k % rutas.length]; const v = p.r === 'rell' ? 0.05 : 0.11; cv.getPoint((p.f + tt * v) % 1, V); PP[i * 3] = V.x; PP[i * 3 + 1] = V.y; PP[i * 3 + 2] = V.z; }
     gp.attributes.position.needsUpdate = true;
@@ -456,11 +452,11 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       const p = POS[k](); V.set(p[0], p[1], p[2]).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 0.92 && Math.abs(V.y) < 0.9; d.style.display = ok ? 'block' : 'none';
       if (ok) d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px) translate(-50%,-110%)`; }
   }
-  requestAnimationFrame(cuadro);
+  RELOJ.alDibujar(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./mejora_tour.js?v=6').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=5').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./mejora_tour.js?v=7').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./capas_escenario.js?v=6').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }

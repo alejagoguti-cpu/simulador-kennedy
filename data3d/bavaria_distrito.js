@@ -1,3 +1,4 @@
+import { RELOJ } from './reloj.js?v=2'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
 /* ============ BAVARIA COMÚN · DISTRITO DE TECNOLOGÍAS CONVERGENTES (NBIC) ============
    Se prende al escoger «Bavaria Común» en la leyenda de «Con la propuesta» (data3d/escenario.js). Al prenderse, en secuencia:
    1. los edificios se levantan como volúmenes de luz de su uso (programa NBIC en 12 edificios: nano, bio, info, cogno + aulas,
@@ -472,7 +473,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
       for (const k in ims) { ims[k].count = n[k]; ims[k].instanceMatrix.needsUpdate = true; if (ims[k].instanceColor) ims[k].instanceColor.needsUpdate = true; if (frs[k]) { frs[k].count = n[k]; frs[k].instanceMatrix.needsUpdate = true; } }
     };
   })();
-  setInterval(() => { if (gHu.visible && !raf) PLANTAS(); }, 600);
+  setInterval(() => { if (gHu.visible && !on) PLANTAS(); /* con el recorrido abierto, PLANTAS() corre en el bucle maestro */ }, 600);
 
   /* ---------- estación solar ---------- */
   {
@@ -797,16 +798,16 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
     cajaDe = pts.length > 1 ? new THREE.CatmullRomCurve3(pts, false, 'centripetal') : null; caja.visible = true; if (!cajaDe) caja.position.copy(pts[0]);
     resaltar(P.k); const fin = P.p[P.p.length - 1], w = M(fin[0], fin[1]);
     if (P.k === 'datos') enfocar('datos', true); else volarA(w, P.k === 'pos' ? 150 : P.k === 'mer' ? 120 : P.k === 'bio' ? 200 : 90);
-    tPaso = performance.now(); pan.querySelector('#bd-go').textContent = 'Detener recorrido';
+    tPaso = RELOJ.tAnim * 1000; pan.querySelector('#bd-go').textContent = 'Detener recorrido';
   }
   function parar() { if (paso < 0) return; paso = -1; cap.classList.remove('on'); caja.visible = false; resaltar(null); pan.querySelector('#bd-go').textContent = 'Seguir una cosecha'; }
   addEventListener('keydown', (e) => { if (paso >= 0 && e.key === 'Escape') parar(); });
 
   /* ---------- animación ---------- */
-  let raf = 0, ult = performance.now(), tOn = 0, on = false; const V = new THREE.Vector3();
+  let ult = 0, tOn = 0, on = false; const V = new THREE.Vector3();
   const ease = (k) => { k = Math.max(0, Math.min(1, k)); return 1 - Math.pow(1 - k, 3); };
-  function cuadro() {
-    raf = requestAnimationFrame(cuadro); const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+  function cuadro(info) { // se dibuja en el bucle maestro del reloj universal
+    const ahora = info.tAnim * 1000, dt = Math.min(0.1, info.dtAnim);
     const mov = !RMQ.matches, t = RMQ.matches ? 99 : (ahora - tOn) / 1000; if (mov) TU.value += dt;
     if ((cuadro.n = (cuadro.n || 0) + 1) % 12 === 0) PLANTAS();
     // secuencia de entrada: edificios (0-2,4 s), sintaxis (1,6-3,4 s), pasajes (2-4,5 s), red de datos (2,8-4,6 s), fauna (3,8-5 s)
@@ -824,6 +825,7 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
       e.d.style.display = ok ? 'block' : 'none'; if (ok) e.d.style.transform = `translate(${((V.x + 1) / 2 * Wd - 10).toFixed(1)}px,${((1 - V.y) / 2 * H - e.d.offsetHeight - 18).toFixed(1)}px)`; }
   }
 
+  const ahora0 = () => RELOJ.tAnim * 1000; RELOJ.alDibujar((info) => { if (on) cuadro(info); });
   let hOn = false;
   const verHu = () => { gHu.visible = on || hOn; if (gHu.visible) PLANTAS(true); };
   return {
@@ -831,8 +833,8 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
       if (v === on) return; on = v; grupo.visible = v; verHu();
       const bv = T3.bavaria; if (bv && bv.userData) { if (bv.userData.demoler) bv.userData.demoler.visible = !v; if (bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); }
       pan.classList.toggle('on', v); document.body.classList.toggle('bd-on', v);
-      if (v) { pan.classList.toggle('min', innerWidth < 760); tab = 'dist'; sxObj = 1; focoFauna = null; pintar(); tOn = ult = performance.now(); SXU.uMix.value = 0; if (!raf) cuadro(); PLANTAS(true); general(); }
-      else { parar(); cancelAnimationFrame(raf); raf = 0; ETQ.forEach(e => { e.d.style.display = 'none'; }); }
+      if (v) { pan.classList.toggle('min', innerWidth < 760); tab = 'dist'; sxObj = 1; focoFauna = null; pintar(); tOn = ahora0(); SXU.uMix.value = 0; PLANTAS(true); general(); }
+      else { parar(); ETQ.forEach(e => { e.d.style.display = 'none'; }); }
     },
     // solo las huertas de enseñanza y la planta de compostaje (con la propuesta se ven siempre, aunque la estrategia escogida sea otra)
     verHuertas(v) { hOn = !!v; const bv = T3.bavaria; if (hOn && bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); verHu(); },

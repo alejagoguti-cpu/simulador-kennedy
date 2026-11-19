@@ -13,7 +13,8 @@
    SIM-02 Orgánicos y compostaje: A ruta actual · B estación de compostaje barrial · C compostaje en Bavaria Común
    SIM-03 Hábitat y fauna: A sin huertas · B huertas sin criterio de ubicación · C huertas con corredores; con y sin medida antitrampa
    Los valores de partida que no da el documento están marcados [SUP] (supuestos para discutir con el grupo). */
-import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=3';
+import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=4';
+import { RELOJ } from './reloj.js?v=2';
 export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const { P1, P2, P3 } = PAR; // los mismos parámetros que el panel de escenarios del mapa (data3d/sim_modelos.js)
   // colores fijos de los escenarios (los mismos en el mapa): A hoy azul grisáceo, B morado, C ámbar (la propuesta)
@@ -126,7 +127,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const cont = document.createElement('div'); cont.className = 'gr sim'; cont.dataset.tab = 'sim';
   const ancla = tb.querySelector('.cuerpo .gr'); ancla.parentNode.insertBefore(cont, ancla);
   const tip = document.createElement('div'); tip.className = 'sim-tip'; tb.appendChild(tip);
-  let sim = 'S1', escP = SIMST.esc, t = SEM - 1, play = null;
+  let sim = 'S1', escP = SIMST.esc, play = null; const semReloj = () => Math.max(0, Math.min(SEM - 1, Math.floor(SIMST.t))); let t = semReloj(); // t: la semana en que va el reloj universal (SIMST.t); aquí solo se LEE
   const escAct = () => (T3.escenario === 'proyecto' ? escP : 'A');
 
   /* ---------------- gráfica de líneas o áreas apiladas (un solo eje) ---------------- */
@@ -269,7 +270,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
           return `<div class="c${b ? ' best' : ''}"><strong>${I.f(v)}</strong><i><b style="width:${Math.max(2, Math.abs(v) / m * 100).toFixed(1)}%;background:${COL[k]}"></b></i></div>`; }).join('')}</div>`; }).join('') + '</div>';
   }
   function resumen() {
-    const p = proK(), A = IND('A'), P = IND(p), a2 = año10(), año = 2026 + a2;
+    t = semReloj(); const p = proK(), A = IND('A'), P = IND(p), a2 = año10(), año = 2026 + a2;
     let q = '', frase = '', gtit = '';
     if (sim === 'S1') { const sA = S.S1.A, sP = S.S1[p];
       q = '¿Cuánto deja Kennedy de depender de Corabastos si las huertas del barrio abastecen tiendas y comedores?';
@@ -286,7 +287,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     }
     const gana = A.reduce((s, I, j) => s + ((I.menos ? P[j].v < I.v : P[j].v > I.v) ? 1 : 0), 0);
     return `<div class="sim-res"><p class="sim-q">${q}</p><div class="sim-frase">${frase}</div>
-      <div class="sim-play"><button data-play>${play ? 'Pausa' : '▶ Correr 10 años'}</button><input type="range" min="0" max="${SEM - 1}" value="${t}" data-t aria-label="Tiempo de la simulación"><output>${año}<br><small style="color:#8e979d">año ${a2} de 10</small></output></div>
+      <div class="sim-play"><output>${año}<br><small style="color:#8e979d">año ${a2} · semana ${t % AÑO + 1} del reloj</small></output><small style="color:#8e979d;flex:1;margin-left:10px">El tiempo lo lleva el reloj de la simulación (control de abajo): aquí se ve cómo va en esta semana.</small></div>
       <div class="sim-h">1 · Kennedy hoy vs. la propuesta</div>
       <p class="sim-lead"><i style="background:${COL.A}"></i><b>Hoy</b>: Kennedy sigue igual 10 años. <i style="background:${COL[p]}"></i><b>Propuesta ${p}</b>: (${CORTO[p].toLowerCase()}) ${esc(ESCD[sim][p])} La propuesta mejora <b>${gana} de ${A.length}</b> indicadores.</p>
       <div class="vss">${A.map((I, j) => filaVs(I, I.v, P[j].v, p)).join('')}</div>
@@ -344,20 +345,15 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   }
   let abiertoVar = false, abiertoTec = false;
   function refrescar() { const r = cont.querySelector('.sim-res'); if (r) r.outerHTML = resumen(); dibujar(); }
-  function parar() { if (play) { cancelAnimationFrame(play); play = null; } }
-  function arrancar(desde0 = true) { parar(); if (desde0 || t >= SEM - 1) t = 0; let prev = performance.now(), tf = t;
-    const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; tf = Math.min(SEM - 1, tf + dt * 66); t = Math.floor(tf); /* ~8 s los 10 años; t siempre entero */
-      if (t >= SEM - 1) { t = SEM - 1; play = null; refrescar(); return; } play = requestAnimationFrame(paso); refrescar(); };
-    play = requestAnimationFrame(paso); }
-  cont.addEventListener('click', (e) => { const e2 = e.target.closest('[data-e2]'); if (e2) { const k = e2.dataset.e2; if (k !== 'A' && k !== escP) { escP = SIMST.esc = k; avisar('tablero'); pintar(); } return; }
-    if (e.target.closest('[data-play]')) { if (play) { parar(); refrescar(); } else arrancar(t >= SEM - 1); } });
-  cont.addEventListener('input', (e) => { const ts = e.target.closest('[data-t]'); if (!ts) return; parar(); t = +ts.value; const o = ts.nextElementSibling; if (o) o.innerHTML = `${2026 + año10()}<br><small style="color:#8e979d">año ${año10()} de 10</small>`; dibujar(); });
-  cont.addEventListener('change', (e) => { if (e.target.closest('[data-t]')) refrescar(); });
+  // sin reproducción propia ni línea de tiempo: la semana la da el reloj universal (data3d/reloj.js). Se repinta cuando cambia la semana (≈1 vez por segundo como mucho)
+  let tVer = 0;
+  RELOJ.alDibujar((info) => { if ((tVer -= info.dtReal) > 0) return; tVer = 1; if (!cont.classList.contains('vis') || semReloj() === t) return; t = semReloj(); refrescar(); });
+  cont.addEventListener('click', (e) => { const e2 = e.target.closest('[data-e2]'); if (e2) { const k = e2.dataset.e2; if (k !== 'A' && k !== escP) { escP = SIMST.esc = k; avisar('tablero'); pintar(); } } });
   // el panel de escenarios del mapa cambió algo: mismo escenario y mismos parámetros aquí
   addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'tablero') return; escP = SIMST.esc; correr(); if (cont.classList.contains('vis')) pintar(); });
   const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const visible = () => cont.classList.contains('vis') && document.body.classList.contains('tb-abierto');
-  const animar = () => { if (RMQ) { t = SEM - 1; refrescar(); return; } if (visible()) arrancar(true); };
+  const animar = () => { t = semReloj(); if (visible()) refrescar(); };
   const btnTab = document.getElementById('b-tablero'); if (btnTab) btnTab.addEventListener('click', () => setTimeout(animar, 120));
   bt.addEventListener('click', () => setTimeout(animar, 60));
   addEventListener('escenario', () => { if (T3.escenario !== 'proyecto') escP = escP === 'A' ? 'C' : escP; pintar(); animar(); });

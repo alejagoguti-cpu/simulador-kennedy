@@ -4,7 +4,9 @@
    se agrupan en celdas de 150 m y se conservan las 8 entradas de borde con más vehículos (marcas sobre el asfalto).
    Los camiones que van a Corabastos NO se dibujan aparte: se resaltan, con un anillo y un pin naranja sobre el techo, los camiones reales
    de la simulación (T3.TRAF.vis) que están a menos de 2,6 km de Corabastos y se acercan a él. No hay líneas en el aire.
-   Horario: la carga entra de noche (6 p. m. a 11 p. m.; la venta mayorista abre a las 2 a. m.; Corabastos recibe 900 a 1.200 vehículos de carga al día). */
+   Horario: la carga entra de noche (6 p. m. a 11 p. m.; la venta mayorista abre a las 2 a. m.; Corabastos recibe 900 a 1.200 vehículos de carga al día).
+   TIEMPO: los botones de hora AVANZAN el reloj universal hasta esa hora (data3d/reloj.js); se dibuja en el bucle maestro. */
+import { RELOJ } from './reloj.js?v=2';
 export function crearOrigenes({ T3, izq, despues }) {
   const THREE = T3.THREE, CORA = [1132.1, 948.6], CEL = 150;
   const grupo = new THREE.Group(); grupo.name = 'origenes'; grupo.visible = false; T3.scene.add(grupo);
@@ -74,10 +76,10 @@ export function crearOrigenes({ T3, izq, despues }) {
     halos.count = pines.count = k; halos.instanceMatrix.needsUpdate = pines.instanceMatrix.needsUpdate = true; nCam = k;
     if (elCont && k !== ultCont) { ultCont = k; elCont.textContent = k + (k === 1 ? ' camión resaltado rumbo a Corabastos' : ' camiones resaltados rumbo a Corabastos'); }
   }
-  function cuadro(t) { requestAnimationFrame(cuadro); if (!grupo.visible) { for (const e of ET) if (e.d.style.display !== 'none') e.d.style.display = 'none'; return; }
-    UA.uT.value = t / 1000; const W = innerWidth, H = innerHeight; resaltar();
+  function cuadro(info) { if (!grupo.visible) { for (const e of ET) if (e.d.style.display !== 'none') e.d.style.display = 'none'; return; }
+    UA.uT.value = info.tAnim; const W = innerWidth, H = innerHeight; resaltar();
     for (const e of ET) { V.copy(e.p).project(T3.camera); const ok = V.z < 1 && Math.abs(V.x) < 0.95 && Math.abs(V.y) < 0.92; e.d.style.display = ok ? 'block' : 'none'; if (ok) e.d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px) translate(-50%,-100%)`; } }
-  requestAnimationFrame(cuadro);
+  RELOJ.alDibujar(cuadro);
   function ver(on) {
     if (on && !hecho) { if (!calcular()) { setTimeout(() => ver(true), 1500); return; } armar(); }
     grupo.visible = !!on;
@@ -93,7 +95,7 @@ export function crearOrigenes({ T3, izq, despues }) {
       <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.4">Corabastos recibe 900 a 1.200 vehículos de carga al día; la carga entra de 6 p. m. a 11 p. m. y la venta mayorista abre a las 2 a. m. En esas horas, cerca de Corabastos uno de cada cinco vehículos es camión. Se resaltan los camiones de la simulación a menos de 2,6 km que se acercan.</div></div>`);
     const caja = izq.querySelector('#gs-og');
     caja.querySelectorAll('#gs-ogb button').forEach(b => b.onclick = () => { ver(!!b.dataset.v); caja.querySelectorAll('#gs-ogb button').forEach(x => x.classList.toggle('on', x === b)); });
-    caja.querySelectorAll('#gs-ogh button').forEach(b => b.onclick = () => { if (T3.reloj) { const h = +b.dataset.h, t = H(h); if (T3.reloj.t > t && h < 12) T3.reloj.dia = (T3.reloj.dia || 1) + 1; T3.reloj.t = t; }
+    caja.querySelectorAll('#gs-ogh button').forEach(b => b.onclick = () => { RELOJ.irAMinuto(H(+b.dataset.h), b.textContent); // el reloj avanza paso a paso hasta esa hora (la próxima vez que llegue)
       ver(true); caja.querySelectorAll('#gs-ogb button').forEach(x => x.classList.toggle('on', x.dataset.v === '1'));
       const FCb = document.querySelector('#gs-fc button[data-v="1"]'); if (FCb && !FCb.classList.contains('on')) FCb.click();
       if (T3.orbit) { const c = T3.orbit.target, p0 = T3.camera.position.clone(), c0 = c.clone(), p1 = new THREE.Vector3(CORA[0] + 900, 3400, CORA[1] + 2600), c1 = new THREE.Vector3(CORA[0], 0, CORA[1]); T3.anim = { t: 0, dur: 2.4, p0, c0, p1, c1 }; } });

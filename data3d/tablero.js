@@ -4,6 +4,7 @@
    2. Flujo del día: encuentros de cada tipo a lo largo de las 24 h (se va construyendo con el reloj de la simulación).
    3. Pulso: cada encuentro nuevo es un punto en la franja de su tipo; los puntos corren hacia la izquierda (últimos 90 s).
    Encuentro: dos agentes relacionados en la red a menos de 18 m (la interacción está ocurriendo). */
+import { RELOJ } from './reloj.js?v=2';
 export function iniciarTablero({ T3, bio }) {
   const { AG, ESP, LINKS, TIPOS, CAT, ENC, CERCA, flora, ESTADO } = bio;
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -179,7 +180,7 @@ body.tb-abierto #dock{display:none}
   btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></svg>Tablero';
   if (hud) { if (pj && pj.parentElement === hud) hud.insertBefore(btn, pj); else hud.appendChild(btn); } else { btn.style.cssText = 'position:fixed;z-index:12;right:14px;bottom:20px'; document.body.appendChild(btn); }
   const abierto = () => document.body.classList.contains('tb-abierto');
-  const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) { pintarTexto(); setTimeout(dibujarSintaxis, 60); cancelAnimationFrame(raf); tPrev = performance.now(); raf = requestAnimationFrame(cuadro); } };
+  const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) { pintarTexto(); setTimeout(dibujarSintaxis, 60); } };
   btn.onclick = () => abrir(!abierto());
   tb.querySelector('.x').onclick = () => abrir(false);
   // pestañas: Relaciones bióticas (lo primero) · Hoy vs. proyecto · Tráfico y sintaxis; el selector de escenario queda en todas
@@ -203,13 +204,13 @@ body.tb-abierto #dock{display:none}
      Indicadores (mismos lugares, mismo periodo): tráfico y ruido en el borde de Corabastos, sintaxis espacial de Bavaria y hábitat de
      polinizadores (data3d/escenarios.json, tools/escenarios_build.js), e interacciones bióticas medidas en vivo en cada escenario
      a las mismas horas del día. */
-  let ESC = null, escAct = T3.escenario || 'hoy', tCambio = performance.now(); // tras cambiar de escenario se esperan 10 s (la fauna aparece o se va) antes de medir
+  let ESC = null, escAct = T3.escenario || 'hoy', tCambio = RELOJ.t; // (segundo del reloj universal) tras cambiar de escenario se esperan 10 s SIMULADOS (la fauna aparece o se va) antes de medir
   const VIVO = { hoy: new Array(96).fill(null), proyecto: new Array(96).fill(null) }; // promedio de encuentros por cuarto de hora en cada escenario
   ESTADO.escenario = escAct;
   fetch('data3d/escenarios.json?v=1').then(r => r.json()).then(d => { ESC = d; pintarComparacion(); }).catch(e => { console.warn('escenarios:', e); $('tb-cmp').innerHTML = '<div class="vacio">No se pudieron cargar los indicadores.</div>'; });
   // el escenario lo manda el selector general (data3d/escenario.js): territorio, huertas, sintaxis, ruido y fauna; aquí solo el tablero
   function aplicarEsc(e) {
-    if (e !== escAct) tCambio = performance.now(); escAct = e; ESTADO.escenario = T3.PROP && T3.PROP.fauna ? e : 'hoy'; // propuesta en revisión: sin la fauna de las huertas
+    if (e !== escAct) tCambio = RELOJ.t; escAct = e; ESTADO.escenario = T3.PROP && T3.PROP.fauna ? e : 'hoy'; // propuesta en revisión: sin la fauna de las huertas
     const viejo = T3.PROP && !T3.PROP.comparar; // los indicadores «hoy vs. proyecto» y la carga desplazada eran de la propuesta anterior
     const tp = tb.querySelector('#tb-tabs button[data-k="esc"]'); if (tp) tp.style.display = viejo ? 'none' : '';
     const gc = $('tb-calles') && $('tb-calles').closest('.gr'); if (gc) gc.style.display = T3.PROP && !T3.PROP.carga ? 'none' : ''; // la carga desplazada a mercados era de la propuesta anterior
@@ -280,13 +281,15 @@ body.tb-abierto #dock{display:none}
   /* ---------- toma de datos (siempre, dos veces por segundo) ---------- */
   const nombreDe = (o, L) => o.id !== undefined ? ESP[o.e].n : ((L && flora[L.f] && flora[L.f].n) || o.n || 'árbol');
   let tFl = 0;
+  let nEv = 0;
+  // toma de datos: es un paso del reloj universal (cada 5 s simulados; el recuento de encuentros no depende de los cuadros ni de que el tablero esté abierto)
   function tick() {
-    const r = T3.reloj, t = r && r.t >= 0 ? r.t : 540, dia = r ? r.dia : 1;
+    const t = (RELOJ.t % 86400) / 60, dia = RELOJ.dia; // minuto del día (sin interpolar: estado entero del paso)
     if (dia !== diaAct) { diaAct = dia; for (const s of DIA) { s.n = 0; s.s.fill(0); } }
     const sl = DIA[Math.floor(t / 15) % 96]; sl.n++; for (let i = 0; i < NT; i++) sl.s[i] += (ENC[i] - sl.s[i]) / Math.min(sl.n, 8); // promedio móvil del cuarto de hora
     // encuentros ocurriendo ahora: pares (especie -> especie o árbol, tipo)
     for (const p of PAR.values()) p.obj = 0;
-    const ahora = performance.now(); let n = 0;
+    const ahora = RELOJ.t * 1000, ahoraA = RELOJ.tAnim * 1000; let n = 0; // ahora: milisegundos SIMULADOS (conteos) · ahoraA: tiempo de animación (la franja del pulso corre con él y se detiene en pausa)
     for (const L of LINKS.values()) {
       if (L.al < 0.3 || Math.hypot(L.b.x - L.a.x, L.b.z - L.a.z) >= CERCA) continue;
       n++;
@@ -295,12 +298,12 @@ body.tb-abierto #dock{display:none}
       const k = s + '|' + d + '|' + L.t; let p = PAR.get(k); if (!p) PAR.set(k, p = { s, d, t: L.t, v: 0, obj: 0 }); p.obj++;
       // pulso: encuentro nuevo (la misma pareja vuelve a contar solo después de 60 s reales)
       const kv = L.a.id + '|' + (L.b.id !== undefined ? 'a' + L.b.id : 'f' + Math.round(L.b.x) + ',' + Math.round(L.b.z)), u0 = VISTO.get(kv);
-      if (primado && (u0 === undefined || ahora - u0 > 60000)) EV.push({ tr: ahora + Math.random() * 500, t: L.t, txt: `${nombreDe(L.a)} ${VERBO[L.t] || '→'} ${nombreDe(L.b, L).toLowerCase()}`, hab: L.a.h.n, y: Math.random() });
+      if (primado && (u0 === undefined || ahora - u0 > 60000)) EV.push({ tr: ahoraA + RELOJ.azarDe('tablero_ev', nEv, 0) * 500, t: L.t, txt: `${nombreDe(L.a)} ${VERBO[L.t] || '→'} ${nombreDe(L.b, L).toLowerCase()}`, hab: L.a.h.n, y: RELOJ.azarDe('tablero_ev', nEv++, 1) });
       VISTO.set(kv, ahora);
     }
     ahoraEnc = n; primado = true;
-    if (ahora - tCambio > 10000) { const sl = Math.floor(t / 15) % 96, V = VIVO[escAct]; if (!V[sl]) V[sl] = { v: n, k: 1 }; else { V[sl].k++; V[sl].v += (n - V[sl].v) / Math.min(V[sl].k, 20); } } // encuentros por cuarto de hora en el escenario activo
-    while (EV.length && ahora - EV[0].tr > 92000) EV.shift(); if (EV.length > 1500) EV.splice(0, EV.length - 1500);
+    if (RELOJ.t - tCambio >= 10) { const sl = Math.floor(t / 15) % 96, V = VIVO[escAct]; if (!V[sl]) V[sl] = { v: n, k: 1 }; else { V[sl].k++; V[sl].v += (n - V[sl].v) / Math.min(V[sl].k, 20); } } // encuentros por cuarto de hora en el escenario activo
+    while (EV.length && ahoraA - EV[0].tr > 92000) EV.shift(); if (EV.length > 1500) EV.splice(0, EV.length - 1500);
     if (VISTO.size > 20000) for (const [k, u0] of VISTO) if (ahora - u0 > 60000) VISTO.delete(k);
     // cada 10 s: qué árboles tienen nodo propio (los más visitados del día)
     if (ahora > tFl) {
@@ -409,17 +412,20 @@ body.tb-abierto #dock{display:none}
   const slotEn = (e) => { const r = FL.c.getBoundingClientRect(); return Math.max(0, Math.min(95, Math.floor((e.clientX - r.left) / r.width * 96))); };
   const textoSlot = (i) => { const S = DIA[i]; if (!S.n) { $('tb-pie2').innerHTML = `<b>${hhmm(i * 15)}</b> · todavía sin datos a esta hora`; return; } const L = TIPOS.map(t => [t, S.s[t.id]]).filter(([t, v]) => activo(t.id) && v >= 0.5).sort((p, q) => q[1] - p[1]).slice(0, 4); $('tb-pie2').innerHTML = `<b>${hhmm(i * 15)}</b> · ${L.map(([t, v]) => `${CORTO[t.id].toLowerCase()} <b>${num(v)}</b>`).join(' · ') || 'casi sin encuentros'}`; };
   let arrF = false;
-  const moverHora = (e) => { const r = FL.c.getBoundingClientRect(), f = Math.max(0, Math.min(0.9999, (e.clientX - r.left) / r.width)); if (T3.reloj) { T3.reloj.t = Math.round(f * 1440 / 5) * 5; ult.t = T3.reloj.t; pintarTexto(); } };
+  // elegir una hora en la gráfica = AVANZAR el reloj universal hasta esa hora (data3d/reloj.js); el tiempo no se devuelve. Se pide al soltar.
+  let horaMeta = null;
+  const moverHora = (e) => { const r = FL.c.getBoundingClientRect(), f = Math.max(0, Math.min(0.9999, (e.clientX - r.left) / r.width)); horaMeta = Math.round(f * 1440 / 5) * 5; $('tb-pie2').innerHTML = `Suelta para avanzar el reloj hasta las <b>${hhmm(horaMeta)}</b>`; };
+  const irHoraMeta = () => { if (horaMeta == null) return; const R = T3.reloj && T3.reloj.reloj; if (R) R.irAMinuto(horaMeta); horaMeta = null; pintarTexto(); };
   FL.c.addEventListener('pointerdown', (e) => { arrF = true; FL.c.setPointerCapture(e.pointerId); moverHora(e); });
   FL.c.addEventListener('pointermove', (e) => { hovSlot = slotEn(e); textoSlot(hovSlot); if (arrF) moverHora(e); });
-  const soltarF = () => { arrF = false; }; FL.c.addEventListener('pointerup', soltarF); FL.c.addEventListener('pointercancel', soltarF);
-  FL.c.addEventListener('pointerleave', () => { hovSlot = -1; $('tb-pie2').textContent = 'Arrastra sobre la gráfica para cambiar la hora de la simulación.'; });
+  const soltarF = (e) => { if (arrF && e && e.type === 'pointerup') irHoraMeta(); arrF = false; horaMeta = null; }; FL.c.addEventListener('pointerup', soltarF); FL.c.addEventListener('pointercancel', soltarF);
+  FL.c.addEventListener('pointerleave', () => { hovSlot = -1; $('tb-pie2').textContent = 'Toca una hora de la gráfica para avanzar la simulación hasta ella.'; });
 
   /* ---------- 3. pulso ---------- */
   const LW = 84, FILA = 18, VENT = 90000; let hovEv = null;
   function dibujarPulso() {
     PU.medir(); const { g, w, h } = PU; g.clearRect(0, 0, w, h);
-    const ahora = performance.now(), x0 = LW, ancho = w - LW - 6;
+    const ahora = RELOJ.tAnim * 1000, x0 = LW, ancho = w - LW - 6; // el pulso corre con el tiempo de animación del reloj (se detiene en pausa)
     g.font = '400 10px Inter,system-ui,sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'left';
     TIPOS.forEach((t, i) => { const y = 5 + i * FILA + FILA / 2; g.fillStyle = activo(t.id) ? '#9aa2a7' : '#4b5257'; g.fillText(CORTO[t.id], 0, y); g.strokeStyle = 'rgba(255,255,255,.045)'; g.beginPath(); g.moveTo(x0, y + 0.5); g.lineTo(w, y + 0.5); g.stroke(); });
     for (const s of [30, 60]) { const x = x0 + ancho - s / 90 * ancho; g.fillStyle = 'rgba(255,255,255,.04)'; g.fillRect(Math.round(x), 0, 1, h); }
@@ -431,7 +437,7 @@ body.tb-abierto #dock{display:none}
     }
     g.fillStyle = '#646c71'; g.textAlign = 'right'; g.fillText('ahora', w - 2, h - 3);
   }
-  const evEn = (e) => { const r = PU.c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, ahora = performance.now(), ancho = PU.w - LW - 6; let best = null, bd = 10; for (const ev of EV) { const edad = ahora - ev.tr; if (edad < 0 || edad > VENT || !activo(ev.t)) continue; const x = LW + ancho * (1 - edad / VENT), y = 5 + ev.t * FILA + FILA / 2 + (ev.y - 0.5) * 12, d = Math.hypot(x - mx, y - my); if (d < bd) { bd = d; best = ev; } } return best; };
+  const evEn = (e) => { const r = PU.c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, ahora = RELOJ.tAnim * 1000, ancho = PU.w - LW - 6; let best = null, bd = 10; for (const ev of EV) { const edad = ahora - ev.tr; if (edad < 0 || edad > VENT || !activo(ev.t)) continue; const x = LW + ancho * (1 - edad / VENT), y = 5 + ev.t * FILA + FILA / 2 + (ev.y - 0.5) * 12, d = Math.hypot(x - mx, y - my); if (d < bd) { bd = d; best = ev; } } return best; };
   const textoEv = (ev) => { $('tb-pie3').innerHTML = ev ? `<b>${esc(ev.txt)}</b> · ${esc(TIPOS[ev.t].n)} · ${esc(ev.hab)}` : 'Pasa o toca un punto para ver qué ocurrió.'; };
   PU.c.addEventListener('pointermove', (e) => { hovEv = evEn(e); textoEv(hovEv); });
   PU.c.addEventListener('pointerdown', (e) => { hovEv = evEn(e); textoEv(hovEv); });
@@ -533,13 +539,13 @@ body.tb-abierto #dock{display:none}
   };
   addEventListener('keydown', (e) => { if (!tp.classList.contains('on')) return; if (e.key === 'ArrowRight') tp.querySelector('#tp-s')?.click(); if (e.key === 'ArrowLeft') tp.querySelector('#tp-a')?.click(); if (e.key === 'Escape') tp.classList.remove('on'); });
 
-  let raf = 0, tPrev = performance.now(), tFlujo = 0;
-  function cuadro() {
+  let tFlujo = 0;
+  // dibujo en el bucle maestro del reloj (solo lee el estado; la cuerda y el pulso usan el tiempo de animación)
+  RELOJ.alDibujar((info) => {
     if (!abierto()) return;
-    const ahora = performance.now(), dt = Math.min(0.1, (ahora - tPrev) / 1000); tPrev = ahora;
-    dibujarCuerda(dt); dibujarPulso(); if ((tFlujo -= dt) <= 0) { tFlujo = 0.5; dibujarFlujo(); }
-    raf = requestAnimationFrame(cuadro);
-  }
+    const dt = Math.min(0.1, info.dtAnim);
+    dibujarCuerda(dt); dibujarPulso(); if ((tFlujo -= info.dtReal) <= 0) { tFlujo = 0.5; dibujarFlujo(); }
+  });
   /* ---------- Av. Ciudad de Cali: tráfico hoy y con la propuesta (data3d/alivio_cali.js, conteo en vivo de la simulación) ---------- */
   function pintarCali() {
     const AL = T3.alivio; if (!AL || !abierto() || pest !== 'tra') return;
@@ -570,10 +576,15 @@ body.tb-abierto #dock{display:none}
   }
   // promedio de polinizaciones y depredaciones en cada escenario (para comparar con «hoy» sin cambiar de escenario)
   const PROMT = { hoy: { p: 0, d: 0, k: 0 }, proyecto: { p: 0, d: 0, k: 0 } };
-  setInterval(() => { if (performance.now() - tCambio < 10000) return; const P = PROMT[escAct]; if (!P) return; P.k++; const a = 1 / Math.min(P.k, 60); P.p += ((ENC[5] || 0) - P.p) * a; P.d += ((ENC[0] || 0) - P.d) * a; }, 1000);
-  let nT = 0; tick(); setInterval(() => { tick(); pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
+  // lo medido (recuento de encuentros y promedios por escenario) son pasos del reloj: cada 5 s simulados el recuento, cada 10 s los promedios
+  RELOJ.registrar({ nombre: 'tablero', orden: 90, step: (dt, t) => {
+    if (t % 5 === 0) tick();
+    if (t % 10 === 0 && RELOJ.t - tCambio >= 10) { const P = PROMT[escAct]; if (P) { P.k++; const a = 1 / Math.min(P.k, 60); P.p += ((ENC[5] || 0) - P.p) * a; P.d += ((ENC[0] || 0) - P.d) * a; } }
+  }, hash: () => { let h = 0x811c9dc5; for (const k of Object.keys(PROMT)) { h = Math.imul(h ^ (Math.round(PROMT[k].p * 1000) | 0), 0x01000193) >>> 0; h = Math.imul(h ^ (Math.round(PROMT[k].d * 1000) | 0), 0x01000193) >>> 0; } return h; } }, { ponerAlDia: false });
+  // la interfaz (textos y paneles) se repinta dos veces por segundo; solo lee
+  let nT = 0; tick(); setInterval(() => { pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
   // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Kennedy hoy / Con la propuesta
-  import('./simulaciones.js?v=11').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
+  import('./simulaciones.js?v=12').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

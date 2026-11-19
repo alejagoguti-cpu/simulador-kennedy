@@ -13,7 +13,10 @@
      P3 Cocinas comunitarias y degustación barrial: cocineras tradicionales, niños de colegios con su maestra y vecinos.
      P4 Huertas en lotes baldíos: huerteros, abejas, aves que atrae la huerta (copetón, mirla patiamarilla, colibrí
         chillón) y lombriz roja californiana en el compost.
-   Cantidades y tiempos sin fuente: marcados [SUP] (supuestos de escala para discutir). */
+   Cantidades y tiempos sin fuente: marcados [SUP] (supuestos de escala para discutir).
+   TIEMPO: lo lleva el reloj universal (data3d/reloj.js). Esta simulación es un sistema del reloj: step(1 s) mueve los agentes con
+   su lógica y su azar con semilla; el dibujo (alDibujar) solo lee las posiciones e interpola entre el paso anterior y el actual. */
+import { RELOJ, DIA, vistaT3, hashNum } from './reloj.js?v=2';
 
 const DEPTHMAP = [[0, 0, 255], [0, 102, 255], [0, 204, 255], [0, 255, 204], [0, 255, 102], [51, 255, 0], [153, 255, 0], [255, 255, 0], [255, 204, 0], [255, 136, 0], [255, 68, 0], [255, 0, 0]]; // escala DepthmapX
 const colorDM = (v) => { const c = DEPTHMAP[Math.min(DEPTHMAP.length - 1, Math.floor(v * DEPTHMAP.length))]; return `rgb(${c[0]},${c[1]},${c[2]})`; };
@@ -91,6 +94,7 @@ const CSS = `
 export async function iniciarSimulacion(cfg = {}) {
   // dos modos: sobre el giro renderizado (2D, window.GIRO) o dentro de la maqueta 3D (cfg.T3: calles pintadas en el suelo, agentes 3D)
   const M3 = !!cfg.T3, T3 = cfg.T3, GIRO = M3 ? null : window.GIRO;
+  const rnd = RELOJ.azar('giro_sim'); // azar con semilla: el sorteo de cada agente no depende de los cuadros por segundo
   const OX = 2095.67, OZ = -109.06; // marco del giro (X este, Y sur, desde El Burro) -> mundo de la maqueta (x, z)
   const D = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/giro_sim.json');
   const $ = (id) => document.getElementById(id);
@@ -121,11 +125,11 @@ export async function iniciarSimulacion(cfg = {}) {
       w.push(p); tot += p;
     }
     if (tot <= 0) return ag.s;
-    let r = Math.random() * tot; for (let k = 0; k < op.length; k++) { r -= w[k]; if (r <= 0) return op[k]; } return op[op.length - 1];
+    let r = rnd() * tot; for (let k = 0; k < op.length; k++) { r -= w[k]; if (r <= 0) return op[k]; } return op[op.length - 1];
   }
   const candVeh = [], candPea = [];
   S.forEach((s, i) => { const m = s.p[Math.floor(s.p.length / 2)]; if (!enRadio(m)) return; if (s.v) candVeh.push(i); candPea.push(i); });
-  function sortear(cand, clave, beta) { let t = 0; const ac = cand.map(i => (t += Math.pow(0.05 + S[i][clave], beta))); return () => { const r = Math.random() * t; let lo = 0, hi = ac.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (ac[m] < r) lo = m + 1; else hi = m; } return cand[lo]; }; }
+  function sortear(cand, clave, beta) { let t = 0; const ac = cand.map(i => (t += Math.pow(0.05 + S[i][clave], beta))); return () => { const r = rnd() * t; let lo = 0, hi = ac.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (ac[m] < r) lo = m + 1; else hi = m; } return cand[lo]; }; }
   const sorteoVeh = sortear(candVeh, 'c', 2), sorteoPea = sortear(candPea, 'i', 2);
 
   // rutas (Dijkstra por longitud) para los recorridos con destino
@@ -142,15 +146,15 @@ export async function iniciarSimulacion(cfg = {}) {
   const linea = (pts) => { const c = [0]; for (let k = 1; k < pts.length; k++) c.push(c[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1])); return { p: pts, cum: c, len: c[c.length - 1] || 1 }; };
   const sobre = (l, d) => { d = Math.max(0, Math.min(l.len, d)); let k = 1; while (k < l.cum.length - 1 && l.cum[k] < d) k++; const a = l.p[k - 1], b = l.p[k], f = (d - l.cum[k - 1]) / ((l.cum[k] - l.cum[k - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
   const dentroPol = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < (P[j][0] - P[i][0]) * (y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
-  function puntoEn(P) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of P) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); } for (let k = 0; k < 200; k++) { const x = x0 + Math.random() * (x1 - x0), y = y0 + Math.random() * (y1 - y0); if (dentroPol(x, y, P)) return [x, y]; } return [(x0 + x1) / 2, (y0 + y1) / 2]; }
-  const cerca = (c, r) => [c[0] + (Math.random() - 0.5) * 2 * r, c[1] + (Math.random() - 0.5) * 2 * r];
+  function puntoEn(P) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of P) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); } for (let k = 0; k < 200; k++) { const x = x0 + rnd() * (x1 - x0), y = y0 + rnd() * (y1 - y0); if (dentroPol(x, y, P)) return [x, y]; } return [(x0 + x1) / 2, (y0 + y1) / 2]; }
+  const cerca = (c, r) => [c[0] + (rnd() - 0.5) * 2 * r, c[1] + (rnd() - 0.5) * 2 * r];
 
   /* ---------- actores ---------- */
   const FLUJO = { p: new Float32Array(S.length), v: new Float32Array(S.length) }; // pasos por tramo (análisis de agentes)
   const A = []; const IND = { rondas: 0, residuos: 0, registros: 0, huidas: 0, sustrato: 0, hongos: 0, entregado: 0, degust: 0, visitas: 0, polen: 0, cosecha: 0, humus: 0, lombricesComidas: 0 };
   const CNT = {}; const contar = (t, n) => { CNT[t] = (CNT[t] || 0) + n; };
   // tráfico y peatones (movimiento natural sobre la sintaxis espacial)
-  const red = (tipo, n, veh, vel, beta, giro) => { for (let k = 0; k < n; k++) { const s = (veh ? sorteoVeh : sorteoPea)(); A.push({ tipo, red: true, veh, s, dir: Math.random() < 0.5 ? 1 : -1, d: Math.random() * S[s].len, vel: vel * (0.8 + Math.random() * 0.4), beta, giro, vis: true }); } contar(tipo, n); };
+  const red = (tipo, n, veh, vel, beta, giro) => { for (let k = 0; k < n; k++) { const s = (veh ? sorteoVeh : sorteoPea)(); A.push({ tipo, red: true, veh, s, dir: rnd() < 0.5 ? 1 : -1, d: rnd() * S[s].len, vel: vel * (0.8 + rnd() * 0.4), beta, giro, vis: true }); } contar(tipo, n); };
   red('carro', 520, true, 9, 1.6, 0.6); red('moto', 180, true, 11, 1.4, 0.8); red('camion', 60, true, 7, 1.2, 0.5); red('bici', 90, false, 4.5, 1.6, 0.7); red('peaton', 900, false, 1.3, 2.2, 0.9); // [SUP]
   // P1: habitantes y colectivos ambientales en el borde de cada humedal
   const HUM = D.humedales.map(h => ({ ...h, l: linea(h.borde) }));
@@ -158,34 +162,34 @@ export async function iniciarSimulacion(cfg = {}) {
   const AVES_H = { 'Humedal El Burro': { tingua: 6, garza: 8, pato: 10, monjita: 16 }, 'Humedal La Vaca': { tingua: 3, garza: 4, pato: 6, monjita: 8 }, 'Humedal de Techo': { tingua: 1, garza: 2, pato: 4, monjita: 6 } }; // [SUP]
   for (const h of HUM) {
     const [nh, nc] = P1n[h.n] || [3, 2];
-    for (let k = 0; k < nh + nc; k++) A.push({ tipo: k < nh ? 'hab' : 'col', ronda: h, d: Math.random() * h.l.len, sentido: Math.random() < 0.5 ? 1 : -1, vel: 1.0, prox: 60 + Math.random() * 120, pausa: 0, ini: Math.random() * 35, vis: false });
+    for (let k = 0; k < nh + nc; k++) A.push({ tipo: k < nh ? 'hab' : 'col', ronda: h, d: rnd() * h.l.len, sentido: rnd() < 0.5 ? 1 : -1, vel: 1.0, prox: 60 + rnd() * 120, pausa: 0, ini: rnd() * 35, vis: false });
     contar('hab', nh); contar('col', nc);
     for (const [t, n] of Object.entries(AVES_H[h.n] || {})) { for (let k = 0; k < n; k++) { const p = puntoEn(h.poly); A.push({ tipo: t, ave: h, x: p[0], y: p[1], obj: puntoEn(h.poly), vel: t === 'garza' ? 0.5 : 0.35, vis: true }); } contar(t, n); }
   }
   // P2: biofábrica de hongos junto a Corabastos
   const BIO = D.biofabrica, CORA = D.corabastos.c, rRecu = ruta(CORA[0], CORA[1], BIO[0], BIO[1]);
-  for (let k = 0; k < 12; k++) A.push({ tipo: 'madre', zona: BIO, rz: 30, x: BIO[0], y: BIO[1], obj: cerca(BIO, 30), pausa: 0, ini: Math.random() * 20, vis: false });
-  for (let k = 0; k < 6; k++) A.push({ tipo: 'recu', lin: rRecu, d: Math.random() * rRecu.len, sentido: 1, vel: 1.1, carga: true, ini: Math.random() * 20, vis: false });
-  for (let k = 0; k < 4; k++) A.push({ tipo: 'joven', zona: BIO, rz: 35, x: BIO[0], y: BIO[1], obj: cerca(BIO, 35), pausa: 0, ini: Math.random() * 20, vis: false });
+  for (let k = 0; k < 12; k++) A.push({ tipo: 'madre', zona: BIO, rz: 30, x: BIO[0], y: BIO[1], obj: cerca(BIO, 30), pausa: 0, ini: rnd() * 20, vis: false });
+  for (let k = 0; k < 6; k++) A.push({ tipo: 'recu', lin: rRecu, d: rnd() * rRecu.len, sentido: 1, vel: 1.1, carga: true, ini: rnd() * 20, vis: false });
+  for (let k = 0; k < 4; k++) A.push({ tipo: 'joven', zona: BIO, rz: 35, x: BIO[0], y: BIO[1], obj: cerca(BIO, 35), pausa: 0, ini: rnd() * 20, vis: false });
   contar('madre', 12); contar('recu', 6); contar('joven', 4); contar('hongo', 600); // [SUP] 600 bolsas de orellana
   // P3: cocinas comunitarias, colegios y degustación barrial
   const COC = D.cocinas.map(c => ({ ...c }));
-  for (const c of COC) { for (let k = 0; k < 4; k++) A.push({ tipo: 'cocinera', zona: c.p, rz: 14, x: c.p[0], y: c.p[1], obj: cerca(c.p, 14), pausa: 0, ini: Math.random() * 15, vis: false }); }
+  for (const c of COC) { for (let k = 0; k < 4; k++) A.push({ tipo: 'cocinera', zona: c.p, rz: 14, x: c.p[0], y: c.p[1], obj: cerca(c.p, 14), pausa: 0, ini: rnd() * 15, vis: false }); }
   contar('cocinera', COC.length * 4);
   const rEntrega = COC.map(c => ruta(BIO[0], BIO[1], c.p[0], c.p[1]));
   D.colegios.forEach((co) => {
     let ci = 0, bd = 1e18; COC.forEach((c, i) => { const d = Math.hypot(c.p[0] - co.p[0], c.p[1] - co.p[1]); if (d < bd) { bd = d; ci = i; } });
     const l = ruta(co.p[0], co.p[1], COC[ci].p[0], COC[ci].p[1]);
-    for (let k = 0; k < 16; k++) A.push({ tipo: k ? 'nino' : 'maestra', grupo: l, coc: ci, d: -k * 2.2, fase: 0, vis: false, off: [(Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4] });
+    for (let k = 0; k < 16; k++) A.push({ tipo: k ? 'nino' : 'maestra', grupo: l, coc: ci, d: -k * 2.2, fase: 0, vis: false, off: [(rnd() - 0.5) * 4, (rnd() - 0.5) * 4] });
   });
   contar('nino', D.colegios.length * 15); contar('maestra', D.colegios.length);
-  for (const [ci, c] of COC.entries()) for (let k = 0; k < 18; k++) { const o = cerca(c.p, 380); A.push({ tipo: 'vecino', lin: ruta(o[0], o[1], c.p[0], c.p[1]), coc: ci, d: 0, ini: Math.random() * 25, vis: false, fase: 0 }); }
+  for (const [ci, c] of COC.entries()) for (let k = 0; k < 18; k++) { const o = cerca(c.p, 380); A.push({ tipo: 'vecino', lin: ruta(o[0], o[1], c.p[0], c.p[1]), coc: ci, d: 0, ini: rnd() * 25, vis: false, fase: 0 }); }
   contar('vecino', COC.length * 18);
   // P4: huertas en lotes baldíos
   const HUE = D.huertas.map(h => ({ ...h, colmena: [h.c[0] + 6, h.c[1] - 6], flores: Array.from({ length: 14 }, () => puntoEn(h.poly)), lomb: 2000 })); // [SUP] 2.000 lombrices por compostera
   for (const h of HUE) {
-    for (let k = 0; k < 3; k++) A.push({ tipo: 'huertero', zona: h.c, pol: h.poly, x: h.c[0], y: h.c[1], obj: puntoEn(h.poly), pausa: 0, ini: Math.random() * 25, vis: false });
-    for (let k = 0; k < 30; k++) A.push({ tipo: 'abeja', h, x: h.colmena[0], y: h.colmena[1], obj: null, pausa: Math.random() * 3, vis: false });
+    for (let k = 0; k < 3; k++) A.push({ tipo: 'huertero', zona: h.c, pol: h.poly, x: h.c[0], y: h.c[1], obj: puntoEn(h.poly), pausa: 0, ini: rnd() * 25, vis: false });
+    for (let k = 0; k < 30; k++) A.push({ tipo: 'abeja', h, x: h.colmena[0], y: h.colmena[1], obj: null, pausa: rnd() * 3, vis: false });
     for (let k = 0; k < 6; k++) { const p = puntoEn(h.poly); A.push({ tipo: 'copeton', h, x: p[0], y: p[1], obj: puntoEn(h.poly), vel: 0.8, vis: true }); }
     for (let k = 0; k < 3; k++) { const p = puntoEn(h.poly); A.push({ tipo: 'mirla', h, x: p[0], y: p[1], obj: puntoEn(h.poly), vel: 0.7, vis: true }); }
     for (let k = 0; k < 2; k++) { const p = puntoEn(h.poly); A.push({ tipo: 'colibri', h, x: p[0], y: p[1], obj: h.flores[0], vel: 6, pausa: 0, vis: true }); }
@@ -201,11 +205,10 @@ export async function iniciarSimulacion(cfg = {}) {
   if (SINP) { for (let i = A.length - 1; i >= 0; i--) if (ACT[A[i].tipo] && ACT[A[i].tipo].p) A.splice(i, 1); for (const k of Object.keys(ACT)) if (ACT[k].p) delete CNT[k]; }
 
   /* ---------- interfaz ---------- */
-  const st0 = { t: H(6, 30), dia: 1, vel: 60, play: true, capa: '', agentes: true, conv: !SINP }; // con estrategias, arrancan apagadas
+  const st0 = { capa: '', agentes: true, conv: !SINP }; // con estrategias, arrancan apagadas · la hora, el día, la pausa y la velocidad son del reloj universal (RELOJ)
   const izq = document.createElement('div'); izq.className = 'gs-pan gs-act'; izq.id = 'gs-izq';
-  izq.innerHTML = `<h3>HORA DEL DÍA <em id="gs-dia">DÍA 1</em></h3><p style="margin:-2px 0 8px;font-size:11px;line-height:1.4;color:var(--ui-tx2,#c3cace)">Un día cualquiera en Kennedy: mueve los carros y las personas. Los <b>años</b> de la propuesta se corren en <b>Escenarios</b>.</p>
-    <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día (24 horas): arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola alrededor: después de las 23:59 sigue la 00:00</em></div></div>
-    <div class="gs-fila"><button id="gs-play">❚❚</button><button data-v="20">x20</button><button data-v="60" class="on">x60</button><button data-v="240">x240</button></div>
+  izq.innerHTML = `<h3>HORA DEL DÍA <em id="gs-dia">DÍA 1</em></h3><p style="margin:-2px 0 8px;font-size:11px;line-height:1.4;color:var(--ui-tx2,#c3cace)">Un solo reloj mueve carros, personas, fauna, cielo y semanas. Pausa y velocidad: en el control de tiempo de arriba.</p>
+    <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Ir a una hora del día: arrastra alrededor (el reloj avanza hasta esa hora)" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola y suelta: la simulación avanza hasta esa hora (el tiempo no se devuelve)</em></div></div>
     <div class="gs-sub">SINTAXIS ESPACIAL <span>DepthmapX</span></div>
     <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="d" class="gs-cambio" title="Qué calles ganan o pierden elección e integración con la propuesta">Cambio</button><button data-c="" class="on">Apagar</button></div>
     <div class="gs-ley" id="gs-ley-sx"><span>baja</span><i></i><span>alta</span></div>
@@ -273,8 +276,9 @@ export async function iniciarSimulacion(cfg = {}) {
   if (SINP) { const ind = der.querySelector('.gs-ind'); if (ind) { ind.previousElementSibling.remove(); ind.remove(); } } // sin indicadores de las P
   tog.onclick = () => { const on = !document.body.classList.contains('gs-abierto'); document.body.classList.toggle('gs-abierto', on); tog.classList.toggle('on', on); if (!on) return; const vis = izq.classList.contains('gs-act'); izq.classList.toggle('gs-act', !vis); der.classList.toggle('gs-act', vis); tog.textContent = vis ? 'AGENTES' : 'SIMULACIÓN'; };
   if (matchMedia('(max-width:760px)').matches) { izq.classList.remove('gs-act'); der.classList.add('gs-act'); }
-  if (M3) T3.reloj = st0; // el cielo de 24 horas (data3d/cielo.js) sigue esta hora
-  // reloj circular de 24 horas (0:00 arriba, sentido horario): se arrastra la bola alrededor y la hora sigue sin cortes por la medianoche
+  if (M3) T3.reloj = vistaT3(RELOJ); // vista del reloj universal (minutos del día, día, play, vel): la leen el cielo, la biótica, el tablero y el tráfico
+  // reloj circular de 24 horas (0:00 arriba, sentido horario): se arrastra la bola a una hora y, al soltar, el reloj AVANZA hasta ella (RELOJ.irAMinuto)
+  let dialMeta = null; // hora elegida en el dial mientras se arrastra (minutos del día)
   const dial = $('gs-dial'), tl = dial;
   {
     const NS = 'http://www.w3.org/2000/svg', el = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
@@ -287,17 +291,16 @@ export async function iniciarSimulacion(cfg = {}) {
     const aguja = el('line', { x1: 60, y1: 60, x2: 60, y2: 16, stroke: '#7dd3fc', 'stroke-width': 1.6, 'stroke-linecap': 'round' }); dial.appendChild(aguja);
     const bola = el('circle', { cx: 60, cy: 12, r: 7.5, fill: '#e0f2fe', stroke: '#0ea5e9', 'stroke-width': 2.5 }); dial.appendChild(bola);
     dial.pintar = (T) => { const a = (T % 1440) / 1440 * 6.2832, [x, y] = pt(48, a), [ax, ay] = pt(40, a); bola.setAttribute('cx', x.toFixed(2)); bola.setAttribute('cy', y.toFixed(2)); aguja.setAttribute('x2', ax.toFixed(2)); aguja.setAttribute('y2', ay.toFixed(2)); dial.setAttribute('aria-valuenow', Math.floor(T)); dial.setAttribute('aria-valuetext', String(Math.floor(T / 60)).padStart(2, '0') + ':' + String(Math.floor(T % 60)).padStart(2, '0')); };
-    const fijar = (nuevo) => { nuevo = ((nuevo % 1440) + 1440) % 1440; const d = nuevo - st0.t; if (d < -720) st0.dia++; else if (d > 720 && st0.dia > 1) st0.dia--; st0.t = nuevo; dial.pintar(st0.t); }; // cruzar la medianoche cambia el día
-    const desdePuntero = (e) => { const r = dial.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); let a = Math.atan2(x, -y); if (a < 0) a += 6.2832; fijar(Math.round(a / 6.2832 * 1440)); };
+    // arrastrar solo elige la hora (la bola la muestra); al soltar, el reloj avanza paso a paso hasta ella (el tiempo no se devuelve)
+    const fijar = (nuevo) => { dialMeta = ((Math.round(nuevo) % 1440) + 1440) % 1440; dial.pintar(dialMeta); };
+    const desdePuntero = (e) => { const r = dial.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); let a = Math.atan2(x, -y); if (a < 0) a += 6.2832; fijar(Math.round(a / 6.2832 * 1440 / 5) * 5); };
     let arr = false;
     dial.addEventListener('pointerdown', (e) => { arr = true; dial.classList.add('arr'); dial.setPointerCapture(e.pointerId); desdePuntero(e); e.preventDefault(); });
     dial.addEventListener('pointermove', (e) => { if (arr) desdePuntero(e); });
-    const soltar = () => { arr = false; dial.classList.remove('arr'); }; dial.addEventListener('pointerup', soltar); dial.addEventListener('pointercancel', soltar);
-    dial.addEventListener('keydown', (e) => { const p = { ArrowRight: 15, ArrowUp: 15, ArrowLeft: -15, ArrowDown: -15, PageUp: 60, PageDown: -60 }[e.key]; if (p) { fijar(st0.t + p); e.preventDefault(); } });
-    dial.pintar(st0.t);
+    const soltar = () => { if (!arr) return; arr = false; dial.classList.remove('arr'); if (dialMeta != null) RELOJ.irAMinuto(dialMeta); dialMeta = null; }; dial.addEventListener('pointerup', soltar); dial.addEventListener('pointercancel', soltar);
+    dial.addEventListener('keydown', (e) => { const p = { ArrowRight: 15, ArrowUp: 15, PageUp: 60 }[e.key]; if (p) { RELOJ.irAMinuto(Math.floor((RELOJ.destino ? (RELOJ.destino.t % DIA) / 60 : RELOJ.minutoDia) / 15) * 15 + p); e.preventDefault(); } if (e.key === 'Escape') RELOJ.cancelarDestino(); });
+    dial.pintar(RELOJ.minutoDia);
   }
-  $('gs-play').onclick = () => { st0.play = !st0.play; $('gs-play').textContent = st0.play ? '❚❚' : '▶'; };
-  izq.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { st0.vel = +b.dataset.v; izq.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); });
   izq.querySelectorAll('#gs-capa button').forEach(b => b.onclick = () => { st0.capa = b.dataset.c; izq.querySelectorAll('#gs-capa button').forEach(x => x.classList.toggle('on', x === b)); vCache = -1; if (M3) capa3D(); });
   $('gs-ag').onclick = (e) => { st0.agentes = !st0.agentes; e.currentTarget.classList.toggle('on', st0.agentes); if (M3) { for (const [k, m] of Object.entries(MALLAS)) m.visible = st0.agentes && !(VEH && VEH.tipos[k]); if (VEH) VEH.visible = st0.agentes; } };
   $('gs-cv-b').onclick = (e) => { st0.conv = !st0.conv; e.currentTarget.classList.toggle('on', st0.conv); vCache = -1;
@@ -362,11 +365,13 @@ export async function iniciarSimulacion(cfg = {}) {
 
   /* ---------- un paso de simulación ---------- */
   const mover2 = (a, vel, dt) => { const dx = a.obj[0] - a.x, dy = a.obj[1] - a.y, d = Math.hypot(dx, dy); if (d < 0.6) return true; const s = Math.min(d, vel * dt); a.x += dx / d * s; a.y += dy / d * s; return false; };
-  function paso(dtR) {
-    const T = st0.t, dtS = st0.play ? dtR * st0.vel / 60 : 0, F = Math.min(st0.vel, 8) * (st0.play ? 1 : 0), dt = dtR * F, dtT = dtS * 60; // dtT: segundos simulados (recorridos con horario) // dtS en minutos simulados; dt en segundos "visuales"
-    if (st0.play) { st0.t += dtS; if (st0.t >= H(24)) { st0.t -= H(24); st0.dia++; for (const k of Object.keys(IND)) IND[k] = 0; } } // reloj de 24 horas: a medianoche empieza el día siguiente
+  // un paso del reloj universal: dtPaso segundos simulados (fijo, 1 s) desde el segundo tSeg. Antes los agentes se movían con un tiempo
+  // «visual» propio (hasta ×8 del real); ahora todo va en segundos simulados: a más velocidad, más pasos por segundo real
+  function paso(dtPaso, tSeg) {
+    const T = (tSeg % DIA) / 60, dtS = dtPaso / 60, dt = dtPaso, dtT = dtPaso; // T: minuto del día al empezar el paso · dtS en minutos · dt y dtT en segundos simulados
     const humanos = [];
     for (const a of A) {
+      a.x0 = a.x; a.y0 = a.y; // posición al empezar el paso: el dibujo interpola entre esta y la nueva
       if (a.red) { // tráfico y peatones
         a.d += a.vel * dt;
         while (a.d > S[a.s].len) { FLUJO[a.veh ? 'v' : 'p'][a.s]++; const s = S[a.s], nodo = a.dir > 0 ? s.b : s.a, r = enTramo(s, a.dir > 0 ? s.len : 0)[2] + (a.dir > 0 ? 0 : Math.PI); a.d -= s.len; const j = siguiente(a, nodo, r); a.dir = S[j].a === nodo ? 1 : -1; a.s = j; }
@@ -377,14 +382,14 @@ export async function iniciarSimulacion(cfg = {}) {
       switch (a.tipo) {
         case 'hab': case 'col': {
           const on = enJornada('P1', T - a.ini); a.vis = on; if (!on) break;
-          if (a.pausa > 0) { a.pausa -= dtS; if (a.pausa <= 0) { IND.residuos += a.tipo === 'col' ? 0.6 : 0.3; IND.registros += Math.random() < 0.7 ? 1 + Math.floor(Math.random() * 3) : 0; } }
-          else { const m = a.vel * dt; a.d = (a.d + a.sentido * m + a.ronda.l.len) % a.ronda.l.len; IND.rondas += a.vel * dtS * 60 / 1000; a.prox -= m; if (a.prox <= 0) { a.pausa = 4 + Math.random() * 8; a.ev = (a.ev || 0) + 1; a.prox = 70 + Math.random() * 110; } }
+          if (a.pausa > 0) { a.pausa -= dtS; if (a.pausa <= 0) { IND.residuos += a.tipo === 'col' ? 0.6 : 0.3; IND.registros += rnd() < 0.7 ? 1 + Math.floor(rnd() * 3) : 0; } }
+          else { const m = a.vel * dt; a.d = (a.d + a.sentido * m + a.ronda.l.len) % a.ronda.l.len; IND.rondas += a.vel * dtS * 60 / 1000; a.prox -= m; if (a.prox <= 0) { a.pausa = 4 + rnd() * 8; a.ev = (a.ev || 0) + 1; a.prox = 70 + rnd() * 110; } }
           const p = sobre(a.ronda.l, a.d); a.x = p[0]; a.y = p[1]; humanos.push(a); break;
         }
         case 'madre': case 'joven': case 'cocinera': case 'huertero': {
           const pk = ACT[a.tipo].p, on = enJornada(pk, T - a.ini); a.vis = on; if (!on) break;
           if (a.pausa > 0) { a.pausa -= dtS; if (a.pausa <= 0) { if (a.tipo === 'madre') IND.hongos += 0.35; if (a.tipo === 'huertero') IND.cosecha += 0.4; } }
-          else if (mover2(a, 0.9, dt)) { a.pausa = 3 + Math.random() * 9; a.ev = (a.ev || 0) + 1; a.obj = a.pol ? puntoEn(a.pol) : cerca(a.zona, a.rz); }
+          else if (mover2(a, 0.9, dt)) { a.pausa = 3 + rnd() * 9; a.ev = (a.ev || 0) + 1; a.obj = a.pol ? puntoEn(a.pol) : cerca(a.zona, a.rz); }
           humanos.push(a); break;
         }
         case 'recu': {
@@ -421,25 +426,25 @@ export async function iniciarSimulacion(cfg = {}) {
         case 'tingua': case 'garza': case 'pato': case 'monjita': {
           const h = cercaHumano(a.x, a.y, a.tipo === 'garza' ? 35 : 25);
           if (h && !a.huye) { a.huye = 1; IND.huidas++; a.ev = (a.ev || 0) + 1; const dx = a.x - h.x, dy = a.y - h.y, d = Math.hypot(dx, dy) || 1; let o = [a.x + dx / d * 60, a.y + dy / d * 60]; if (!dentroPol(o[0], o[1], a.ave.poly)) o = puntoEn(a.ave.poly); a.obj = o; }
-          if (mover2(a, a.huye ? (a.tipo === 'garza' ? 5 : 2) : a.vel, dt)) { a.huye = 0; a.obj = Math.random() < 0.7 ? cerca([a.x, a.y], 25) : puntoEn(a.ave.poly); if (!dentroPol(a.obj[0], a.obj[1], a.ave.poly)) a.obj = puntoEn(a.ave.poly); }
+          if (mover2(a, a.huye ? (a.tipo === 'garza' ? 5 : 2) : a.vel, dt)) { a.huye = 0; a.obj = rnd() < 0.7 ? cerca([a.x, a.y], 25) : puntoEn(a.ave.poly); if (!dentroPol(a.obj[0], a.obj[1], a.ave.poly)) a.obj = puntoEn(a.ave.poly); }
           break;
         }
         case 'abeja': { // pecorea entre 9:00 y 16:00: de la colmena a una flor y de vuelta
           a.vis = T >= H(9) && T < H(16); if (!a.vis) { a.x = a.h.colmena[0]; a.y = a.h.colmena[1]; break; }
           if (a.pausa > 0) { a.pausa -= dtS; break; }
-          if (!a.obj) a.obj = Math.random() < 0.85 ? a.h.flores[Math.floor(Math.random() * a.h.flores.length)] : cerca(a.h.c, 220);
-          if (mover2(a, 5, dt)) { if (a.obj === a.h.colmena) { a.obj = null; a.pausa = 1 + Math.random() * 2; } else { IND.visitas++; IND.polen += 0.02; a.ev = (a.ev || 0) + 1; a.pausa = 0.5 + Math.random(); a.obj = a.h.colmena; } }
+          if (!a.obj) a.obj = rnd() < 0.85 ? a.h.flores[Math.floor(rnd() * a.h.flores.length)] : cerca(a.h.c, 220);
+          if (mover2(a, 5, dt)) { if (a.obj === a.h.colmena) { a.obj = null; a.pausa = 1 + rnd() * 2; } else { IND.visitas++; IND.polen += 0.02; a.ev = (a.ev || 0) + 1; a.pausa = 0.5 + rnd(); a.obj = a.h.colmena; } }
           break;
         }
         case 'copeton': case 'mirla': {
           const h = cercaHumano(a.x, a.y, 12);
           if (h) { const dx = a.x - h.x, dy = a.y - h.y, d = Math.hypot(dx, dy) || 1; a.obj = [a.x + dx / d * 25, a.y + dy / d * 25]; if (!a.huye) { a.huye = 1; IND.huidas++; a.ev = (a.ev || 0) + 1; } }
-          if (mover2(a, a.huye ? 6 : a.vel, dt)) { a.huye = 0; a.obj = puntoEn(a.h.poly); if (a.tipo === 'mirla' && Math.random() < 0.15) { IND.lombricesComidas++; } }
+          if (mover2(a, a.huye ? 6 : a.vel, dt)) { a.huye = 0; a.obj = puntoEn(a.h.poly); if (a.tipo === 'mirla' && rnd() < 0.15) { IND.lombricesComidas++; } }
           break;
         }
         case 'colibri': {
           if (a.pausa > 0) { a.pausa -= dtS; break; }
-          if (mover2(a, a.vel, dt)) { a.pausa = 0.3 + Math.random() * 0.6; a.obj = a.h.flores[Math.floor(Math.random() * a.h.flores.length)]; IND.visitas++; a.ev = (a.ev || 0) + 1; }
+          if (mover2(a, a.vel, dt)) { a.pausa = 0.3 + rnd() * 0.6; a.obj = a.h.flores[Math.floor(rnd() * a.h.flores.length)]; IND.visitas++; a.ev = (a.ev || 0) + 1; }
           break;
         }
       }
@@ -447,6 +452,9 @@ export async function iniciarSimulacion(cfg = {}) {
     // lombrices: transforman el compost en humus (0,3 g por lombriz y día de actividad) [SUP]
     for (const h of HUE) { IND.humus += h.lomb * 0.0003 * dtS / 60 * (T > H(6) && T < H(19) ? 1 : 0.5); h.lomb += h.lomb * 0.00002 * dtS - (IND.lombricesComidas > (h.comidas || 0) ? 1 : 0); h.comidas = IND.lombricesComidas; }
   }
+  // sistema del reloj: lógica de los agentes (no depende de la cámara ni del dibujo) · a medianoche los indicadores del día vuelven a cero
+  RELOJ.registrar({ nombre: 'giro_sim', orden: 10, step: paso, onDia: () => { for (const k of Object.keys(IND)) IND[k] = 0; },
+    hash: () => { let h = 0x811c9dc5; for (const a of A) { h = hashNum(h, a.x); h = hashNum(h, a.y); } for (const k in IND) h = hashNum(h, IND[k]); return h; } });
 
   /* ---------- dibujo de agentes ---------- */
   function dibujarAgentes() {
@@ -527,7 +535,7 @@ export async function iniciarSimulacion(cfg = {}) {
         for (let si = 0; si < nS; si++) { IP0[si] = S[si].i; CP0[si] = S[si].c; } for (const [si, iP, cP] of SP.cambios) { if (si < nS) { IP0[si] = iP; CP0[si] = cP; } }
         const CORA_W = [1132.1, 948.6], pesoC = (x, z) => { const d = Math.hypot(x - CORA_W[0], z - CORA_W[1]); return d <= 600 ? 1 : d >= 2600 ? 0 : 1 - (d - 600) / 2000; };
         const nucleo = (d, R) => Math.exp(-(d / R) * (d / R)), lim = (v) => Math.max(0, Math.min(1, v)), enRango = (v, a, b) => Math.max(a, Math.min(b, v));
-        let MER = [], HUE = [], tEsc = 0, tElec = 0, listo = false; const ahora = () => performance.now();
+        let MER = [], HUE = [], tEsc = 0, tElec = 0, listo = false; const ahora = () => RELOJ.tAnim * 1000; // la aparición de la capa (~8 s) corre con el tiempo de animación del reloj (se detiene en pausa)
         const resumen = { sube: 0, baja: 0, mer: 0, hue: 0, max: 0 };
         const aplicar = () => {
           const pro = T3.escenario === 'proyecto', rampa = pro ? Math.min(1, (ahora() - tEsc) / 8000) : 0, CSx = T3.coraCS || { merc: 20, huer: 10 };
@@ -628,15 +636,16 @@ export async function iniciarSimulacion(cfg = {}) {
     }
     const d = new THREE.Object3D(), n = {};
     T3.giroSim = { A, ACT, OX, OZ, Y0, MALLAS }; // personas y vehículos de la simulación, para seguirlos (data3d/seguir.js)
-    actualizar3D = () => {
+    actualizar3D = (alfa = 1) => { // solo lee el estado: posición interpolada entre el paso anterior (x0, y0) y el actual
       const activos = {}; for (const k in n) n[k] = 0;
       if (VEH) VEH.inicio();
       for (const a of A) {
         const m = MALLAS[a.tipo]; if (!m || a.vis === false || a.x === undefined) { if (a.vis !== false && a.x !== undefined) activos[a.tipo] = (activos[a.tipo] || 0) + 1; continue; }
         activos[a.tipo] = (activos[a.tipo] || 0) + 1;
         if (T3.sumoActivo && (a.tipo === 'carro' || a.tipo === 'moto' || a.tipo === 'camion')) continue; // los dibuja la simulación SUMO
-        const dx = a.x - (a.px ?? a.x), dy = a.y - (a.py ?? a.y); if (dx * dx + dy * dy > 1e-4) a.rot = Math.atan2(dx, dy); a.px = a.x; a.py = a.y;
-        let px = a.x + OX, pz = a.y + OZ;
+        const lerp = a.x0 !== undefined && Math.abs(a.x - a.x0) + Math.abs(a.y - a.y0) < 60, ix = lerp ? a.x0 + (a.x - a.x0) * alfa : a.x, iy = lerp ? a.y0 + (a.y - a.y0) * alfa : a.y; // sin interpolar los saltos (reaparece en otro lugar)
+        const dx = ix - (a.px ?? ix), dy = iy - (a.py ?? iy); if (dx * dx + dy * dy > 1e-4) a.rot = Math.atan2(dx, dy); a.px = ix; a.py = iy;
+        let px = ix + OX, pz = iy + OZ;
         if (VEH && VEH.tipos[a.tipo]) { const r = a.rot || 0, c = VEH.carril(a, a.tipo); px -= Math.cos(r) * c; pz += Math.sin(r) * c; VEH.poner(a, a.tipo, px, Y0 + (T3.alzaVia ? T3.alzaVia(px, pz) : 0), pz, r); } // por su carril, a la derecha
         d.position.set(px, Y0 + (ALTO[a.tipo] || 0) + (T3.alzaVia && ACT[a.tipo].g === 'h' ? T3.alzaVia(px, pz) : 0), pz); // en los puentes suben con la vía d.rotation.set(0, a.rot || 0, 0); d.scale.setScalar(ACT[a.tipo].g === 'n' && !FORMA[a.tipo] ? 2.2 : 1); d.updateMatrix();
         const i = n[a.tipo] = (n[a.tipo] || 0); m.setMatrixAt(i, d.matrix); n[a.tipo] = i + 1;
@@ -721,7 +730,7 @@ export async function iniciarSimulacion(cfg = {}) {
       }
       addEventListener('escenario', () => setTimeout(pintarCora, 80)); setInterval(() => { if (T3.alivio && !T3.alivio.manual) pintarCora(); }, 1000);
       pintarCora();
-      import('./origenes.js?v=2').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
+      import('./origenes.js?v=3').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
       { /* cuántos carros hay en la calle a esta hora (demanda según el reloj: index.html, demandaHora) */
         izq.querySelector('#gs-fc').insertAdjacentHTML('beforebegin', '<div id="gs-dem" style="font-size:10.5px;color:#94a3b8;margin:2px 0 6px"></div>');
         const dem = izq.querySelector('#gs-dem');
@@ -841,19 +850,19 @@ export async function iniciarSimulacion(cfg = {}) {
     T3.anim = { t: 0, dur: 2.2, p0: T3.camera.position.clone(), p1: new THREE.Vector3(OX, 300, OZ - 720), c0: T3.orbit.target.clone(), c1: new THREE.Vector3(OX, 0, OZ) };
   }
 
-  let ult = performance.now(), tPanel = 0;
-  function cuadro() {
-    const ahora = performance.now(), dtR = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+  // dibujo: lo llama el reloj universal después de correr los pasos del cuadro (un solo requestAnimationFrame maestro, en index.html)
+  let tPanel = 0;
+  function cuadro(info) {
+    const dtR = info.dtReal;
     dpr = Math.min(devicePixelRatio || 1, 2);
     if (W !== innerWidth || Hh !== innerHeight) { W = innerWidth; Hh = innerHeight; for (const c of [cv, cv2]) { c.width = Math.round(W * dpr); c.height = Math.round(Hh * dpr); } vCache = -1; }
     if (!M3 && GIRO.v && vCache !== GIRO.v + '|' + GIRO.i) { vCache = GIRO.v + '|' + GIRO.i; dibujarFija(); }
-    paso(dtR);
-    const act = M3 ? actualizar3D() : dibujarAgentes();
+    const act = M3 ? actualizar3D(info.alfa) : dibujarAgentes();
     if ((tPanel -= dtR) <= 0) {
       tPanel = 0.3;
-      const T = st0.t, hh = Math.floor(T / 60), mm = Math.floor(T % 60);
-      $('gs-hora').textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); $('gs-dia').textContent = 'DÍA ' + st0.dia;
-      dial.pintar(T);
+      const T = RELOJ.minutoDia, hh = Math.floor(T / 60), mm = Math.floor(T % 60);
+      $('gs-hora').textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); $('gs-dia').textContent = 'DÍA ' + RELOJ.dia;
+      if (dialMeta == null) dial.pintar(RELOJ.destino ? (RELOJ.destino.t % DIA) / 60 : T); // yendo a una hora: la bola marca la meta
       $('gs-jor').textContent = T < H(4, 45) ? 'Noche' : T < H(5, 40) ? 'Madrugada · alba' : T < H(7) ? 'Amanece · antes de las jornadas' : T < H(11, 30) ? 'Jornada diurna' : T < H(14) ? 'Almuerzo' : T < H(17, 30) ? 'Jornada después del almuerzo' : T < H(18, 30) ? 'Atardecer' : T < H(19, 15) ? 'Anochece' : 'Noche';
       for (const k of Object.keys(ACT)) { const e = $('gs-a-' + k); if (e) e.textContent = (k === 'hongo' ? (T > H(8) ? 600 : 0) : k === 'lombriz' ? Math.round(HUE.reduce((s, h) => s + h.lomb, 0)) : (act[k] || 0)).toLocaleString('es-CO'); }
       const f = (v, u, d = 0) => v.toLocaleString('es-CO', { maximumFractionDigits: d }) + (u ? ' ' + u : '');
@@ -862,7 +871,9 @@ export async function iniciarSimulacion(cfg = {}) {
       $('gs-i-sustrato').textContent = f(IND.sustrato, 'kg'); $('gs-i-hongos').textContent = f(IND.hongos, 'kg', 1); $('gs-i-degust').textContent = f(IND.degust);
       $('gs-i-visitas').textContent = f(IND.visitas); $('gs-i-cosecha').textContent = f(IND.cosecha, 'kg', 1); $('gs-i-humus').textContent = f(IND.humus, 'kg', 1); }
     }
-    requestAnimationFrame(cuadro);
   }
-  requestAnimationFrame(cuadro);
+  RELOJ.alDibujar(cuadro);
+  if (!M3) { // sin la maqueta (giro sobre el render) no hay bucle maestro: este es el único requestAnimationFrame y arranca el reloj
+    const maestro = (ms) => { RELOJ.cuadro(ms); requestAnimationFrame(maestro); }; requestAnimationFrame(maestro); RELOJ.arrancar();
+  }
 }

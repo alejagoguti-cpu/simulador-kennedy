@@ -98,6 +98,7 @@ const PANEL_DER = `
   <div class="p-nota">Modelo exploratorio: las cifras marcadas [SUP] en data3d/propuesta.js son supuestos para discutir, no datos medidos.</div>
 </div>`;
 
+import { RELOJ } from './reloj.js?v=2';
 export function crearPropuesta(ctx) {
   const T3 = ctx.T3(), THREE = T3.THREE, D = ctx.datos;
   const $ = (id) => document.getElementById(id);
@@ -404,7 +405,7 @@ export function crearPropuesta(ctx) {
     ctx.say('Escenario: ' + b.textContent);
   });
   let tRecalc = null;
-  function recalcular() { clearTimeout(tRecalc); tRecalc = setTimeout(() => { S.tDia = 0; nuevoDia(); pintar3D(); }, 120); }
+  function recalcular() { clearTimeout(tRecalc); tRecalc = setTimeout(() => { RELOJ.entrada('propuesta', { ...V }); nuevoDia(); pintar3D(); }, 120); } // «aplicar»: el cambio rige desde ya, sin mover el reloj
 
   /* ---------- resultados ---------- */
   const pct = (v) => (v * 100).toFixed(0) + ' %', kg = (v) => Math.round(v).toLocaleString('es-CO') + ' kg';
@@ -432,13 +433,16 @@ export function crearPropuesta(ctx) {
   /* ---------- cada cuadro ---------- */
   const v3 = new THREE.Vector3();
   function proy(cam, x, y, z, W, H) { v3.set(x, y, z).project(cam); if (v3.z > 1 || v3.x < -1.1 || v3.x > 1.1 || v3.y < -1.1 || v3.y > 1.1) return null; return [(v3.x + 1) * W / 2, (1 - v3.y) * H / 2]; }
+  /* TIEMPO (data3d/reloj.js): un «día» del modelo es un día del reloj universal (onDia; antes 40 s de pared × velocidad del tráfico) y los
+     agentes se mueven en los pasos fijos del reloj (step). update(dt) solo dibuja. */
+  RELOJ.registrar({ nombre: 'propuesta', orden: 70,
+    step: (dt) => { if (!document.body.classList.contains('sim')) return; for (const a of Object.values(AG)) for (const x of a.lista) mover(x, dt, a.vel); },
+    onDia: () => { S.tDia = 0; nuevoDia(); } });
   function update(dt) {
     if (!document.body.classList.contains('sim')) return;
-    const tr = ctx.traf(), vel = tr ? (tr.playing ? (tr.vel || 1) : 0) : 1, dts = dt * vel;
-    if ((S.tDia += dts) >= DIA_S) { S.tDia = 0; nuevoDia(); }
+    S.tDia = (RELOJ.t % 86400) / 86400 * DIA_S; // fracción del día (solo para mostrar)
     for (const [k, a] of Object.entries(AG)) {
       a.lista.forEach((x, i) => {
-        mover(x, dts, a.vel);
         dm.position.set(x.x, 0.5, x.z); dm.rotation.set(0, x.rumbo, 0);
         if (k === 'comp') dm.scale.set(1, 1, 1); else dm.scale.set(a.ancho, a.alto, a.largo);
         dm.updateMatrix(); a.mesh.setMatrixAt(i, dm.matrix);

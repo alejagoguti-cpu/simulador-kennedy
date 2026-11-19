@@ -3,7 +3,9 @@
    E3 Corabastos reducido (Corabastos) · E4 Orgánicos y hongos (distrito biotecnológico) · E5 Corredor biótico (humedales)
    E8 Red distribuida de producción alimentaria (huertas en lotes baldíos, en cubiertas de vivienda en altura y en viviendas, del shapefile de lotes).
    E1 Bavaria Común la dibuja data3d/bavaria_plan.js. E2, E6, E7 y E9 no tienen una ubicación única: desde la leyenda se abre su
-   red de actores. Las capas sobre techos (cubiertas, viviendas) se pintan a la altura de cada edificio; las demás a ras del suelo. */
+   red de actores. Las capas sobre techos (cubiertas, viviendas) se pintan a la altura de cada edificio; las demás a ras del suelo.
+   TIEMPO: etiquetas y pulsos se dibujan en el bucle maestro del reloj universal (data3d/reloj.js); los pulsos usan su tiempo de animación. */
+import { RELOJ } from './reloj.js?v=2';
 export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = null, movil = false }) {
   const D = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/estrategias.json?v=5');
   const esc = D.escala || 0.5, grupo = new THREE.Group(); grupo.name = 'estrategias'; T3.scene.add(grupo);
@@ -53,7 +55,7 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
   const hidroponia = (on) => {
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = !on; // las terrazas son hidropónicas (no camas de tierra)
     if (HIDRO) { HIDRO.ver(on); return; } if (!on) return;
-    if (!HIDRO_P) HIDRO_P = import('./huertas_hidro.js?v=16').then(m => { const e = D.estrategias.find(x => x.id === 'E8'), c = e && e.capas.find(x => /cubiertas/i.test(x.n)); if (!c) return null;
+    if (!HIDRO_P) HIDRO_P = import('./huertas_hidro.js?v=17').then(m => { const e = D.estrategias.find(x => x.id === 'E8'), c = e && e.capas.find(x => /cubiertas/i.test(x.n)); if (!c) return null;
       const techos = (c.techos || []).map(t => ({ W: W2(t.slice(0, -1)), h: t[t.length - 1] / 10 })).filter(t => !dentro || dentro(t.W[0][0], t.W[0][1]));
       return m.iniciarHidroponia({ THREE, T3, techos: (() => { const L = techos.concat(T3.torresTechos || [], T3.techosAltos || []), vistos = new Set(); return L.filter(t => { let x = 0, z = 0; for (const q of t.W) { x += q[0]; z += q[1]; } const k = Math.round(x / t.W.length / 4) + ',' + Math.round(z / t.W.length / 4); if (vistos.has(k)) return false; vistos.add(k); return true; }); })(), movil }); }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er));
   };
@@ -125,9 +127,8 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
       v.copy(t.p).project(cam); const fuera = v.z > 1 || v.x < -1.1 || v.x > 1.1 || v.y < -1.1 || v.y > 1.1;
       t.d.style.display = fuera ? 'none' : 'block'; if (!fuera) { t.d.style.left = ((v.x + 1) / 2 * W).toFixed(1) + 'px'; t.d.style.top = ((1 - v.y) / 2 * H).toFixed(1) + 'px'; }
     }
-    requestAnimationFrame(bucle);
   };
-  requestAnimationFrame(bucle);
+  RELOJ.alDibujar(bucle);
   /* ---------- conexiones entre estrategias (documento maestro, sección 8) ----------
      Arcos entre los lugares de dos estrategias relacionadas; se ven cuando las dos están prendidas. Pulsos de origen a destino
      (en las dos direcciones si la relación es ↔) y una etiqueta con el mecanismo que se investigará. */
@@ -178,8 +179,8 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
   }
   const conexiones = () => { for (const p of PARES) { const v2 = !!(PREN[p.o] && PREN[p.d]); p.gr.visible = v2; if (!v2 && p.et) p.et.style.display = 'none'; } };
   const vc = new THREE.Vector3();
-  const bucleC = () => {
-    const t = performance.now() / 1000;
+  const bucleC = (info) => {
+    const t = info.tAnim; // pulsos: tiempo de animación del reloj (se detienen en pausa)
     for (const p of PARES) {
       if (!p.gr.visible) continue;
       p.curvas.forEach((P, i) => { for (let j = 0; j < 2; j++) { let u = (t * 0.22 + i * 0.173 + j * 0.5) % 1; if (p.bi && j === 1) u = 1 - u; const k = Math.min(P.length - 1, Math.floor(u * (P.length - 1))), q = P[k], o = (i * 2 + j) * 3, c = p.col.clone().lerp(p.col2, u); p.pp[o] = q.x; p.pp[o + 1] = q.y; p.pp[o + 2] = q.z; p.pc[o] = c.r; p.pc[o + 1] = c.g; p.pc[o + 2] = c.b; } });
@@ -187,9 +188,8 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
       if (!p.et) continue;
       vc.copy(p.top).project(T3.camera); const fuera = vc.z > 1 || Math.abs(vc.x) > 1.05 || Math.abs(vc.y) > 1.05; p.et.style.display = fuera ? 'none' : 'block'; if (!fuera) { p.et.style.left = ((vc.x + 1) / 2 * innerWidth).toFixed(1) + 'px'; p.et.style.top = ((1 - vc.y) / 2 * innerHeight).toFixed(1) + 'px'; }
     }
-    requestAnimationFrame(bucleC);
   };
-  requestAnimationFrame(bucleC);
+  RELOJ.alDibujar(bucleC);
   // las 9 estrategias del Excel, con o sin ubicación en el mapa
   const NOM = D.nombres || {}, COL = { E2: '#38bdf8', E6: '#e879f9', E7: '#facc15', E9: '#fb7185' };
   const lista = Object.keys(NOM).filter(k => k !== 'E1').sort((a, b) => +a.slice(1) - +b.slice(1)).map(k => {

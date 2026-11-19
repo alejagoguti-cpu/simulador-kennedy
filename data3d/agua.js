@@ -23,7 +23,7 @@ export async function crearAgua({ THREE, T3 }) {
   const pts = new THREE.Points(pg, pm); pts.renderOrder = 8; pts.frustumCulled = false; g.add(pts);
   // arcos: agua lluvia que va de la cisterna a la huerta comunitaria
   const ap = new Float32Array(n * 6); D.cisternas.forEach((c, i) => { const h = D.huertas[c[2]].p; ap.set([c[0], Y(c[0], c[1]) + 30, c[1], h[0], Y(h[0], h[1]) + 3, h[1]], i * 6); });
-  g.add(await (await import('./red_resaltada.js?v=2')).redResaltada({ THREE, T3, pos: ap, color: AZ, ancho: 2, arco: 0.18 }));
+  g.add(await (await import('./red_resaltada.js?v=3')).redResaltada({ THREE, T3, pos: ap, color: AZ, ancho: 2, arco: 0.18 }));
   // ficha al pasar el cursor por una huerta
   const tip = document.createElement('div'); tip.style.cssText = 'position:fixed;z-index:45;display:none;pointer-events:none;max-width:240px;background:rgba(13,15,18,.9);border:1px solid rgba(95,211,141,.45);border-radius:8px;padding:7px 9px;color:#e9ebec;font:11px/1.4 Inter,system-ui,sans-serif'; document.body.appendChild(tip);
   const v = new THREE.Vector3(), el = T3.renderer.domElement;

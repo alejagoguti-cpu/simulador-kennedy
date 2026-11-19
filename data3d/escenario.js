@@ -7,6 +7,7 @@
      Lo de la propuesta anterior (estrategias E1-E9 en polígonos, huertas en techos/balcones/Bavaria, naves retiradas, sintaxis con
      pasajes, camiones a furgonetas, fauna de huertas, carga desplazada e indicadores) queda APAGADO con T3.PROP; el código sigue
      en sus módulos por si se retoma. */
+import { RELOJ } from './reloj.js?v=2';
 export function iniciarEscenario({ T3, say = () => {} }) {
   const CHOY = '#8fb0c9', CPRO = '#e2a55b';
   // qué de la propuesta anterior se usa (todo apagado mientras se redefine)
@@ -124,7 +125,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
   function distritoBavaria() {
     const pro = T3.escenario === 'proyecto', on = pro && solo === 'bav';
-    if (pro && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=20'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
+    if (pro && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=21'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
     if (DIST) { DIST.ver(on); if (DIST.verHuertas) DIST.verHuertas(pro && solo !== 'col'); } // las huertas de enseñanza de Bavaria se ven SIEMPRE con la propuesta, aunque se mire otra estrategia
   }
@@ -133,7 +134,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('col-cerrar', () => { const sp = $ley().querySelector('[data-s="col"]'); if (solo === 'col' && sp) sp.click(); });
   function redColegios() {
     const on = T3.escenario === 'proyecto' && solo === 'col';
-    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=5').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
+    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=6').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
     if (RED) { RED.ver(on); if (on && !redOn) Promise.resolve(RED.listo).then(() => { if (RED.on) RED.general(); }); if (!RED.pintados) { RED.pintados = true; Promise.resolve(RED.listo).then(() => PUNTOS.filter(p => p.s.id === 'col').forEach((p, i) => { const c = RED.colorDe(i); if (c) p.d.style.setProperty('--c', c); })); } } // cada colegio con el color de su grupo // vista de toda la red cuando llegan los datos
     redOn = on;
   }
@@ -148,7 +149,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   let CALI = null, HBAR = null, pHBar = null;
   /* huertas de barrio (lotes baldíos y parques vecinales): bancales reales, solo con la propuesta (data3d/huertas_barrio.js) */
   const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
-    pHBar = Promise.all([import('./huertas_barrio.js?v=7'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
+    pHBar = Promise.all([import('./huertas_barrio.js?v=8'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
       .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
   /* parches de árboles nativos en parques y junto a las huertas de parque (data3d/parches_arboles.js): solo con la propuesta */
   let PARCH = null, pParch = null;
@@ -162,13 +163,13 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     pMerc = import('./mercados_barrio.js?v=1').then(m => m.crearMercados({ T3, cj })).then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
   const parqueCorabastos = (on) => { if (PCORA) { PCORA.ver(on); return; } if (!on || pPCora) return;
-    pPCora = import('./corabastos_parque.js?v=3').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
-  import('./escenarios_sim.js?v=27').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
-  Promise.all([import('./alivio_cali.js?v=5'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
+    pPCora = import('./corabastos_parque.js?v=4').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
+  import('./escenarios_sim.js?v=28').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  Promise.all([import('./alivio_cali.js?v=6'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;
-    pRProd = import('./red_produccion.js?v=2').then(m => m.crearRedProduccion({ T3, lw, cj })).then(r => { RPROD = r; window.KEN_RPROD = r; RPROD.ver(T3.escenario === 'proyecto' && solo === 'red'); }).catch(e => console.warn('red de producción:', e)); };
+    pRProd = import('./red_produccion.js?v=3').then(m => m.crearRedProduccion({ T3, lw, cj })).then(r => { RPROD = r; window.KEN_RPROD = r; RPROD.ver(T3.escenario === 'proyecto' && solo === 'red'); }).catch(e => console.warn('red de producción:', e)); };
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
     d.style.setProperty('--c', s.c); d.innerHTML = `<b class="pin">${svg(s.id, 15)}</b><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
@@ -184,18 +185,19 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     new Promise(r => { const mira = (k) => { const E = T3.EST; if (E && E.lugar) { const a = E.lugar('E4'), b = E.lugar('E8'); if (a) poner('res', a.c[0], a.c[1]); if (b) poner('red', b.c[0], b.c[1]); r(); } else if (k < 40) setTimeout(() => mira(k + 1), 500); else r(); }; mira(0); })
   ]).then(() => { PUNTOS.forEach(p => { if (!p.d.querySelector('span').textContent) p.d.classList.add('chico'); }); });
   // los puntos se dibujan en pantalla (siempre del mismo tamaño), sobre la posición 3D a 2 m del suelo
-  let raf = 0; const V = new T3.THREE.Vector3();
-  function cuadro() {
-    raf = requestAnimationFrame(cuadro); const cam = T3.camera, W = innerWidth, H = innerHeight;
+  let puntosOn = false; const V = new T3.THREE.Vector3();
+  function cuadro(info) { // se dibuja en el bucle maestro del reloj universal (data3d/reloj.js)
+    if (!puntosOn) return; const cam = T3.camera, W = innerWidth, H = innerHeight;
     const cp = cam.position;
-    if (GCOL && GCOL.visible && !RMQ.matches) GCOL.userData.mv.opacity = 0.34 + 0.14 * Math.sin(performance.now() / 420); // los colegios «respiran»
+    if (GCOL && GCOL.visible && !RMQ.matches) GCOL.userData.mv.opacity = 0.34 + 0.14 * Math.sin(info.tAnim * 2.4); // (tiempo de animación del reloj: se detiene en pausa) los colegios «respiran»
     for (const p of PUNTOS) { if (!p.vis) { if (p.d.style.display !== 'none') p.d.style.display = 'none'; continue; }
       if (p.s.id === 'col') p.d.classList.toggle('cerca', Math.hypot(cp.x - p.x, cp.y, cp.z - p.z) < 1600); // el nombre del colegio solo de cerca
       V.set(p.x, 2 + (T3.alzaVia ? T3.alzaVia(p.x, p.z) : 0), p.z).project(cam);
       const ok = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05; p.d.style.display = ok ? 'flex' : 'none';
       if (ok) p.d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px)`; }
   }
-  function verPuntos(on) { cancelAnimationFrame(raf); if (on) cuadro(); else PUNTOS.forEach(p => { p.d.style.display = 'none'; }); }
+  RELOJ.alDibujar(cuadro);
+  function verPuntos(on) { puntosOn = !!on; if (on) cuadro({ tAnim: RELOJ.tAnim }); else PUNTOS.forEach(p => { p.d.style.display = 'none'; }); }
   // tocar una estrategia de la leyenda: se prende SOLO esa y la cámara va a sus puntos; tocarla otra vez vuelve a mostrar todas.
   // Los colegios no se muestran con todas (son más de cien): solo cuando se escogen.
   function filtrar() {
@@ -236,6 +238,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     huertasBarrio(hu); parchesArboles(hu); redProduccion(pro && solo === 'red'); distritoBavaria(); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
+    if (T3.escenario !== e) RELOJ.entrada('escenario', e); // bitácora de entradas del usuario que cambian la corrida (fase 2: reproducirla)
     T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
     limpiarAnterior(); verPuntos(e === 'proyecto'); resaltarColegios();

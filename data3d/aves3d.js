@@ -322,49 +322,63 @@ export function crearAves(T3, W, lw) {
   };
   const api = { grp, lista: aves, total: aves.length, nadando: totalNad, cuerpos: cuerpos.length, burro: cuerpos.find(c => c.burro) || null, anillo, punto, dentro, distBorde,
     porTipo: TIPOS.map((t, i) => t.id + ':' + aves.filter(b => b.tipo === i).length).join(' ') };
-  api.update = (dt, now) => {
+  /* TIEMPO (data3d/reloj.js): step(dt, t) es la lógica (posición, rumbo, estados, pesca) con paso fijo y azar determinista;
+     dibujar(alfa, tAnim, dtAnim) solo lee ese estado: interpola la posición, y el cabeceo, el balanceo en el agua y las ondas
+     salen del tiempo de animación del reloj (se detienen en pausa). */
+  api.step = (dt, tSeg) => {
+    const now = tSeg; // la garza pescadora sube y baja con el tiempo simulado
+    for (const b of aves) {
+      const t = TIPOS[b.tipo];
+      b.px = b.x; b.pz = b.z; b.py = b.yv; // estado al empezar el paso (el dibujo interpola)
+      if (b.pesca) { volarPescadora(b, dt, now); continue; }
+      if (b.vuelo) { // órbita elíptica sobre el humedal, con alabeo hacia el centro
+        b.ca += b.dir * (b.vel / b.cr) * dt;
+        b.x = b.c.cx + Math.cos(b.ca) * b.cr; b.z = b.c.cz + Math.sin(b.ca) * b.cr * 0.6;
+        b.h = Math.atan2(-Math.sin(b.ca) * b.dir, Math.cos(b.ca) * 0.6 * b.dir); continue;
+      }
+      const pescando = b.fase > 0;
+      b.pausa -= dt;
+      if (b.pausa <= 0 && b.dab <= 0 && !pescando) {
+        b.tt -= dt; if (b.tt <= 0) { b.th = b.h + (R() - 0.5) * 1.8; b.tt = 2 + R() * 6; if (R() < (t.mov === 'camina' ? 0.6 : 0.2)) b.pausa = 1.5 + R() * (t.mov === 'camina' ? 9 : 4); }
+        b.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, giro(b.h, b.th)));
+        const nx = b.x + Math.sin(b.h) * b.vel * dt, nz = b.z + Math.cos(b.h) * b.vel * dt;
+        if ((++b.n3 || (b.n3 = 1)) % 3 === 0 || b.fuera) { b.fuera = !dentro(nx, nz, b.c.pts); }
+        if (b.fuera) { b.th = b.h + Math.PI * (0.7 + R() * 0.6); b.h += 0.15; b.fuera = false; } else { b.x = nx; b.z = nz; }
+      }
+      if (t.mov === 'nada') {
+        if (b.tipo !== T.focha && b.tipo !== T.tingua) { // los patos meten la cabeza al agua (pico y cola arriba) de vez en cuando
+          b.sigDab -= dt; if (b.sigDab <= 0 && b.dab <= 0) { b.dab = 2.2; b.sigDab = 12 + R() * 35; }
+          else if (b.dab > 0) b.dab = Math.max(0, b.dab - dt);
+        }
+      } else { // garzas de la orilla: se quedan quietas al acecho, dan la estocada y se tragan el pez
+        b.sigPesca -= dt;
+        if (b.sigPesca <= 0 && !pescando) { b.fase = 1; b.tf = 0; b.sigPesca = 14 + R() * 30; }
+        if (pescando) {
+          b.tf += dt; const tf = b.tf;
+          if (tf > 1.35 && !b.pez && tf < 2.0) { b.pez = true; anillo(b.x + Math.sin(b.h) * 0.4, b.z + Math.cos(b.h) * 0.4); }
+          if (tf > 3.4) { b.fase = 0; b.pez = false; }
+          else if (tf > 3.0) b.pez = false; // se lo traga
+        }
+      }
+    }
+  };
+  api.hash = () => { let h = 0x811c9dc5; for (const b of aves) { h = Math.imul((h ^ (Math.round(b.x * 1000) | 0)) >>> 0, 0x01000193) >>> 0; h = Math.imul((h ^ (Math.round(b.z * 1000) | 0)) >>> 0, 0x01000193) >>> 0; } return h; };
+  api.dibujar = (alfa = 1, now = 0, dtAnim = 0) => {
     nPez = 0;
     for (const b of aves) {
       const t = TIPOS[b.tipo];
+      const li = b.px !== undefined && Math.abs(b.x - b.px) + Math.abs(b.z - b.pz) < 60, x = li ? b.px + (b.x - b.px) * alfa : b.x, z = li ? b.pz + (b.z - b.pz) * alfa : b.z;
       let y = b.c.y, pitch = 0, roll = 0;
-      if (b.pesca) {
-        volarPescadora(b, dt, now); y = b.yv; pitch = b.pit; roll = b.rol;
-      } else if (b.vuelo) { // órbita elíptica sobre el humedal, con alabeo hacia el centro
-        b.ca += b.dir * (b.vel / b.cr) * dt;
-        b.x = b.c.cx + Math.cos(b.ca) * b.cr; b.z = b.c.cz + Math.sin(b.ca) * b.cr * 0.6;
-        b.h = Math.atan2(-Math.sin(b.ca) * b.dir, Math.cos(b.ca) * 0.6 * b.dir);
-        y = b.alt + Math.sin(now * 0.4 + b.ph) * 2.5; roll = -b.dir * 0.3; pitch = Math.sin(now * (b.fr || 3) + b.ph) * 0.05;
-      } else {
-        const pescando = b.fase > 0;
-        b.pausa -= dt;
-        if (b.pausa <= 0 && b.dab <= 0 && !pescando) {
-          b.tt -= dt; if (b.tt <= 0) { b.th = b.h + (R() - 0.5) * 1.8; b.tt = 2 + R() * 6; if (R() < (t.mov === 'camina' ? 0.6 : 0.2)) b.pausa = 1.5 + R() * (t.mov === 'camina' ? 9 : 4); }
-          b.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, giro(b.h, b.th)));
-          const nx = b.x + Math.sin(b.h) * b.vel * dt, nz = b.z + Math.cos(b.h) * b.vel * dt;
-          if ((++b.n3 || (b.n3 = 1)) % 3 === 0 || b.fuera) { b.fuera = !dentro(nx, nz, b.c.pts); }
-          if (b.fuera) { b.th = b.h + Math.PI * (0.7 + R() * 0.6); b.h += 0.15; b.fuera = false; } else { b.x = nx; b.z = nz; }
-        }
-        if (t.mov === 'nada') {
-          y = b.c.y + 0.012 + Math.sin(now * 1.7 + b.ph) * 0.008; roll = Math.sin(now * 1.3 + b.ph) * 0.03;
-          if (b.tipo !== T.focha && b.tipo !== T.tingua) { // los patos meten la cabeza al agua (pico y cola arriba) de vez en cuando
-            b.sigDab -= dt; if (b.sigDab <= 0 && b.dab <= 0) { b.dab = 2.2; b.sigDab = 12 + R() * 35; }
-            if (b.dab > 0) { b.dab -= dt; pitch = 0.9 * Math.sin(Math.min(1, (2.2 - b.dab) / 0.5) * Math.PI / 2) * Math.min(1, b.dab / 0.5); }
-          }
-        } else {
-          y = b.c.y;
-          // garzas de la orilla: se quedan quietas al acecho, dan la estocada y se tragan el pez
-          b.sigPesca -= dt;
-          if (b.sigPesca <= 0 && !pescando) { b.fase = 1; b.tf = 0; b.sigPesca = 14 + R() * 30; }
-          if (pescando) {
-            b.tf += dt; const tf = b.tf;
-            pitch = tf < 1.0 ? 0.12 * (tf / 1.0) : tf < 1.5 ? 0.12 + 0.75 * Math.sin((tf - 1.0) / 0.5 * Math.PI / 2) : tf < 2.0 ? 0.87 - 0.75 * ((tf - 1.5) / 0.5) : 0.12 * (1 - (tf - 2.0) / 1.0);
-            if (tf > 1.35 && !b.pez && tf < 2.0) { b.pez = true; anillo(b.x + Math.sin(b.h) * 0.4, b.z + Math.cos(b.h) * 0.4); }
-            if (tf > 3.4) { b.fase = 0; b.pez = false; }
-            else if (tf > 3.0) b.pez = false; // se lo traga
-          }
-        }
+      if (b.pesca) { y = b.py != null ? b.py + (b.yv - b.py) * alfa : b.yv; pitch = b.est === 'orbita' ? Math.sin(now * (b.fr || 3) + b.ph) * 0.05 : b.est === 'aprox' ? 0.12 : b.est === 'pesca' ? 0.35 : 0; roll = b.rol; }
+      else if (b.vuelo) { y = b.alt + Math.sin(now * 0.4 + b.ph) * 2.5; roll = -b.dir * 0.3; pitch = Math.sin(now * (b.fr || 3) + b.ph) * 0.05; }
+      else if (t.mov === 'nada') {
+        y = b.c.y + 0.012 + Math.sin(now * 1.7 + b.ph) * 0.008; roll = Math.sin(now * 1.3 + b.ph) * 0.03;
+        if (b.dab > 0) { const dab = Math.max(0, b.dab - alfa); pitch = 0.9 * Math.sin(Math.min(1, (2.2 - dab) / 0.5) * Math.PI / 2) * Math.min(1, dab / 0.5); }
+      } else if (b.fase > 0) { // estocada de la garza: el cabeceo sale del tiempo de pesca (interpolado dentro del paso)
+        const tf = b.tf + alfa;
+        pitch = tf < 1.0 ? 0.12 * (tf / 1.0) : tf < 1.5 ? 0.12 + 0.75 * Math.sin((tf - 1.0) / 0.5 * Math.PI / 2) : tf < 2.0 ? 0.87 - 0.75 * ((tf - 1.5) / 0.5) : Math.max(0, 0.12 * (1 - (tf - 2.0) / 1.0));
       }
-      d.position.set(b.x, y, b.z); d.rotation.set(pitch, b.h, roll); d.scale.setScalar(b.esc); d.updateMatrix();
+      d.position.set(x, y, z); d.rotation.set(pitch, b.h, roll); d.scale.setScalar(b.esc); d.updateMatrix();
       mallas[b.tipo].setMatrixAt(b.k, d.matrix);
       if (b.pez) { // el pez cuelga del pico
         if (b.vuelo) ponerPez(d.matrix, 0, -0.01, 0.5); else ponerPez(d.matrix, 0, 1.0, 0.47);
@@ -372,12 +386,14 @@ export function crearAves(T3, W, lw) {
     }
     mallas.forEach(m => { m.instanceMatrix.needsUpdate = true; });
     peces.count = nPez; peces.instanceMatrix.needsUpdate = true;
-    for (const m of anillos) {
+    for (const m of anillos) { // ondas en el agua: decorativas, con el tiempo de animación del reloj
       if (!m.visible) continue;
-      const u = m.userData; u.t += dt;
+      const u = m.userData; u.t += dtAnim;
       if (u.t > 1.6) { m.visible = false; continue; }
       const k = u.t / 1.6; m.scale.setScalar(0.6 + k * 5); m.material.opacity = 0.75 * (1 - k) * (1 - k);
     }
   };
+  // compatibilidad (modo pájaro): un paso y un dibujo
+  api.update = (dt, now) => { api.step(dt, now); api.dibujar(1, now, dt); };
   return api;
 }

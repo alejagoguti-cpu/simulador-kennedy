@@ -16,7 +16,11 @@
    - mamíferos, reptiles: caminata correlacionada con atractor de ámbito hogareño (clase L8); la comadreja persigue roedores y ranas.
    - rana: saltos cortos en la orilla.  Caracol: casi inmóvil.
    Red realizada: cuando un agente encuentra a otro agente o a un árbol de una especie con la que tiene relación en la red,
-   se dibuja la arista (color del tipo de interacción) y la línea sigue a los dos mientras dure el encuentro. */
+   se dibuja la arista (color del tipo de interacción) y la línea sigue a los dos mientras dure el encuentro.
+   TIEMPO: sistema del reloj universal (data3d/reloj.js). step(1 s) mueve la fauna y rehace la red con azar con semilla, SIEMPRE
+   (también con la red oculta: el estado no depende de si se dibuja). El dibujo solo lee e interpola posiciones; el aleteo y los
+   pulsos usan el tiempo de animación del reloj (se detienen en pausa). */
+import { RELOJ, hashNum } from './reloj.js?v=2';
 
 const SVG = { // íconos de los tipos de interacción (mismo orden que la red)
   0: '<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',
@@ -89,11 +93,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const [{ LineSegments2 }, { LineSegmentsGeometry }, { LineMaterial }] = await Promise.all([import('three/addons/lines/LineSegments2.js'), import('three/addons/lines/LineSegmentsGeometry.js'), import('three/addons/lines/LineMaterial.js')]);
   const [D, B, TR, PQ] = await Promise.all(['data3d/giro_sim.json', 'data3d/biotica.json?v=2', 'data3d/trees.json', 'data3d/parques.json'].map(u => (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))(u)));
   const [BV, BA, CO] = await Promise.all(['data3d/bavaria.json?v=2', 'data3d/bavaria_arboles.json?v=2', 'data3d/corabastos.json?v=3'].map(u => (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))(u).catch(() => null))); // Bavaria y Corabastos: también son hábitat
-  const rnd = Math.random, gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283 * v); };
+  const rnd = RELOJ.azar('biotica'), gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283 * v); }; // azar con semilla del reloj universal
   const TIPOS = B.tipos, COLT = TIPOS.map(t => new THREE.Color(t.c));
   const GY = (T3.sueloY != null && T3.sueloY > 0) ? T3.sueloY + 0.02 : Y0; // con la foto real (sueloY 0,3) los animales pisan la foto, no flotan 1,7 m // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
-  // actividad de cada especie a la hora del reloj de la simulación (T3.reloj): al terminar cada pausa, el animal sigue en reposo con probabilidad 1 - actividad
-  const AC = {}, horaSim = () => { const r = T3.reloj; return r && r.t >= 0 ? (r.t / 60) % 24 : 9; };
+  // actividad de cada especie a la hora del reloj universal (la del paso que corre): al terminar cada pausa, el animal sigue en reposo con probabilidad 1 - actividad
+  let tPaso = RELOJ.t; const AC = {}, horaSim = () => (tPaso % 86400) / 3600;
   const actualizarAC = () => { const h = horaSim(); for (const k of Object.keys(ESP)) AC[k] = actividad(k, h); }; actualizarAC();
   const despierta = (a) => { if (a.huye || rnd() < AC[a.e]) { a.duerme = false; return true; } a.duerme = true; return false; };
 
@@ -417,7 +421,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (a.st === 'liba') { a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.4 + Math.sin(a.flap * 0.03) * 0.2; a.z = a.arb.z + Math.sin(a.ang) * 1.4; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
       if ((a.t -= dt) > 0) return; a.ev++; if (--a.flores <= 0) { a.vuelta = true; vuelo(a, a.colmena[0], GY + 1, a.colmena[1], ESP.abeja.v, 2.5); } else otraFlor(); return; }
     const f = a.f; f.s += f.v * dt; const u = Math.min(1, f.s / f.d), px = a.x, pz = a.z;
-    a.x = f.x0 + (f.x1 - f.x0) * u + Math.sin(a.flap * 0.02) * 0.3; a.z = f.z0 + (f.z1 - f.z0) * u; a.y = f.y0 + (f.y1 - f.y0) * u + Math.sin(Math.PI * u) * f.arco; girarA(a, a.x - px, a.z - pz, dt, 14); a.vel = f.v;
+    a.x = f.x0 + (f.x1 - f.x0) * u + Math.sin(tPaso * 0.37 + a.id) * 0.3; /* zigzag del vuelo con el tiempo del paso (antes con el aleteo del dibujo) */ a.z = f.z0 + (f.z1 - f.z0) * u; a.y = f.y0 + (f.y1 - f.y0) * u + Math.sin(Math.PI * u) * f.arco; girarA(a, a.x - px, a.z - pz, dt, 14); a.vel = f.v;
     if (u >= 1) { if (a.vuelta) { a.vuelta = false; a.st = 'colmena'; a.t = 6 + rnd() * 18; a.arb = null; } else { a.st = 'liba'; a.t = 2 + rnd() * 3; } }
   }
   function moverLombriz(a, dt) { // casi quieta; a ratos se mete en la tierra y vuelve a salir
@@ -461,15 +465,15 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (a.duerme) return L.filter(v => v.t === 4 || v.t === 6).slice(0, 5); // en reposo solo quedan el refugio y el dosel donde duerme
     return L.slice(0, 5);
   }
-  let iEnc = 0, tIdx = 0;
+  let iEnc = 0, tIdx = 0; const REFRESCO_RED = 30, VIDA_LINK = REFRESCO_RED + 2; // s simulados
   function actualizarRed(dt) {
-    if ((tIdx -= dt) <= 0) { tIdx = 0.4; indexar(); }
-    const n = Math.max(1, Math.ceil(AG.length * Math.min(dt, 0.1) * 1.5)); // cada agente rehace sus conexiones ~1,5 veces por segundo, sin importar los cuadros por segundo (antes: por cuadro, y con el 3D pesado había menos conexiones)
+    if ((tIdx -= dt) <= 0) { tIdx = 2; indexar(); } // índice espacial de los agentes: cada 2 s simulados
+    const n = Math.max(1, Math.min(AG.length, Math.ceil(AG.length * dt / REFRESCO_RED))); // cada agente rehace sus conexiones una vez cada REFRESCO_RED s SIMULADOS (3.194 agentes: ~213 por paso; rehacer todos en cada paso costaba ~116 ms)
     for (let k = 0; k < n; k++) {
       const a = AG[iEnc++ % AG.length], claves = [];
       for (const v of conexiones(a)) {
         const kb = v.b.id !== undefined ? 'a' + v.b.id : 'f' + v.b.x.toFixed(1) + v.b.z.toFixed(1), key = a.id + '|' + kb; claves.push(key);
-        const L = LINKS.get(key); if (L) L.vivo = 1.6; else LINKS.set(key, { a, b: v.b, t: v.t, al: 0, vivo: 1.6, r: v.r, f: v.f });
+        const L = LINKS.get(key); if (L) L.vivo = VIDA_LINK; else LINKS.set(key, { a, b: v.b, t: v.t, al: 0, vivo: VIDA_LINK, r: v.r, f: v.f });
       }
       a.links = claves;
     }
@@ -579,14 +583,15 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   /* ---------- instancias ---------- */
   const m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), e4 = new THREE.Euler(), v4 = new THREE.Vector3(), s4 = new THREE.Vector3(), w4 = new THREE.Matrix4(), w5 = new THREE.Matrix4();
   const OCULTO = new THREE.Matrix4().makeScale(0, 0, 0);
-  function instancias(dt) {
+  function instancias(dt, alfa = 1) { // dt: tiempo de animación del reloj (aleteo); alfa: interpolación entre el paso anterior y el actual
     const n = {}; for (const k in MAL) n[k] = 0;
     for (const a of AG) {
       const Mk = MAL[a.e], i = n[a.e]++, e = ESP[a.e];
       if (!a.vis || !ESTADO.agentes) { Mk.cu.setMatrixAt(i, OCULTO); if (Mk.al) { Mk.al.setMatrixAt(i * 2, OCULTO); Mk.al.setMatrixAt(i * 2 + 1, OCULTO); } continue; }
       const vuela = a.st === 'vuelo' || a.st === 'liba' || a.st === 'planea' || a.st === 'picada' || a.st === 'sube' || (a.e === 'colibri') || (a.e === 'abeja' && a.st !== 'colmena');
       const bob = !vuela && a.vel > 0.05 ? Math.abs(Math.sin(a.flap * 0.5)) * 0.04 * Mk.s * (e.ave ? e.ave.len : 0.1) : 0;
-      e4.set(0, a.rot, vuela ? -a.pitch : 0, 'YXZ'); q4.setFromEuler(e4); v4.set(a.x, a.y + bob, a.z); s4.setScalar(Mk.s);
+      const li = a.x0 !== undefined && Math.abs(a.x - a.x0) + Math.abs(a.z - a.z0) < 80, ix = li ? a.x0 + (a.x - a.x0) * alfa : a.x, iy = li ? a.y0 + (a.y - a.y0) * alfa : a.y, iz = li ? a.z0 + (a.z - a.z0) * alfa : a.z;
+      e4.set(0, a.rot, vuela ? -a.pitch : 0, 'YXZ'); q4.setFromEuler(e4); v4.set(ix, iy + bob, iz); s4.setScalar(Mk.s);
       m4.compose(v4, q4, s4); Mk.cu.setMatrixAt(i, m4);
       if (Mk.al) {
         if (!vuela) { Mk.al.setMatrixAt(i * 2, OCULTO); Mk.al.setMatrixAt(i * 2 + 1, OCULTO); }
@@ -843,33 +848,39 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     cancelAnimationFrame(animRed); animRed = requestAnimationFrame(cuadro);
   }
 
-  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0, tOc = 0, dtI = 0;
-  function cuadro() {
-    const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
-    // red biótica oculta (grupo apagado, o sin líneas ni agentes): no se simula ni se suben buffers; solo se recuenta cada ~1 s para los paneles
-    if (!grupo.visible || (!ESTADO.on && ESTADO.agentes === false)) {
-      requestAnimationFrame(cuadro);
-      if ((tOc += dt) >= 1) { tOc = 0; actualizarRed(0.1); dibujarRed(ahora / 1000, true); TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); }
-      return;
-    }
-    tOc = 0;
-    if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); } VER_PRO = ESTADO.escenario !== 'hoy';
+  /* ---------- paso del reloj universal (lógica: siempre, se vea o no la red) ---------- */
+  let tUI = 0, tPot = 0, nCuadro = 0, tOc = 0, dtI = 0;
+  function paso(dt, t) {
+    tPaso = t;
+    if (t % 60 === 0) actualizarAC(); // actividad por especie: cada minuto simulado
+    VER_PRO = ESTADO.escenario !== 'hoy';
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
+      a.x0 = a.x; a.y0 = a.y; a.z0 = a.z; // posición al empezar el paso (el dibujo interpola)
       if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
-      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a._rp ?? (a._rp = Math.random())) > (ESTADO.proFrac ?? 1)) { /* la fauna de las huertas llega año a año (proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
-      // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden
-      if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = Math.random()), fuera = r > ESTADO.fauna;
+      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id))) > (ESTADO.proFrac ?? 1)) { /* la fauna de las huertas llega año a año (proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden (sorteo fijo por id)
+      if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = RELOJ.azarDe('bio-fauna', a.id)), fuera = r > ESTADO.fauna;
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }
       if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
-    actualizarRed(dt); dtI += dt; nCuadro = (nCuadro + 1) % 2;
+    actualizarRed(dt);
+  }
+  RELOJ.registrar({ nombre: 'biotica', orden: 20, step: paso,
+    hash: () => { let h = 0x811c9dc5; for (const a of AG) { h = hashNum(h, a.x); h = hashNum(h, a.y); h = hashNum(h, a.z); } return hashNum(h, LINKS.size); } });
+  /* ---------- dibujo: solo lee el estado (lo llama el reloj después de los pasos del cuadro) ---------- */
+  RELOJ.alDibujar((info) => {
+    const dt = info.dtReal, tiempo = info.tAnim;
+    // red biótica oculta (grupo apagado, o sin líneas ni agentes): no se suben buffers; solo se recuenta cada ~1 s para los paneles
+    if (!grupo.visible || (!ESTADO.on && ESTADO.agentes === false)) {
+      if ((tOc += dt) >= 1) { tOc = 0; dibujarRed(tiempo, true); TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); }
+      return;
+    }
+    tOc = 0; dtI += info.dtAnim; nCuadro = (nCuadro + 1) % 2;
     // matrices de los animales cada dos cuadros si la cámara está lejos (a esa distancia no se nota); dtI acumula el tiempo para el aleteo
     const lejosCam = T3.orbit && T3.camera.position.distanceTo(T3.orbit.target) > 700;
-    if (!lejosCam || nCuadro === 1) { instancias(dtI); dtI = 0; }
-    if (nCuadro === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
+    if (!lejosCam || nCuadro === 1) { instancias(dtI, info.alfa); dtI = 0; }
+    if (nCuadro === 0) dibujarRed(tiempo); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
-    requestAnimationFrame(cuadro);
-  }
-  requestAnimationFrame(cuadro);
+  });
   return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
 }
