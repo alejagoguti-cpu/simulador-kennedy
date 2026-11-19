@@ -14,7 +14,7 @@ export const PAR = {
 // SIMST.t puede pasar de SEM; los modelos de abajo siguen siendo los de 10 años del documento (los usa el tablero). semilla = réplica que se ve en el mapa
 // SIMST.t (semanas, con fracción) ya NO es un reloj propio: se deriva del reloj universal (data3d/reloj.js): 1 semana = 7 días del reloj.
 // No se puede escribir (no hay saltos de año ni de semana); para avanzar se usa el reloj (RELOJ.irA / avanzar).
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 export const SIMST = { esc: 'C', semilla: 1 };
 Object.defineProperty(SIMST, 't', { enumerable: true, get: () => RELOJ.semanas, set: (v) => { console.warn('SIMST.t es del reloj universal: no se escribe (se pidió', v, ')'); } });
 export const avisar = (origen) => dispatchEvent(new CustomEvent('sim-cambio', { detail: { origen } }));

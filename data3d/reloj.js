@@ -18,7 +18,15 @@
      por segundo ni de la cámara (los sistemas que sí dependen de la cámara se declaran con dependeCamara: true).
    · Un sistema que se registra tarde se pone al día solo (corre sus pasos desde T0 hasta el t actual) para no depender del orden de carga.
    · Sin DOM: este módulo corre igual en un Web Worker o en Node (la interfaz está en data3d/reloj_ui.js).
-   Fase 2 (salto en segundo plano por lotes, con progreso y cancelar, y pruebas de hash): usar avanzar(n), hash() y entradas. */
+   · SALTO SIN DIBUJO (saltar(n), botón «+2 h»): corre la lógica real de TODOS los sistemas, paso por paso (el mismo R.paso() que a
+     velocidad normal), por lotes de hasta ~40 ms / 600 pasos; entre lote y lote cede el hilo (MessageChannel y, cada ~200 ms, un cuadro
+     para que se pinte la barra). Mientras salta, avanzarCuadro no corre pasos y el bucle maestro no dibuja. Cancelar deja el estado en un
+     paso entero (como si se hubiera corrido hasta ahí). Antes de empezar se esperan los preparativos registrados (prepararSalto: p. ej.
+     bajar toda la grabación de tráfico). Al terminar vuelve la velocidad y la pausa que había y avisa 'salto-fin' (la capa gráfica se pone al día).
+   · ENTRADAS: todo lo que cambia la corrida se anota con entrada(tipo, datos) en el t en que se aplica (siempre entre dos pasos). Para
+     reproducirla en otra corrida: manejar(tipo, fn) registra cómo se aplica y programar(t, tipo, datos) la aplica justo antes del paso t,
+     sea dibujando, sin dibujar o a cualquier velocidad.
+   · ?reloj=quieto en la URL: el reloj no arranca solo (las pruebas lo arrancan con arrancar(true) cuando todo cargó: mismo estado inicial). */
 
 export const DT = 1;                                   // segundos simulados por paso
 export const DIA = 86400, SEMANA = 7 * DIA, AÑO = 52 * SEMANA; // en pasos (DT = 1 s)
@@ -35,9 +43,20 @@ export function hashNum(h, v) { return Math.imul((h ^ (Math.round((+v || 0) * 10
 const mezclar = (a, b) => { let h = Math.imul((a ^ (b + 0x9e3779b9 + (a << 6) + (a >>> 2))) >>> 0, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };
 const pad = (n) => String(n).padStart(2, '0');
 
-export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, presupuestoMs = 14 } = {}) {
+// ceder el hilo entre lotes del salto: MessageChannel (no espera los 4 ms mínimos de setTimeout); sin él, setTimeout
+let canalCeder = null;
+const colaCeder = [];
+function ceder() {
+  if (typeof MessageChannel === 'undefined') return new Promise(r => setTimeout(r, 0));
+  if (!canalCeder) { canalCeder = new MessageChannel(); canalCeder.port1.onmessage = () => { const f = colaCeder.shift(); if (f) f(); }; }
+  return new Promise(r => { colaCeder.push(r); canalCeder.port2.postMessage(0); });
+}
+// ceder hasta el próximo cuadro (para que el navegador pinte la barra de progreso); sin requestAnimationFrame, como ceder()
+const cederCuadro = () => typeof requestAnimationFrame === 'undefined' ? ceder() : new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+
+export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, presupuestoMs = 14, retenido = false } = {}) {
   const ahoraMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  const S = [], DIB = [], OYE = [];
+  const S = [], DIB = [], OYE = [], PREP = [], MAN = {}, PROG = [];
   const R = {
     DT, DIA, SEMANA, AÑO, T0: t0, VELOCIDADES,
     semilla, t: t0, vel, pausa: false, arrancado: false,
@@ -46,8 +65,12 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
     // registro de lo que pasa en cada cuadro (para la interfaz y la medición)
     stats: { pasosCuadro: 0, msCuadro: 0, velEfectiva: 0, recortes: 0, ultimoRecorte: -1, motivo: '' },
     destino: null,       // «ir a»: corre a la máxima velocidad sostenible hasta este t y vuelve a la velocidad anterior
-    entradas: [],        // bitácora de entradas del usuario que cambian la corrida (t, tipo, datos): para reproducirla en la fase 2
+    entradas: [],        // bitácora de entradas del usuario que cambian la corrida (t, tipo, datos): para reproducirla (programar)
     sistemas: S,
+    salto: null,         // salto sin dibujo en curso: { desde, hasta, t, pasos, fase, cancelado, ms… } (saltar)
+    ultimoSalto: null,   // el último salto terminado o cancelado (para la interfaz y las pruebas)
+    detenerEn: null,     // pruebas: al llegar a este t, en cualquier modo, el reloj se pausa justo antes de correr ese paso
+    retenido,            // ?reloj=quieto: arrancar() no hace nada hasta arrancar(true)
 
     /* ---------- derivados del tiempo ---------- */
     get seg() { return R.t * DT; },
@@ -91,6 +114,7 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
     /* ---------- un paso y N pasos (sin dibujar) ---------- */
     paso() {
       const t = R.t;
+      if (PROG.length && PROG[0].t <= t) aplicarProgramadas(t); // entradas reproducidas: justo antes del paso t, en cualquier modo
       for (let i = 0; i < S.length; i++) { const s = S[i]; if (s.step) { s.step(DT, t); } }
       R.t = t + 1;
       if (R.t % DIA === 0) { const d = R.t / DIA; for (const s of S) if (s.onDia) s.onDia(d); if (R.t % SEMANA === 0) { const w = R.t / SEMANA; for (const s of S) if (s.onSemana) s.onSemana(w); } }
@@ -110,15 +134,58 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
       return { pasos: n, ms: ahoraMs() - m0, porSistema: porSis };
     },
     // hash del estado de todos los sistemas que lo saben dar (pruebas de determinismo)
-    hash() { let h = mezclar(R.t >>> 0, R.semilla >>> 0); const det = {}; for (const s of S) if (s.hash) { const v = s.hash() >>> 0; det[s.nombre] = v; h = mezclar(h, v); } return { t: R.t, h, sistemas: det }; },
+    // Los sistemas con dependeCamara (su lógica mira la cámara) NO entran en h: se informan aparte en «excluidos».
+    hash() {
+      let h = mezclar(R.t >>> 0, R.semilla >>> 0); const det = {}, excluidos = {}, sinHash = [];
+      for (const s of S) { if (!s.hash) { sinHash.push(s.nombre); continue; } const v = s.hash() >>> 0; if (s.dependeCamara) { excluidos[s.nombre] = v; continue; } det[s.nombre] = v; h = mezclar(h, v); }
+      return { t: R.t, h, sistemas: det, excluidos, sinHash };
+    },
+
+    /* ---------- salto sin dibujo (botón «+2 h») ----------
+       saltar(n): corre n pasos con la lógica de todos los sistemas, por lotes, cediendo el hilo entre lotes. Devuelve una promesa con el
+       resumen { desde, hasta, t, pasos, ms, cancelado }. Durante el salto: avanzarCuadro no corre pasos, el bucle maestro no dibuja y los
+       controles que cambian la corrida (velocidad, pausa, ir a) no hacen nada. */
+    prepararSalto(fn) { PREP.push(fn); return () => { const i = PREP.indexOf(fn); if (i >= 0) PREP.splice(i, 1); }; },
+    get saltando() { return !!R.salto; },
+    cancelarSalto() { if (R.salto && !R.salto.cancelado) { R.salto.cancelado = true; avisar('salto-progreso'); } },
+    async saltar(n, { presupuestoMs: pms = 40, maxLote = 600, alProgreso = null } = {}) {
+      n = Math.floor(n); if (R.salto || !(n > 0)) return null;
+      const J = { desde: R.t, hasta: R.t + n, t: R.t, pasos: 0, n, fase: 'preparando', cancelado: false, avisos: [], ms: 0, msPrep: 0,
+        vel: R.vel, pausa: R.pausa, m0: ahoraMs() };
+      if (R.destino) { R.destino = null; avisar('destino'); } // un «ir a» en curso se reemplaza por el salto
+      R.salto = J; R.entrada('salto', { n }); avisar('salto');
+      for (const f of PREP) { if (J.cancelado) break; try { await f(J); } catch (e) { J.avisos.push(String(e && e.message || e)); console.warn('reloj · preparar salto:', e); } }
+      J.msPrep = ahoraMs() - J.m0; J.fase = 'corriendo'; J.m1 = ahoraMs(); avisar('salto-progreso');
+      let ultCuadro = ahoraMs();
+      while (R.t < J.hasta && !J.cancelado) {
+        const m = ahoraMs(); let k = 0;
+        // un lote: pasos enteros hasta ~pms ms o maxLote pasos (un paso de la maqueta completa cuesta 5-14 ms: 600 pasos seguidos congelarían la página)
+        while (R.t < J.hasta && k < maxLote && (k === 0 || ahoraMs() - m < pms)) { R.paso(); k++; }
+        J.pasos += k; J.t = R.t; J.ms = ahoraMs() - J.m1;
+        if (alProgreso) { try { alProgreso(J); } catch (e) { console.warn(e); } }
+        avisar('salto-progreso');
+        if (ahoraMs() - ultCuadro > 200) { ultCuadro = ahoraMs(); await cederCuadro(); } else await ceder();
+      }
+      J.ms = ahoraMs() - (J.m1 || J.m0); J.msTotal = ahoraMs() - J.m0; J.t = R.t; J.fase = J.cancelado ? 'cancelado' : 'listo';
+      R.salto = null; R.ultimoSalto = J;
+      R.acum = 0; R.alfa = 1; R._ult = null; R.vel = J.vel; R.pausa = J.pausa; // vuelve a la velocidad y la pausa que tenía, desde el t alcanzado
+      R.entrada(J.cancelado ? 'salto-cancelado' : 'salto-fin', { t: R.t, pasos: J.pasos });
+      avisar('salto-fin');
+      return J;
+    },
+
+    /* ---------- entradas reproducibles ---------- */
+    manejar(tipo, fn) { MAN[tipo] = fn; },
+    programar(t, tipo, datos) { PROG.push({ t: Math.floor(t), tipo, datos }); PROG.sort((a, b) => a.t - b.t); },
+    get programadas() { return PROG.slice(); },
 
     /* ---------- control ---------- */
-    arrancar() { if (R.arrancado) return; R.arrancado = true; R._ult = null; avisar('arranque'); },
-    ponerVel(v) { R.vel = v === 'max' ? Infinity : Math.max(0, +v || 0); R.pausa = false; R.acum = Math.min(R.acum, 1); R.entrada('vel', R.vel); avisar('vel'); },
-    pausar(on = true) { R.pausa = !!on; R.acum = Math.min(R.acum, 1); avisar('pausa'); },
+    arrancar(forzar = false) { if (R.arrancado || (R.retenido && !forzar)) return; R.retenido = false; R.arrancado = true; R._ult = null; avisar('arranque'); },
+    ponerVel(v) { if (R.salto) return; R.vel = v === 'max' ? Infinity : Math.max(0, +v || 0); R.pausa = false; R.acum = Math.min(R.acum, 1); R.entrada('vel', R.vel); avisar('vel'); },
+    pausar(on = true) { if (R.salto) return; R.pausa = !!on; R.acum = Math.min(R.acum, 1); R.entrada('pausa', R.pausa); avisar('pausa'); },
     alternar() { R.pausar(!R.pausa); },
     // ir hasta un t (solo hacia adelante: el tiempo no se devuelve). Corre a la máxima velocidad sostenible y vuelve a la anterior.
-    irA(tDestino, motivo = '') { tDestino = Math.floor(tDestino); if (tDestino <= R.t) return false; R.destino = { t: tDestino, desde: R.t, motivo, pausa: R.pausa }; R.pausa = false; R.entrada('irA', { t: tDestino, motivo }); avisar('destino'); return true; },
+    irA(tDestino, motivo = '') { tDestino = Math.floor(tDestino); if (R.salto || tDestino <= R.t) return false; R.destino = { t: tDestino, desde: R.t, motivo, pausa: R.pausa }; R.pausa = false; R.entrada('irA', { t: tDestino, motivo }); avisar('destino'); return true; },
     // la próxima vez que el reloj marque este minuto del día (0 … 1439); si ya pasó hoy, mañana
     irAMinuto(min, motivo = '') { min = ((Math.round(min) % 1440) + 1440) % 1440; const hoy = R.diaN * DIA + min * 60; return R.irA(hoy > R.t ? hoy : hoy + DIA, motivo || ('las ' + R.hhmm(min * 60))); },
     cancelarDestino() { if (!R.destino) return; const d = R.destino; R.destino = null; R.pausa = d.pausa; avisar('destino'); },
@@ -138,24 +205,26 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
       const dtReal = R._ult == null ? 1 / 60 : Math.min(0.25, Math.max(0, (ahora - R._ult) / 1000)); R._ult = ahora; R.dtReal = dtReal;
       const st = R.stats, t0c = R.t, m0 = ahoraMs();
       let pasos = 0, recorte = '';
-      if (R.arrancado && !R.pausa) {
+      if (R.arrancado && !R.pausa && !R.salto) { // durante un salto los pasos los corre saltar(), no el cuadro
         const maxModo = !!R.destino || R.vel === Infinity;
         if (!maxModo) R.acum += dtReal * R.vel / DT;
         const quiere = maxModo ? Infinity : Math.floor(R.acum);
         while (pasos < quiere) {
           if (R.destino && R.t >= R.destino.t) break;
+          if (R.detenerEn != null && R.t >= R.detenerEn) { R.detenerEn = null; R.pausa = true; R.acum = 0; R.entrada('pausa', true); avisar('pausa'); break; } // pruebas: parar justo en ese t
           if (pasos >= R.topePasos) { recorte = 'pasos'; break; }
           if (pasos && ahoraMs() - m0 > R.presupuestoMs) { recorte = 'tiempo'; break; } // el reloj se mira en cada paso: un paso puede costar varios ms
           R.paso(); pasos++;
         }
         if (maxModo) { R.acum = 0; R.alfa = 1; }
+        else if (R.pausa) { R.acum = 0; R.alfa = 1; } // se detuvo en detenerEn
         else { R.acum -= pasos; if (recorte && R.acum >= 1) { R.acum = Math.min(R.acum, 1); st.recortes++; st.ultimoRecorte = R.t; } R.alfa = Math.max(0, Math.min(1, R.acum)); }
         if (R.destino && R.t >= R.destino.t) { const d = R.destino; R.destino = null; R.pausa = d.pausa; R.acum = 0; R.alfa = 1; avisar('destino'); }
       }
       st.pasosCuadro = pasos; st.msCuadro = ahoraMs() - m0; st.motivo = recorte;
       R.dtSim = (R.t - t0c) * DT;
       const ve = dtReal > 0 ? R.dtSim / dtReal : 0; st.velEfectiva += (ve - st.velEfectiva) * Math.min(1, dtReal * 3);
-      R.dtAnim = R.corriendo ? dtReal * Math.min(R.destino ? ANIM_MAX : R.vel, ANIM_MAX) : 0; R.tAnim += R.dtAnim;
+      R.dtAnim = R.corriendo && !R.salto ? dtReal * Math.min(R.destino ? ANIM_MAX : R.vel, ANIM_MAX) : 0; R.tAnim += R.dtAnim;
       R._info = { alfa: R.alfa, tVis: R.tVis, tAnim: R.tAnim, dtAnim: R.dtAnim, dtReal, dtSim: R.dtSim, pasos };
       return R._info;
     },
@@ -163,11 +232,18 @@ export function crearReloj({ semilla = 1, t0 = T0, vel = 60, topePasos = 3600, p
     medir(seg) { const n = Math.round(seg / DT), r = R.avanzar(n, { medir: true }); return { segundos: seg, pasos: n, ms: Math.round(r.ms), msPorPaso: +(r.ms / n).toFixed(4), porSistema: Object.fromEntries(Object.entries(r.porSistema).map(([k, v]) => [k, Math.round(v)])) }; }
   };
   function avisar(que) { for (const f of OYE) { try { f(que, R); } catch (e) { console.warn('reloj:', e); } } }
+  function aplicarProgramadas(t) {
+    while (PROG.length && PROG[0].t <= t) { const e = PROG.shift(), f = MAN[e.tipo];
+      if (!f) { console.warn('reloj · entrada sin manejador:', e.tipo); continue; }
+      try { f(e.datos, e); } catch (err) { console.warn('reloj · entrada ' + e.tipo + ':', err); } }
+  }
+  MAN.vel = (v) => R.ponerVel(v); MAN.pausa = (p) => R.pausar(p); // velocidad y pausa no cambian el estado (solo cuántos pasos por cuadro)
   return R;
 }
 
-// el reloj de la página (uno solo: todos los módulos lo importan con la MISMA url, ./reloj.js?v=2)
-export const RELOJ = crearReloj();
+// el reloj de la página (uno solo: todos los módulos lo importan con la MISMA url, ./reloj.js?v=4)
+const QUIETO = typeof location !== 'undefined' && /[?&]reloj=quieto\b/.test(location.search || '');
+export const RELOJ = crearReloj({ retenido: QUIETO });
 if (typeof window !== 'undefined') window.KEN_RELOJ = RELOJ;
 
 // vista compatible con el antiguo T3.reloj (minutos del día, día, play, vel): la leen cielo, biótica, tablero, orígenes e index.html

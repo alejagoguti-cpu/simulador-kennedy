@@ -247,8 +247,8 @@
 /* RELOJ UNIVERSAL (data3d/reloj.js): una sola fuente de verdad del tiempo. El único requestAnimationFrame maestro (flight) llama
    RELOJ.cuadro(): corre los pasos fijos de 1 s simulado que tocan (tráfico, agentes, fauna, aves, semanas) y después los dibujos registrados.
    El control de tiempo (pausa, velocidad, fecha y hora) está en data3d/reloj_ui.js. */
-import { RELOJ, vistaT3 } from './data3d/reloj.js?v=2';
-import { crearControlTiempo } from './data3d/reloj_ui.js?v=2';
+import { RELOJ, vistaT3 } from './data3d/reloj.js?v=4';
+import { crearControlTiempo } from './data3d/reloj_ui.js?v=3';
 crearControlTiempo(); // control de tiempo único (pausa, velocidad, fecha y hora) dentro de #trafficHud
 // caché de JSON compartida: cada archivo se descarga y se lee UNA vez aunque lo pidan varios módulos (giro_sim.json, trees.json, estrategias.json…)
 window.cargarJSON = window.cargarJSON || ((c) => (u) => c[u] || (c[u] = fetch(u).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })))({});
@@ -789,6 +789,7 @@ addEventListener('keypress', e => {
 let acc = 0;
 function flight(ms) {
   RELOJ.avanzarCuadro(ms); // ÚNICO bucle maestro: el reloj universal corre los pasos fijos que tocan (lógica); abajo se dibujan los sistemas registrados (RELOJ.dibujar) y el resto solo dibuja
+  if (RELOJ.saltando) { requestAnimationFrame(flight); return; } // salto «+2 h» (RELOJ.saltar): la lógica corre por lotes fuera del cuadro y la escena NO se dibuja hasta terminar
   if (PAJARO && PAJARO.activo) { RELOJ.dibujar(); if (SIM) SIM.update(0); requestAnimationFrame(flight); return; } // (SIM.update oculta el HUD del simulador mientras se juega) // el modo pájaro dibuja con su propio bucle (también el de WebXR)
   if (mode === 'splat' && SPLAT) { splatKeys(); requestAnimationFrame(flight); return; }
   if (mode === 'todo' && T3) {
@@ -2084,7 +2085,7 @@ function buildChunks(THREE, B) {
     const L = torresFoto.map(b => ({ W: b.pts.slice(0, -1).map(p => lw(p[0], p[1])), h: b.h, y0: 0.3 }));
     for (const t of L) techosHuerta.push({ W: t.W, y: t.h - 0.45 });
     T3.torresTechos = (T3.torresTechos || []).concat(L.map(t => ({ W: t.W, h: t.h + 0.45 }))); // su losa está 0,45 m bajo el borde // cubiertas de las torres con balcones: también hidropónicas
-    if (!pTorres) pTorres = import('./data3d/torres_balcones.js?v=5').then(m => (T3.torres = m.crearTorres(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('torres con balcones:', e); return null; });
+    if (!pTorres) pTorres = import('./data3d/torres_balcones.js?v=6').then(m => (T3.torres = m.crearTorres(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('torres con balcones:', e); return null; });
     pTorres.then(Tt => { if (Tt) { Tt.agregar(L); Tt.huertas(T3.escenario === 'proyecto'); } }); // huerta de los balcones: solo con la propuesta
   }
   agregarHuertasTecho(techosHuerta);
@@ -2522,8 +2523,23 @@ async function buildTraffic(THREE) {
   T3.counts.cars = NV; T3.TRAF = TRAF; T3.LC = LC; T3.lw = lw; /* lw: modelo -> mundo, para los módulos que se cargan aparte */ /* data3d/origenes.js pasa las posiciones SUMO al mundo */ /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
   if (window.trafficPaint) window.trafficPaint();
   updateTraffic(0);
-  RELOJ.registrar({ nombre: 'trafico_flujo', orden: 20, step: pasoFlujoTrafico }, { ponerAlDia: false });
+  RELOJ.registrar({ nombre: 'trafico_flujo', orden: 20, step: pasoFlujoTrafico, hash: () => { const FC = T3.flujoCarros; let h = 0x811c9dc5; if (FC && FC.acum) for (let i = 0; i < FC.acum.length; i++) h = Math.imul((h ^ (Math.round(FC.acum[i] * 1000) | 0)) >>> 0, 0x01000193) >>> 0; return h; } }, { ponerAlDia: false });
+  // salto «+2 h» sin dibujo: antes de empezar baja TODA la grabación (trafico_flujo lee la posición de cada vehículo en cada paso;
+  // un trozo que falte haría contar cero carros en esos segundos). Si un trozo no baja, se reintenta una vez y se avisa.
+  RELOJ.prepararSalto(async (J) => {
+    const nT = I.n, todos = () => Promise.all(Array.from({ length: nT }, (_, k) => pedirTrozo(k)));
+    await todos(); let falta = 0; for (let s = 0; s < NS; s++) if (!steps[s]) falta++;
+    if (falta) { await todos(); falta = 0; for (let s = 0; s < NS; s++) if (!steps[s]) falta++; }
+    if (falta) J.avisos.push('faltan ' + falta + ' s de la grabación de tráfico');
+  });
 }
+// al terminar un salto la capa gráfica se pone al día con el estado: rumbo de cada carro (sin giro suave desde el rumbo viejo), copias
+// ocultas, colores del flujo de carros, sombras y el tiempo del cuadro (sin un dt enorme)
+RELOJ.alCambiar((que) => {
+  if (que !== 'salto-fin') return;
+  if (TRAF) { if (TRAF.headF) TRAF.headF.fill(NaN); if (TRAF.ocuCop) TRAF.ocuCop.clear(); }
+  if (T3) { T3.last = 0; if (T3.flujoCarros && T3.flujoCarros.visible) T3.flujoCarros.pintar(); if (T3.renderer && T3.renderer.shadowMap) T3.renderer.shadowMap.needsUpdate = true; }
+});
 // segundo de la grabación SUMO que corresponde a un tiempo del reloj (grabación en bucle)
 function tGrabacion(seg) { const P = TRAF.periodo; return ((TRAF.t0 + (seg - RELOJ.T0 * RELOJ.DT)) % P + P) % P; }
 // flujo de carros por vía (capa «Flujo»): cada 5 pasos cuenta los vehículos de la grabación (con la demanda de la hora y las copias desfasadas)
@@ -2532,7 +2548,7 @@ function pasoFlujoTrafico(dt, t) {
   const FC = T3.flujoCarros, V = TRAF.visPaso || (TRAF.visPaso = { n: 0, x: new Float32Array(TRAF.maxi * 3), z: new Float32Array(TRAF.maxi * 3) });
   const tg = Math.floor(tGrabacion(t * RELOJ.DT)), pD = demandaEn((t % RELOJ.DIA) / 60); TRAF.demandaPaso = pD;
   const NCOP = KEN && T3.vehSUMO ? Math.max(1, Math.min(3, Math.round(1 + 2.2 * Math.max(0, pD - 0.25) / 0.72))) : 1;
-  if (!FC.listo) FC.precalentar(TRAF);
+  if (!FC.listo) FC.precalentar(TRAF, tg, pD); // con el segundo de la grabación y la demanda DE ESTE PASO (no los del cuadro dibujado)
   V.n = 0;
   for (let cl = 0; cl < NCOP; cl++) {
     const ka = (tg + cl * 487) % TRAF.NS, S = TRAF.steps[ka]; if (!S) { if (TRAF.pedirTrozo) TRAF.pedirTrozo(Math.floor(ka / TRAF.chunk)); continue; }
@@ -2735,7 +2751,7 @@ function buildCars(THREE, N) {
   if (cabins.instanceColor) cabins.instanceColor.needsUpdate = true;
   T3.scene.add(bodies, cabins, wheels);
   CARS = { bodies, cabins, wheels, cars, paths, cums, dummy: new THREE.Object3D() };
-  RELOJ.registrar({ nombre: 'carros_maqueta', orden: 25, step: (dt) => { for (const c of cars) { c.dist += c.speed * c.dir * dt; if (c.dist > c.total) c.dist -= c.total; if (c.dist < 0) c.dist += c.total; } } }); // carros de la maqueta antigua: paso fijo; updateCars solo dibuja
+  RELOJ.registrar({ nombre: 'carros_maqueta', orden: 25, step: (dt) => { for (const c of cars) { c.dist += c.speed * c.dir * dt; if (c.dist > c.total) c.dist -= c.total; if (c.dist < 0) c.dist += c.total; } }, hash: () => { let h = 0x811c9dc5; for (const c of cars) h = Math.imul((h ^ (Math.round(c.dist * 1000) | 0)) >>> 0, 0x01000193) >>> 0; return h; } }); // carros de la maqueta antigua: paso fijo; updateCars solo dibuja
   T3.counts.cars = NC;
   updateCars(0.016);
 }
@@ -2945,10 +2961,11 @@ function crearFlujoCarros(THREE, N, ANCHO, dedupe, yVia, RUTAS) {
     if (mesh.visible && (tPint -= dt) <= 0) { tPint = 0.4; api.pintar(); }
   };
   // al abrir: se recorren los 2 minutos de simulación alrededor de la hora de inicio, así la capa ya sale con color
-  api.precalentar = (TR) => {
+  api.acum = acum; // estado (hash del sistema trafico_flujo)
+  api.precalentar = (TR, tPaso, dPaso) => { // tPaso, dPaso: segundo de la grabación y demanda del paso del reloj (lógica: no depende del dibujo)
     const V = { n: 0, x: new Float32Array(TR.maxi), z: new Float32Array(TR.maxi) }; let usados = 0;
-    const t0 = Math.floor(TR.t);
-    const pD = TR.demanda != null ? TR.demanda : 1;
+    const t0 = Math.floor(tPaso != null ? tPaso : TR.t);
+    const pD = dPaso != null ? dPaso : TR.demanda != null ? TR.demanda : 1;
     for (let t = t0 - TAU; t <= t0 + TAU && usados < TAU; t++) { const S = TR.steps[(t + TR.NS) % TR.NS]; if (!S) continue;
       V.n = 0; for (let i = 0; i < S.ids.length && V.n < TR.maxi; i++) { if (pD < 0.999 && ((S.ids[i] * 2654435761) >>> 0) / 4294967296 > pD) continue; const vx = S.xs[i] - LC.x, vz = LC.y - S.ys[i]; if (T3.alivio && T3.escenario === 'proyecto' && T3.alivio.enVia(vx, vz) && T3.alivio(vx, vz, S.ids[i]) === 2) continue; V.x[V.n] = vx; V.z[V.n] = vz; V.n++; } api.contar(V, 1); usados++; }
     api.listo = usados >= Math.min(5, TAU); /* antes nunca quedaba listo y se recalentaba en cada cuadro con todos los carros: el color no cambiaba */ if (mesh.visible) api.pintar(); return usados;
@@ -3208,7 +3225,7 @@ function buildPeatones(THREE, N) {
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); T3.scene.add(mesh);
   PEAT = { list, mesh, d: new THREE.Object3D(), vx: new Float32Array(list.length), vz: new Float32Array(list.length), vn: 0 }; // vx/vz: peatones dibujados en este cuadro (detección del simulador)
   T3.counts.peatones = list.length;
-  RELOJ.registrar({ nombre: 'peatones_maqueta', orden: 25, step: (dt) => { for (const p of list) { p.s0 = p.s; p.s += p.v * p.dir * dt; if (p.s < 0) { p.s = 0; p.dir = 1; } else if (p.s > p.L) { p.s = p.L; p.dir = -1; } } } });
+  RELOJ.registrar({ nombre: 'peatones_maqueta', orden: 25, step: (dt) => { for (const p of list) { p.s0 = p.s; p.s += p.v * p.dir * dt; if (p.s < 0) { p.s = 0; p.dir = 1; } else if (p.s > p.L) { p.s = p.L; p.dir = -1; } } }, hash: () => { let h = 0x811c9dc5; for (const p of list) h = Math.imul((h ^ (Math.round(p.s * 1000) | 0)) >>> 0, 0x01000193) >>> 0; return h; } });
 }
 function mergeGeoms(THREE, gs) { // une geometrías con los mismos atributos (posición, normal, color)
   const pos = [], nor = [], col = [], idx = []; let off = 0;
@@ -3661,18 +3678,18 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=48'), import('./data3d/estrategias.js?v=23'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=49'), import('./data3d/estrategias.js?v=24'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
       [EST, PLAN, CPLAN] = await Promise.all([
         me.iniciarEstrategias({ THREE: T3.THREE, T3, lw, Y0: 2.0, movil: MOVIL, dentro: (x, z) => enZona(x + LC.x, LC.y - z) /* huertas hidropónicas solo donde está el modelo de edificios */ }).catch(e => { console.warn('estrategias:', e); return null; }),
-        import('./data3d/bavaria_plan.js?v=6').then(m2 => m2.iniciarPlanBavaria({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Bavaria:', e); return null; }),
-        import('./data3d/corabastos_plan.js?v=5').then(m2 => m2.iniciarPlanCorabastos({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Corabastos:', e); return null; })]);
+        import('./data3d/bavaria_plan.js?v=7').then(m2 => m2.iniciarPlanBavaria({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Bavaria:', e); return null; }),
+        import('./data3d/corabastos_plan.js?v=6').then(m2 => m2.iniciarPlanCorabastos({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Corabastos:', e); return null; })]);
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=65').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=66').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3708,15 +3725,15 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         const ref = document.getElementById('us-btn') || document.getElementById('ar-btn'); (ref || ag.parentElement).insertAdjacentElement('afterend', b2); (ref || ag.parentElement).insertAdjacentElement('afterend', b1);
         /* puntos actuales de recolección de residuos (UAESP): empieza apagado */
         const b3 = document.createElement('button'); b3.id = 'rs-btn'; b3.textContent = 'Recolección de basura'; b3.title = 'Contenedores de recolección de la UAESP en Kennedy y su red'; b3.style.cssText = 'width:100%;margin-top:6px';
-        let pRes = null; b3.onclick = async () => { const on = !b3.classList.contains('on'); b3.classList.toggle('on', on); try { const m = await import('./data3d/residuos.js?v=8'); if (!pRes) pRes = m.crearResiduos({ THREE: T3.THREE, T3 }); const a = await pRes; a.ver(on); m.panelResiduos(a, on); } catch (e) { console.warn('residuos:', e); } };
+        let pRes = null; b3.onclick = async () => { const on = !b3.classList.contains('on'); b3.classList.toggle('on', on); try { const m = await import('./data3d/residuos.js?v=9'); if (!pRes) pRes = m.crearResiduos({ THREE: T3.THREE, T3 }); const a = await pRes; a.ver(on); m.panelResiduos(a, on); } catch (e) { console.warn('residuos:', e); } };
         b2.insertAdjacentElement('afterend', b3);
         /* asambleas existentes: Juntas de Acción Comunal (IDPAC); empieza apagado */
         const b4 = document.createElement('button'); b4.id = 'as-btn'; b4.textContent = 'Asambleas (JAC)'; b4.title = 'Juntas de Acción Comunal de Kennedy: sede, horario y red de vecindad'; b4.style.cssText = 'width:100%;margin-top:6px';
-        let pAs = null; b4.onclick = async () => { const on = !b4.classList.contains('on'); b4.classList.toggle('on', on); try { const m = await import('./data3d/asambleas.js?v=6'); if (!pAs) pAs = m.crearAsambleas({ THREE: T3.THREE, T3 }); const a = await pAs; a.ver(on); m.panelAsambleas(a, on); } catch (e) { console.warn('asambleas:', e); } };
+        let pAs = null; b4.onclick = async () => { const on = !b4.classList.contains('on'); b4.classList.toggle('on', on); try { const m = await import('./data3d/asambleas.js?v=7'); if (!pAs) pAs = m.crearAsambleas({ THREE: T3.THREE, T3 }); const a = await pAs; a.ver(on); m.panelAsambleas(a, on); } catch (e) { console.warn('asambleas:', e); } };
         b3.insertAdjacentElement('afterend', b4);
         /* agua comunitaria: huertas existentes que gestionan agua + propuesta de cisternas de agua lluvia; empieza apagado */
         const b5 = document.createElement('button'); b5.id = 'ag-btn'; b5.textContent = 'Agua comunitaria'; b5.title = 'Huertas comunitarias existentes y propuesta de cisternas de agua lluvia'; b5.style.cssText = 'width:100%;margin-top:6px';
-        let pAg = null; b5.onclick = async () => { const on = !b5.classList.contains('on'); b5.classList.toggle('on', on); try { const m = await import('./data3d/agua.js?v=1'); if (!pAg) pAg = m.crearAgua({ THREE: T3.THREE, T3 }); const a = await pAg; a.ver(on); m.panelAgua(a, on); } catch (e) { console.warn('agua comunitaria:', e); } };
+        let pAg = null; b5.onclick = async () => { const on = !b5.classList.contains('on'); b5.classList.toggle('on', on); try { const m = await import('./data3d/agua.js?v=2'); if (!pAg) pAg = m.crearAgua({ THREE: T3.THREE, T3 }); const a = await pAg; a.ver(on); m.panelAgua(a, on); } catch (e) { console.warn('agua comunitaria:', e); } };
         b4.insertAdjacentElement('afterend', b5);
         /* indicadores en 3D (picos de las láminas: anasoficasca-code.github.io/picos); empieza apagado */
         const b6 = document.createElement('button'); b6.id = 'in-btn'; b6.textContent = 'Indicadores'; b6.title = 'Indicadores del diagnóstico como picos 3D sobre Kennedy'; b6.style.cssText = 'width:100%;margin-top:6px';
@@ -3726,14 +3743,14 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
         const fb = document.getElementById('fb-btn'), b = document.createElement('button'); b.id = 'vi-btn'; b.textContent = '✦ Visión'; b.title = 'Ver la propuesta: Bavaria Común, Corabastos, red de huertas y humedales'; b.style.cssText = 'width:100%;margin-top:6px;background:linear-gradient(100deg,#2a1d6b,#5b3fd6);color:#fff;border:1px solid #8b74ff;letter-spacing:.2em';
         let V = null, pV = null;
-        b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=5').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? '✦ Salir de la visión' : '✦ Visión'; } catch (e) { console.warn('visión:', e); say('⚠️ No cargó la visión', 5000); } b.disabled = false; };
+        b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=6').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? '✦ Salir de la visión' : '✦ Visión'; } catch (e) { console.warn('visión:', e); say('⚠️ No cargó la visión', 5000); } b.disabled = false; };
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
-      return import('./data3d/cielo.js?v=9');
+      return import('./data3d/cielo.js?v=10');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=34'), import('./data3d/huertas_barrio.js?v=8'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
-    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=28').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
-    .then(() => import('./data3d/actores.js?v=8')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
+    .then(() => Promise.all([import('./data3d/biotica.js?v=35'), import('./data3d/huertas_barrio.js?v=9'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=29').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
+    .then(() => import('./data3d/actores.js?v=9')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));
 } else import('./data3d/simulador.js?v=6').then(m => {
   SIM = m.crearSimulador({
@@ -3743,7 +3760,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   });
   // propuesta (descentralizar Corabastos): espera la red de vías y el panel del simulador
   const datos = window.cargarJSON('data3d/propuesta.json');
-  const mod = import('./data3d/propuesta.js?v=3');
+  const mod = import('./data3d/propuesta.js?v=4');
   const listo = () => T3 && T3.net && document.querySelector('#gevUI .g-left') ? Promise.resolve() : new Promise(r => setTimeout(() => r(listo()), 400));
   Promise.all([datos, mod, listo()]).then(([d, pm]) => {
     PROP = pm.crearPropuesta({ T3: () => T3, traf: () => TRAF, peat: () => PEAT, sim: SIM, lw, say, datos: d });

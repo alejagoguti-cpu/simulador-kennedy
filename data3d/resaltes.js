@@ -2,7 +2,7 @@
    Al pasar a la propuesta las huertas (parques, lotes y cubiertas) se van abriendo año a año; cada una que se abre dispara un anillo verde
    que se expande sobre ella y una columna tenue que se desvanece en ~3,5 s, así se ve dónde va creciendo la red.
    Uso: const R = resaltes(T3); R.pulso(x, y, z, radio) */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 let API = null;
 export function resaltes(T3) {
   if (API) return API;

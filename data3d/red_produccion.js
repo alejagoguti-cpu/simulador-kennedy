@@ -7,7 +7,7 @@
    3. LO LLEVAN A CASA: los vecinos implementan huertas en techos y patios; cada casa se apoya en la huerta del parque más cercana
       (plántulas, compost, dudas) y lleva ahí lo que cosecha para el mercado del barrio.
    Datos: huertas_barrio.json (parques y lotes), colegios.json, estrategias.json (E8: techos), bavaria.json. */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 export async function crearRedProduccion({ T3, lw, cj }) {
   const THREE = T3.THREE, MOV = matchMedia('(pointer:coarse)').matches, RMQ = matchMedia('(prefers-reduced-motion: reduce)');
   const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');

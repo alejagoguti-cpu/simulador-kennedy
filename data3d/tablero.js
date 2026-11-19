@@ -4,9 +4,9 @@
    2. Flujo del día: encuentros de cada tipo a lo largo de las 24 h (se va construyendo con el reloj de la simulación).
    3. Pulso: cada encuentro nuevo es un punto en la franja de su tipo; los puntos corren hacia la izquierda (últimos 90 s).
    Encuentro: dos agentes relacionados en la red a menos de 18 m (la interacción está ocurriendo). */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 export function iniciarTablero({ T3, bio }) {
-  const { AG, ESP, LINKS, TIPOS, CAT, ENC, CERCA, flora, ESTADO } = bio;
+  const { AG, ESP, LINKS, TIPOS, CAT, ENC, CERCA, flora, ESTADO } = bio, ENCL = bio.ENCL || ENC; // ENCL: encuentros contados en el paso del reloj (lógica); ENC: los que se dibujan
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const hhmm = (min) => { min = ((Math.floor(min) % 1440) + 1440) % 1440; return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'); };
   const num = (v) => Math.round(v).toLocaleString('es-CO');
@@ -286,7 +286,7 @@ body.tb-abierto #dock{display:none}
   function tick() {
     const t = (RELOJ.t % 86400) / 60, dia = RELOJ.dia; // minuto del día (sin interpolar: estado entero del paso)
     if (dia !== diaAct) { diaAct = dia; for (const s of DIA) { s.n = 0; s.s.fill(0); } }
-    const sl = DIA[Math.floor(t / 15) % 96]; sl.n++; for (let i = 0; i < NT; i++) sl.s[i] += (ENC[i] - sl.s[i]) / Math.min(sl.n, 8); // promedio móvil del cuarto de hora
+    const sl = DIA[Math.floor(t / 15) % 96]; sl.n++; for (let i = 0; i < NT; i++) sl.s[i] += (ENCL[i] - sl.s[i]) / Math.min(sl.n, 8); // promedio móvil del cuarto de hora
     // encuentros ocurriendo ahora: pares (especie -> especie o árbol, tipo)
     for (const p of PAR.values()) p.obj = 0;
     const ahora = RELOJ.t * 1000, ahoraA = RELOJ.tAnim * 1000; let n = 0; // ahora: milisegundos SIMULADOS (conteos) · ahoraA: tiempo de animación (la franja del pulso corre con él y se detiene en pausa)
@@ -579,12 +579,12 @@ body.tb-abierto #dock{display:none}
   // lo medido (recuento de encuentros y promedios por escenario) son pasos del reloj: cada 5 s simulados el recuento, cada 10 s los promedios
   RELOJ.registrar({ nombre: 'tablero', orden: 90, step: (dt, t) => {
     if (t % 5 === 0) tick();
-    if (t % 10 === 0 && RELOJ.t - tCambio >= 10) { const P = PROMT[escAct]; if (P) { P.k++; const a = 1 / Math.min(P.k, 60); P.p += ((ENC[5] || 0) - P.p) * a; P.d += ((ENC[0] || 0) - P.d) * a; } }
+    if (t % 10 === 0 && RELOJ.t - tCambio >= 10) { const P = PROMT[escAct]; if (P) { P.k++; const a = 1 / Math.min(P.k, 60); P.p += ((ENCL[5] || 0) - P.p) * a; P.d += ((ENCL[0] || 0) - P.d) * a; } }
   }, hash: () => { let h = 0x811c9dc5; for (const k of Object.keys(PROMT)) { h = Math.imul(h ^ (Math.round(PROMT[k].p * 1000) | 0), 0x01000193) >>> 0; h = Math.imul(h ^ (Math.round(PROMT[k].d * 1000) | 0), 0x01000193) >>> 0; } return h; } }, { ponerAlDia: false });
   // la interfaz (textos y paneles) se repinta dos veces por segundo; solo lee
   let nT = 0; tick(); setInterval(() => { pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
   // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Kennedy hoy / Con la propuesta
-  import('./simulaciones.js?v=12').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
+  import('./simulaciones.js?v=13').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

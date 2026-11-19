@@ -16,7 +16,7 @@
    Cantidades y tiempos sin fuente: marcados [SUP] (supuestos de escala para discutir).
    TIEMPO: lo lleva el reloj universal (data3d/reloj.js). Esta simulación es un sistema del reloj: step(1 s) mueve los agentes con
    su lógica y su azar con semilla; el dibujo (alDibujar) solo lee las posiciones e interpola entre el paso anterior y el actual. */
-import { RELOJ, DIA, vistaT3, hashNum } from './reloj.js?v=2';
+import { RELOJ, DIA, vistaT3, hashNum } from './reloj.js?v=4';
 
 const DEPTHMAP = [[0, 0, 255], [0, 102, 255], [0, 204, 255], [0, 255, 204], [0, 255, 102], [51, 255, 0], [153, 255, 0], [255, 255, 0], [255, 204, 0], [255, 136, 0], [255, 68, 0], [255, 0, 0]]; // escala DepthmapX
 const colorDM = (v) => { const c = DEPTHMAP[Math.min(DEPTHMAP.length - 1, Math.floor(v * DEPTHMAP.length))]; return `rgb(${c[0]},${c[1]},${c[2]})`; };
@@ -715,7 +715,9 @@ export async function iniciarSimulacion(cfg = {}) {
 #gs-cora .gs-cres small{display:block;font-size:9.5px;color:#94a3b8;letter-spacing:.04em}#gs-cora .gs-cres b{font-size:18px;font-weight:600;color:#6ee7b7;font-variant-numeric:tabular-nums}
 #gs-cora.hoy .gs-cres div{background:rgba(225,87,89,.08);border-color:rgba(225,87,89,.3)}#gs-cora.hoy .gs-cres b{color:#fca5a5}`; document.head.appendChild(css); }
       const caja = izq.querySelector('#gs-cora');
-      caja.querySelectorAll('input[data-k]').forEach(i => { i.value = CS[i.dataset.k]; i.oninput = () => { CS[i.dataset.k] = +i.value; pintarCora(); dispatchEvent(new Event('cora-cambio')); }; /* los indicadores en 3D (data3d/indicadores.js) se recalculan */ });
+      caja.querySelectorAll('input[data-k]').forEach(i => { i.value = CS[i.dataset.k]; i.oninput = () => { CS[i.dataset.k] = +i.value; RELOJ.entrada('corabastos', { k: i.dataset.k, v: +i.value }); pintarCora(); dispatchEvent(new Event('cora-cambio')); }; /* los indicadores en 3D (data3d/indicadores.js) se recalculan */ });
+      // los sliders cambian T3.alivio.manual, que usa la lógica del flujo de carros (trafico_flujo): entrada reproducible
+      RELOJ.manejar('corabastos', (d) => { if (!d || !(d.k in CS)) return; CS[d.k] = +d.v; const i = caja.querySelector(`input[data-k="${d.k}"]`); if (i) i.value = d.v; RELOJ.entrada('corabastos', d); pintarCora(); dispatchEvent(new Event('cora-cambio')); });
       caja.querySelectorAll('#gs-cesc button').forEach(b => b.onclick = () => { const K = window.KEN_ESC; if (K && K.poner) K.poner(b.dataset.e); setTimeout(pintarCora, 80); });
       function pintarCora() {
         const pro = T3.escenario === 'proyecto', r = calcCora(), AL = T3.alivio;
@@ -730,7 +732,7 @@ export async function iniciarSimulacion(cfg = {}) {
       }
       addEventListener('escenario', () => setTimeout(pintarCora, 80)); setInterval(() => { if (T3.alivio && !T3.alivio.manual) pintarCora(); }, 1000);
       pintarCora();
-      import('./origenes.js?v=3').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
+      import('./origenes.js?v=4').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
       { /* cuántos carros hay en la calle a esta hora (demanda según el reloj: index.html, demandaHora) */
         izq.querySelector('#gs-fc').insertAdjacentHTML('beforebegin', '<div id="gs-dem" style="font-size:10.5px;color:#94a3b8;margin:2px 0 6px"></div>');
         const dem = izq.querySelector('#gs-dem');

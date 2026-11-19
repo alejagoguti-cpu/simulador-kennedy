@@ -5,7 +5,7 @@
    jardinera colgada por fuera y una matera grande en la esquina.
    Uso: const T = crearTorres(THREE, T3, { liviano }); T.agregar([{ W: [[x, z], ...], h, y0 }]); T.actualizar(camara) en cada cuadro. */
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 
 export function crearTorres(THREE, T3, opt = {}) {
   const LIV = !!opt.liviano, PISO = 3, PX = 64; // 3 m por piso; 64 px por metro en las texturas
@@ -176,12 +176,11 @@ export function crearTorres(THREE, T3, opt = {}) {
     const curva = (s, e, t, out) => { const pf = O.set(s.flor.x + s.flor.ox * e.lejos, s.flor.y + 0.005, s.flor.z + s.flor.oz * e.lejos), u = 1 - t, k = t * t * (3 - 2 * t); // vuelo en curva hacia la flor (Bézier cuadrática con avance suave)
       return out.set(u * u * s.a.x + 2 * u * k * s.c.x + k * k * pf.x, u * u * s.a.y + 2 * u * k * s.c.y + k * k * pf.y, u * u * s.a.z + 2 * u * k * s.c.z + k * k * pf.z); };
     /* TIEMPO (data3d/reloj.js): paso(dt, t) es la lógica (vuelos y esperas, con azar con semilla) y se corre en los pasos fijos del reloj; actualizar(visible)
-       solo DIBUJA (interpola el vuelo dentro del paso; el temblor y el aleteo usan el tiempo de animación). El enjambre solo se mueve cerca de la
-       cámara (G.visible): su lógica depende de la cámara (dependeCamara) y no corre sin dibujo. */
+       solo DIBUJA (interpola el vuelo dentro del paso; el temblor y el aleteo usan el tiempo de animación). Desde la fase 2 el enjambre se mueve
+       siempre (no solo cerca de la cámara): su lógica ya no depende de la cámara y corre igual sin dibujo. */
     const P0 = new THREE.Vector3();
     return { G, centro, E,
-      paso(dt, T) {
-        if (!G.visible) return;
+      paso(dt, T) { // fase 2: corre siempre, se vea o no el enjambre (antes solo cerca de la cámara: G.visible); 114 agentes, barato
         for (const { e, A } of E) for (let i = 0; i < A.length; i++) { const s = A[i]; s.t0 = s.t;
           if (s.t < 1) { // vuelo en curva hacia la flor
             s.t = Math.min(1, s.t + dt / s.dur); curva(s, e, s.t, P0); if (Math.hypot(P0.x - s.p.x, P0.z - s.p.z) > 1e-5) s.yaw = Math.atan2(P0.x - s.p.x, P0.z - s.p.z); s.p.copy(P0);
@@ -224,7 +223,7 @@ export function crearTorres(THREE, T3, opt = {}) {
   api.huertas = (on) => { conHuerta = on; for (const m of HIDRO) m.visible = on; if (!on) { for (const c of cercanas) c.m.visible = false; for (const P of polinizadores) P.actualizar(false); } };
   api.actualizar = (cam) => { if (!conHuerta) return; for (const c of cercanas) { const v = Math.hypot(c.x - cam.position.x, c.z - cam.position.z, c.y - cam.position.y) < CERCA + 120; if (c.m.visible !== v) c.m.visible = v; }
     for (const P of polinizadores) P.actualizar(Math.hypot(P.centro.x - cam.position.x, P.centro.z - cam.position.z, P.centro.y - cam.position.y) < CERCA + 120, RELOJ.alfa, RELOJ.tAnim); };
-  RELOJ.registrar({ nombre: 'torres_polinizadores', orden: 45, dependeCamara: true, step: (dt, t) => { if (conHuerta) for (const P of polinizadores) P.paso(dt, t); }, hash: () => { let h = 0; for (const P of polinizadores) h = (h ^ P.hash()) >>> 0; return h; } }, { ponerAlDia: false });
+  RELOJ.registrar({ nombre: 'torres_polinizadores', orden: 45, step: (dt, t) => { if (conHuerta) for (const P of polinizadores) P.paso(dt, t); }, hash: () => { let h = 0; for (const P of polinizadores) h = (h ^ P.hash()) >>> 0; return h; } }, { ponerAlDia: false });
 
   api.agregar = (lista) => {
     const B = { fachada: [], concreto: [], baranda: [], partes: [], blanco: [], tanque: [], led: [] };

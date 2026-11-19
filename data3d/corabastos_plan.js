@@ -5,7 +5,7 @@
    - transporte: camiones grandes con cita a un patio de transferencia interno; salida en vehículos pequeños; residuos a E4
    - agentes humanos (del Excel de E3), interacciones bióticas que llegan al borde restaurado, sostenibilidad y tren vs. vehículos
    Bodegas y su distancia al humedal: data3d/corabastos.json (tools/corabastos_build.py). Todo son hipótesis de diseño. */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 
 const USOS = {
   quitar: { n: 'Bodegas que se desmontan', c: '#ef4444', d: 'Las más cercanas al humedal La Vaca (a menos de 120 m).', din: 'Se desmontan por fases y su suelo pasa a la franja de restauración del borde del humedal; sus comerciantes se reubican en las bodegas que se conservan o en los nodos barriales.' },

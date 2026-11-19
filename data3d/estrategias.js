@@ -5,7 +5,7 @@
    E1 Bavaria Común la dibuja data3d/bavaria_plan.js. E2, E6, E7 y E9 no tienen una ubicación única: desde la leyenda se abre su
    red de actores. Las capas sobre techos (cubiertas, viviendas) se pintan a la altura de cada edificio; las demás a ras del suelo.
    TIEMPO: etiquetas y pulsos se dibujan en el bucle maestro del reloj universal (data3d/reloj.js); los pulsos usan su tiempo de animación. */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = null, movil = false }) {
   const D = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/estrategias.json?v=5');
   const esc = D.escala || 0.5, grupo = new THREE.Group(); grupo.name = 'estrategias'; T3.scene.add(grupo);
@@ -55,7 +55,7 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
   const hidroponia = (on) => {
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = !on; // las terrazas son hidropónicas (no camas de tierra)
     if (HIDRO) { HIDRO.ver(on); return; } if (!on) return;
-    if (!HIDRO_P) HIDRO_P = import('./huertas_hidro.js?v=17').then(m => { const e = D.estrategias.find(x => x.id === 'E8'), c = e && e.capas.find(x => /cubiertas/i.test(x.n)); if (!c) return null;
+    if (!HIDRO_P) HIDRO_P = import('./huertas_hidro.js?v=18').then(m => { const e = D.estrategias.find(x => x.id === 'E8'), c = e && e.capas.find(x => /cubiertas/i.test(x.n)); if (!c) return null;
       const techos = (c.techos || []).map(t => ({ W: W2(t.slice(0, -1)), h: t[t.length - 1] / 10 })).filter(t => !dentro || dentro(t.W[0][0], t.W[0][1]));
       return m.iniciarHidroponia({ THREE, T3, techos: (() => { const L = techos.concat(T3.torresTechos || [], T3.techosAltos || []), vistos = new Set(); return L.filter(t => { let x = 0, z = 0; for (const q of t.W) { x += q[0]; z += q[1]; } const k = Math.round(x / t.W.length / 4) + ',' + Math.round(z / t.W.length / 4); if (vistos.has(k)) return false; vistos.add(k); return true; }); })(), movil }); }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er));
   };

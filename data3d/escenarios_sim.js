@@ -8,11 +8,11 @@
              con partículas proporcionales a los kilos y la ocupación de cada estación
    · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
              trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
-import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=4';
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=5';
 /* TIEMPO: un solo reloj (data3d/reloj.js). La semana de la simulación sale del reloj (1 semana = 7 días del reloj) y las reglas
    semanales de sim_vida corren cada vez que el reloj cruza una semana (onSemana). Ya no hay play, velocidades ni línea de tiempo
    propios, ni saltos al año 10: los sliders rigen desde la semana en que se mueven y la corrida sigue desde donde va. */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con perturbaciones al azar (semilla = SIMST.semilla) y reglas de colapso fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
 import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE } from './sim_vida.js?v=1';
@@ -272,7 +272,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   };
   // Humedal La Vaca: se recupera a lo largo de los 10 años (data3d/humedal_vaca.js)
   let VACA = null;
-  import('./humedal_vaca.js?v=2').then(m => m.iniciarHumedalVaca({ T3, cj })).then(v => { VACA = v; window.KEN_VACA = v; aplicar(); }).catch(e => console.warn('La Vaca:', e));
+  import('./humedal_vaca.js?v=3').then(m => m.iniciarHumedalVaca({ T3, cj })).then(v => { VACA = v; window.KEN_VACA = v; aplicar(); }).catch(e => console.warn('La Vaca:', e));
   const GRUPO = { 1: ['huertas', 'trafico'], 2: ['compost'], 3: ['humedal'] };
   let tAviso = 0;
   const avisar2 = (txt, lugar) => { const d = $('[data-aviso]'); d.hidden = false; d.innerHTML = `<span>${txt}: mira ${LUGAR[lugar].n}.</span><button type="button" data-ir="${lugar}">Ver en el mapa</button>`; clearTimeout(tAviso); tAviso = setTimeout(() => { d.hidden = true; }, 9000); };
@@ -427,9 +427,15 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   el.addEventListener('change', (ev) => { const i = ev.target;
     if (i.dataset.b) { P1[i.dataset.b] = i.checked; RELOJ.entrada('param', { g: '1', k: i.dataset.b, v: i.checked }); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Activaste un estrés forzado' : 'Quitaste un estrés forzado', 'huertas'); }
     if (i.dataset.anti !== undefined) { P3.anti = i.checked; RELOJ.entrada('param', { g: '3', k: 'anti', v: i.checked }); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Con medida antitrampa' : 'Sin medida antitrampa', 'humedal'); } });
+  // reproducir las entradas de los sliders (RELOJ.programar): mismo efecto que moverlos, justo antes del paso anotado
+  RELOJ.manejar('param', (d) => { if (!d) return; const P = d.g === '1' ? P1 : d.g === '2' ? P2 : P3; P[d.k] = d.v; RELOJ.entrada('param', d);
+    const i = el.querySelector(`input[data-g="${d.g}"][data-k="${d.k}"]`); if (i) i.value = d.v; aplicar(); avisar('mapa'); });
   el.addEventListener('toggle', (ev) => { if (ev.target.classList && ev.target.classList.contains('reglas') && ev.target.open) pintarPanel(); }, true);
   addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); }); // cambios desde el tablero: también rigen desde ahora
-  addEventListener('escenario', () => setTimeout(() => { ultHB = -1; aplicar(); }, 60)); // hoy ⇄ propuesta: cambia lo que se mira, el tiempo sigue
+  // hoy ⇄ propuesta: cambia lo que se mira, el tiempo sigue. aplicar() fija parámetros de la lógica (fauna, huertas del proyecto, tráfico
+  // a Corabastos): corre YA, en el mismo instante de la entrada «escenario» (antes 60 ms reales después: según la velocidad, varios pasos
+  // simulados con los valores viejos); a los 60 ms se repite (idempotente) para los módulos que terminan de cargar
+  addEventListener('escenario', () => { ultHB = -1; aplicar(); setTimeout(() => { ultHB = -1; aplicar(); }, 60); });
   // la huerta de barrio carga después: se aplica cuando aparece
   const espera = setInterval(() => { if (window.KEN_HBAR && window.KEN_HBAR.fraccion) { clearInterval(espera); ultHB = -1; aplicar(); } }, 800);
 
@@ -455,8 +461,8 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   RELOJ.alDibujar(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./mejora_tour.js?v=7').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=6').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./mejora_tour.js?v=8').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./capas_escenario.js?v=7').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }

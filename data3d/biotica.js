@@ -20,7 +20,7 @@
    TIEMPO: sistema del reloj universal (data3d/reloj.js). step(1 s) mueve la fauna y rehace la red con azar con semilla, SIEMPRE
    (también con la red oculta: el estado no depende de si se dibuja). El dibujo solo lee e interpola posiciones; el aleteo y los
    pulsos usan el tiempo de animación del reloj (se detienen en pausa). */
-import { RELOJ, hashNum } from './reloj.js?v=2';
+import { RELOJ, hashNum } from './reloj.js?v=4';
 
 const SVG = { // íconos de los tipos de interacción (mismo orden que la red)
   0: '<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',
@@ -97,7 +97,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const TIPOS = B.tipos, COLT = TIPOS.map(t => new THREE.Color(t.c));
   const GY = (T3.sueloY != null && T3.sueloY > 0) ? T3.sueloY + 0.02 : Y0; // con la foto real (sueloY 0,3) los animales pisan la foto, no flotan 1,7 m // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
   // actividad de cada especie a la hora del reloj universal (la del paso que corre): al terminar cada pausa, el animal sigue en reposo con probabilidad 1 - actividad
-  let tPaso = RELOJ.t; const AC = {}, horaSim = () => (tPaso % 86400) / 3600;
+  let tPaso = RELOJ.t; const AC = {},
+    // fase del aleteo para la LÓGICA (cernido del colibrí, balanceo en el agua): función del tiempo simulado y del id. a.flap es del dibujo (avanza con el
+    // tiempo de animación de cada cuadro) y no puede mover a nadie: con él la posición dependía de cuántos cuadros se dibujaron
+    faseL = (a, w) => RELOJ.azarDe('bio-fase', a.id) * 6.283 + tPaso * w, horaSim = () => (tPaso % 86400) / 3600;
   const actualizarAC = () => { const h = horaSim(); for (const k of Object.keys(ESP)) AC[k] = actividad(k, h); }; actualizarAC();
   const despierta = (a) => { if (a.huye || rnd() < AC[a.e]) { a.duerme = false; return true; } a.duerme = true; return false; };
 
@@ -330,7 +333,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   }
   function moverColibri(a, dt) { // forrajeador floral de lugar central
     if (a.st === 'posado' || a.st === 'liba') {
-      a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.3 + Math.sin(a.flap * 0.05) * 0.15; a.z = a.arb.z + Math.sin(a.ang) * 1.3; a.y = a.arb.y - 0.4 + Math.sin(a.flap * 0.03) * 0.12; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
+      a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.3 + Math.sin(faseL(a, 56.5) * 0.05) * 0.15; a.z = a.arb.z + Math.sin(a.ang) * 1.3; a.y = a.arb.y - 0.4 + Math.sin(faseL(a, 56.5) * 0.03) * 0.12; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
       if ((a.t -= dt) > 0) return;
       if (!despierta(a)) { a.st = 'posado'; a.t = 4 + rnd() * 8; return; }
       let L = alcanzables(a, 150).filter(t => t !== a.arb); if (!L.length) L = arbolesCerca(a.h, a.x, a.z, 120);
@@ -353,7 +356,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     a.duerme = AC[a.e] < 0.3; let v = e.v * (0.35 + 0.65 * AC[a.e]); /* de noche la balsa casi no se mueve */ if (a.huye) { vx += (a.x - a.huye.x) * 0.2; vz += (a.z - a.huye.z) * 0.2; v *= 4; }
     const l = Math.hypot(vx, vz) || 1, nx = a.x + vx / l * v * dt, nz = a.z + vz / l * v * dt;
     if (dentro(nx, nz, a.h.poly)) { a.x = nx; a.z = nz; girarA(a, vx, vz, dt, 2); a.vel = v; } else { a.ang += Math.PI * (0.5 + rnd() * 0.5); }
-    a.y = GY - 0.02 + Math.sin(a.flap * 0.02) * 0.02;
+    a.y = GY - 0.02 + Math.sin(faseL(a, 6) * 0.02) * 0.02;
   }
   function moverOrilla(a, dt) { // tingua: caminata correlacionada con pausas, pegada a la orilla
     const e = ESP[a.e];
@@ -418,7 +421,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       a.arb = t; a.ang = rnd() * 6.28; vuelo(a, t.x + Math.cos(a.ang) * 1.4, t.y - 0.3 + gauss() * 0.6, t.z + Math.sin(a.ang) * 1.4, ESP.abeja.v * (0.8 + rnd() * 0.4), 1 + rnd() * 2);
     };
     if (a.st === 'colmena') { a.vel = 0; a.vis = false; if ((a.t -= dt) > 0) return; if (!despierta(a)) { a.t = 5 + rnd() * 10; return; } a.vis = true; a.flores = 3 + Math.floor(rnd() * 3); otraFlor(); return; }
-    if (a.st === 'liba') { a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.4 + Math.sin(a.flap * 0.03) * 0.2; a.z = a.arb.z + Math.sin(a.ang) * 1.4; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
+    if (a.st === 'liba') { a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.4 + Math.sin(faseL(a, 56.5) * 0.03) * 0.2; a.z = a.arb.z + Math.sin(a.ang) * 1.4; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
       if ((a.t -= dt) > 0) return; a.ev++; if (--a.flores <= 0) { a.vuelta = true; vuelo(a, a.colmena[0], GY + 1, a.colmena[1], ESP.abeja.v, 2.5); } else otraFlor(); return; }
     const f = a.f; f.s += f.v * dt; const u = Math.min(1, f.s / f.d), px = a.x, pz = a.z;
     a.x = f.x0 + (f.x1 - f.x0) * u + Math.sin(tPaso * 0.37 + a.id) * 0.3; /* zigzag del vuelo con el tiempo del paso (antes con el aleteo del dibujo) */ a.z = f.z0 + (f.z1 - f.z0) * u; a.y = f.y0 + (f.y1 - f.y0) * u + Math.sin(Math.PI * u) * f.arco; girarA(a, a.x - px, a.z - pz, dt, 14); a.vel = f.v;
@@ -524,7 +527,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const alto = (a) => { const e = ESP[a.e]; return (e.ave ? (e.ave.alto + e.ave.len * 0.35) : 0.06) * MAL[a.e].s; };
   const ancla = (o, out) => { if (o.id !== undefined) { out[0] = o.x; out[1] = o.y + alto(o); out[2] = o.z; } else { out[0] = o.x; out[1] = o.y; out[2] = o.z; } return out; };
   const P0 = [0, 0, 0], P1 = [0, 0, 0], Q = [0, 0, 0], Rr = [0, 0, 0], VA = new THREE.Vector3(), VB = new THREE.Vector3();
-  const CUENTA = new Array(TIPOS.length).fill(0), ENC = new Array(TIPOS.length).fill(0);
+  const CUENTA = new Array(TIPOS.length).fill(0), ENC = new Array(TIPOS.length).fill(0); // lo que se ve (dibujo: depende de la capa encendida y de los filtros)
+  // encuentros por tipo para la LÓGICA (el tablero los promedia): se cuentan en el paso del reloj, cada 5 s simulados, sin mirar capas ni filtros
+  const ENCL = new Array(TIPOS.length).fill(0);
+  function contarEncuentros() { ENCL.fill(0); for (const L of LINKS.values()) { if (L.al < 0.3) continue; if (Math.hypot(L.b.x - L.a.x, L.b.z - L.a.z) < CERCA) ENCL[L.t]++; } }
   let np = 0;
   function pintar(C, A, Bv, t, pulso, tiempo) {
     if (C.n >= MAXL) return; ancla(A, P0); ancla(Bv, P1);
@@ -787,7 +793,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       <div class="ley">${tipos.map(t => `<span><i style="background:${TIPOS[t].c}"></i>${esc(TIPOS[t].n)}</span>`).join('')}<span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${CAT[0].c}"></b>árbol del censo</span><span style="color:#94a3b8">arrastra para girar · toca un animal para ver su red</span></div>
       <div class="cuerpo"><div class="lienzo"><canvas aria-label="Red de ${esc(e.n)} en esfera"></canvas><div class="tip"></div></div><div class="lista">${grupos || '<div class="it">Sin relaciones en la red.</div>'}</div></div></div>`;
     red.querySelector('.x').onclick = () => { red.classList.remove('on'); cancelAnimationFrame(animRed); };
-    red.querySelector('.vt').onclick = () => { red.classList.remove('on'); cancelAnimationFrame(animRed); const L = (POR[k] || []).filter(a => a.vis); if (L.length) seleccionar(L[Math.floor(rnd() * L.length)], true); };
+    red.querySelector('.vt').onclick = () => { red.classList.remove('on'); cancelAnimationFrame(animRed); const L = (POR[k] || []).filter(a => a.vis); if (L.length) seleccionar(L[Math.floor(Math.random() * L.length)], true); }; // azar de interfaz (no gasta el azar de la lógica)
     red.classList.add('on');
 
     // ---- dibujo de la bola ----
@@ -863,6 +869,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }
       if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
     actualizarRed(dt);
+    if (t % 5 === 0) contarEncuentros();
   }
   RELOJ.registrar({ nombre: 'biotica', orden: 20, step: paso,
     hash: () => { let h = 0x811c9dc5; for (const a of AG) { h = hashNum(h, a.x); h = hashNum(h, a.y); h = hashNum(h, a.z); } return hashNum(h, LINKS.size); } });
@@ -882,5 +889,5 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
   });
-  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
+  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, ENCL, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
 }

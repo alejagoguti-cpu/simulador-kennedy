@@ -8,7 +8,7 @@
    04 Bordes de humedal La Vaca y El Burro: matriz vegetal nativa
    Todo unido en una red densa: Bavaria ↔ Corabastos, Bavaria → parques → huertas → tiendas de barrio → Corabastos, humedales ↔ parques.
    Se arma la primera vez que se prende (no pesa en la carga inicial) y al apagarlo todo vuelve como estaba. */
-import { RELOJ } from './reloj.js?v=2';
+import { RELOJ } from './reloj.js?v=4';
 export async function crearVision({ THREE, T3, lw, OX, OZ, movil = false }) {
   const J = (u) => (window.cargarJSON || ((x) => fetch(x).then(r => r.json())))(u);
   const [BV, CO, ES, PQ, GS] = await Promise.all(['data3d/bavaria.json?v=3', 'data3d/corabastos.json?v=3', 'data3d/estrategias.json?v=5', 'data3d/parques.json', 'data3d/giro_sim.json'].map(u => J(u).catch(() => null)));

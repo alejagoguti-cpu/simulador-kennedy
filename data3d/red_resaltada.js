@@ -1,4 +1,4 @@
-import { RELOJ } from './reloj.js?v=2'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
+import { RELOJ } from './reloj.js?v=4'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
 /* Red resaltada (residuos, asambleas): líneas con grosor real en pantalla + halo ancho y suave + pulsos que recorren
    los tramos, siempre encima del modelo para que se lean de lejos. pos: Float32Array de segmentos (x,y,z, x,y,z ...). */
 export async function redResaltada({ THREE, T3, pos: pos0, colores: col0, color, ancho = 2.6, arco = 0 }) {
