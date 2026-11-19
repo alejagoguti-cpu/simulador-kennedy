@@ -933,7 +933,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (t % 5 === 0) contarEncuentros();
   }
   RELOJ.registrar({ nombre: 'biotica', orden: 20, step: paso,
-    hash: () => { let h = 0x811c9dc5; for (const a of AG) { h = hashNum(h, a.x); h = hashNum(h, a.y); h = hashNum(h, a.z); } return hashNum(h, LINKS.size); } });
+    hash: () => { let h = 0x811c9dc5; for (const a of AG) { h = hashNum(h, a.x); h = hashNum(h, a.y - GY); h = hashNum(h, a.z); } /* altura sobre el suelo: el nivel del suelo (GY) depende de cuándo cargó la foto 3D, no de la simulación */ return hashNum(h, LINKS.size); } });
   /* ---------- dibujo: solo lee el estado (lo llama el reloj después de los pasos del cuadro) ---------- */
   RELOJ.alDibujar((info) => {
     const dt = info.dtReal, tiempo = info.tAnim;
