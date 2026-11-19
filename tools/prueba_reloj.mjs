@@ -58,7 +58,7 @@ const USOS = {
   'corabastos_plan.js': [7, 'cosmético', 'figuras ilustrativas del plan'],
   'escenario.js': [4, 'cámara/carga', 'vuelo de cámara, limpieza de módulos que cargan tarde'],
   'escenarios_sim.js': [8, 'interfaz/cámara/cosmético', 'paneles a ~4 Hz, vuelo de cámara, espera de la huerta de barrio, fase de partículas (ocultas)'],
-  'estrategias.js': [6, 'cosmético/cámara', 'textura, vuelo de cámara'],
+  'estrategias.js': [8, 'cosmético/cámara/carga', 'textura, vuelo de cámara; espera a que carguen todos los edificios antes de armar las huertas hidropónicas (Date.now + setTimeout, no toca la lógica)'],
   'giro_sim.js': [10, 'interfaz', 'paneles de agentes y flujo (1-2 s), clic corto, bucle propio SOLO sin maqueta (giro sobre render)'],
   'huertas_barrio.js': [2, 'cosmético', 'apoyo de plantas en la malla y LOD'],
   'huertas_hidro.js': [12, 'cosmético/cámara', 'texturas de hojas, recálculo de plantas visibles (enjambre dependeCamara, fuera del hash)'],
