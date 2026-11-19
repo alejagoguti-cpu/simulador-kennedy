@@ -72,10 +72,11 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
     <div class="rt-fila rt-dia"><span class="rt-et">Día</span><button type="button" class="rt-play" id="rt-play" aria-label="Pausar el día">❚❚</button>
       <span class="rt-fecha" id="rt-fecha" role="timer" aria-live="off">lunes · 06:30</span>
       <div class="rt-vel" id="rt-vel" role="group" aria-label="Velocidad del día">${VELOCIDADES.map(v => `<button type="button" data-v="${v}" aria-label="Velocidad ${v} veces">${v}×</button>`).join('')}</div>
-      <button type="button" class="rt-salto" id="rt-salto" title="Calcula las próximas 2 horas del día sin dibujar la escena" aria-label="Avanzar 2 horas del día sin dibujar">+2 h</button></div>
+      <button type="button" class="rt-salto" id="rt-salto" title="Calcula las próximas 2 horas del día sin dibujar la escena" aria-label="Avanzar 2 horas del día sin dibujar">+2 h</button>
+      <button type="button" class="rt-salto" id="rt-salto6" title="Calcula las próximas 6 horas del día sin dibujar la escena. Tarda unos 5 minutos (más a mediodía); se puede cancelar" aria-label="Avanzar 6 horas del día sin dibujar (tarda unos 5 minutos)">+6 h</button></div>
     <p class="rt-exp">Los años los mueve el modelo semanal; los carros y animales muestran un día de esa semana.</p>
     <div class="rt-info vacio" id="rt-info"><span id="rt-msg"></span></div>`;
-  const $ = (id) => host.querySelector('#' + id), fecha = $('rt-fecha'), play = $('rt-play'), vel = $('rt-vel'), msg = $('rt-msg'), info = $('rt-info'), bSalto = $('rt-salto');
+  const $ = (id) => host.querySelector('#' + id), fecha = $('rt-fecha'), play = $('rt-play'), vel = $('rt-vel'), msg = $('rt-msg'), info = $('rt-info'), bSalto = $('rt-salto'), bSalto6 = $('rt-salto6');
   const fechaA = $('rt-fechaA'), playA = $('rt-playA'), velA = $('rt-velA');
   play.onclick = () => { if (!RELOJ.arrancado) { RELOJ.arrancar(); return; } if (RELOJ.destino) RELOJ.cancelarDestino(); RELOJ.alternar(); };
   vel.querySelectorAll('button').forEach(b => b.onclick = () => { RELOJ.ponerVel(+b.dataset.v); });
@@ -85,7 +86,7 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
     play.textContent = RELOJ.pausa || !RELOJ.arrancado ? '▶' : '❚❚';
     play.setAttribute('aria-label', RELOJ.pausa ? 'Reanudar el día' : 'Pausar el día');
     vel.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausa && +b.dataset.v === RELOJ.vel));
-    bSalto.disabled = !RELOJ.arrancado || RELOJ.saltando;
+    bSalto.disabled = bSalto6.disabled = !RELOJ.arrancado || RELOJ.saltando;
     playA.textContent = RELOJ.pausaSem ? '▶' : '❚❚';
     playA.setAttribute('aria-label', RELOJ.pausaSem ? 'Correr los años' : 'Pausar los años');
     velA.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausaSem && +b.dataset.v === RELOJ.velSem));
@@ -131,6 +132,8 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
     }
   });
   bSalto.onclick = () => { if (!RELOJ.saltando && RELOJ.arrancado) RELOJ.saltar(SALTO_PASOS); };
+  bSalto6.onclick = () => { if (!RELOJ.saltando && RELOJ.arrancado) RELOJ.saltar(3 * SALTO_PASOS); }; // +6 h: el mismo salto paso a paso, tres veces más largo (medido: ~4 min 40 s de 06:30 a 12:30)
+  RELOJ.alCambiar((que) => { if (que === 'salto' && RELOJ.salto && RELOJ.salto.n > SALTO_PASOS) q('rs-n').textContent = 'Este salto de 6 horas tarda unos 5 minutos (más a mediodía, cuando hay más carros, personas y animales). Puedes cancelarlo cuando quieras.'; else if (que === 'salto') q('rs-n').textContent = 'Cada segundo simulado corre con el mismo modelo que a velocidad normal; la escena se vuelve a dibujar al terminar.'; });
 
   let tUi = 0, cancelar = null;
   // se actualiza ~4 veces por segundo (leer el reloj no cuesta; escribir texto en el DOM sí)

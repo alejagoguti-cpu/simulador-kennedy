@@ -248,7 +248,7 @@
    RELOJ.cuadro(): corre los pasos fijos de 1 s simulado que tocan (tráfico, agentes, fauna, aves, semanas) y después los dibujos registrados.
    El control de tiempo (pausa, velocidad, fecha y hora) está en data3d/reloj_ui.js. */
 import { RELOJ, vistaT3 } from './data3d/reloj.js?v=5';
-import { crearControlTiempo } from './data3d/reloj_ui.js?v=5';
+import { crearControlTiempo } from './data3d/reloj_ui.js?v=6';
 crearControlTiempo(); // control de tiempo único (pausa, velocidad, fecha y hora) dentro de #trafficHud
 // caché de JSON compartida: cada archivo se descarga y se lee UNA vez aunque lo pidan varios módulos (giro_sim.json, trees.json, estrategias.json…)
 window.cargarJSON = window.cargarJSON || ((c) => (u) => c[u] || (c[u] = fetch(u).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })))({});
