@@ -24,7 +24,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
   opacity:0;transform:translateY(-6px);transition:opacity .35s,transform .35s;pointer-events:none}
 #ci-toast.on{opacity:1;transform:none;pointer-events:auto}#ci-toast h4{margin:0 0 6px;font-size:12.5px;font-weight:600}#ci-toast ul{margin:0;padding:0 0 0 14px}#ci-toast li{margin:2px 0}#ci-toast li b{color:#fff}
 #ci-toast button{all:unset;cursor:pointer;position:absolute;right:10px;top:8px;color:#b3bbc0;font-size:15px}
-@media(max-width:760px){#ci-toast{left:8px;right:8px;width:auto;top:auto;bottom:140px}}
+@media(max-width:760px){#ci-toast{left:8px;right:8px;width:auto;top:auto;bottom:84px;max-height:34vh;overflow:auto;font-size:11px}}
 @media(prefers-reduced-motion:reduce){#ci-toast{transition:none}}`;
   document.head.appendChild(css);
 
@@ -240,7 +240,8 @@ export function iniciarCapasEscenario({ T3, ES }) {
     const fila = (n, hoy, prop, mejor, por, raw) => { const ir = IR[ii++]; let br = '';
       if (raw && pro() && raw.every(v => isFinite(v) && v >= 0)) { const m = Math.max(raw[0], raw[1], 1e-9), w = (v) => Math.max(2, v / m * 100).toFixed(1); br = `<i class="br"><b style="width:${w(raw[0])}%;background:#8fb0c9"></b><b style="width:${w(raw[1])}%;background:${CP}"></b></i>`; }
       return `<div class="r"><span>${n}</span><b>${hoy}</b><strong class="${pro() ? (mejor ? 'bien' : 'mal') : ''}">${pro() ? prop : '–'}</strong>${br}<small>${por}${ir ? ` <button type="button" class="ci-ir" data-ir="${ir}">Ver en el mapa →</button>` : ''}</small></div>`; };
-    x.innerHTML = `<div class="h"><span>Indicadores · ${2026 + Math.floor(t / AÑO) + 1}</span><span><i class="lg" style="background:#8fb0c9"></i>hoy → <i class="lg" style="background:${CP}"></i>propuesta ${pro() ? e : ''}</span></div>` +
+    const tReal = Math.max(0, Math.floor(SIMST.t)); // semana real del reloj (sin tope): la vista viva R devuelve siempre el estado actual, sin importar el índice
+    x.innerHTML = `<div class="h"><span>Indicadores · Año ${Math.floor(tReal / AÑO) + 1}</span><span><i class="lg" style="background:#8fb0c9"></i>hoy → <i class="lg" style="background:${CP}"></i>propuesta ${pro() ? e : ''}</span></div>` +
       fila('Hogares con huerta', fmt(A.act[t]), fmt(P.act[t]), true, 'Bavaria forma promotores que abren y acompañan huertas.', [A.act[t], P.act[t]]) +
       fila('Dependencia de Corabastos', fmt(A.dep[t] * 100) + ' %', fmt(P.dep[t] * 100) + ' %', true, 'Huertas y compras directas a la región abastecen tiendas y comedores.', [A.dep[t], P.dep[t]]) +
       fila('Vehículos en la Av. Ciudad de Cali', '100 %', ru ? fmt(100 - ru.veh) + ' %' : '–', true, 'Menos viajes de carga y de compra hacia Corabastos.', ru ? [100, 100 - ru.veh] : null) +

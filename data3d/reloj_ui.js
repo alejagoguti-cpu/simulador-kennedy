@@ -39,8 +39,11 @@ const CSS = `
 #rt-velo .rs-a button{font:600 12px var(--ui-sans,Inter,system-ui,sans-serif);padding:7px 14px;border-radius:9px;cursor:pointer;background:rgba(148,163,184,.12);color:#e2e8f0;border:1px solid rgba(148,163,184,.3)}
 #rt-velo .rs-a button:hover{background:rgba(148,163,184,.22)}#rt-velo .rs-a button:disabled{opacity:.5;cursor:default}
 @media (prefers-reduced-motion:reduce){#rt-velo .rs-b.ind i{animation:none;width:100%;opacity:.35}}
-@media (max-width:760px){#trafficHud{top:64px!important;bottom:auto!important;width:calc(100vw - 24px)!important}#toast{top:150px!important}#trafficHud .rt-vel{flex:1 1 100%}#trafficHud .rt-vel button{flex:1}#trafficHud .rt-fecha{font-size:12px}
-  #rt-velo{align-items:flex-start;padding:150px 16px 0}}
+@media (max-width:760px){#trafficHud{top:58px!important;bottom:auto!important;width:calc(100vw - 16px)!important;max-width:none;padding:6px 8px!important}#toast{top:196px!important}
+  #trafficHud .rt-fila{gap:6px 8px;justify-content:space-between}#trafficHud .rt-fecha{flex:1 1 auto;text-align:left;font-size:12px}#trafficHud .rt-vel{flex:1 1 auto}#trafficHud .rt-vel button{flex:1;min-width:0;padding:0 4px}#trafficHud .rt-salto{flex:none}
+  #trafficHud .rt-info{margin-top:4px;flex-wrap:wrap}
+  /* el salto sin dibujo: la tarjeta va abajo (sobre el selector de escenarios, que queda bloqueado), nunca sobre la fila de velocidades ni sobre el panel de escenarios */
+  #rt-velo{align-items:flex-end;padding:0 8px 78px}#rt-velo .rs-c{padding:12px 14px 10px}#rt-velo .rs-n{display:none}#rt-velo .rs-t{margin:2px 0 6px}#rt-velo .rs-a{margin-top:8px}}
 `;
 const pad = (n) => String(n).padStart(2, '0');
 const durTxt = (seg) => { seg = Math.max(0, Math.round(seg)); const h = Math.floor(seg / 3600), m = Math.floor((seg % 3600) / 60); return h ? h + ' h' + (m ? ' ' + m + ' min' : '') : m ? m + ' min' : seg + ' s'; };

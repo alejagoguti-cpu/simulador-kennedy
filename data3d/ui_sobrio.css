@@ -89,6 +89,21 @@ body #hud-c svg{opacity:.8}
 #dock #bt-pan:not(.dk-oculto){display:block!important}
 #dock #bt-pan .bt-cuerpo{display:block!important}
 @media(max-width:760px){#dock{display:none}}
+/* columna derecha sin solapes (escritorio): arriba el panel de pestañas (Agentes · Red biótica · Polinización) con altura limitada y scroll propio,
+   abajo el panel de escenarios; entre los dos reparten la altura libre (100vh menos 14 px arriba, 86 px abajo y 12 px entre ambos) */
+@media(min-width:761px){
+  :root{--dk-top:14px}
+  body #dock{top:var(--dk-top); max-height:calc((100vh - 98px - var(--dk-top)) * .45)}
+  #dock .dk-body{min-height:0}
+  body #esim{max-height:calc((100vh - 98px - var(--dk-top)) * .55)}
+}
+/* con 1101-1380 px de ancho el selector de escenarios (centrado arriba) llega hasta la columna derecha: la columna baja debajo de él */
+@media(min-width:1101px) and (max-width:1380px){:root{--dk-top:70px}}
+/* celular: los interruptores DATOS y RED BIÓTICA van en la fila de la marca, no sobre el control de tiempo ni el panel de escenarios */
+@media(max-width:760px){
+  body #gs-tog{top:14px!important;right:10px!important}
+  body #bt-tog{top:14px!important;right:84px!important}
+}
 
 /* títulos con espacio entre nombre y nota */
 body .gs-pan h3{gap:10px}

@@ -148,7 +148,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
 .es-et{position:fixed;left:0;top:0;z-index:5;pointer-events:none;display:none;padding:6px 10px;border-radius:10px;font:400 11px/1.3 var(--ui-sans,Inter,system-ui,sans-serif);color:#eef1f2;white-space:nowrap;
   background:var(--ui-glass,rgba(14,16,20,.6));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));backdrop-filter:blur(14px) saturate(1.6);-webkit-backdrop-filter:blur(14px) saturate(1.6);font-variant-numeric:tabular-nums}
 .es-et b{display:block;font-weight:600;font-size:11.5px}.es-et i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.es-et em{font-style:normal;color:#f2c995}
-#esim{position:fixed;right:16px;bottom:86px;z-index:8;width:330px;max-height:calc(100vh - 470px);min-height:150px;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;color:#e9ecee;
+#esim{position:fixed;right:16px;bottom:86px;z-index:8;width:330px;max-height:calc((100vh - 112px) * .55);min-height:150px;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;color:#e9ecee;
   font:400 12px/1.4 var(--ui-sans,Inter,system-ui,sans-serif);background:var(--ui-glass,rgba(14,16,20,.62));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));box-shadow:var(--ui-glass-sh,0 20px 40px rgba(0,0,0,.3));
   backdrop-filter:var(--ui-glass-fx,blur(24px) saturate(1.8));-webkit-backdrop-filter:var(--ui-glass-fx,blur(24px) saturate(1.8))}
 #esim .cab{display:flex;align-items:center;gap:8px;padding:11px 12px 8px 14px}#esim .cab b{flex:1;font-weight:600;font-size:13px}
@@ -160,7 +160,8 @@ export async function iniciarEscenariosSim({ T3, cj }) {
 #esim .seg button b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:var(--c)}
 #esim .tl{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}#esim .tl button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e2a55b;color:#1a1208;font-size:12px;flex:none}
 #esim .tl .tlb{flex:1;min-width:0;height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}#esim .tl .tlb i{display:block;height:100%;width:0;background:#e2a55b}#esim .tlr{margin-top:0;font-size:10px}#esim .tl output{width:58px;text-align:right;font-variant-numeric:tabular-nums;color:#d5dadd;font-size:11px}
-#esim .cuerpo{overflow:auto;padding:2px 12px 12px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+#esim{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}#esim>*{flex-shrink:0}#esim.min{overflow:hidden}
+#esim .cuerpo{overflow:visible;padding:2px 12px 12px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
 #esim ul{list-style:none;margin:4px 0 8px;padding:0;display:grid;gap:4px}#esim li{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04)}
 #esim li span{color:#c3cace;font-size:11px}#esim li strong{font-weight:600;font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}#esim li small{grid-column:1/-1;color:#949da3;font-size:10.5px}
 #esim li small em{font-style:normal;color:#f2c995}
@@ -200,8 +201,8 @@ body.tb-abierto #esim{display:none}
 #esim .reglas canvas{display:block;width:100%;height:56px;margin:6px 0 2px}
 #esim .senales{font-size:11px;color:#c3cace}#esim .senales p{margin:3px 0}#esim .senales b{color:#fff;font-weight:600}
 #esim.min .vctl,#esim.min .como{display:none}
-@media (max-width:760px){#esim:not(.min){overflow-y:auto;max-height:56vh!important}#esim:not(.min)>*{flex-shrink:0}#esim:not(.min) .cuerpo{overflow:visible}#esim .exp.ley2{display:none}}
-@media (max-width:760px){#esim{left:8px;right:8px;width:auto;top:146px;bottom:auto;max-height:40vh}#esim .cab{padding:8px 10px 6px 12px}}`;
+@media (max-width:760px){#esim:not(.min){overflow-y:auto;max-height:min(56vh,calc(100vh - 480px))!important}body:has(#hid-red[data-on="1"]) #esim{max-height:max(150px,calc(100vh - 530px))!important}#esim:not(.min)>*{flex-shrink:0}#esim:not(.min) .cuerpo{overflow:visible}#esim .exp.ley2{display:none}}
+@media (max-width:760px){#esim{left:8px;right:8px;width:auto;top:192px;bottom:auto;max-height:40vh}#esim .cab{padding:8px 10px 6px 12px}}`;
   document.head.appendChild(css);
   const chip = (html) => { const d = document.createElement('div'); d.className = 'es-et'; d.innerHTML = html; document.body.appendChild(d); return d; };
   const ET = { via: chip(''), cora: chip(''), hum: chip(''), bav: chip(''), comp: chip(''), dj: chip('') };
@@ -462,7 +463,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
   import('./mejora_tour.js?v=8').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=7').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./capas_escenario.js?v=8').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }
