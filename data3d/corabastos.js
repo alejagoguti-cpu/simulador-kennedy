@@ -72,11 +72,13 @@ function mallaNaves({ THREE, T3, lw, D, liviano }, lista) {
 }
 // dos mallas: las bodegas que se conservan y las que la estrategia E3 desmonta (a menos de 120 m del humedal La Vaca, campo dh)
 export function construirCorabastos(cfg) {
-  const lejos = cfg.D.naves.filter(n => !(n.dh < 120)), cerca = cfg.D.naves.filter(n => n.dh < 120);
+  const lejos = cfg.D.naves.filter(n => !(n.dh < 120));
   const grupo = new cfg.THREE.Group(); grupo.name = 'corabastos';
-  const conservadas = mallaNaves(cfg, lejos), quitadas = cerca.length ? mallaNaves(cfg, cerca) : new cfg.THREE.Group();
+  // las que se desmontan van una por una (mismo orden que data3d/sim_vida.js: de la más cercana al humedal a la más lejana), para desmontarlas por fases
+  const cerca = cfg.D.naves.map((n, i) => ({ n, i })).filter(o => o.n.dh < 120).sort((a, b) => a.n.dh - b.n.dh || a.i - b.i);
+  const conservadas = mallaNaves(cfg, lejos), quitadas = new cfg.THREE.Group(), bodegasQ = cerca.map(({ n, i }) => { const m = mallaNaves(cfg, [n]); m.userData = { i, dh: n.dh }; quitadas.add(m); return m; });
   grupo.add(conservadas, quitadas); cfg.T3.scene.add(grupo);
-  grupo.userData = { conservadas, quitadas, n_quitadas: cerca.length };
+  grupo.userData = { conservadas, quitadas, bodegasQ, n_quitadas: cerca.length };
   return grupo;
 }
 // ¿la huella (marco del modelo) cae en una nave de Corabastos? (para quitar su caja genérica)

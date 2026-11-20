@@ -4,7 +4,7 @@
    Muestra TODAS las corridas: % que cierra por cada regla, semana mediana de cierre, supervivencia, zona peor abastecida (corridas + mediana),
    tiempo de resolución de solicitudes (B y C), alimento por mercado en C, y la lista
    completa de semillas (cada una se puede ver en el mapa). */
-import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=2';
+import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=3';
 const R_CORRIDAS = 30, AÑOS = 20; // el mismo periodo para A, B y C
 const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOM = Object.fromEntries(Object.entries(ESCENARIOS).map(([k, v]) => [k, v.n]));
 const NREG = Object.fromEntries(REGLAS.map(R => [R.k, R.n.toLowerCase()]));
@@ -83,7 +83,7 @@ export function abrirEvaluar({ PAR, esc, verCorrida }) {
   const recibir = (d) => { if (d.id !== id) return; if (d.tipo === 'progreso') progreso(d.hecho, d.total);
     if (d.tipo === 'escenario') { RES[d.e] = { corridas: d.corridas, resumen: d.resumen }; pintar(); }
     if (d.tipo === 'fin') { RES.listo = true; el.querySelector('[data-prog]').textContent = `Listo: ${escs.length * R_CORRIDAS} corridas de ${AÑOS} años con los parámetros de este momento.`; pintar(); } };
-  let w = null; try { w = new Worker(new URL('./sim_vida_worker.js?v=2', import.meta.url), { type: 'module' }); } catch (e) { w = null; }
+  let w = null; try { w = new Worker(new URL('./sim_vida_worker.js?v=3', import.meta.url), { type: 'module' }); } catch (e) { w = null; }
   if (w) { w.onmessage = (ev) => { recibir(ev.data); if (ev.data.tipo === 'fin') w.terminate(); };
     w.onerror = () => { w.terminate(); porBloques(id, escs, congelado, recibir); }; w.postMessage({ id, escs, R: R_CORRIDAS, años: AÑOS, PAR: congelado }); }
   else porBloques(id, escs, congelado, recibir);
@@ -106,6 +106,7 @@ function pintar() {
       <p>Por regla: ${REGLAS.map(Q => `${Q.n.toLowerCase()} <b>${fmt(r.porRegla[Q.k])} %</b>`).join(' · ')}</p>
       <p>Semana mediana de cierre: <b>${r.semCierre != null ? `${fmt(r.semCierre)} (año ${fmt(Math.floor((r.semCierre - 1) / AÑO) + 1)})` : 'ninguna cierra'}</b>${r.colapsan ? ` · rango año ${fmt(r.min + 1 / AÑO, 1)} a ${fmt(r.max + 1 / AÑO, 1)}` : ''}</p>
       ${r.resM != null ? `<p>Solicitudes: se resuelven en <b>${fmt(r.resM, 1)} semanas</b> (media) · p90 <b>${fmt(r.resP, 1)}</b> (mediana de las corridas)</p>` : '<p>Sin sistema de solicitudes (cada quien resuelve solo).</p>'}
+      ${r.cora && k !== 'A' ? `<p>Corabastos: <b>${fmt(r.cora.desm)}</b> bodegas desmontadas junto a La Vaca · borde recuperado <b>${fmt(r.cora.borde)} m²</b> (mediana a los ${AÑOS} años)</p>` : ''}
       ${recM != null ? `<p>Tras un cierre de vía, todas las zonas vuelven a 95 % en <b>${fmt(recM)} semanas</b> en promedio</p>` : ''}</div>`; }).join('');
   { const d = RES && RES.C && RES.C.resumen && RES.C.resumen.merc, box = el.querySelector('[data-merc]');
     box.innerHTML = d ? `<div class="runs">${MERCADOS.map((m, k) => ({ m, kg: d[k] })).sort((a, b) => b.kg - a.kg).map(x => `<button type="button" disabled style="--c:${COL.C};cursor:default"><b>${x.m.n}</b> · ${fmt(x.kg)} kg/sem de ${fmt(x.m.cap * 7)}</button>`).join('')}</div>` : '<p class="nota">calculando…</p>'; }

@@ -163,8 +163,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     pMerc = import('./mercados_red.js?v=5').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
   const parqueCorabastos = (on) => { if (PCORA) { PCORA.ver(on); return; } if (!on || pPCora) return;
-    pPCora = import('./corabastos_parque.js?v=6').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
-  import('./escenarios_sim.js?v=32').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+    pPCora = import('./corabastos_parque.js?v=7').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
+  import('./escenarios_sim.js?v=33').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   Promise.all([import('./alivio_cali.js?v=9'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   /* viajes de abastecimiento (data3d/viajes_mercados.js): la simulación EVALÚA adónde van los carros y camiones que iban a Corabastos (mercados de
      barrio, plazoletas y Bavaria) según los mercados abiertos cada año; el tráfico que se quita cerca de Corabastos sale de este modelo. Se carga
@@ -233,7 +233,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = hu && !EST; // camas de tierra en terrazas solo si no hay hidroponía
     if (T3.torres && T3.torres.huertas) T3.torres.huertas(hu);
     const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); // las parcelas viejas (en diagonal) ya no: las reemplazan las huertas de enseñanza del distrito
-    const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = !hu; // con la propuesta las bodegas junto al humedal se desmontan
+    const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (window.KEN_PCORA && window.KEN_PCORA.aplicarVis) window.KEN_PCORA.aplicarVis(); else if (co && co.userData.quitadas) co.userData.quitadas.visible = !hu; // con la propuesta las bodegas junto al humedal se desmontan por fases (data3d/corabastos_parque.js, según sim_vida.js)
     parqueCorabastos(hu); // y en su lugar queda el parque humedal (agua y árboles nativos)
     mercadosBarrio(hu); // red de mercados: de barrio y plazoletas en parques grandes, abren año a año
     if (window.KEN_VIAJES) { window.KEN_VIAJES.ver(hu); window.KEN_VIAJES.panel(hu); } // viajes de abastecimiento hacia mercados y Bavaria

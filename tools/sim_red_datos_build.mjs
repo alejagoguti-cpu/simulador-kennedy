@@ -77,6 +77,14 @@ const cub = []; for (const q of ZONAS.slice().sort((a, b) => b[2] - a[2])) { if 
 cub.forEach((q, i) => MOD.push({ id: 'cu' + (i + 1), n: 'Cubiertas compartidas ' + (i + 1), t: 'modCubierta', x: q[0], z: q[1], ha: 0.6 }));
 MOD.sort((a, b) => dB(a.x, a.z) - dB(b.x, b.z)).forEach((m, i, L) => { m.cuota = Math.round((i + 0.5) / L.length * 1000) / 1000; P.push(m); }); // se incorporan de Bavaria hacia afuera
 P.push({ id: 'huertaBav', n: 'Huerta central de Bavaria (B)', t: 'modBavaria', x: 4170, z: 30, ha: 2.9 });
+/* BODEGAS de Corabastos a menos de 120 m del humedal La Vaca (data3d/corabastos.json, campo dh; las mismas de data3d/corabastos_plan.js),
+   en orden de desmonte: de la más cercana al humedal a la más lejana. area = huella (m²); borde = huella + 10 m alrededor (calles y patios
+   de carga que también se liberan) [SUP]. AREA_NAVES = huella de todas las bodegas de la central. */
+const CO = D('corabastos.json'), BODEGAS = CO.naves.map((n, i) => ({ i, n })).filter(o => o.n.dh < 120).sort((a, b) => a.n.dh - b.n.dh || a.i - b.i)
+  .map(({ i, n }) => { const w = lw(n.c[0], n.c[1]); return { i, x: r1(w[0]), z: r1(w[1]), dh: n.dh, area: Math.round(n.L * n.W), borde: Math.round((n.L + 20) * (n.W + 20)) }; });
+const AREA_NAVES = Math.round(CO.naves.reduce((s, n) => s + n.L * n.W, 0));
+{ const cx = BODEGAS.reduce((s, b) => s + b.x, 0) / BODEGAS.length, cz = BODEGAS.reduce((s, b) => s + b.z, 0) / BODEGAS.length;
+  P.push({ id: 'bordeVaca', n: 'Borde restaurado de La Vaca (antes bodegas de Corabastos)', t: 'humedal', x: r1(cx), z: r1(cz), ha: 1, dyn: true }); } // su área cambia con el desmonte (sim_vida)
 const MERC = MERCADOS.map(m => ({ id: m.id, n: m.n, tipo: m.tipo, x: m.x, z: m.z, cap: m.cap, desde: m.desde }));
 const txt = `/* GENERADO por tools/sim_red_datos_build.mjs (no editar a mano). Datos fijos del modelo semanal data3d/sim_vida.js.
    ZONAS: [x, z, población] (zonas de 500 m de data3d/viajes_mercados.js). FUENTES: Corabastos, Bavaria, Doña Juana y los mercados (en ese orden).
@@ -89,6 +97,8 @@ export const LARGO = ${JSON.stringify(L0)};
 export const CIERRES = ${JSON.stringify(CIERRES)};
 export const MERCADOS = ${JSON.stringify(MERC)};
 export const PARCHES = ${JSON.stringify(P)};
+export const BODEGAS = ${JSON.stringify(BODEGAS)};
+export const AREA_NAVES = ${AREA_NAVES};
 `;
 writeFileSync(join(REPO, 'data3d', 'sim_red_datos.js'), txt);
 console.log('zonas', ZONAS.length, 'pob', ZONAS.reduce((s, q) => s + q[2], 0), 'fuentes', FUENTES.length, 'parches', P.length);

@@ -18,7 +18,7 @@
    REGLAS DE GAME OVER (REGLAS): tres, una por subsistema, fijas antes de correr e iguales para A, B y C; cada una cierra la simulación si se
    cumple 4 semanas seguidas; se registra el motivo y la semana. Todo supuesto que no viene del documento ni de los datos está marcado [SUP].
    Datos fijos (red vial, zonas, mercados, parches): data3d/sim_red_datos.js (tools/sim_red_datos_build.mjs). */
-import { ZONAS, FUENTES, COSTO, LARGO, CIERRES, MERCADOS as MERC_D, PARCHES } from './sim_red_datos.js?v=1';
+import { ZONAS, FUENTES, COSTO, LARGO, CIERRES, MERCADOS as MERC_D, PARCHES, BODEGAS, AREA_NAVES } from './sim_red_datos.js?v=2';
 export const AÑO = 52, POB_K = 1034000;
 export const ARRANQUE = 0; // las reglas cuentan desde la semana 1: los tres escenarios se evalúan el mismo periodo, montaje incluido
 export const MERCADOS = MERC_D;
@@ -73,6 +73,22 @@ const CATCH = MERC_D.map((m, k) => { const L = []; for (let z = 0; z < NZ; z++) 
 const EFB = ZONAS.map((_, z) => 1 / (1 + LARGO[z][JB] / SUP.KM_REPARTO));
 const GC = ZONAS.map((_, z) => Math.exp(-COSTO[z][JC] / SUP.INCL)), GB = ZONAS.map((_, z) => Math.exp(-COSTO[z][JB] / SUP.INCL));
 const NODO_Z = ZONAS.map((_, z) => { let b = 0, bc = Infinity; for (let k = 0; k < NM; k++) if (COSTO[z][3 + k] < bc) { bc = COSTO[z][3 + k]; b = k; } return b; }); // C: estación de compost más cercana
+export const CAP_RED_TDIA = CAPT / 1000; // t/día de frutas y verduras de los 35 mercados de mercados_red.js (= capacidad de Bavaria en B)
+export const PRECIO_REF = 2600;           // $/kg: precio de referencia de los alimentos frescos (valor por defecto de P1.precio)
+/* ---------- CORABASTOS LIBERA ESPACIO (solo B y C) ----------
+   Regla [SUP], declarada antes de correr: la carga liberada es la fracción de la comida de Kennedy que ya NO pasa por Corabastos (1 − dependencia),
+   promediada en 26 semanas. El espacio de bodega que sobra es proporcional a la carga liberada: cuando carga liberada × huella de todas las
+   bodegas alcanza la huella acumulada de la siguiente bodega (en orden de cercanía al humedal La Vaca), se aprueba su desmonte; como mucho una
+   fase cada 13 semanas. Obra: 26 semanas sin bodega ni borde; luego el borde restaurado madura en 156 semanas. El desmonte no se revierte. */
+export const DESMONTE = { EMA: 26, CADA: 13, OBRA: 26, MADURA: 156, Q_BORDE: 0.85, MEJORA_VACA: 0.25 };
+export { BODEGAS, AREA_NAVES };
+const BORDE_TOT = BODEGAS.reduce((a, b) => a + b.borde, 0), CUM = []; { let c = 0; for (const b of BODEGAS) { c += b.area; CUM.push(c); } }
+function corabastos(s, e, dep, t) {
+  const D = s.cora; if (e === 'A') return D;
+  D.lib += ((1 - dep) - D.lib) / DESMONTE.EMA;
+  const k = D.ap.length; if (k < BODEGAS.length && D.lib * AREA_NAVES >= CUM[k] && t - D.ult >= DESMONTE.CADA) { D.ap.push(t); D.ult = t; }
+  let m2 = 0, ha = 0, mad = 0, rest = 0; for (let i = 0; i < D.ap.length; i++) { m2 += BODEGAS[i].area; const w = t - D.ap[i] - DESMONTE.OBRA; if (w >= 0) { rest++; const mz = Math.min(1, w / DESMONTE.MADURA); ha += BODEGAS[i].borde / 1e4; mad += mz * BODEGAS[i].borde; } }
+  D.m2 = m2; D.ha = ha; D.rest = rest; D.mad = ha > 0 ? mad / (ha * 1e4) : 0; return D; }
 const rampa = (t) => { let s = 0; for (const m of MERC_D) if (t >= m.desde) s += m.cap; return s / CAPT; }; // mismo calendario de montaje para B y C
 
 /* ---------- HÁBITAT: especies (data3d/biotica.js) × parches, metapoblación de Levins ---------- */
@@ -93,9 +109,11 @@ const NP = PARCHES.length, NS = ESPECIES.length, GK = Object.keys(GRUPOS);
 const TIPO = PARCHES.map(p => p.t === 'modCubierta' ? 'cub' : p.t.startsWith('mod') ? 'mod' : p.t);
 const KER = Object.fromEntries(GK.map(g => { const D = GRUPOS[g].D, a = new Float32Array(NP * NP); for (let p = 0; p < NP; p++) for (let q = 0; q < NP; q++) if (p !== q) a[p * NP + q] = Math.exp(-Math.hypot(PARCHES[p].x - PARCHES[q].x, PARCHES[p].z - PARCHES[q].z) / D) * Math.sqrt(PARCHES[q].ha); return [g, a]; }));
 const SQA = PARCHES.map(p => Math.sqrt(Math.max(0.05, p.ha)));
+const IB = PARCHES.findIndex(p => p.dyn), IV = PARCHES.findIndex(p => p.id === 'vaca'); // borde restaurado de La Vaca (área variable: KER usa 1 ha y se escala en cada semana) y La Vaca
 function calidad(e, s, P3, out) { // calidad de cada parche esta semana (0 = no existe)
   for (let p = 0; p < NP; p++) { const P = PARCHES[p];
-    out[p] = P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55) : P.t === 'bosque' ? 0.6 : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
+    out[p] = P.dyn ? (s.cora.ha > 0 ? DESMONTE.Q_BORDE * s.cora.mad : 0)
+      : P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55 * (p === IV ? 1 + DESMONTE.MEJORA_VACA * (s.cora.ha * 1e4 / BORDE_TOT) * s.cora.mad : 1)) : P.t === 'bosque' ? 0.6 : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
       : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : (e === 'C' && s.supF >= P.cuota ? 0.4 : 0); } }
 function apto(i, p, q) { const g = ESPECIES[i][2]; return (GRUPOS[g].hab[TIPO[p]] || 0) * q[p]; }
 
@@ -118,7 +136,7 @@ export function crear(e, seed) {
     A: A0, prom: 0, pipe: [], pob: POB_K, Nef: BASE[e].N, supF: 0, adopc: 0.15, buf: new Float64Array(64), W: W0, B: 900, muertes: 0,
     cierre: null, Kc: (1 + SUP.HOLGURA) * POB_K * SUP.KG_PERS * 7, Kr: (1 + SUP.HOLGURA) * POB_K * SUP.KG_ORG * 7, Kcs: 0, pr: 0, pcs: 0, pcp: 0,
     colaB: 0, colaC: [], colaF: 0, bajo90: 0, log: [], o: {}, racha: Object.fromEntries(REGLAS.map(R => [R.k, 0])), colapso: null,
-    rec: { pend: null, n: 0, suma: 0, ult: null, fallidas: 0 }, occ: new Uint8Array(NS * NP), q: new Float32Array(NP),
+    cora: { lib: 0, ap: [], ult: -999, m2: 0, ha: 0, mad: 0, rest: 0 }, rec: { pend: null, n: 0, suma: 0, ult: null, fallidas: 0 }, occ: new Uint8Array(NS * NP), q: new Float32Array(NP),
     H: { paso: 13, t: [], act: [], dep: [], zmin: [], esp: [], pend: [], res: [] } };
   calidad(e, s, { arboles: 0.4 }, s.q); // estado inicial igual para todos (sin módulos; árboles por defecto)
   for (let i = 0; i < NS; i++) for (let p = 0; p < NP; p++) s.occ[i * NP + p] = apto(i, p, s.q) >= 0.45 ? 1 : 0;
@@ -134,7 +152,7 @@ function racionar(r, g, u, C, out) { let tot = 0; for (let z = 0; z < NZ; z++) t
   while (f(hi) < C) hi *= 2; for (let it = 0; it < 40; it++) { const m = (lo + hi) / 2; if (f(m) < C) lo = m; else hi = m; }
   for (let z = 0; z < NZ; z++) out[z] = r[z] * Math.min(1, lo * g[z]); }
 const UNO = new Float64Array(NZ).fill(1), UB = Float64Array.from(EFB, e => 1 / e);
-const NEED = new Float64Array(NZ), LOCZ = new Float64Array(NZ), MK = new Float64Array(NZ), BV = new Float64Array(NZ), RQ = new Float64Array(NZ), CO = new Float64Array(NZ), TMP = new Float64Array(NZ), DES = new Float64Array(NZ);
+const PUR = new Float64Array(NZ), NEED = new Float64Array(NZ), LOCZ = new Float64Array(NZ), MK = new Float64Array(NZ), BV = new Float64Array(NZ), RQ = new Float64Array(NZ), CO = new Float64Array(NZ), TMP = new Float64Array(NZ), DES = new Float64Array(NZ);
 // cuantil de una mezcla de uniformes [lo, hi] con peso w
 function mezclaU(seg) { let W = 0, m = 0; for (const [lo, hi, w] of seg) { W += w; m += w * (lo + hi) / 2; } if (!W) return { m: null, p90: null };
   const cdf = (x) => { let c = 0; for (const [lo, hi, w] of seg) c += w * (x <= lo ? 0 : x >= hi ? 1 : (x - lo) / Math.max(1e-9, hi - lo)); return c / W; };
@@ -165,7 +183,8 @@ export function paso(s, PAR) {
     s.prom = Math.max(0, s.prom + nuevos - binom(L, s.prom, Math.min(1, h))); m2p = s.prom >= 1 ? s.A * 50 / s.prom : Infinity; }
   const Nef = Math.max(1, s.Nef);
   const p = !prop ? 0.0002 : s.prom >= 1 ? Math.max(0.00058, (P1.cupos / 13) * P1.alcance / Nef) : 0.0002;
-  const adop = Math.max(0, (p + b.q * s.A / Nef) * (Nef - s.A)) * ruido(L, 0.3);
+  const fPrecio = Math.min(1, Math.pow(PRECIO_REF / Math.max(500, P1.precio || PRECIO_REF), 0.3)); // [SUP] precio alto: los hogares compran menos (elasticidad −0,3)
+  const adop = Math.max(0, (p + b.q * s.A / Nef) * (Nef - s.A)) * Math.sqrt(Math.max(500, P1.precio || PRECIO_REF) / PRECIO_REF) * ruido(L, 0.3); // [SUP] precio alto: más hogares quieren sembrar (elasticidad 0,5)
   const espPrev = s.resolPrev || 0, fEsp = prop && espPrev > 12 ? 1 + Math.min(1, (espPrev - 12) / 24) : 1;
   const retiro = s.A * 0.0018 * (1 + 3 * Math.max(0, carga - 1)) * alivio * fEsp * ruido(L, 0.3);
   s.A = cl(s.A + adop - retiro, 0, Nef);
@@ -177,33 +196,39 @@ export function paso(s, PAR) {
   /* ---- ABASTECIMIENTO por zona ---- */
   const r0 = rampa(t);
   let needT = 0; for (let z = 0; z < NZ; z++) { NEED[z] = POBZ[z] * popF * SUP.KG_PERS * 7; needT += NEED[z]; LOCZ[z] = 0; MK[z] = 0; BV[z] = 0; }
-  const alimLocal = prod - merma; let bavKg = 0; const merc = e === 'C' ? new Float32Array(NM) : null;
-  if (e !== 'B') for (let z = 0; z < NZ; z++) LOCZ[z] = Math.min(NEED[z], alimLocal * SHARE[z]);
+  /* producción de las huertas: el autoconsumo (P1.auto) se queda en la zona; el excedente entra a la red hasta la capacidad de acopio de
+     excedentes (P1.acopio, kg/semana): A sin acopio vende la mitad en la cuadra y pierde la otra mitad; B lo lleva a Bavaria; C lo vende en los mercados */
+  const acop = !prop ? 0 : Math.min(Math.max(0, exc), P1.acopio), perdido = !prop ? Math.max(0, exc) * 0.5 : Math.max(0, exc - acop);
+  const alimLocal = auto + (!prop ? Math.max(0, exc) * 0.5 : e === 'C' ? acop : 0); let bavKg = 0; const merc = e === 'C' ? new Float32Array(NM) : null;
+  const fCap = (P1.capAcopio != null ? P1.capAcopio : CAP_RED_TDIA) / CAP_RED_TDIA; // «Capacidad de acopio de la red» (B: Bavaria; C: los mercados), relativa a la de mercados_red.js
+  for (let z = 0; z < NZ; z++) LOCZ[z] = Math.min(NEED[z], alimLocal * SHARE[z]);
+  for (let z = 0; z < NZ; z++) PUR[z] = fPrecio * Math.max(0, NEED[z] - LOCZ[z]); // lo que los hogares de la zona compran
   if (e === 'C') { /* mercados nodo, por rondas: cada mercado ofrece lo que le queda a sus zonas que aún tienen falta (en proporción a la falta
        y la cercanía); llega oferta × factor de ruta; lo que no hace falta o no llega por una ruta cortada queda en el mercado para la ronda
        siguiente, y otro mercado cercano puede suplir a la zona (4 rondas) */
-    for (let z = 0; z < NZ; z++) DES[z] = Math.max(0, NEED[z] * SUP.TOPE_MERC - LOCZ[z]);
-    const resto = new Float64Array(NM); for (let k = 0; k < NM; k++) resto[k] = t >= MERC_D[k].desde ? MERC_D[k].cap * 7 : 0;
+    for (let z = 0; z < NZ; z++) DES[z] = Math.min(PUR[z], Math.max(0, NEED[z] * SUP.TOPE_MERC - LOCZ[z]));
+    const resto = new Float64Array(NM); for (let k = 0; k < NM; k++) resto[k] = t >= MERC_D[k].desde ? MERC_D[k].cap * 7 * fCap : 0;
     for (let ronda = 0; ronda < 4; ronda++) for (let k = 0; k < NM; k++) { const S = resto[k]; if (S <= 1) continue; let wt = 0;
       for (const [z, w] of CATCH[k]) wt += Math.max(0, DES[z] - MK[z]) * w; if (!wt) continue;
       for (const [z, w] of CATCH[k]) { const falta = Math.max(0, DES[z] - MK[z]); if (!falta) continue; const ff = fe(z, 3 + k);
         const x = Math.min(S * falta * w / wt, falta / Math.max(0.05, ff)), lleg = Math.min(falta, x * ff); MK[z] += lleg; merc[k] += lleg; resto[k] -= x; } }
   }
   if (e === 'B') { // un solo nodo: misma capacidad total que la red de C y mismo calendario; reparto con costo por distancia
-    const KB = CAPT * 7 * r0 + alimLocal; let dem = 0; for (let z = 0; z < NZ; z++) dem += NEED[z] * UB[z];
+    const KB = CAPT * 7 * r0 * fCap + acop; let dem = 0; for (let z = 0; z < NZ; z++) dem += PUR[z] * UB[z];
     const sB = dem > 0 ? Math.min(SUP.TOPE_MERC, KB / dem) : 0;
-    for (let z = 0; z < NZ; z++) TMP[z] = NEED[z] * sB;
+    for (let z = 0; z < NZ; z++) TMP[z] = PUR[z] * sB;
     racionar(TMP, GB, UB, KB, BV); let perd = 0; for (let z = 0; z < NZ; z++) { const f = fe(z, JB); perd += BV[z] * (1 - f) * UB[z]; BV[z] *= f; }
     // lo que no llega por una ruta cortada queda en Bavaria y se manda a las zonas que aún tienen cupo (igual que los mercados de C en su segunda vuelta)
-    if (perd > 0) { let room = 0; for (let z = 0; z < NZ; z++) { DES[z] = Math.max(0, NEED[z] * SUP.TOPE_MERC - BV[z]); room += DES[z] * UB[z]; }
+    if (perd > 0) { let room = 0; for (let z = 0; z < NZ; z++) { DES[z] = Math.max(0, Math.min(PUR[z], NEED[z] * SUP.TOPE_MERC) - BV[z]); room += DES[z] * UB[z]; }
       if (room > 0) for (let z = 0; z < NZ; z++) { const capU = perd * DES[z] * UB[z] / room, f = fe(z, JB); BV[z] += Math.min(DES[z], capU / UB[z] * f); } }
     for (let z = 0; z < NZ; z++) bavKg += BV[z]; }
-  let R = 0; for (let z = 0; z < NZ; z++) { RQ[z] = Math.max(0, NEED[z] - LOCZ[z] - MK[z] - BV[z]); R += RQ[z]; }
+  let R = 0; for (let z = 0; z < NZ; z++) { RQ[z] = Math.max(0, PUR[z] - MK[z] - BV[z]); R += RQ[z]; }
   racionar(RQ, GC, UNO, s.Kc, CO);
   let zMin = Infinity, zArg = -1, rec = 0, coraT = 0, nBajo = 0, b90 = 0;
   for (let z = 0; z < NZ; z++) { CO[z] *= fe(z, JC); coraT += CO[z]; const got = LOCZ[z] + MK[z] + BV[z] + CO[z], r = got / NEED[z]; rec += got; if (r < zMin) { zMin = r; zArg = z; } if (r < 0.8) nBajo++; if (r < 0.9) b90++; }
   s.Kc += ((1 + SUP.HOLGURA) * R - s.Kc) / tau; // el mayorista se acomoda a lo que le piden
   const dep = rec > 0 ? coraT / rec : 1;
+  const DC = corabastos(s, e, dep, t); // Corabastos libera espacio y desmonta bodegas junto a La Vaca (B y C)
 
   /* ---- RESIDUOS orgánicos: pendientes de tratamiento vs. capacidad de almacenamiento ---- */
   const gen = POB_K * popF * SUP.KG_ORG * 7, cob = prop ? SUP.COB * r0 : 0;
@@ -229,11 +254,11 @@ export function paso(s, PAR) {
   s.W = cl(s.W + P3.rec * (1 - s.W) * 0.2 - presion * s.W, 0.05, 1);
   calidad(e, s, P3, s.q);
   const trampa = 1 + 3 * P3.luz * (P3.anti ? 0.3 : 1); // [SUP] luz y vidrio de los módulos: más extinción de aves de árbol en ellos
-  const H_ = s.hab, q = s.q, occ = s.occ; let esp = 0;
+  const H_ = s.hab, q = s.q, occ = s.occ, raizB = Math.sqrt(Math.max(0.05, s.cora.ha)); let esp = 0; // el borde restaurado pesa según su área de esta semana
   for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP); let hay = 0;
     for (let pp = 0; pp < NP; pp++) { const u = H_(), h = apto(i, pp, q); if (h <= 0) { nuevo[pp] = 0; continue; }
-      if (occ[base + pp]) { const ext = Math.min(1, G.e / (h * SQA[pp]) * (g === 'arbol' && TIPO[pp] !== 'parque' && TIPO[pp] !== 'humedal' && TIPO[pp] !== 'bosque' ? trampa : 1)); nuevo[pp] = u < ext ? 0 : 1; }
-      else { let S = 0; for (let qq = 0; qq < NP; qq++) if (occ[base + qq]) S += K[pp * NP + qq] * apto(i, qq, q); const col = 1 - Math.exp(-G.c * h * S) + RESCATE * h; nuevo[pp] = u < col ? 1 : 0; }
+      if (occ[base + pp]) { const ext = Math.min(1, G.e / (h * (pp === IB ? raizB : SQA[pp])) * (g === 'arbol' && TIPO[pp] !== 'parque' && TIPO[pp] !== 'humedal' && TIPO[pp] !== 'bosque' ? trampa : 1)); nuevo[pp] = u < ext ? 0 : 1; }
+      else { let S = 0; for (let qq = 0; qq < NP; qq++) if (occ[base + qq]) S += K[pp * NP + qq] * apto(i, qq, q) * (qq === IB ? raizB : 1); const col = 1 - Math.exp(-G.c * h * S) + RESCATE * h; nuevo[pp] = u < col ? 1 : 0; }
       hay |= nuevo[pp]; }
     occ.set(nuevo, base); esp += hay; }
   const conect = !prop ? 0.2 : e === 'B' ? 1 - Math.exp(-P3.disp / 600) : (1 - Math.exp(-P3.disp / 250)) * (0.4 + 0.6 * s.supF);
@@ -259,6 +284,7 @@ export function paso(s, PAR) {
     gen, relleno: colR, desv: trat, rech, compost: comp, vuelve: comp, hongos, pct2: trat / gen * 100, pila, km: colR / 8000 * 28 * 2 + colC / 1500 * dist * 2, ocup: capComp ? Math.min(1.5, s.pcp / Math.max(1, Sp)) : 0,
     aves: s.B, riq: Math.round(42 * (0.45 + 0.35 * conect + 0.3 * s.W)), hum: s.W * 100, trampa: s.muertes, conect,
     need: needT, recib: rec / needT, zMin, zArg, nBajo, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
+    cora: { lib: DC.lib, desm: DC.ap.length, rest: DC.rest, m2: DC.m2, borde: Math.round(DC.ha * 1e4), mad: DC.mad, total: BODEGAS.length }, perdido,
     cierre: s.cierre ? { via: VIAS[s.cierre.k].n, sem: t - s.cierre.t0 + 1, dur: s.cierre.dur, on: s.cierre.on } : null });
   /* ---- reglas de game over ---- */
   if (t >= ARRANQUE) { for (const Q of REGLAS) s.racha[Q.k] = Q.malo(o) ? s.racha[Q.k] + 1 : 0;
@@ -292,7 +318,7 @@ export function corrida(e, seed, años, PAR) {
     if (w >= n - AÑO) { if (o.merc) for (let k = 0; k < NM; k++) merc[k] += o.merc[k] / AÑO; bav += o.bavKg / AÑO; nMerc++; }
     if (w % AÑO === AÑO - 1) act[y] = o.act; }
   return { seed, colapso: s.colapso ? { año: s.colapso.t / AÑO, semana: s.colapso.semana, causas: s.colapso.causas } : null, act, zmin, esp, pend, resM: nRes ? resM : null, resP: nRes ? resP : null,
-    merc: e === 'C' ? Array.from(merc) : null, bav: e === 'B' ? bav : null, rec: s.rec.n ? s.rec.suma / s.rec.n : null, recN: s.rec.n, recF: s.rec.fallidas, cierres: s.log.filter(x => x.k === 'cierre').length };
+    merc: e === 'C' ? Array.from(merc) : null, bav: e === 'B' ? bav : null, cora: { desm: s.cora.ap.length, rest: s.cora.rest, borde: Math.round(s.cora.ha * 1e4), m2: s.cora.m2, primera: s.cora.ap.length ? s.cora.ap[0] + 1 : null, lib: s.cora.lib }, rec: s.rec.n ? s.rec.suma / s.rec.n : null, recN: s.rec.n, recF: s.rec.fallidas, cierres: s.log.filter(x => x.k === 'cierre').length };
 }
 export function resumen(corridas, años) {
   const R = corridas.length, sup = []; for (let y = 0; y <= años; y++) sup.push(corridas.filter(c => !c.colapso || c.colapso.año > y).length / R * 100);
@@ -304,6 +330,7 @@ export function resumen(corridas, años) {
   const medAct = [], medZ = []; for (let y = 0; y < años; y++) { medAct.push(mediana(corridas.map(c => c.act[y]))); medZ.push(mediana(corridas.map(c => c.zmin[y]))); }
   const conR = corridas.filter(c => c.resM); const resM = conR.length ? mediana(conR.map(c => c.resM.reduce((a, v) => a + v, 0) / años)) : null, resP = conR.length ? mediana(conR.map(c => c.resP.reduce((a, v) => a + v, 0) / años)) : null;
   const merc = corridas[0] && corridas[0].merc ? corridas[0].merc.map((_, k) => corridas.reduce((a, c) => a + c.merc[k], 0) / R) : null;
-  return { R, sup, colapsan: col.length, mediana: med, semCierre, min: col.length ? col[0] : null, max: col.length ? col[col.length - 1] : null, causas, medAct, medZ, resM, resP, merc,
+  const cora = corridas[0] && corridas[0].cora ? { desm: mediana(corridas.map(c => c.cora.desm)), borde: mediana(corridas.map(c => c.cora.borde)), m2: mediana(corridas.map(c => c.cora.m2)), primera: mediana(corridas.filter(c => c.cora.primera).map(c => c.cora.primera)) } : null;
+  return { R, cora, sup, colapsan: col.length, mediana: med, semCierre, min: col.length ? col[0] : null, max: col.length ? col[col.length - 1] : null, causas, medAct, medZ, resM, resP, merc,
     porRegla: Object.fromEntries(REGLAS.map(Q => [Q.k, (causas[Q.k] || 0) / R * 100])) };
 }
