@@ -3683,7 +3683,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=53'), import('./data3d/estrategias.js?v=30'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=54'), import('./data3d/estrategias.js?v=30'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)

@@ -232,7 +232,7 @@ export async function iniciarSimulacion(cfg = {}) {
   const st0 = { capa: '', agentes: true, conv: !SINP }; // con estrategias, arrancan apagadas · la hora, el día, la pausa y la velocidad son del reloj universal (RELOJ)
   const izq = document.createElement('div'); izq.className = 'gs-pan gs-act'; izq.id = 'gs-izq';
   izq.innerHTML = `<h3>HORA DEL DÍA <em id="gs-dia">DÍA 1</em></h3><p style="margin:-2px 0 8px;font-size:11px;line-height:1.4;color:var(--ui-tx2,#c3cace)">Un solo reloj con dos ritmos: el día mueve carros, personas, fauna y cielo; los años los mueve el modelo semanal. Pausa y velocidad de cada uno: en el control de tiempo.</p>
-    <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día: arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola: el cielo cambia a esa hora al instante (día, atardecer, noche)</em></div></div>
+    <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día: arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola: el cielo cambia mientras la mueves (día, atardecer, noche)</em></div></div>
     <div class="gs-sub">SINTAXIS ESPACIAL <span>DepthmapX</span></div>
     <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="d" class="gs-cambio" title="Qué calles ganan o pierden elección e integración con la propuesta">Cambio</button><button data-c="" class="on">Apagar</button></div>
     <div class="gs-ley" id="gs-ley-sx"><span>baja</span><i></i><span>alta</span></div>
@@ -316,12 +316,14 @@ export async function iniciarSimulacion(cfg = {}) {
     const bola = el('circle', { cx: 60, cy: 12, r: 7.5, fill: '#e0f2fe', stroke: '#0ea5e9', 'stroke-width': 2.5 }); dial.appendChild(bola);
     dial.pintar = (T) => { const a = (T % 1440) / 1440 * 6.2832, [x, y] = pt(48, a), [ax, ay] = pt(40, a); bola.setAttribute('cx', x.toFixed(2)); bola.setAttribute('cy', y.toFixed(2)); aguja.setAttribute('x2', ax.toFixed(2)); aguja.setAttribute('y2', ay.toFixed(2)); dial.setAttribute('aria-valuenow', Math.floor(T)); dial.setAttribute('aria-valuetext', String(Math.floor(T / 60)).padStart(2, '0') + ':' + String(Math.floor(T % 60)).padStart(2, '0')); };
     // arrastrar solo elige la hora (la bola la muestra); al soltar, el reloj avanza paso a paso hasta ella (el tiempo no se devuelve)
-    const fijar = (nuevo) => { dialMeta = ((Math.round(nuevo) % 1440) + 1440) % 1440; dial.pintar(dialMeta); };
+    let diaArr = 0, minArr = 0; // al empezar a arrastrar: día y minuto de partida (la hora sigue a la bola EN VIVO dentro de ese día y el siguiente)
+    const fijar = (nuevo) => { dialMeta = ((Math.round(nuevo) % 1440) + 1440) % 1440; dial.pintar(dialMeta);
+      if (arr && !RELOJ.salto) { const t = (dialMeta >= minArr ? diaArr : diaArr + 1) * DIA + dialMeta * 60; if (RELOJ.destino) RELOJ.cancelarDestino(); RELOJ.t = t; RELOJ.acum = 0; RELOJ.alfa = 1; } };
     const desdePuntero = (e) => { const r = dial.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); let a = Math.atan2(x, -y); if (a < 0) a += 6.2832; fijar(Math.round(a / 6.2832 * 1440 / 5) * 5); };
     let arr = false;
-    dial.addEventListener('pointerdown', (e) => { arr = true; dial.classList.add('arr'); dial.setPointerCapture(e.pointerId); desdePuntero(e); e.preventDefault(); });
+    dial.addEventListener('pointerdown', (e) => { arr = true; diaArr = RELOJ.diaN; minArr = Math.floor(RELOJ.minutoDia); dial.classList.add('arr'); dial.setPointerCapture(e.pointerId); desdePuntero(e); e.preventDefault(); });
     dial.addEventListener('pointermove', (e) => { if (arr) desdePuntero(e); });
-    const soltar = () => { if (!arr) return; arr = false; dial.classList.remove('arr'); if (dialMeta != null) RELOJ.irAMinuto(dialMeta); dialMeta = null; }; dial.addEventListener('pointerup', soltar); dial.addEventListener('pointercancel', soltar);
+    const soltar = () => { if (!arr) return; arr = false; dial.classList.remove('arr'); if (dialMeta != null) RELOJ.entrada('hora', { t: RELOJ.t, motivo: 'dial' }); dialMeta = null; }; dial.addEventListener('pointerup', soltar); dial.addEventListener('pointercancel', soltar);
     dial.addEventListener('keydown', (e) => { const p = { ArrowRight: 15, ArrowUp: 15, PageUp: 60 }[e.key]; if (p) { RELOJ.irAMinuto(Math.floor((RELOJ.destino ? (RELOJ.destino.t % DIA) / 60 : RELOJ.minutoDia) / 15) * 15 + p); e.preventDefault(); } if (e.key === 'Escape') RELOJ.cancelarDestino(); });
     dial.pintar(RELOJ.minutoDia);
   }
