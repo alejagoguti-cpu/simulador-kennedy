@@ -243,7 +243,7 @@ body.tb-abierto #esim{display:none}
   const pct = (v) => fmt(v * 100) + ' %';
   const FMT = { alcance: pct, auto: pct, frac: pct, sust: pct, precio: (v) => '$' + fmt(v), capAcopio: (v) => fmt(v), sup: fmtK, arboles: (v) => fmt(v, 2), luz: (v) => fmt(v, 2), rec: (v) => fmt(v, 3), dist: (v) => fmt(v, 1), pares: (v) => fmt(v, 2) };
   const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
-  el.innerHTML = `<div class="cab"><b>Escenarios · simulación sin fin</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
+  el.innerHTML = `<div class="cab"><b>Escenarios A · B · C</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
 <p class="exp">Tres escenarios con las mismas condiciones de partida, el mismo periodo y los mismos cierres de vía al azar. Tres reglas de game over fijas antes de correr: si una se cumple 4 semanas seguidas, se registra el motivo y la semana.</p>
 <p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta abierta (se cierran si la red se cae)</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Bavaria central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Red de mercados</button></div>
