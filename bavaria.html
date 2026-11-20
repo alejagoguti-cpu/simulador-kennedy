@@ -58,6 +58,15 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ochre);outline-offs
 .panel{position:fixed;left:12px;bottom:12px;z-index:10;width:min(470px,calc(100vw - 24px));max-height:calc(100vh - 92px);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;transition:opacity .35s,transform .35s}
 .panel .cuerpo{padding:18px 20px 14px;overflow-y:auto}
 .kicker{margin:0;font:600 11.5px var(--mono);letter-spacing:.06em;color:var(--ochre);text-transform:uppercase}
+#frase{margin:8px 0 0;font-size:clamp(19px,1.75vw,24px);line-height:1.42;font-weight:500;letter-spacing:-.012em;color:var(--ink);text-wrap:pretty}
+.autores{display:none;margin:10px 0 0;font:500 12px var(--mono);color:var(--soft)}
+body.es-portada #frase{font-size:clamp(40px,5vw,68px);font-weight:700;letter-spacing:-.035em;line-height:1}
+body.es-portada .autores{display:block}
+.et.fuerte{font-weight:600;font-size:13px;border-color:rgba(242,181,58,.6)}
+.et.verbo{background:rgba(242,239,232,.92);color:#111;border-color:transparent}
+.et.titulo3d{font:600 14px var(--ui);padding:6px 12px;border:1px solid var(--ochre);color:var(--ochre)}
+.et .g{font:600 10px var(--mono);color:#111;background:var(--ink);border-radius:999px;padding:1px 6px;margin-left:4px}
+.et .letra{font:700 14px var(--ui);margin-right:4px}
 .panel h1{margin:6px 0 0;font-size:clamp(24px,2.4vw,32px);font-weight:700;letter-spacing:-.025em;line-height:1.08}
 .sub{margin:8px 0 0;font-size:14.5px;line-height:1.5;color:var(--soft)}
 .cifras{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -81,7 +90,7 @@ body.con-guion .guion{display:block}
 .nav button.primary{background:var(--ink);color:#111;border-color:var(--ink)}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .rise{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
-#titulo.rise{animation-delay:.04s}#sub.rise{animation-delay:.1s}#guion.rise{animation-delay:.16s}#cifras.rise{animation-delay:.2s}
+#frase.rise{animation-delay:.06s}
 @media (prefers-reduced-motion:reduce){.rise{animation:none}}
 /* leyenda y herramientas */
 .lado{position:fixed;right:12px;top:72px;z-index:9;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none}
@@ -111,9 +120,9 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
  #leyenda{display:none}
  .panel{left:8px;right:8px;bottom:8px;width:auto;max-height:50vh}
  .panel .cuerpo{padding:14px 16px 10px}
- .panel h1{font-size:21px}
- .sub{font-size:13.5px}
- .guion p{font-size:14px}
+ #frase{font-size:16.5px}
+ body.es-portada #frase{font-size:40px}
+ .et{font-size:11px}
  .pie{padding:8px 10px 10px 16px}
  .nav button{padding:8px 12px}
  #atrib{right:auto;left:10px;top:52px;bottom:auto}
@@ -129,7 +138,6 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
 <header class="bar glass">
   <div class="brand">Bavaria <span>Común</span></div>
   <nav class="bloques" id="bloques" aria-label="Bloques del guion"></nav>
-  <button class="pill" id="gbtn" type="button" aria-pressed="true">Guion<span class="mono">N</span></button>
   <span class="count" id="count"></span><span class="pline"><i id="pbar"></i></span>
 </header>
 
@@ -145,10 +153,8 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
 <section class="panel glass" aria-live="polite">
   <div class="cuerpo">
     <p class="kicker" id="kicker"></p>
-    <h1 id="titulo"></h1>
-    <p class="sub" id="sub"></p>
-    <div class="cifras" id="cifras"></div>
-    <div class="guion" id="guion"><div class="t">Guion</div><p id="guionTxt"></p></div>
+    <p class="frase" id="frase"></p>
+    <p class="autores">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo · 2026</p>
   </div>
   <div class="pie">
     <div class="prog" id="prog"></div>
@@ -163,7 +169,7 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
   <form method="dialog"><button class="pill" type="submit">Cerrar</button></form>
 </dialog>
 
-<script type="module" src="data3d/bavaria_pres.js?v=3"></script>
+<script type="module" src="data3d/bavaria_pres.js?v=4"></script>
 <script>document.getElementById('b-fuentes').onclick=()=>document.getElementById('d-fuentes').showModal();</script>
 </body>
 </html>

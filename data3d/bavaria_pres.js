@@ -96,11 +96,11 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 host.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#0d0e10');
+scene.background = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 512; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#0b0d10'); gr.addColorStop(0.55, '#1a2129'); gr.addColorStop(0.8, '#3a4048'); gr.addColorStop(1, '#4a4a45'); g.fillStyle = gr; g.fillRect(0, 0, 4, 512); const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx; })();
 // cámara de lente larga (casi axonométrica) para que la malla fotorrealista de Google cargue su detalle
-const FOV = 30;
+const FOV = 42;
 const cam = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 10, 60000);
-scene.fog = new THREE.Fog('#0d0e10', 45000, 90000);
+scene.fog = new THREE.Fog('#3a4048', 30000, 90000);
 scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x1a1f24, 1.1));
 const sol = new THREE.DirectionalLight(0xfff1dc, 2.1); sol.position.set(-600, 900, 400); scene.add(sol);
 const sol2 = new THREE.DirectionalLight(0x9fb7d0, 0.6); sol2.position.set(700, 500, -300); scene.add(sol2);
@@ -376,7 +376,7 @@ const guias = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(es
 /* ---------------- etiquetas HTML proyectadas ---------------- */
 const etq = [];
 const capaEt = $('#etiquetas');
-const addEt = (html, pos, grupos, cls = '', capa = null) => { const d = document.createElement('div'); d.className = 'et ' + cls; d.innerHTML = html; d.style.opacity = 0; capaEt.appendChild(d); etq.push({ d, pos: new THREE.Vector3(...pos), grupos: new Set(grupos), capa }); };
+const addEt = (html, pos, grupos, cls = '', capa = null, dy = 0) => { const d = document.createElement('div'); d.className = 'et ' + cls; d.innerHTML = html; d.style.opacity = 0; capaEt.appendChild(d); const ob = pos && pos.isObject3D; etq.push({ d, pos: ob ? new THREE.Vector3() : new THREE.Vector3(...pos), obj: ob ? pos : null, dy, grupos: new Set(grupos), capa }); };
 Object.entries(PROG).forEach(([i, p]) => { const [X, Z] = centroEdif(+i); if (MOVIL && ![2, 3, 4, 5, 7, 23].includes(+i)) return; addEt(`<i style="background:${p.c}"></i>${p.n}`, [X, D.edif[i].h + 6, Z], ['prog', 'plan'], '', 'edif'); });
 addEt('<i style="background:#6b4f33"></i>Compostaje', [ZC[0], 6, ZC[1]], ['prog', 'flujos', 'suelo'], '', 'suelo');
 { const p = W(9150, 3150); addEt('<i style="background:#3a4a58"></i>Patio de carga', [p[0], 4, p[1]], ['prog'], '', 'suelo'); }
@@ -390,25 +390,31 @@ addEt('Av. Boyacá', (() => { const p = W(8840, 2700); return [p[0] - 40, 10, p[
 /* =============================== CAPAS DEL GUION (todo en 3D) =============================== */
 // Cada grupo se enciende por escena (propiedad x de la escena) y se desvanece solo.
 const XG = {};
-const xg = (k) => XG[k] || (XG[k] = (() => { const g = new THREE.Group(); g.visible = false; scene.add(g); return { g, mats: [], v: 0, o: 0, pul: [] }; })());
-const xmat = (k, m, base = 1) => { m.transparent = true; m.opacity = 0; m.depthWrite = false; m.depthTest = false; xg(k).mats.push({ m, base }); return m; };
+const xg = (k) => XG[k] || (XG[k] = (() => { const g = new THREE.Group(); g.visible = false; scene.add(g); return { g, mats: [], v: 0, o: 0, pul: [], cre: [], ondas: [], upd: [], t0: -99, rot: 0, tgt: null, foc: null }; })());
+const xmat = (k, m, base = 1, tags = null, prof = false) => { m.transparent = true; m.opacity = 0; m.depthWrite = prof; m.depthTest = prof; xg(k).mats.push({ m, base, tags }); return m; };
+// crecimiento al aparecer: esc (escala), sy (altura), draw (se dibuja de a poco)
+const crece = (k, o, d = 0, dur = 0.9, tipo = 'esc') => { const n = tipo === 'draw' ? (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) : 0; xg(k).cre.push({ o, d, dur, tipo, n, s0: o.scale.x }); return o; };
+const texGlow = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.22, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const halo = (k, col, s, base = 0.85, tags = null) => { const sp = new THREE.Sprite(xmat(k, new THREE.SpriteMaterial({ map: texGlow, color: col, blending: THREE.AdditiveBlending }), base, tags)); sp.scale.setScalar(s); sp.renderOrder = 10; return sp; };
+// ondas: anillos que se expanden y se desvanecen (para señalar un punto)
+const onda = (k, P, col, R, y = 3, n = 2) => { for (let i = 0; i < n; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 64), xmat(k, new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }), 0.9)); m.rotation.x = -Math.PI / 2; m.position.set(P[0], y, P[1]); m.renderOrder = 9; xg(k).g.add(m); xg(k).ondas.push({ m, R, ph: i / n }); } };
 const V3 = (p, y) => new THREE.Vector3(p[0], y, p[1]);
 const curva = (a, b, alt, y0 = 6, y1 = 6) => { const A = V3(a, y0), B = V3(b, y1); const M = A.clone().lerp(B, 0.5); M.y = Math.max(y0, y1) + (alt ?? A.distanceTo(B) * 0.2); return new THREE.QuadraticBezierCurve3(A, M, B); };
-const tubo = (k, cur, r, col, op = 0.85) => { const m = new THREE.Mesh(new THREE.TubeGeometry(cur, 56, r, 6), xmat(k, new THREE.MeshBasicMaterial({ color: col }), op)); m.renderOrder = 8; xg(k).g.add(m); return m; };
+const tubo = (k, cur, r, col, op = 0.85, d = null, tags = null, padre = null) => { const m = new THREE.Mesh(new THREE.TubeGeometry(cur, 56, r, 6), xmat(k, new THREE.MeshBasicMaterial({ color: col }), op, tags)); m.renderOrder = 8; (padre || xg(k).g).add(m); crece(k, m, d ?? Math.random() * 0.5, 1.4, 'draw'); return m; };
 const linea = (k, cur, col, op = 0.55) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(cur.getPoints(36)), xmat(k, new THREE.LineBasicMaterial({ color: col }), op)); l.renderOrder = 8; xg(k).g.add(l); return l; };
-const pulsos = (k, curvas, cols, n = 3, vel = 0.1, tam = 5) => {
+const pulsos = (k, curvas, cols, n = 3, vel = 0.1, tam = 5, padre = null) => {
   if (!curvas.length) return; const N = curvas.length * n; const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
   curvas.forEach((c, i) => { const cc = new THREE.Color(Array.isArray(cols) ? cols[i % cols.length] : cols); for (let j = 0; j < n; j++) col.set([cc.r, cc.g, cc.b], (i * n + j) * 3); });
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const p = new THREE.Points(g, xmat(k, new THREE.PointsMaterial({ size: MOVIL ? tam * 0.8 : tam, sizeAttenuation: false, vertexColors: true }), 1)); p.renderOrder = 11; p.frustumCulled = false; xg(k).g.add(p);
+  const p = new THREE.Points(g, xmat(k, new THREE.PointsMaterial({ size: MOVIL ? tam * 0.8 : tam, sizeAttenuation: false, vertexColors: true }), 1)); p.renderOrder = 11; p.frustumCulled = false; (padre || xg(k).g).add(p);
   xg(k).pul.push({ curvas, n, vel, pos, g, fase: curvas.map((_, i) => (i * 0.618) % 1) });
 };
-const pin = (k, P, col, h, r) => {
+const pin = (k, P, col, h, r, dl = null) => {
   const g = new THREE.Group(); const mat = xmat(k, new THREE.MeshBasicMaterial({ color: col }), 0.95);
   const c = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.16, r * 0.16, h, 8), mat); c.position.y = h / 2;
   const s = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), mat); s.position.y = h;
   const d = new THREE.Mesh(new THREE.RingGeometry(r * 1.4, r * 2, 40), xmat(k, new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }), 0.55)); d.rotation.x = -Math.PI / 2; d.position.y = 3;
-  g.add(c, s, d); g.children.forEach(o => { o.renderOrder = 9; }); g.position.set(P[0], 0, P[1]); xg(k).g.add(g); return g;
+  g.add(c, s, d, halo(k, col, r * 5, 0.5)); g.children[3].position.y = h; g.children.forEach(o => { o.renderOrder = 9; }); g.position.set(P[0], 0, P[1]); xg(k).g.add(g); crece(k, g, dl ?? 0.2 + Math.random() * 0.6, 1.1, 'sy'); return g;
 };
 const corto = (s) => s.replace(/\s*\(.*$/, '').replace(/\s*-.*$/, '');
 const COL = { ocre: '#F2B53A', rojo: '#E0623F', verde: '#4FB98C', azul: '#4EAECF', lila: '#B48AD6', crema: '#F2EFE8', gris: '#77736b' };
@@ -534,6 +540,199 @@ const FED = { orgs: [], tok: null, yc: 240 };
   FED.tok = new THREE.Mesh(new THREE.SphereGeometry(11, 16, 12), xmat(k, new THREE.MeshBasicMaterial({ color: COL.crema }), 1)); FED.tok.renderOrder = 13; xg(k).g.add(FED.tok);
   addEt('La vocería rota: cada persona lleva la voz en algún momento', [FED.orgs[1].P.x, FED.orgs[1].P.y - 50, FED.orgs[1].P.z], ['voz']); }
 
+
+/* =============================== REDES 3D DEL GUION =============================== */
+// red3d: nodos (esferas con halo) y vínculos (tubos que se dibujan, con pulsos), flotando sobre el territorio y girando.
+// N: [{ id, n, c, r, p? }], L: [[a, b, color, grosor]], o: { c:[X,Z], y, R, fijo, rot, flat, et }
+const red3d = (k, N, L, o) => {
+  const X = xg(k); X.g.position.set(o.c[0], o.y, o.c[1]); X.rot = o.rot ?? 0.12;
+  const G = new THREE.Group(); G.userData.gira = true; X.g.add(G);
+  const idx = new Map(N.map((n, i) => [n.id, i]));
+  let s = 5; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const P = N.map(n => n.p ? new THREE.Vector3(...n.p) : new THREE.Vector3(rnd() - 0.5, (rnd() - 0.5) * (o.flat ?? 0.7), rnd() - 0.5).multiplyScalar(o.R));
+  if (!o.fijo) { // Fruchterman-Reingold en 3D
+    const E2 = L.map(l => [idx.get(l[0]), idx.get(l[1])]).filter(e => e[0] != null && e[1] != null);
+    const kk = o.R * (o.rep ?? 1.6) / Math.cbrt(N.length); let temp = o.R * 0.2; const d = new THREE.Vector3();
+    for (let it = 0; it < 220; it++) {
+      const F = P.map(() => new THREE.Vector3());
+      for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { d.subVectors(P[i], P[j]); const l = Math.max(1, d.length()); d.multiplyScalar(kk * kk / l / l); F[i].add(d); F[j].sub(d); }
+      for (const [a, b] of E2) { d.subVectors(P[a], P[b]); const l = Math.max(1, d.length()); d.multiplyScalar(l / kk); F[a].sub(d); F[b].add(d); }
+      P.forEach((p, i) => { F[i].sub(p.clone().multiplyScalar(0.06 * kk / o.R * 4)); const l = F[i].length(); if (l > 0) p.add(F[i].multiplyScalar(Math.min(l, temp) / l)); p.y *= o.flat ?? 0.7; });
+      temp *= 0.985;
+    }
+    const Ls = P.map(p => p.length()).sort((a, b) => a - b); const m = Ls[Math.floor(Ls.length * 0.9)] || 1; P.forEach(p => { p.multiplyScalar(o.R / m); if (p.length() > o.R * 1.15) p.setLength(o.R * 1.15); });
+  }
+  const nodos = {};
+  N.forEach((n, i) => {
+    const mat = xmat(k, new THREE.MeshBasicMaterial({ color: n.c }), 1, [n.id]);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), mat); m.position.copy(P[i]); m.scale.setScalar(n.r); m.renderOrder = 12; G.add(m);
+    const h = halo(k, n.c, n.r * 4.5, 0.55, [n.id]); h.position.copy(P[i]); G.add(h);
+    const c = crece(k, m, Math.min(1.2, i * (o.dn ?? 0.06)), 0.8); c.lat = true; crece(k, h, c.d, 0.8);
+    nodos[n.id] = m;
+    if (n.et) addEt(n.et === true ? `<i style="background:${n.c}"></i>${n.n}` : n.et, m, [k], n.cls || '', null, n.r * 1.6);
+  });
+  const cs = [], cols = [];
+  L.forEach(([a, b, col, w], j) => {
+    const A = P[idx.get(a)], B = P[idx.get(b)]; if (!A || !B) return;
+    const M = A.clone().lerp(B, 0.5); M.y += A.distanceTo(B) * 0.12; const cur = new THREE.QuadraticBezierCurve3(A.clone(), M, B.clone());
+    tubo(k, cur, w ?? o.R * 0.008, col, 0.7, 0.35 + Math.min(1.4, j * (o.dl ?? 0.03)), [a, b, 'l' + j], G); cs.push(cur); cols.push(col);
+  });
+  pulsos(k, cs, cols.map(c => new THREE.Color(c).lerp(new THREE.Color('#ffffff'), 0.55)), o.np ?? 2, o.vp ?? 0.22, o.tp ?? 6, G);
+  return { G, nodos, P };
+};
+const enMundo = (k, local) => { const X = xg(k); X.g.updateMatrixWorld(true); return local.clone().applyMatrix4(X.g.matrixWorld); };
+
+// ---- 08.1 la red de problemas de Kennedy (red-de-problemas: 6 problemas, 11 relaciones)
+const PROB = { A: ['Dependencia de alimentos externos', '#a3b845'], B: ['Crecimiento poblacional', '#d9bf6e'], C: ['Valorización del suelo', '#dba73a'], D: ['Especulación', '#d4553f'], E: ['Gestión de residuos sólidos', '#a77b5a'], F: ['Centralización de servicios', '#ee8a45'] };
+const PROB_E = [['B', 'C'], ['B', 'A'], ['B', 'E'], ['F', 'B'], ['C', 'D'], ['F', 'C'], ['F', 'A'], ['F', 'E'], ['D', 'A'], ['A', 'E'], ['D', 'F']];
+const gradoP = {}; PROB_E.forEach(([a, b]) => { gradoP[a] = (gradoP[a] || 0) + 1; gradoP[b] = (gradoP[b] || 0) + 1; });
+const CPROB = [KEN_C[0] * 0.45, KEN_C[1] * 0.45], YPROB = 760, RPROB = MOVIL ? 380 : 470;
+{ const otros = ['B', 'C', 'D', 'A', 'E'];
+  const N = Object.entries(PROB).map(([id, [n, c]]) => { const i = otros.indexOf(id); const a = i * Math.PI * 2 / 5; return { id, n, c, r: 16 + gradoP[id] * 9, p: id === 'F' ? [0, 0, 0] : [Math.cos(a) * RPROB, Math.sin(i * 2.1) * RPROB * 0.25, Math.sin(a) * RPROB], et: `<i style="background:${c}"></i>${n} <b class="g">${gradoP[id]}</b>`, cls: id === 'F' ? 'fuerte' : '' }; });
+  red3d('problemas', N, PROB_E.map(([a, b]) => [a, b, a === 'F' || b === 'F' ? PROB.F[1] : '#cfd6dd', a === 'F' || b === 'F' ? 7 : 3.5]), { c: CPROB, y: YPROB, R: RPROB, fijo: true, rot: 0.1, dn: 0.15, dl: 0.08, tp: 8 });
+  // la centralización late
+  const X = xg('problemas'); const f = new THREE.Mesh(new THREE.TorusGeometry(1, 0.03, 8, 64), xmat('problemas', new THREE.MeshBasicMaterial({ color: PROB.F[1] }), 0.9)); X.g.add(f);
+  X.upd.push((t) => { const u = (t * 0.6) % 1; f.scale.setScalar(70 + 160 * u); f.material.opacity *= 1 - u; f.rotation.x = Math.PI / 2; });
+}
+// 08.2 de la centralización al abastecimiento: un haz baja de la red a Corabastos
+{ const A = new THREE.Vector3(CPROB[0], YPROB - 60, CPROB[1]), B = V3(CORA, 10); const cur = new THREE.QuadraticBezierCurve3(A, A.clone().lerp(B, 0.5).add(new THREE.Vector3(0, 120, 0)), B);
+  tubo('foco', cur, 14, PROB.F[1], 0.9, 0.2); pulsos('foco', [cur], '#ffffff', 6, 0.35, 10); onda('foco', CORA, PROB.F[1], 900, 6, 3); pin('foco', CORA, PROB.F[1], 520, 110, 0.6);
+  addEt(`<i style="background:${PROB.F[1]}"></i>Abastecimiento de alimentos · Corabastos`, [CORA[0], 680, CORA[1]], ['foco']); }
+
+// ---- 08.5 la antigua cervecería entre la Boyacá y las Américas
+{ const k = 'avs'; const pts = D.sitio.concat([D.sitio[0]]).map(([x, y]) => { const [X, Z] = W(x, y); return new THREE.Vector3(X, 3, Z); });
+  const cur = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0); tubo(k, cur, 4, COL.ocre, 1, 0);
+  const gs = []; for (let i = 0; i < D.sitio.length; i++) { const a = D.sitio[i], b = D.sitio[(i + 1) % D.sitio.length]; const [ax, az] = W(...a), [bx, bz] = W(...b); const L = Math.hypot(bx - ax, bz - az); if (L < 0.5) continue; const m = new THREE.PlaneGeometry(L, 60); m.translate(0, 30, 0); m.rotateY(-Math.atan2(bz - az, bx - ax)); m.translate((ax + bx) / 2, 0, (az + bz) / 2); gs.push(m); }
+  const muroLuz = new THREE.Mesh(mergeGeometries(gs), xmat(k, new THREE.MeshBasicMaterial({ color: COL.ocre, side: THREE.DoubleSide }), 0.22)); muroLuz.renderOrder = 7; xg(k).g.add(muroLuz); crece(k, muroLuz, 0.3, 1.4, 'sy');
+  const xs = D.sitio.map(p => p[0]), ys = D.sitio.map(p => p[1]); const mnx = Math.min(...xs), mxy = Math.max(...ys);
+  addEt('<i style="background:#F2EFE8"></i>Av. Boyacá', (() => { const p = W(mnx - 70, CY); return [p[0], 20, p[1]]; })(), ['avs'], 'fuerte');
+  addEt('<i style="background:#F2EFE8"></i>Av. de las Américas', (() => { const p = W(CX, mxy + 70); return [p[0], 20, p[1]]; })(), ['avs'], 'fuerte');
+  addEt(`<i style="background:${COL.ocre}"></i>Antigua cervecería de Bavaria`, [0, 140, 0], ['avs']);
+  onda(k, [0, 0], COL.ocre, 900, 4, 2); }
+addEt('Bavaria Común · Distrito de Tecnologías Convergentes', [0, 700, 0], ['capas'], 'titulo3d');
+
+// ---- 08.7 clúster de conocimiento: actores ↔ actividades, con haces a sus naves
+{ const ACT = [['uni', 'Universidades', COL.lila, 5], ['com', 'Comerciantes', COL.ocre, 3], ['pro', 'Promotores', '#d98f5a', 11], ['org', 'Organizaciones barriales', COL.rojo, 4]];
+  const VER = [['exp', 'Experimentar', '#F2EFE8'], ['apr', 'Aprender', '#F2EFE8'], ['ini', 'Organizar iniciativas propias', '#F2EFE8']];
+  const R = 260, Y = 260;
+  const N = [...ACT.map(([id, n, c], i) => { const a = i * Math.PI / 2 + 0.4; return { id, n, c, r: 20, p: [Math.cos(a) * R, 0, Math.sin(a) * R], et: true }; }),
+    ...VER.map(([id, n, c], i) => { const a = i * Math.PI * 2 / 3; return { id, n, c, r: 12, p: [Math.cos(a) * 90, 90, Math.sin(a) * 90], et: `<b>${n}</b>`, cls: 'verbo' }; })];
+  const L = []; ACT.forEach(([a, , c]) => VER.forEach(([v]) => L.push([a, v, c, 3]))); ACT.forEach(([a, , c], i) => L.push([a, ACT[(i + 1) % 4][0], '#77736b', 2]));
+  red3d('actores', N, L, { c: [0, 0], y: Y, R, fijo: true, rot: 0, dn: 0.2, dl: 0.04, tp: 6 });
+  ACT.forEach(([id, , c, ed], i) => { const a = i * Math.PI / 2 + 0.4; const A = new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R); const [bx, bz] = centroEdif(ed); const B = new THREE.Vector3(bx, D.edif[ed].h + 2 - Y, bz);
+    const cur = new THREE.LineCurve3(A, B); tubo('actores', cur, 2.5, c, 0.8, 1.2); pulsos('actores', [cur], c, 3, 0.3, 7); }); }
+
+// ---- 08.8 NBIC: tetraedro de la convergencia (Roco y Bainbridge)
+const NB = { N: ['Nanotecnología', COL.ocre], B: ['Biotecnología', COL.verde], I: ['Información', COL.azul], C: ['Cognición', COL.lila] };
+const ZNB = [(ZI[0] + ZI2[0]) / 2, (ZI[1] + ZI2[1]) / 2], YNB = 330;
+{ const v = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]], R = 110; const ids = ['N', 'B', 'I', 'C'];
+  const N = ids.map((id, i) => ({ id, n: NB[id][0], c: NB[id][1], r: 22, p: v[i].map(q => q * R / Math.sqrt(3)), et: `<b class="letra" style="color:${NB[id][1]}">${id}</b> ${NB[id][0]}` }));
+  const L = []; for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) L.push([ids[i], ids[j], '#F2EFE8', 2.5]);
+  red3d('nbic', N, L, { c: ZNB, y: YNB, R, fijo: true, rot: 0.35, dn: 0.18, dl: 0.1, tp: 7, np: 3 });
+  addEt('Enfoque NBIC · Roco y Bainbridge (2003)', (() => { const o = new THREE.Object3D(); o.position.set(0, 150, 0); xg('nbic').g.add(o); return o; })(), ['nbic'], 'titulo3d'); }
+// haces desde el centro del tetraedro hacia donde se aplica cada línea
+const hazNB = (k, destinos, col) => { const A = new THREE.Vector3(ZNB[0], YNB - 40, ZNB[1]); const cs = destinos.map(([x, y, z]) => { const B = new THREE.Vector3(x, y, z); return new THREE.QuadraticBezierCurve3(A, A.clone().lerp(B, 0.5).add(new THREE.Vector3(0, A.distanceTo(B) * 0.15, 0)), B); });
+  cs.forEach((c, i) => tubo(k, c, 4, col, 0.85, 0.2 + i * 0.15)); pulsos(k, cs, '#ffffff', 4, 0.3, 8); destinos.forEach(([x, , z]) => onda(k, [x, z], col, 70, 4, 2)); };
+hazNB('nbB', [[centroEdif(0)[0], D.edif[0].h, centroEdif(0)[1]], [ZC[0], 4, ZC[1]], [centroEdif(23)[0], D.edif[23].h, centroEdif(23)[1]]], COL.verde);
+hazNB('nbI', [...MERC.map(m => [m.p[0], 300, m.p[1]]), [CORA[0], 300, CORA[1]]], COL.azul);
+hazNB('nbC', [[ZM[0], 30, ZM[1]], ...TECHS.filter((_, i) => i % 6 === 0).map(t => [t.p[0], t.h, t.p[1]])], COL.lila);
+hazNB('nbN', [[centroEdif(5)[0], D.edif[5].h, centroEdif(5)[1]]], COL.ocre);
+// biotecnología: el ciclo residuo → compost → huerta → mercado gira en el predio
+{ const pts = [V3(ZC, 6), V3(ZI, 14), V3(ZM, 14), V3(ZC, 6)]; const c1 = new THREE.CatmullRomCurve3(pts, true); tubo('nbB', c1, 3, '#b98a57', 0.8, 0.8); pulsos('nbB', [c1], ['#8fc46a'], 10, 0.12, 8); }
+
+// ---- 09.2 formación en Bavaria -> producción en las viviendas: ciclos de acompañamiento
+const TCASA = TECHS[Math.floor(TECHS.length * 0.35)] || { p: [400, 300], h: 10 };
+onda('ciclos', TCASA.p, COL.ocre, 90, TCASA.h + 2, 3); pin('ciclos', TCASA.p, '#8fc46a', 40, 10);
+{ const ZF = centroEdif(2); const cur = curva(ZF, TCASA.p, 80, 12, TCASA.h + 4); tubo('ciclos', cur, 3, COL.ocre, 0.9, 0.2); pulsos('ciclos', [cur], '#ffffff', 5, 0.25, 9);
+  addEt(`<i style="background:${COL.ocre}"></i>Promotor barrial · primeros ciclos`, (() => { const p = cur.getPoint(0.5); return [p.x, p.y + 20, p.z]; })(), ['ciclos']);
+  addEt(`<i style="background:#8fc46a"></i>Vivienda con huerta`, [TCASA.p[0], TCASA.h + 60, TCASA.p[1]], ['ciclos']); }
+addEt(`<i style="background:${COL.verde}"></i>Módulos demostrativos en Bavaria`, (() => { const B = D.bloques || []; if (!B.length) return [0, 12, 0]; const b = B[Math.floor(B.length / 2)]; const p = W(b.reduce((t, q) => t + q[0], 0) / b.length, b.reduce((t, q) => t + q[1], 0) / b.length); return [p[0], 14, p[1]]; })(), ['ciclos']);
+// 09.3 el incentivo: una red sobre la vivienda
+{ const N = [{ id: 'h', n: 'Huerta en casa', c: '#8fc46a', r: 16, p: [0, 0, 0], et: true }, { id: 'a', n: 'Hortalizas frescas', c: COL.verde, r: 11, p: [70, 40, 0], et: true }, { id: 'b', n: 'Insumos conocidos', c: COL.ocre, r: 11, p: [-35, 40, 60], et: true }, { id: 'c', n: 'Menos compras del hogar', c: COL.azul, r: 11, p: [-35, 40, -60], et: true }];
+  red3d('incentivo', N, [['h', 'a', COL.verde, 2.5], ['h', 'b', COL.ocre, 2.5], ['h', 'c', COL.azul, 2.5]], { c: TCASA.p, y: TCASA.h + 50, R: 80, fijo: true, rot: 0.25, dn: 0.3, dl: 0.25, tp: 7, np: 3 });
+  onda('incentivo', TCASA.p, '#8fc46a', 60, TCASA.h + 2, 2); }
+// 09.4 excedentes = ingreso complementario
+addEt(`<i style="background:${COL.ocre}"></i>Ingreso complementario`, (() => { const m = MERC[1].p; return [m[0], 380, m[1]]; })(), ['exc'], 'fuerte');
+// 09.5 Jardín Botánico de Bogotá, referente local
+const JB = geoLL(4.6683, -74.0995);
+{ const cur = curva(JB, [0, 0], null, 20, 20); tubo('jb', cur, 16, COL.verde, 0.85, 0.1); pulsos('jb', [cur], '#ffffff', 6, 0.18, 10); pin('jb', JB, COL.verde, 520, 110, 0.2); pin('jb', [0, 0], COL.ocre, 380, 80, 0.8); onda('jb', JB, COL.verde, 900, 6, 3);
+  addEt(`<i style="background:${COL.verde}"></i>Jardín Botánico de Bogotá`, [JB[0], 720, JB[1]], ['jb'], 'fuerte');
+  addEt('Formación y asistencia técnica en producción urbana', (() => { const p = cur.getPoint(0.5); return [p.x, p.y + 60, p.z]; })(), ['jb']);
+  addEt(`<i style="background:${COL.ocre}"></i>Bavaria Común`, [0, 520, 0], ['jb']); }
+
+// ---- 10.1 la red de relaciones bióticas de Kennedy (data3d/biotica.json: especies, flora e interacciones)
+let LEY_BIO = '';
+const BIO = await fetch('data3d/biotica.json').then(r => r.json()).catch(() => null);
+if (BIO) { const TIP = BIO.tipos; const deg = {}; BIO.enlaces.forEach(([a, b]) => { deg[a] = (deg[a] || 0) + 1; deg[b] = (deg[b] || 0) + 1; });
+  const esp = Object.entries(BIO.especies).map(([id, e]) => ({ id, n: e.n, c: '#F2EFE8', r: 7 + Math.sqrt(deg[id] || 1) * 3.2 }));
+  const fl = Object.entries(BIO.flora).filter(([id]) => deg[id]).map(([id, f]) => ({ id, n: f.n.split(',')[0], c: '#7fc48f', r: 4 + Math.sqrt(deg[id] || 1) * 1.8 }));
+  const top = [...esp].sort((a, b) => (deg[b.id] || 0) - (deg[a.id] || 0)).slice(0, MOVIL ? 6 : 10); top.forEach(n => { n.et = true; });
+  const L = BIO.enlaces.map(([a, b, t]) => [a, b, (TIP[t] || TIP[0]).c, 1.8]);
+  red3d('bioRed', [...esp, ...fl], L, { c: [ZB[0], ZB[1]], y: 470, R: MOVIL ? 380 : 560, rep: 3.2, rot: 0.06, flat: 0.85, dn: 0.012, dl: 0.006, tp: 4, np: 1, vp: 0.15 });
+  LEY_BIO = '<div class="t">Red de relaciones bióticas</div>' + TIP.slice(0, 6).map(q => `<div class="f"><i style="background:${q.c}"></i>${q.n}</div>`).join('') + '<div class="f"><i style="background:#F2EFE8"></i>Fauna</div><div class="f"><i style="background:#7fc48f"></i>Flora</div>'; }
+// 10.2 polinizadores alrededor de las huertas: enjambres que giran sobre las manzanas de huerta
+{ const B = D.bloques || []; const n = MOVIL ? 500 : 1100; const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), cen = [], par = []; let s = 13; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const PAL = ['#f2c230', '#f2c230', '#ffffff', '#d0517a', '#b48ad6'];
+  for (let i = 0; i < n; i++) { const b = B[Math.floor(rnd() * B.length)] || [[CX, CY]]; const c = W(b.reduce((t, q) => t + q[0], 0) / b.length, b.reduce((t, q) => t + q[1], 0) / b.length); cen.push(c); par.push([8 + rnd() * 22, rnd() * 6.28, 0.6 + rnd() * 1.6, 2 + rnd() * 9]); const cc = new THREE.Color(PAL[i % PAL.length]); col.set([cc.r, cc.g, cc.b], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const p = new THREE.Points(g, xmat('abejas', new THREE.PointsMaterial({ size: MOVIL ? 3 : 3.6, sizeAttenuation: false, vertexColors: true }), 1)); p.frustumCulled = false; p.renderOrder = 12; xg('abejas').g.add(p);
+  xg('abejas').upd.push((t) => { for (let i = 0; i < n; i++) { const [r, ph, w, h] = par[i], c = cen[i]; const a = ph + t * w; pos.set([c[0] + Math.cos(a) * r, h + Math.sin(t * 3 + ph) * 1.5, c[1] + Math.sin(a * 1.3) * r], i * 3); } g.attributes.position.needsUpdate = true; }); }
+// 10.3 los parches dejan de ser islas: domos de vegetación unidos, con aves que viajan entre ellos
+const PARCHES = [];
+{ const cerca = PQ.map(q => { const x = q.pts.reduce((t, p) => t + p[0], 0) / q.pts.length, y = q.pts.reduce((t, p) => t + p[1], 0) / q.pts.length; const c = W(x, y); return { c, d: Math.hypot(c[0], c[1]), a: poligonoArea(q.pts) }; }).filter(o => o.d < 2400 && o.a > 2500).sort((a, b) => b.a - a.a).slice(0, MOVIL ? 12 : 20);
+  PARCHES.push({ c: ZB, a: 120000 }, ...cerca);
+  PARCHES.forEach((o, i) => { const r = Math.min(150, 30 + Math.sqrt(o.a) * 0.5); const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), xmat('islas', new THREE.MeshLambertMaterial({ color: '#4FB98C' }), 0.55, null, false)); m.position.set(o.c[0], 0, o.c[1]); m.renderOrder = 8; xg('islas').g.add(m); crece('islas', m, i * 0.05, 0.9); onda('islas', o.c, COL.verde, r * 2.2, 3, 1); });
+  const cs = []; const pares = new Set(); PARCHES.forEach((a, i) => PARCHES.map((b, j) => [j, Math.hypot(b.c[0] - a.c[0], b.c[1] - a.c[1])]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 2).forEach(([j]) => { const key = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(key)) return; pares.add(key); cs.push(curva(a.c, PARCHES[j].c, null, 20, 20)); }));
+  cs.forEach((c, i) => tubo('puentes', c, 4, COL.verde, 0.75, 0.3 + i * 0.06)); pulsos('puentes', cs, ['#f2c230', '#ffffff', '#d0517a'], 3, 0.09, 7);
+  // aves que vuelan por los puentes
+  const ala = new THREE.BufferGeometry(); ala.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -2, 0, 0, 2, -7, 0.8, 0, 0, 0, -2, 0, 0, 2, 7, 0.8, 0, 0, 0, -2, 0, 0, 2, 0, 0.2, 5], 3));
+  const am = xmat('puentes', new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }), 1); const aves = cs.slice(0, 16).map((c, i) => { const b = new THREE.Mesh(ala, am); b.scale.setScalar(2.4); b.renderOrder = 13; xg('puentes').g.add(b); return { b, c, ph: i * 0.37 }; });
+  xg('puentes').upd.push((t) => aves.forEach(({ b, c, ph }) => { const u = (t * 0.07 + ph) % 1; c.getPoint(u, tmp); b.position.copy(tmp); c.getTangent(u, tmp2); b.rotation.set(0, Math.atan2(tmp2.x, tmp2.z), Math.sin(t * 9 + ph * 7) * 0.4); }));
+  addEt(`<i style="background:${COL.verde}"></i>Parches que eran islas`, [PARCHES[3] ? PARCHES[3].c[0] : 300, 120, PARCHES[3] ? PARCHES[3].c[1] : 300], ['islas']);
+  addEt('<i style="background:#ffffff"></i>Aves y polinizadores entre parches', (() => { const c = cs[2] || cs[0]; const p = c ? c.getPoint(0.5) : new THREE.Vector3(); return [p.x, p.y + 30, p.z]; })(), ['puentes']);
+  addEt(`<i style="background:${COL.verde}"></i>Alimento y refugio`, [ZB[0], 160, ZB[1]], ['islas']); }
+// 10.4 control de ratas: la cadena residuos → ratas, cortada por almacenamiento y retiro, y la depredación de las rapaces
+{ const N = [{ id: 'res', n: 'Residuos', c: '#a77b5a', r: 9, p: [-60, 0, 0], et: true }, { id: 'rat', n: 'Ratas', c: '#9aa0a6', r: 9, p: [60, 0, 0], et: true }, { id: 'alm', n: 'Almacenamiento cerrado', c: COL.verde, r: 8, p: [-30, 60, 40], et: true }, { id: 'ret', n: 'Retiro oportuno', c: COL.verde, r: 8, p: [-30, 60, -40], et: true }, { id: 'rap', n: 'Aves rapaces', c: '#F2EFE8', r: 9, p: [80, 90, 0], et: true }];
+  red3d('cadena', N, [['res', 'rat', COL.rojo, 2.5], ['alm', 'res', COL.verde, 2.5], ['ret', 'res', COL.verde, 2.5], ['rap', 'rat', '#F2EFE8', 2.5]], { c: ZC, y: 70, R: 90, fijo: true, rot: 0.15, dn: 0.25, dl: 0.25, tp: 6, np: 3 }); }
+{ const e = masCerca(ZC, ENT.map(p => W(...p))); const cur = curva(ZC, e, 30, 4, 4); tubo('retiro', cur, 2.5, COL.ocre, 0.9, 0.2); pulsos('retiro', [cur], COL.ocre, 4, 0.2, 10); addEt(`<i style="background:${COL.ocre}"></i>Retiro de residuos`, (() => { const p = cur.getPoint(0.5); return [p.x, p.y + 12, p.z]; })(), ['retiro']); }
+
+// ---- 10.5 sintaxis en 3D: cada tramo de calle es una barra cuya altura es su valor
+const SXC = [];
+const barras = (k, ix) => {
+  const S = existentes; const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+  const m = new THREE.InstancedMesh(geo, xmat(k, new THREE.MeshLambertMaterial({ color: '#ffffff' }), 1, null, true), S.length);
+  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
+  S.forEach((s, i) => { const a = s.p[0], b = s.p[s.p.length - 1]; const [ax, az] = W(...a), [bx, bz] = W(...b); const L = Math.max(2, Math.hypot(bx - ax, bz - az)); const v = pct(s.a[ix], ix);
+    const h = 4 + 480 * Math.pow(v, 6); p.set((ax + bx) / 2, 0, (az + bz) / 2); q.setFromAxisAngle(Y, -Math.atan2(bz - az, bx - ax)); sc.set(L, h, MOVIL ? 14 : 10); M.compose(p, q, sc); m.setMatrixAt(i, M); m.setColorAt(i, rampa(v)); });
+  m.renderOrder = 5; xg(k).g.add(m); crece(k, m, 0.1, 2.2, 'sy'); return m; };
+barras('sxI', 1); barras('sxE', 2);
+{ const top = existentes.map(s => ({ s, v: s.a[2] })).sort((a, b) => b.v - a.v).slice(0, MOVIL ? 160 : 360);
+  const cs = top.map(({ s }) => { const pts = s.p.map(([x, y]) => { const [X, Z] = W(x, y); return new THREE.Vector3(X, 8, Z); }); return pts.length > 1 ? new THREE.CatmullRomCurve3(pts) : null; }).filter(Boolean);
+  pulsos('sxE', cs, '#ffffff', 2, 0.35, 5); }
+// 10.6 pasajes: peatones que entran por las puertas hasta las naves
+{ const cs = nuevos.map(s => { const pts = chaikin(s.p).map(([x, y]) => { const [X, Z] = W(x, y); return new THREE.Vector3(X, 3, Z); }); return new THREE.CatmullRomCurve3(pts); });
+  cs.forEach((c, i) => tubo('pasos', c, 2.2, '#F2EFE8', 0.95, i * 0.08)); pulsos('pasos', cs, [COL.ocre, '#ffffff'], 5, 0.07, 7);
+  ENT.forEach(([x, y], i) => onda('pasos', W(x, y), COL.ocre, 40, 3, 1)); }
+// 10.7 áreas ya ocupadas: la huella existente se ilumina; el bosque queda sin intervenir
+{ const g = mergeGeometries(D.edif.map(e => { const s = new THREE.ShapeGeometry(forma(e.p)); s.rotateX(-Math.PI / 2); s.translate(0, 2, 0); s.deleteAttribute('uv'); return s; })); const m = new THREE.Mesh(g, xmat('ocupado', new THREE.MeshBasicMaterial({ color: COL.ocre }), 0.75)); m.renderOrder = 8; xg('ocupado').g.add(m);
+  D.edif.forEach((e, i) => { if (i % 3) return; const c = centroEdif(i); onda('ocupado', c, COL.ocre, 50, 3, 1); });
+  addEt(`<i style="background:${COL.ocre}"></i>Intervención en áreas ya ocupadas`, [0, 80, 0], ['ocupado'], 'fuerte');
+  addEt(`<i style="background:${COL.verde}"></i>Bosque sin intervenir`, [ZB[0], 70, ZB[1]], ['ocupado']); }
+
+// ---- 11.1 ¿hasta dónde llegan los pasajes? frentes que se acercan al bosque y se detienen
+{ const cs = nuevos.map(s => { const pts = chaikin(s.p).map(([x, y]) => { const [X, Z] = W(x, y); return new THREE.Vector3(X, 4, Z); }); return { c: new THREE.CatmullRomCurve3(pts), d: Math.min(...pts.map(p => Math.hypot(p.x - ZB[0], p.z - ZB[1]))) }; }).sort((a, b) => a.d - b.d).slice(0, 8);
+  cs.forEach(({ c }, i) => { tubo('limite', c, 3.2, '#F2EFE8', 0.9, i * 0.1); }); pulsos('limite', cs.map(o => o.c), [COL.rojo, '#ffffff'], 3, 0.12, 8);
+  const anillo = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 96), xmat('limite', new THREE.MeshBasicMaterial({ color: COL.verde }), 0.9)); anillo.rotation.x = Math.PI / 2; anillo.position.set(ZB[0], 6, ZB[1]); anillo.scale.setScalar(230); xg('limite').g.add(anillo);
+  xg('limite').upd.push((t) => { anillo.scale.setScalar(230 + Math.sin(t * 2) * 12); });
+  addEt('¿Hasta dónde llegan los pasajes?', [ZB[0], 120, ZB[1]], ['limite'], 'fuerte'); addEt('¿Qué actividades cerca del bosque?', [ZB[0] + 160, 60, ZB[1] - 120], ['limite']); }
+// 11.2 Salvemos el Bosque de Bavaria: el colectivo rodea el bosque
+{ const G = new THREE.Group(); G.position.set(ZB[0], 0, ZB[1]); G.userData.gira = true; xg('colectivo').g.add(G); xg('colectivo').rot = 0.08; const n = 64;
+  const pm = xmat('colectivo', new THREE.MeshBasicMaterial({ color: COL.verde }), 1);
+  for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; const c = new THREE.Mesh(new THREE.CapsuleGeometry(2.2, 5, 3, 8), pm); c.position.set(Math.cos(a) * 250, 5, Math.sin(a) * 250); c.renderOrder = 12; G.add(c); crece('colectivo', c, i * 0.015, 0.5); }
+  new THREE.TextureLoader().load('data3d/logo_bosque_bavaria.png', (tx) => { tx.colorSpace = THREE.SRGBColorSpace; const sp = new THREE.Sprite(xmat('colectivo', new THREE.SpriteMaterial({ map: tx }), 1)); const asp = tx.image.width / tx.image.height; sp.scale.set(160 * asp, 160, 1); sp.position.set(ZB[0], 210, ZB[1]); sp.renderOrder = 14; xg('colectivo').g.add(sp); crece('colectivo', sp, 0.4, 0.9); });
+  addEt(`<i style="background:${COL.verde}"></i>Salvemos el Bosque de Bavaria · colectivo ciudadano`, [ZB[0], 320, ZB[1]], ['colectivo'], 'fuerte');
+  addEt('Conservación del bosque frente a la tala', [ZB[0] + 250, 30, ZB[1]], ['colectivo']); }
+
 /* ---------------- escenas ---------------- */
 // cam: s = tamaño visible (m), az = rumbo de la cámara (grados), el = elevación, t = objetivo [X, Z]
 const E = {
@@ -585,7 +784,41 @@ const E = {
   federacion: { luz: 0.6, cam: { s: 1050, az: -35, el: 22, y: 170 }, ctx: 0.3, edif: 'prog', pas: 1, banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
   voceria: { luz: 0.55, cam: { s: 820, az: -55, el: 20, y: 220 }, ctx: 0.3, edif: 'prog', pas: 1, banc: 1, inv: 1, x: ['fed'], et: 'voz', ley: 'voz', voz: 1 },
 };
-const TGT = { mid: [KEN_C[0] * 0.45, KEN_C[1] * 0.45], midc: [MERC[1].p[0] * 0.5, MERC[1].p[1] * 0.5], lab: centroEdif(5), comp: ZC, bosq: ZB,
+const ZI2c = centroEdif(2);
+Object.assign(E, {
+  g01: { luz: 0.5, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
+  g02: { luz: 0.5, cam: { s: 5600, az: -15, el: 20, t: 'mid', y: 380 }, ctx: 0, edif: 'ghost', x: ['problemas', 'foco'], nf: { problemas: ['F', 'A'] }, et: ['problemas', 'foco'], ley: 'prob2' },
+  g03: { lim: 1, luz: 0.5, cam: { s: 8800, az: -12, el: 24, t: 'ken', y: 200 }, ctx: 0, edif: 'ghost', x: ['abHoy', 'prod'], et: 'abHoy', ley: 'abHoy' },
+  g04: { lim: 1, luz: 0.5, cam: { s: 8800, az: 18, el: 26, t: 'ken', y: 200 }, ctx: 0, edif: 'ghost', x: ['abRed', 'nodos', 'prod'], et: 'abRed', ley: 'abRed' },
+  g05: { luz: 0.85, cam: { s: 1350, az: -35, el: 22 }, ctx: 0, edif: 'ghost', borde: 1, x: ['avs'], et: 'avs', ley: 'avs' },
+  g06: { luz: 0.55, cam: { s: !SIN_G ? 1450 : 2300, az: -40, el: 20, y: !SIN_G ? 300 : 540 }, ctx: 0, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, expl: 1, flu: 1, et: 'capas', ley: 'capas' },
+  g07: { luz: 0.7, cam: { s: 1000, az: -30, el: 18, y: 150 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['actores'], et: 'actores', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
+  g08: { luz: 0.7, cam: { s: 620, az: -50, el: 16, t: 'nb', y: 260 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic'], et: 'nbic', ley: 'nbic', giro: 1 },
+  g09: { luz: 0.8, cam: { s: 950, az: -62, el: 24, t: 'nb', y: 130 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, flu: 1, x: ['nbic', 'nbB'], nf: { nbic: 'B' }, et: ['nbic', 'nb_b'], ley: 'nb_b', hl: { 23: '#d9c7ef', 0: COL.verde, 2: COL.verde } },
+  g10: { luz: 0.55, cam: { s: 5200, az: -20, el: 24, t: 'mid', y: 260 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'nodos'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
+  g11: { luz: 0.75, cam: { s: 2000, az: -30, el: 22, y: 160 }, ctx: 1, edif: 'prog', techos: 1, x: ['nbic', 'nbC', 'cogno'], xt: { nbic: { s: 1.8, y: 480 } }, nf: { nbic: 'C' }, et: ['nbic', 'nb_c'], ley: 'nb_c', hl: { 4: COL.lila, 3: COL.ocre } },
+  g12: { luz: 0.75, cam: { s: 650, az: -15, el: 18, t: 'nb', y: 190 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic', 'nbN'], nf: { nbic: 'N' }, et: ['nbic', 'nb_n'], ley: 'nb_n', hl: { 5: COL.lila } },
+  g13: { luz: 0.8, cam: { s: 2000, az: -35, el: 24, y: 70 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['viv'], et: 'viv', ley: 'viv', hl: { 2: COL.verde, 11: '#d98f5a' } },
+  g14: { luz: 0.85, cam: { s: 950, az: -20, el: 22, t: 'casaMid', y: 30 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['ciclos'], et: 'ciclos', ley: 'form', hl: { 2: COL.verde, 11: '#d98f5a' } },
+  g15: { luz: 0.9, cam: { s: 420, az: -30, el: 18, t: 'casa', y: 50 }, ctx: 1, edif: 'prog', techos: 1, x: ['incentivo'], et: 'incentivo', ley: 'viv' },
+  g16: { luz: 0.6, cam: { s: 3600, az: -25, el: 26, t: 'midc', y: 90 }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'nodos'], et: ['exc', 'abBav'], ley: 'exc', hl: { 3: COL.ocre } },
+  g17: { luz: 0.5, cam: { s: 9500, az: -25, el: 24, t: 'jbMid', y: 200 }, ctx: 0, edif: 'prog', x: ['jb'], et: 'jb', ley: 'jb' },
+  g18: { luz: 0.45, cam: { s: 950, az: 20, el: 10, t: 'bosq', y: 470 }, ctx: 0, edif: 'prog', x: ['bioRed'], et: 'bioRed', ley: 'bioRed', giro: 1 },
+  g19: { luz: 0.85, cam: { s: 950, az: 10, el: 24, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['flores', 'abejas', 'puentes'], et: ['parches', 'puentes'], ley: 'parches' },
+  g20: { luz: 0.6, cam: { s: 3400, az: -20, el: 26, t: 'bio', y: 40 }, ctx: 0, edif: 'prog', x: ['islas', 'puentes'], et: ['islas', 'puentes'], ley: 'islas' },
+  g21: { luz: 0.85, cam: { s: 380, az: -50, el: 20, t: 'comp', y: 45 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'ratas', 'retiro'], nf: { cadena: ['res', 'alm', 'ret'] }, et: ['cadena', 'retiro'], ley: 'ratas' },
+  g22: { luz: 0.85, cam: { s: 420, az: -15, el: 20, t: 'comp', y: 60 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'rapaces', 'ratas'], nf: { cadena: ['rap', 'rat'] }, et: ['cadena'], ley: 'ratas' },
+  g23: { lim: 1, luz: 0.32, cam: { s: 6800, az: -15, el: 28, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', borde: 1, x: ['sxI', 'nodos'], et: 'sxm', ley: 'nain8m' },
+  g24: { lim: 1, luz: 0.32, cam: { s: 6800, az: 22, el: 28, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', borde: 1, x: ['sxE'], ley: 'nach' },
+  g25: { luz: 0.8, cam: { s: 1300, az: -24, el: 26 }, ctx: 0.3, edif: 'prog', x: ['pasos'], et: 'puertas', ley: 'pasajes' },
+  g26: { luz: 0.8, cam: { s: 1250, az: 15, el: 28 }, ctx: 0.3, edif: 'prog', x: ['ocupado', 'bosqueZona'], et: 'ocupado', ley: 'ocupado' },
+  g27: { luz: 0.8, cam: { s: 1000, az: 25, el: 24, t: 'bosq', y: 30 }, ctx: 0.3, edif: 'prog', x: ['limite', 'bosqueZona'], et: 'limite', ley: 'gobB' },
+  g28: { luz: 0.8, cam: { s: 1150, az: 30, el: 16, t: 'bosq', y: 140 }, ctx: 0.3, edif: 'ghost', x: ['colectivo', 'bosqueZona'], et: 'colectivo', ley: 'colectivo' },
+  g29: { luz: 0.6, cam: { s: 1050, az: -35, el: 16, y: 200 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
+  g30: { luz: 0.6, cam: { s: 1150, az: -10, el: 20, y: 160 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
+  g31: { luz: 0.55, cam: { s: 780, az: -55, el: 16, y: 230 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'voz', ley: 'voz', voz: 1 },
+});
+const TGT = { nb: ZNB, casa: TCASA.p, casaMid: [(ZI2c[0] + TCASA.p[0]) / 2, (ZI2c[1] + TCASA.p[1]) / 2], jbMid: [JB[0] * 0.5, JB[1] * 0.5], mid: [KEN_C[0] * 0.45, KEN_C[1] * 0.45], midc: [MERC[1].p[0] * 0.5, MERC[1].p[1] * 0.5], lab: centroEdif(5), comp: ZC, bosq: ZB,
   bio: (() => { const h = HUM.filter(q => !q.cora); return [h.reduce((t, q) => t + q.v.x, 0) / (h.length + 1), h.reduce((t, q) => t + q.v.z, 0) / (h.length + 1)]; })() };
 const KT = 'ken';
 const invT = (() => { const a = centroEdif(2), b = centroEdif(0); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; })();
@@ -632,13 +865,24 @@ Object.assign(LEY, {
   gobB: '<div class="t">El bosque</div>' + f_(COL.verde, 'Copas del bosque denso') + f_('#f2efe6', 'Pasajes propuestos'),
   fed: '<div class="t">Federación de asambleas</div>' + f_(COL.verde, 'Salvemos el Bosque de Bavaria') + f_(COL.ocre, 'Organizaciones barriales') + f_(COL.azul, 'Comerciantes') + f_(COL.crema, 'Decisiones comunes'),
   voz: '<div class="t">Vocería rotativa</div>' + f_(COL.crema, 'Quien lleva los acuerdos cambia cada cierto tiempo'),
+  prob: '<div class="t">Red de problemas de Kennedy</div>' + Object.entries(PROB).map(([id, [n, c]]) => f_(c, `${n} · ${gradoP[id]} conexiones`)).join(''),
+  prob2: '<div class="t">De la red a la propuesta</div>' + f_(PROB.F[1], 'Centralización de servicios') + f_(PROB.A[1], 'Dependencia de alimentos externos') + f_('#ffffff', 'Abastecimiento de alimentos'),
+  avs: '<div class="t">El predio</div>' + f_(COL.ocre, `Antigua cervecería · ${V.area_ha} ha`) + f_('#F2EFE8', 'Av. Boyacá y Av. de las Américas'),
+  nbic: '<div class="t">Enfoque NBIC</div>' + Object.entries(NB).map(([id, [n, c]]) => f_(c, `${id} · ${n}`)).join(''),
+  form: '<div class="t">Formación</div>' + f_(COL.verde, 'Módulos demostrativos') + f_(COL.ocre, 'Promotores barriales, primeros ciclos'),
+  jb: '<div class="t">Referente local</div>' + f_(COL.verde, 'Jardín Botánico de Bogotá') + f_(COL.ocre, 'Bavaria Común'),
+  bioRed: LEY_BIO,
+  islas: '<div class="t">De islas a red</div>' + f_(COL.verde, 'Parches de árboles y parques') + f_('#ffffff', 'Aves que se desplazan') + f_('#f2c230', 'Polinizadores'),
+  ocupado: '<div class="t">Dónde se interviene</div>' + f_(COL.ocre, 'Huellas ya ocupadas') + f_(COL.verde, 'Bosque sin intervenir'),
+  colectivo: '<div class="t">Salvemos el Bosque de Bavaria</div>' + f_(COL.verde, 'Colectivo ciudadano'),
 });
+LEY.nach = LEY.nach.replace('poco paso', 'pocos recorridos').replace('mucho paso', 'muchos recorridos') + f_('#ffffff', 'Recorridos potenciales');
 if (MOVIL) for (const k of ['prog', 'sectores']) LEY[k] = LEY[k].replace(/<div class="f">.*$/s, '<div class="f">Ver etiquetas en el modelo</div>');
 
 /* ---------------- estado animado ---------------- */
 const est = { lim: 0, ctx: 1, edif: 1, prog: 0, muro: 1, arb: 1, red: 0, pas: 0, banc: 0, inv: 0, techos: 0, flu: 0, expl: 0, corr: 0, borde: 0 };
 const obj = { ...est };
-let escena = 'portada', camObj = null, giroAz = 0, HL = null;
+let escena = 'portada', camObj = null, giroAz = 0, HL = null, tEsc = 0; const tmp2 = new THREE.Vector3();
 const GRIS_HL = new THREE.Color('#30363d');
 const camAct = { s: 2300, az: -38, el: 34, x: 0, z: 0, y: 0 };
 const setEscena = (k) => {
@@ -652,7 +896,8 @@ const setEscena = (k) => {
     G.luzObj = e.luz ?? (e.red ? 0.38 : e.ctx === 'sector' ? 0.75 : 1);
   }
   if (e.red) pintarRed(e.red); else pintarRed(e.pas ? 'gris' : modoRed);
-  for (const k in XG) XG[k].o = (e.x || []).includes(k) ? 1 : 0;
+  for (const k in XG) { const X = XG[k], on = (e.x || []).includes(k); if (on && !X.o) X.t0 = reloj.elapsedTime; X.o = on ? 1 : 0; const xt = e.xt && e.xt[k]; X.tgt = xt || null; const fc = e.nf && e.nf[k]; X.foc = fc ? new Set([].concat(fc)) : null; }
+  tEsc = reloj.elapsedTime;
   HL = e.hl ? new Map(Object.entries(e.hl)) : null;
   const t = e.cam.t === 'inv' ? invT : e.cam.t === 'ken' ? KEN_C : TGT[e.cam.t] || (Array.isArray(e.cam.t) ? e.cam.t : [0, 0]); obj.lim = e.lim ? 1 : 0;
   camObj = { s: e.cam.s * (MOVIL ? 1.15 : 1), az: e.cam.az, el: e.cam.el, x: t[0], z: t[1], y: e.cam.y || 0 };
@@ -700,7 +945,14 @@ function cuadro() {
   opac(techosMat, est.techos);
   edifMeshes.forEach(m => { const h = HL && HL.get(String(m.userData.i)); m.material.color.set(m.userData.hoy).lerp(HL ? (h ? new THREE.Color(h) : GRIS_HL) : new THREE.Color(m.userData.prog), est.prog); opac(m.material, est.edif * (HL && !h ? 0.18 : 1)); });
   // capas del guion
-  for (const k in XG) { const X = XG[k]; X.v = lerp(X.v, X.o, f); const on = X.v > 0.01; X.g.visible = on; if (!on) continue; for (const { m, base } of X.mats) m.opacity = base * X.v;
+  for (const k in XG) { const X = XG[k]; X.v = lerp(X.v, X.o, f); const on = X.v > 0.01; X.g.visible = on; if (!on) continue;
+    X.fv = lerp(X.fv ?? 1, X.foc ? 0 : 1, f);
+    for (const { m, base, tags } of X.mats) m.opacity = base * X.v * (X.foc && tags ? (tags.some(q => X.foc.has(q)) ? 1 : 0.12 + 0.88 * X.fv) : 1);
+    if (X.tgt) { if (!X.base) X.base = { y: X.g.position.y, s: X.g.scale.x }; X.g.position.y = lerp(X.g.position.y, X.tgt.y ?? X.base.y, f); X.g.scale.setScalar(lerp(X.g.scale.x, X.tgt.s ?? X.base.s, f)); }
+    if (X.rot) X.g.children.forEach(c => { if (c.userData.gira) c.rotation.y += dt * X.rot; });
+    for (const c of X.cre) { const q = Math.max(0, Math.min(1, (t - X.t0 - c.d) / c.dur)), e2 = 1 - Math.pow(1 - q, 3); if (c.tipo === 'draw') c.o.geometry.setDrawRange(0, Math.max(0, Math.floor(c.n * e2 / 3) * 3)); else if (c.tipo === 'sy') c.o.scale.y = Math.max(0.001, e2); else c.o.scale.setScalar(Math.max(0.001, e2) * c.s0 * (c.lat ? 1 + 0.07 * Math.sin(t * 2.2 + c.d * 9) : 1)); }
+    for (const w of X.ondas) { const u = (t * 0.45 + w.ph) % 1; w.m.scale.setScalar(w.R * (0.15 + 0.85 * u)); w.m.material.opacity *= (1 - u); }
+    for (const fn of X.upd) fn(t, dt, X);
     for (const P of X.pul) { P.curvas.forEach((c, i) => { for (let j = 0; j < P.n; j++) { const u = (t * P.vel + j / P.n + P.fase[i]) % 1; c.getPoint(u, tmp); P.pos.set([tmp.x, tmp.y, tmp.z], (i * P.n + j) * 3); } }); P.g.attributes.position.needsUpdate = true; } }
   if (XG.rapaces && XG.rapaces.g.visible) rapaces.forEach((b, i) => { const a = t * 0.35 + i * 2.1, r = 70 + i * 22; b.position.set(ZC[0] + Math.cos(a) * r, 70 + i * 14 + Math.sin(t * 1.3 + i) * 4, ZC[1] + Math.sin(a) * r); b.rotation.set(0, -a, Math.sin(t * 6 + i) * 0.25); });
   if (XG.fed && XG.fed.g.visible) { const per = E[escena].voz ? 1.1 : 2.6; const ciclo = Math.floor(t / per); const o = FED.orgs[ciclo % 3]; FED.tok.position.copy(o.cur.getPoint((t % per) / per));
@@ -725,9 +977,9 @@ function cuadro() {
   // etiquetas
   const w = innerWidth, h = innerHeight; const grupo = E[escena].et; const vis = [];
   for (const e of etq) {
-    const on = grupo && e.grupos.has(grupo);
+    const on = grupo && (Array.isArray(grupo) ? grupo.some(g => e.grupos.has(g)) : e.grupos.has(grupo));
     if (!on) { if (e.d.style.opacity !== '0') e.d.style.opacity = 0; continue; }
-    tmp.copy(e.pos); if (e.capa) tmp.y += capas[e.capa].position.y + (e.d.classList.contains('capa') ? 0 : 0);
+    if (e.obj) { e.obj.getWorldPosition(tmp); tmp.y += e.dy * (e.obj.parent ? e.obj.parent.getWorldScale(tmp2).x : 1); } else tmp.copy(e.pos); if (e.capa) tmp.y += capas[e.capa].position.y + (e.d.classList.contains('capa') ? 0 : 0);
     tmp.project(cam); let x = (tmp.x + 1) / 2 * w; const y = (1 - tmp.y) / 2 * h;
     if (e.d.classList.contains('capa')) x += MOVIL ? 90 : 230; e.sx = x; e.sy = y; e.vis = x > 0 && x < w && y > 0 && y < h; vis.push(e);
   }
@@ -738,63 +990,66 @@ function cuadro() {
 }
 
 /* =============================== DIAPOSITIVAS (siguen el guion) =============================== */
-// b: bloque · e: escena 3D · k: antetítulo · t: título · s: lo que se ve · g: texto del guion · c: cifras
+// Una diapositiva por frase del guion; el texto es el del guion, sin cambios. b: bloque (lámina del guion) · e: escena 3D
 const SL = [
-  { b: 'Inicio', e: 'portada', k: 'Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo', t: 'Bavaria Común', s: 'Un Distrito de Tecnologías Convergentes en la antigua cervecería, entre las avenidas Boyacá y Américas.', g: 'Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo · 2026' },
-  { b: 'Abastecimiento', e: 'abasto_hoy', k: 'El problema con más conexiones', t: 'La centralización de servicios', s: 'Hoy los alimentos que llegan de otros territorios entran por un solo punto, Corabastos, y desde allí se reparten a los barrios.', g: 'Esta red nos ayudó a identificar la centralización de servicios como el problema con más conexiones. Por eso, la propuesta empieza por reorganizar el abastecimiento de alimentos en Kennedy.' },
-  { b: 'Abastecimiento', e: 'abasto_red', k: 'Red de abastecimiento', t: 'Cambia dónde se reciben y se distribuyen', s: `Los productores llegan a ${MERC.length} mercados barriales y a los puntos de abastecimiento existentes. Corabastos es uno de los mercados de la red.`, g: 'Los alimentos que solo pueden abastecerse desde fuera de la localidad seguirían llegando de otros territorios. Lo que cambia es dónde se reciben y se distribuyen: los productores llegarían a distintos mercados barriales y puntos de abastecimiento, con Corabastos como uno de los mercados de la red.' },
-  { b: 'Abastecimiento', e: 'abasto_bav', k: 'Un nodo de la red', t: 'La antigua cervecería', s: `Entre las avenidas Boyacá y Américas: ${V.area_ha} ha cerradas desde 2010, con las naves de la fábrica todavía en pie.`, g: 'Como parte de esta red, proponemos recuperar parte de la antigua cervecería, entre las avenidas Boyacá y Américas.', c: [[V.area_ha + ' ha', 'del predio'], [V.edif_n, 'edificios en pie']] },
-  { b: 'Bavaria Común', e: 'dtc', k: 'Bavaria Común', t: 'Distrito de Tecnologías Convergentes', s: 'El predio por capas: territorio real, suelo productivo, pasajes, naves recuperadas y flujos.', g: 'A esta intervención la llamamos Bavaria Común, un Distrito de Tecnologías Convergentes que funciona como clúster de conocimiento.' },
-  { b: 'Bavaria Común', e: 'cluster', k: 'Clúster de conocimiento', t: 'Espacios para experimentar, aprender y organizarse', s: 'Universidades, comerciantes, promotores y organizaciones barriales ocupan las naves recuperadas.', g: 'Allí, universidades, comerciantes, promotores y organizaciones barriales disponen de espacios para experimentar, aprender y organizar iniciativas propias. El enfoque NBIC, de Roco y Bainbridge, orienta el programa.' },
-  { b: 'NBIC', e: 'nb_b', k: 'B · Biotecnología', t: 'Hidroponía, compostaje y hongos', s: `Bajo la cubierta liviana de las naves: ${V.inv_m2} m² cultivables.`, g: 'La biotecnología se aplica a la producción hidropónica, el compostaje y el cultivo experimental de hongos con materiales vegetales adecuados.', c: [[V.inv_m2 + ' m²', 'bajo cubierta']] },
-  { b: 'NBIC', e: 'nb_i', k: 'I · Tecnologías de la información', t: 'Pedidos, entregas y excedentes', s: 'El mercado de Bavaria registra lo que se pide y lo que se entrega en cada mercado de la red.', g: 'Las tecnologías de la información ayudan a registrar pedidos, entregas y excedentes.' },
-  { b: 'NBIC', e: 'nb_c', k: 'C · Ciencias cognitivas', t: 'Información útil para decidir', s: 'Herramientas pensadas para que familias y comerciantes usen esa información.', g: 'Las ciencias cognitivas orientan el diseño de herramientas para que familias y comerciantes usen esa información al tomar decisiones.' },
-  { b: 'NBIC', e: 'nb_n', k: 'N · Nanotecnología', t: 'Empaques para conservar alimentos', s: 'Una línea de investigación universitaria en el laboratorio del distrito.', g: 'La nanotecnología se plantea como una línea de investigación universitaria sobre materiales de empaque para conservar alimentos.' },
-  { b: 'Vivienda', e: 'form', k: 'Formación', t: 'Se aprende en Bavaria', s: 'Las familias practican en módulos demostrativos.', g: 'La formación se realiza en Bavaria y la producción se lleva a las viviendas. Las familias practican en módulos demostrativos y reciben acompañamiento de promotores barriales durante los primeros ciclos.' },
-  { b: 'Vivienda', e: 'viv', k: 'Producción en las viviendas', t: 'Se cosecha en casa', s: `Promotores barriales acompañan las huertas de ${V.techos_n} cubiertas cercanas.`, g: 'El incentivo es cosechar hortalizas frescas, conocer los insumos utilizados y sustituir parte de las compras del hogar.', c: [[V.techos_n, 'cubiertas con huerta'], [V.techos_m2 + ' m²', 'en techos']] },
-  { b: 'Vivienda', e: 'exc', k: 'Excedentes', t: 'Lo que sobra va al mercado barrial', s: 'Cada vivienda vende sus excedentes en el mercado más cercano. Referente local: el Jardín Botánico de Bogotá.', g: 'Cuando hay excedentes, su venta en los mercados barriales ofrece una posibilidad de ingreso complementario. El Jardín Botánico de Bogotá es un referente local por su trabajo en formación y asistencia técnica para la producción urbana.' },
-  { b: 'Red biótica', e: 'bio', k: 'Red de relaciones bióticas', t: 'Qué vínculos fortalecer', s: 'El bosque de Bavaria, los parques y los humedales como una sola red.', g: 'La red de relaciones bióticas de Kennedy nos ayuda a definir qué vínculos queremos fortalecer.' },
-  { b: 'Red biótica', e: 'parches', k: 'Parches conectados', t: 'Que los parches dejen de ser islas', s: 'Plantas en flor junto a las huertas y parches de árboles unidos a la vegetación existente.', g: 'Alrededor de los espacios de producción incorporamos plantas en flor para atraer polinizadores y conectamos parches de árboles con la vegetación existente. Así, los parches dejan de funcionar como islas aisladas y ofrecen alimento y refugio en distintos puntos, lo que facilita que las aves y los polinizadores se desplacen entre ellos.' },
-  { b: 'Red biótica', e: 'ratas', k: 'Control de ratas', t: 'Almacenamiento cerrado y rapaces', s: 'Los residuos se guardan cerrados y se retiran a tiempo; las aves rapaces ayudan.', g: 'El control de ratas empieza con el almacenamiento cerrado y el retiro oportuno de residuos. Las aves rapaces pueden contribuir a ese control mediante la depredación.' },
-  { b: 'Sintaxis', e: 'sx_merc', k: 'Sintaxis espacial · integración', t: 'Tramos accesibles para los mercados', s: 'Integración angular a 800 m (unos diez minutos a pie): rojo, muy integrado. Los mercados barriales se ubican en tramos accesibles.', g: 'Con la sintaxis espacial, usamos la integración para identificar tramos accesibles donde ubicar mercados' },
-  { b: 'Sintaxis', e: 'sx_rec', k: 'Sintaxis espacial · elección', t: 'Por dónde pasan más recorridos', s: 'Elección angular: cuántos de los recorridos más directos atraviesan cada tramo.', g: 'y la elección para reconocer por dónde pasan más recorridos potenciales.' },
-  { b: 'Sintaxis', e: 'sx_pas', k: 'Pasajes', t: 'Las naves se conectan con las calles', s: `${V.pasajes_km} km de pasajes y ${V.entradas} puertas. Las intervenciones se concentran en áreas ya ocupadas.`, g: 'En Bavaria, los nuevos pasajes conectan las naves recuperadas con las calles del entorno. Concentramos las intervenciones en áreas ya ocupadas.', c: [[V.pasajes_km + ' km', 'de pasajes'], [V.entradas, 'puertas']] },
-  { b: 'Gobernanza', e: 'gob_bosque', k: 'Una decisión de la comunidad', t: 'Hasta dónde llegan los pasajes', s: 'Qué actividades se ubican cerca del bosque también se decide en común.', g: 'Definir hasta dónde llegan esos pasajes y qué actividades se ubican cerca del bosque también es una decisión de la comunidad.' },
-  { b: 'Gobernanza', e: 'colectivo', k: 'Salvemos el Bosque de Bavaria', t: 'Quienes ya defienden el bosque', s: 'Colectivo ciudadano que defiende la conservación del bosque frente a la tala.', g: 'Por eso participa Salvemos el Bosque de Bavaria, un colectivo ciudadano que defiende la conservación del bosque de la antigua cervecería frente a la tala de árboles.' },
-  { b: 'Gobernanza', e: 'federacion', k: 'Federación de asambleas', t: 'Cada organización lleva sus acuerdos', s: 'Se decide en común sobre el uso de los espacios, el cuidado del bosque y el abastecimiento de alimentos.', g: 'El colectivo, las organizaciones barriales y los comerciantes participan en una federación de asambleas. Cada organización discute sus propuestas y una persona lleva sus acuerdos a la asamblea de la federación, donde se toman las decisiones comunes sobre el uso de los espacios, el cuidado del bosque y el abastecimiento de alimentos.' },
-  { b: 'Gobernanza', e: 'voceria', k: 'Vocería rotativa', t: 'Todas las personas llevan la voz', s: 'Quien representa a cada organización cambia cada cierto tiempo.', g: 'La vocería rota cada cierto tiempo, de modo que todas las personas de cada asamblea puedan representar a su organización en algún momento.' },
-  { b: 'Cierre', e: 'final', k: 'Bavaria Común', t: 'Un nodo de la red de Kennedy', s: 'Abastecimiento cercano, formación, huertas en las viviendas, parches conectados y una federación de asambleas.', g: 'Usa «Explorar» para recorrer el modelo.' },
+  { b: 'Inicio', e: 'portada', g: 'Bavaria Común', ini: true },
+  { b: '08', e: 'g01', g: 'Esta red nos ayudó a identificar la centralización de servicios como el problema con más conexiones.' },
+  { b: '08', e: 'g02', g: 'Por eso, la propuesta empieza por reorganizar el abastecimiento de alimentos en Kennedy.' },
+  { b: '08', e: 'g03', g: 'Los alimentos que solo pueden abastecerse desde fuera de la localidad seguirían llegando de otros territorios.' },
+  { b: '08', e: 'g04', g: 'Lo que cambia es dónde se reciben y se distribuyen: los productores llegarían a distintos mercados barriales y puntos de abastecimiento, con Corabastos como uno de los mercados de la red.' },
+  { b: '08', e: 'g05', g: 'Como parte de esta red, proponemos recuperar parte de la antigua cervecería, entre las avenidas Boyacá y Américas.' },
+  { b: '08', e: 'g06', g: 'A esta intervención la llamamos Bavaria Común, un Distrito de Tecnologías Convergentes que funciona como clúster de conocimiento.' },
+  { b: '08', e: 'g07', g: 'Allí, universidades, comerciantes, promotores y organizaciones barriales disponen de espacios para experimentar, aprender y organizar iniciativas propias.' },
+  { b: '08', e: 'g08', g: 'El enfoque NBIC, de Roco y Bainbridge, orienta el programa.' },
+  { b: '09', e: 'g09', g: 'La biotecnología se aplica a la producción hidropónica, el compostaje y el cultivo experimental de hongos con materiales vegetales adecuados.' },
+  { b: '09', e: 'g10', g: 'Las tecnologías de la información ayudan a registrar pedidos, entregas y excedentes.' },
+  { b: '09', e: 'g11', g: 'Las ciencias cognitivas orientan el diseño de herramientas para que familias y comerciantes usen esa información al tomar decisiones.' },
+  { b: '09', e: 'g12', g: 'La nanotecnología se plantea como una línea de investigación universitaria sobre materiales de empaque para conservar alimentos.' },
+  { b: '09', e: 'g13', g: 'La formación se realiza en Bavaria y la producción se lleva a las viviendas.' },
+  { b: '09', e: 'g14', g: 'Las familias practican en módulos demostrativos y reciben acompañamiento de promotores barriales durante los primeros ciclos.' },
+  { b: '09', e: 'g15', g: 'El incentivo es cosechar hortalizas frescas, conocer los insumos utilizados y sustituir parte de las compras del hogar.' },
+  { b: '09', e: 'g16', g: 'Cuando hay excedentes, su venta en los mercados barriales ofrece una posibilidad de ingreso complementario.' },
+  { b: '09', e: 'g17', g: 'El Jardín Botánico de Bogotá es un referente local por su trabajo en formación y asistencia técnica para la producción urbana.' },
+  { b: '10', e: 'g18', g: 'La red de relaciones bióticas de Kennedy nos ayuda a definir qué vínculos queremos fortalecer.' },
+  { b: '10', e: 'g19', g: 'Alrededor de los espacios de producción incorporamos plantas en flor para atraer polinizadores y conectamos parches de árboles con la vegetación existente.' },
+  { b: '10', e: 'g20', g: 'Así, los parches dejan de funcionar como islas aisladas y ofrecen alimento y refugio en distintos puntos, lo que facilita que las aves y los polinizadores se desplacen entre ellos.' },
+  { b: '10', e: 'g21', g: 'El control de ratas empieza con el almacenamiento cerrado y el retiro oportuno de residuos.' },
+  { b: '10', e: 'g22', g: 'Las aves rapaces pueden contribuir a ese control mediante la depredación.' },
+  { b: '10', e: 'g23', g: 'Con la sintaxis espacial, usamos la integración para identificar tramos accesibles donde ubicar mercados' },
+  { b: '10', e: 'g24', g: 'y la elección para reconocer por dónde pasan más recorridos potenciales.' },
+  { b: '10', e: 'g25', g: 'En Bavaria, los nuevos pasajes conectan las naves recuperadas con las calles del entorno.' },
+  { b: '10', e: 'g26', g: 'Concentramos las intervenciones en áreas ya ocupadas.' },
+  { b: '11', e: 'g27', g: 'Definir hasta dónde llegan esos pasajes y qué actividades se ubican cerca del bosque también es una decisión de la comunidad.' },
+  { b: '11', e: 'g28', g: 'Por eso participa Salvemos el Bosque de Bavaria, un colectivo ciudadano que defiende la conservación del bosque de la antigua cervecería frente a la tala de árboles.' },
+  { b: '11', e: 'g29', g: 'El colectivo, las organizaciones barriales y los comerciantes participan en una federación de asambleas.' },
+  { b: '11', e: 'g30', g: 'Cada organización discute sus propuestas y una persona lleva sus acuerdos a la asamblea de la federación, donde se toman las decisiones comunes sobre el uso de los espacios, el cuidado del bosque y el abastecimiento de alimentos.' },
+  { b: '11', e: 'g31', g: 'La vocería rota cada cierto tiempo, de modo que todas las personas de cada asamblea puedan representar a su organización en algún momento.' },
 ];
 const BLOQ = [...new Set(SL.map(s => s.b))];
-let iSl = 0; const guionOn = () => document.body.classList.contains('con-guion');
+let iSl = 0;
 const pintarSl = (i, anim = true) => {
   iSl = Math.max(0, Math.min(SL.length - 1, i)); const s = SL[iSl];
   setEscena(s.e);
-  $('#kicker').textContent = s.k; $('#titulo').textContent = s.t; $('#sub').textContent = s.s; $('#guionTxt').textContent = s.g || '';
-  $('#guion').hidden = !s.g;
-  $('#cifras').innerHTML = (s.c || []).map(([b, l]) => `<div><b>${b}</b><span>${l}</span></div>`).join('');
-  if (anim) for (const id of ['#kicker', '#titulo', '#sub', '#guion', '#cifras']) { const e = $(id); e.classList.remove('rise'); void e.offsetWidth; e.classList.add('rise'); }
-  $('#count').textContent = `${iSl + 1} / ${SL.length}`; $('#pbar').style.width = (100 * (iSl + 1) / SL.length) + '%';
+  document.body.classList.toggle('es-portada', !!s.ini);
+  $('#kicker').textContent = s.ini ? 'Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo' : `Lámina ${s.b} · ${iSl} de ${SL.length - 1}`;
+  $('#frase').textContent = s.g;
+  if (anim) for (const id of ['#kicker', '#frase']) { const e = $(id); e.classList.remove('rise'); void e.offsetWidth; e.classList.add('rise'); }
+  $('#count').textContent = `${iSl} / ${SL.length - 1}`; $('#pbar').style.width = (100 * iSl / (SL.length - 1)) + '%';
   document.querySelectorAll('#bloques button').forEach(b => b.classList.toggle('on', b.dataset.b === s.b));
-  const on = document.querySelector('#bloques button.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   document.querySelectorAll('#prog span').forEach((p, k) => { p.className = (k < iSl ? 'done' : k === iSl ? 'on' : '') + (k && SL[k].b !== SL[k - 1].b ? ' gap' : ''); });
   $('#prev').disabled = iSl === 0; $('#next').textContent = iSl === SL.length - 1 ? 'Inicio' : 'Siguiente';
-  history.replaceState(null, '', '#' + (iSl + 1));
+  history.replaceState(null, '', '#' + iSl);
 };
-$('#bloques').innerHTML = BLOQ.map(b => `<button type="button" data-b="${b}">${b}</button>`).join('');
+$('#bloques').innerHTML = BLOQ.map(b => `<button type="button" data-b="${b}">${b === 'Inicio' ? b : 'Lámina ' + b}</button>`).join('');
 $('#bloques').onclick = (ev) => { const b = ev.target.closest('button'); if (b) pintarSl(SL.findIndex(s => s.b === b.dataset.b)); };
-$('#prog').innerHTML = SL.map((s, k) => `<span title="${s.t}"></span>`).join('');
+$('#prog').innerHTML = SL.map((s, k) => `<span title="${k}"></span>`).join('');
 $('#prog').onclick = (ev) => { const k = [...$('#prog').children].indexOf(ev.target); if (k >= 0) pintarSl(k); };
 $('#prev').onclick = () => pintarSl(iSl - 1);
 $('#next').onclick = () => pintarSl(iSl === SL.length - 1 ? 0 : iSl + 1);
-const ponerGuion = (v) => { document.body.classList.toggle('con-guion', v); $('#gbtn').setAttribute('aria-pressed', String(v)); try { localStorage.setItem('bav-guion', v ? '1' : '0'); } catch (e) {} };
-$('#gbtn').onclick = () => ponerGuion(!guionOn());
-{ let g = '1'; try { g = localStorage.getItem('bav-guion') ?? '1'; } catch (e) {} ponerGuion(g === '1'); }
 addEventListener('keydown', (ev) => {
   if (ev.target.closest && ev.target.closest('input,textarea,dialog')) return;
   if (['ArrowRight', 'PageDown', ' '].includes(ev.key)) { ev.preventDefault(); $('#next').click(); }
   else if (['ArrowLeft', 'PageUp'].includes(ev.key)) { ev.preventDefault(); pintarSl(iSl - 1); }
-  else if (ev.key === 'n' || ev.key === 'N') ponerGuion(!guionOn());
   else if (ev.key === 'e' || ev.key === 'E') $('#b-explorar').click();
 });
 // deslizar en el celular (fuera del modo explorar)
@@ -802,7 +1057,7 @@ addEventListener('keydown', (ev) => {
   host.addEventListener('touchend', (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) pintarSl(iSl + (dx < 0 ? 1 : -1)); }); }
 
 const forzada = new URLSearchParams(location.search).get('escena'); // ?escena=clave: vista fija para capturas
-const ini = Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1);
+const ini = Math.max(0, parseInt(location.hash.slice(1), 10) || 0);
 if (forzada && E[forzada]) { setEscena(forzada); document.body.classList.add('fija'); } else pintarSl(ini, false);
 Object.assign(camAct, camObj); for (const k in est) est[k] = obj[k]; for (const k in XG) XG[k].v = XG[k].o; ponerCam();
 requestAnimationFrame(cuadro);
