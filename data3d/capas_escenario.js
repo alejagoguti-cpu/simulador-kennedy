@@ -110,7 +110,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
          de día 0 dB; solo afecta la parte de camiones que sigue entrando, con el peso de cercanía a Corabastos. [SUP]
      · «Ruido promedio» = promedio de los niveles de todas las celdas de vía. Bandas: verde < 55, amarillo 55–65, naranja 65–70, rojo > 70 dB.
      Todo se precalcula una vez (flujo) y se rehace en milisegundos al mover un control; el mapa solo se repinta cuando algo cambia. */
-  const LREF = [0, 60, 68, 74], BANDA = [55, 65, 70], BANDA_N = ['Verde · tranquilo', 'Amarillo · moderado', 'Naranja · ruidoso', 'Rojo · muy ruidoso'], BANDA_C = ['#3fbf6f', '#f2d338', '#f28c28', '#e0412f'];
+  const LREF = [0, 60, 68, 74], BANDA = [55, 65, 70], BANDA_N = ['Amarillo claro · tranquilo', 'Amarillo · moderado', 'Naranja · ruidoso', 'Rojo · muy ruidoso'], BANDA_C = ['#fff7b3', '#ffd646', '#f57c00', '#d32f2f'];
   RM.LREF = LREF; RM.BANDA = BANDA; RM.BANDA_C = BANDA_C; RM.aj = { vel: 50, hor: 0 }; RM.vista = 'auto'; RM.niv = null; RM.fl = null; RM.densPre = 1; RM.arbPre = null;
   let pArb = 0; const precargarArboles = () => { if (pArb || window.KEN_PARCHES || typeof T3.lw !== 'function') return; pArb = 1; // los árboles de los parches se calculan aparte para que el panel dé lo mismo en «hoy» y en «propuesta» (la capa 3D solo se crea con la propuesta)
     Promise.all([import('./parches_arboles.js?v=7'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {

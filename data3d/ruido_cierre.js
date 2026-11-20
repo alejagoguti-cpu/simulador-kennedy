@@ -35,7 +35,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
      así «hoy», «propuesta» y «diferencia» se ven en el mismo encuadre, el mapa responde a los controles del panel y no depende de la hora del reloj.
      Cada celda de vía aporta su energía (10^(dB/10)); se promedia en una ventana de 3×3 celdas (48 m) y el color sale del nivel con las bandas del panel:
      verde < 55, amarillo 55–65, naranja 65–70, rojo > 70 dB. Se repinta solo cuando cambia algo (vista, controles, árboles), no en cada cuadro. */
-  const COL = [[63, 191, 111], [242, 211, 56], [242, 140, 40], [224, 65, 47]], LIM = [55, 65, 70];
+  const COL = [[255, 247, 179], [255, 214, 70], [245, 124, 0], [211, 47, 47]] /* como antes del 18-nov: amarillo pálido → amarillo → naranja → rojo (sin verde) */, LIM = [55, 65, 70];
   const suave = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
   const colNivel = (L, o) => { let u = 0; for (let i = 0; i < 3; i++) u += suave((L - (LIM[i] - 1.2)) / 2.4); const a = Math.min(2, Math.floor(u)), f = u - a, A = COL[a], B = COL[a + 1];
     o[0] = A[0] + (B[0] - A[0]) * f; o[1] = A[1] + (B[1] - A[1]) * f; o[2] = A[2] + (B[2] - A[2]) * f; };
