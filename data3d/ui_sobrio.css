@@ -150,3 +150,7 @@ body #tb #tb-chips{display:none!important}
 body #bd .pie a.sec2{flex:1;height:34px;border-radius:8px;font:500 12px var(--ui-sans)!important;color:#cfd5d9!important;white-space:nowrap;padding:0 8px}
 body #bd .pie a.sec2:hover{background:rgba(255,255,255,.1)}
 body #bd .pie button{white-space:nowrap}
+
+/* tablero más pequeño (la usuaria: que no ocupe tanto espacio) */
+@media(min-width:761px){ body #tb{width:360px!important; bottom:auto!important; max-height:min(64vh,640px)!important; font-size:11px!important} }
+@media(max-width:760px){ body #tb{height:min(58vh,560px)!important} }
