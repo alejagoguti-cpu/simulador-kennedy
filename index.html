@@ -916,7 +916,8 @@ function tick() {
 }
 /* ============ MODO TODO 3D (datos propios de Kennedy, mundo local) ============ */
 let LIVIANO = new URLSearchParams(location.search).get('liviano') === '1'; // sin edificios, sombras ni tráfico (gafas VR, celulares, equipos modestos)
-let MEDIO = false; // con LIVIANO: conserva los edificios (Quest sola)
+let MEDIO = new URLSearchParams(location.search).get('medio') === '1'; // con LIVIANO: conserva los edificios (Quest sola); ?medio=1 (lamina17.html): versión ligera con edificios, para que cargue rápido y no se trabe
+if (MEDIO) LIVIANO = true;
 const QUEST = /OculusBrowser|Quest|Pico/i.test(navigator.userAgent);
 if (QUEST) { LIVIANO = true; MEDIO = true; } // gafas independientes: versión ligera (sin sombras ni tráfico pesado) pero CON los edificios del entorno del humedal desde que abre la página
 // REALISTA (por defecto): el mundo es la malla fotorrealista de Google completa, como Google Earth en 3D; sobre ella solo van carros, peatones y aves.
