@@ -9,6 +9,10 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const MOVIL = matchMedia('(max-width:760px)').matches;
 const QUIETO = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -102,6 +106,9 @@ const FOV = 42;
 const cam = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 10, 60000);
 scene.fog = new THREE.Fog('#3a4048', 30000, 90000);
 scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x1a1f24, 1.1));
+// brillo (bloom) solo para lo más luminoso: redes, pulsos e íconos
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, cam));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), MOVIL ? 0.45 : 0.6, 0.45, 0.88); composer.addPass(bloom); composer.addPass(new OutputPass());
 const sol = new THREE.DirectionalLight(0xfff1dc, 2.1); sol.position.set(-600, 900, 400); scene.add(sol);
 const sol2 = new THREE.DirectionalLight(0x9fb7d0, 0.6); sol2.position.set(700, 500, -300); scene.add(sol2);
 
@@ -426,7 +433,9 @@ const MERC = SITIOS.map(([x, y, n]) => ({ n, p: W(x, y) }));
 const PLZ = await fetch('data3d/plazas.json').then(r => r.json()).then(j => j.plazas.map(p => ({ n: p.n, p: W(...p.p) }))).catch(() => []);
 const NODOS = [...MERC.map(m => ({ ...m, t: 'm' })), ...PLZ.map(p => ({ ...p, t: 'p' })), { n: 'Bavaria Común', p: [0, 0], t: 'b' }];
 // productores de otros territorios: llegan desde fuera de la localidad (cinco direcciones de entrada)
-const ENTR = [200, 165, 240, 300, 120].map((a, i) => { const r = a * Math.PI / 180, R = 4700; return [KEN_C[0] + Math.cos(r) * R, KEN_C[1] - Math.sin(r) * R]; });
+// entradas de productores: sobre el borde de Kennedy (todo ocurre dentro de la localidad)
+const LIMW = SXD.limite.map(([x, y]) => W(x, y));
+const ENTR = [200, 165, 240, 300, 120].map((a) => { const r = a * Math.PI / 180; let best = LIMW[0], m = 9; for (const v of LIMW) { const b = Math.atan2(-(v[1] - KEN_C[1]), v[0] - KEN_C[0]); const d = Math.abs(Math.atan2(Math.sin(b - r), Math.cos(b - r))); if (d < m) { m = d; best = v; } } return [KEN_C[0] + (best[0] - KEN_C[0]) * 0.96, KEN_C[1] + (best[1] - KEN_C[1]) * 0.96]; });
 const masCerca = (p, L) => L.reduce((b, q) => (Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.hypot(b[0] - p[0], b[1] - p[1]) ? q : b), L[0]);
 ENTR.forEach((e, i) => pin('prod', e, COL.crema, 200, 70));
 addEt('Productores de otros territorios', [ENTR[0][0], 140, ENTR[0][1]], ['abHoy', 'abRed']);
@@ -780,7 +789,7 @@ const TAM = { cora: 0.05, hub: 0.03, cole: 0.017, bav: 0.042, prod: 0.028 };
 const camiones = (k, cs) => { const sps = cs.map((c, i) => { const sp = icono(k, 'camion', CC.prod, [0, 0], 0, TAM.prod, 0.2); return { sp, c, ph: i * 0.29 }; }); xg(k).upd.push((t) => sps.forEach(({ sp, c, ph }) => { c.getPoint((t * 0.09 + ph) % 1, sp.position); })); };
 { const k = 'llegan'; const cs = ENTR.map(e => curva(e, CORA, null, 10, 40)); cs.forEach((c, i) => tubo(k, c, MOVIL ? 22 : 16, CC.prod, 0.75, i * 0.1)); camiones(k, cs); pulsos(k, cs, '#ffffff', 3, 0.09, 6);
   ENTR.forEach((e, i) => icono(k, 'huerta', '#a3b845', e, 40, TAM.hub, i * 0.08));
-  addEt(etI('huerta', '#a3b845', 'Productores de otros territorios'), [ENTR[0][0], 260, ENTR[0][1]], [k], 'fuerte');
+  addEt(etI('huerta', '#a3b845', 'Entrada de productores de otros territorios'), [ENTR[0][0], 260, ENTR[0][1]], [k], 'fuerte');
   addEt(etI('huerta', '#a3b845', 'Productores de otros territorios'), [ENTR[3][0], 260, ENTR[3][1]], [k]); }
 // --- PROPUESTA: red distribuida. Nodos que reciben: mercados barriales nuevos, plazas existentes, Corabastos (uno más) y Bavaria Común (clúster)
 const HUBS = [...MERC.map(m => ({ n: 'Mercado ' + m.n, p: m.p, t: 'merc' })), ...PLZK.map(q => ({ n: q.n, p: q.p, t: 'plaza' })), { n: 'Corabastos', p: CORA, t: 'cora' }, { n: 'Bavaria Común', p: [0, 0], t: 'bav' }];
@@ -821,6 +830,12 @@ const CLU = [[3, 'mercado', 'Mercado y registro de pedidos', COL.ocre], [5, 'lab
 }
 
 { const k = 'lleganProp'; const cs = []; ENTR.forEach(e => [...HUBS].sort((a, b) => dist(a.p, e) - dist(b.p, e)).slice(0, 3).forEach(h => cs.push(curva(e, h.p, null, 10, 40)))); cs.forEach((c, i) => tubo(k, c, MOVIL ? 9 : 7, CC.prod, 0.7, i * 0.05)); camiones(k, cs.filter((_, i) => i % 2 === 0)); ENTR.forEach((e, i) => icono(k, 'huerta', '#a3b845', e, 40, TAM.hub, i * 0.08)); addEt(etI('huerta', '#a3b845', 'Productores de otros territorios'), [ENTR[0][0], 260, ENTR[0][1]], [k]); }
+// el Jardín Botánico como referente, sin salir de Kennedy: sobre los módulos de formación de Bavaria
+{ const k = 'jbRef'; const B = D.bloques || []; const P = B.length ? (() => { const b = B[Math.floor(B.length / 2)]; return W(b.reduce((t, q) => t + q[0], 0) / b.length, b.reduce((t, q) => t + q[1], 0) / b.length); })() : [0, 0];
+  icono(k, 'huerta', COL.verde, P, 60, 0.05, 0.2); onda(k, P, COL.verde, 160, 3, 3);
+  const pas = [[ZI[0], ZI[1], 'Formación'], [ZM[0], ZM[1], 'Asistencia técnica']].map(([x, z, n], i) => { const c = curva(P, [x, z], 60, 60, 20); tubo(k, c, 3, COL.verde, 0.85, 0.6 + i * 0.2); return c; }); pulsos(k, pas, '#ffffff', 4, 0.25, 7);
+  addEt(etI('huerta', COL.verde, '<b>Referente: Jardín Botánico de Bogotá</b>'), [P[0], 90, P[1]], [k], 'fuerte');
+  addEt('Formación en producción urbana', [ZI[0], 40, ZI[1]], [k]); addEt('Asistencia técnica', [ZM[0], 40, ZM[1]], [k]); }
 { HUBS.forEach((h, i) => icono('hubIco', h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, 40, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04)); }
 /* ---------------- maqueta 3D de Kennedy: todos los edificios como volúmenes (red-de-problemas/edif.bin) ---------------- */
 // Cajas orientadas por edificio (buildings.json + Microsoft), oscuras con aristas de luz; se levantan al aparecer.
@@ -902,7 +917,7 @@ Object.assign(E, {
   g01: { luz: 0.5, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
   g02: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 7600, az: -12, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redHoy'], et: ['redHoy', 'redHoyN'], ley: 'redHoy' },
   g03: { maqueta: 1, lim: 1, luz: 0.55, cam: { s: 10500, az: -12, el: 34, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redHoy', 'llegan'], et: ['llegan', 'redHoy'], ley: 'llegan' },
-  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 8200, az: 15, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redProp', 'lleganProp'], et: ['redProp', 'lleganProp'], ley: 'redProp' },
+  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 8200, az: 15, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redProp', 'lleganProp', 'redHoy'], xOut: { redHoy: 2.4 }, xIn: { redProp: 2.2, lleganProp: 3 }, et: ['redProp', 'lleganProp'], ley: 'redProp' },
   g05: { luz: 0.85, cam: { s: 1350, az: -35, el: 22 }, ctx: 0, edif: 'ghost', borde: 1, x: ['avs'], et: 'avs', ley: 'avs' },
   g06: { luz: 0.8, cam: { s: 1000, az: -35, el: 36, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['cluster'], et: 'cluster', ley: 'cluster2' },
   g07: { luz: 0.7, cam: { s: 1000, az: -30, el: 18, y: 150 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['actores'], et: 'actores', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
@@ -915,7 +930,7 @@ Object.assign(E, {
   g14: { luz: 0.85, cam: { s: 950, az: -20, el: 22, t: 'casaMid', y: 30 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['ciclos'], et: 'ciclos', ley: 'form', hl: { 2: COL.verde, 11: '#d98f5a' } },
   g15: { luz: 0.9, cam: { s: 420, az: -30, el: 18, t: 'casa', y: 50 }, ctx: 1, edif: 'prog', techos: 1, x: ['incentivo'], et: 'incentivo', ley: 'viv' },
   g16: { maqueta: 1, luz: 0.6, cam: { s: 3600, az: -25, el: 26, t: 'midc', y: 90 }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'hubIco'], et: ['exc', 'abBav'], ley: 'exc', hl: { 3: COL.ocre } },
-  g17: { maqueta: 1, luz: 0.5, cam: { s: 9500, az: -25, el: 24, t: 'jbMid', y: 200 }, ctx: 0, edif: 'prog', x: ['jb'], et: 'jb', ley: 'jb' },
+  g17: { luz: 0.85, cam: { s: 950, az: -30, el: 30, y: 30 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['jbRef'], et: 'jbRef', ley: 'jb' },
   g18: { luz: 0.45, cam: { s: 950, az: 20, el: 10, t: 'bosq', y: 470 }, ctx: 0, edif: 'prog', x: ['bioRed'], et: 'bioRed', ley: 'bioRed', giro: 1 },
   g19: { luz: 0.85, cam: { s: 950, az: 10, el: 24, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['flores', 'abejas', 'puentes'], et: ['parches', 'puentes'], ley: 'parches' },
   g20: { maqueta: 1, luz: 0.6, cam: { s: 3400, az: -20, el: 26, t: 'bio', y: 40 }, ctx: 0, edif: 'prog', x: ['islas', 'puentes'], et: ['islas', 'puentes'], ley: 'islas' },
@@ -1015,7 +1030,7 @@ const setEscena = (k) => {
     G.luzObj = e.maqueta ? 0 : e.luz ?? (e.red ? 0.38 : e.ctx === 'sector' ? 0.75 : 1);
   }
   if (e.red) pintarRed(e.red); else pintarRed(e.pas ? 'gris' : modoRed);
-  for (const k in XG) { const X = XG[k], on = (e.x || []).includes(k) || (k === 'verdeK' && !!e.maqueta); if (on && !X.o) X.t0 = reloj.elapsedTime; X.o = on ? 1 : 0; const xt = e.xt && e.xt[k]; X.tgt = xt || null; const fc = e.nf && e.nf[k]; X.foc = fc ? new Set([].concat(fc)) : null; }
+  for (const k in XG) { const X = XG[k], on = (e.x || []).includes(k) || (k === 'verdeK' && !!e.maqueta); const tr = reloj.elapsedTime; const ret = (e.xIn && e.xIn[k]) || 0; if (on && (!X.o || ret)) X.t0 = tr + ret; X.o = on ? 1 : 0; X.offAt = on && e.xOut && e.xOut[k] ? tr + e.xOut[k] : 0; const xt = e.xt && e.xt[k]; X.tgt = xt || null; const fc = e.nf && e.nf[k]; X.foc = fc ? new Set([].concat(fc)) : null; }
   tEsc = reloj.elapsedTime;
   HL = e.hl ? new Map(Object.entries(e.hl)) : null;
   const t = e.cam.t === 'inv' ? invT : e.cam.t === 'ken' ? KEN_C : TGT[e.cam.t] || (Array.isArray(e.cam.t) ? e.cam.t : [0, 0]); obj.lim = e.lim ? 1 : 0;
@@ -1028,13 +1043,13 @@ const lerp = (a, b, f) => a + (b - a) * f;
 /* ---------------- cámara ---------------- */
 const controles = new OrbitControls(cam, renderer.domElement); controles.enabled = false; controles.enableDamping = true; controles.zoomToCursor = true;
 let explorar = false, giro = !QUIETO;
-const distCam = (s) => { const asp = innerWidth / innerHeight; const vh = asp >= 1 ? s : s / asp; return vh / 2 / Math.tan(FOV / 2 * Math.PI / 180); };
+const distCam = (s) => { const asp = innerWidth / innerHeight; const vh = asp >= 1 ? s : s / Math.max(asp, 0.82); return vh / 2 / Math.tan(FOV / 2 * Math.PI / 180); };
 const ajustarCam = () => {
   const w = innerWidth, h = innerHeight;
   // dónde cae el objetivo en pantalla: a la derecha en escritorio (hay texto a la izquierda), arriba en celular
   const fx = explorar ? 0.5 : MOVIL ? 0.5 : (w > 1000 ? 0.64 : 0.56), fy = explorar ? 0.5 : MOVIL ? 0.34 : 0.5;
   cam.aspect = w / h; cam.setViewOffset(w, h, w / 2 - fx * w, h / 2 - fy * h, w, h);
-  const R = cam.position.distanceTo(controles.target); cam.near = Math.max(5, R * 0.08); cam.far = R * 4 + 4000; cam.updateProjectionMatrix();
+  const R = cam.position.distanceTo(controles.target); cam.near = Math.max(5, R * 0.08); cam.far = R * 4 + 4000; cam.updateProjectionMatrix(); scene.fog.near = R * 1.15; scene.fog.far = R * 3.2;
 };
 const ponerCam = () => {
   const az = (camAct.az + giroAz) * Math.PI / 180, el = camAct.el * Math.PI / 180, R = distCam(camAct.s);
@@ -1042,7 +1057,7 @@ const ponerCam = () => {
   cam.position.set(t.x + R * Math.cos(el) * Math.sin(az), t.y + R * Math.sin(el), t.z + R * Math.cos(el) * Math.cos(az)); cam.lookAt(t); controles.target.copy(t);
   ajustarCam();
 };
-addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); lineMats.forEach(m => m.resolution.set(innerWidth, innerHeight)); if (!explorar) ajustarCam(); });
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.resolution.set(innerWidth / 2, innerHeight / 2); lineMats.forEach(m => m.resolution.set(innerWidth, innerHeight)); if (!explorar) ajustarCam(); });
 
 $('#b-giro').setAttribute('aria-pressed', String(giro));
 $('#b-giro').onclick = (ev) => { giro = !giro; ev.currentTarget.setAttribute('aria-pressed', String(giro)); };
@@ -1057,7 +1072,7 @@ const opac = (mat, v) => { mat.opacity = v; mat.visible = v > 0.01; mat.depthWri
 function cuadro() {
   const dt = Math.min(0.05, reloj.getDelta()), t = reloj.elapsedTime; const f = 1 - Math.pow(0.0025, dt);
   for (const k in est) est[k] = lerp(est[k], obj[k], f);
-  if (!explorar && camObj) { for (const k of ['s', 'el', 'x', 'z', 'y']) camAct[k] = lerp(camAct[k], camObj[k], f); let d = camObj.az - camAct.az; camAct.az += d * f; if (giro && E[escena].giro) giroAz += dt * 2.2; else giroAz = lerp(giroAz, 0, f); ponerCam(); }
+  if (!explorar && camObj) { for (const k of ['s', 'el', 'x', 'z', 'y']) camAct[k] = lerp(camAct[k], camObj[k], f); let d = camObj.az - camAct.az; camAct.az += d * f; if (giro && E[escena].giro) giroAz += dt * 2.2; else giroAz = lerp(giroAz, giro && !QUIETO ? Math.sin(t * 0.12) * 7 : 0, f * 0.3); if (giro && !QUIETO) camAct.el = lerp(camAct.el, camObj.el + Math.sin(t * 0.09) * 2.5, f * 0.2); ponerCam(); }
   if (explorar) controles.update();
   // opacidades
   opac(ctxMat, est.ctx * 0.95); ctxG.visible = est.ctx > 0.01 || est.techos > 0.01;
@@ -1072,7 +1087,7 @@ function cuadro() {
     for (const c of X.cre) { const q = Math.max(0, Math.min(1, (t - X.t0 - c.d) / c.dur)), e2 = 1 - Math.pow(1 - q, 3); if (c.tipo === 'draw') c.o.geometry.setDrawRange(0, Math.max(0, Math.floor(c.n * e2 / 3) * 3)); else if (c.tipo === 'sy') c.o.scale.y = Math.max(0.001, e2); else c.o.scale.setScalar(Math.max(0.001, e2) * c.s0 * (c.lat ? 1 + 0.07 * Math.sin(t * 2.2 + c.d * 9) : 1)); }
     for (const w of X.ondas) { const u = (t * 0.45 + w.ph) % 1; w.m.scale.setScalar(w.R * (0.15 + 0.85 * u)); w.m.material.opacity *= (1 - u); }
     for (const fn of X.upd) fn(t, dt, X);
-    for (const P of X.pul) { P.curvas.forEach((c, i) => { for (let j = 0; j < P.n; j++) { const u = (t * P.vel + j / P.n + P.fase[i]) % 1; c.getPoint(u, tmp); P.pos.set([tmp.x, tmp.y, tmp.z], (i * P.n + j) * 3); } }); P.g.attributes.position.needsUpdate = true; } }
+    const pulOn = t > X.t0 + 0.9; for (const P of X.pul) { P.g.visible = pulOn; if (!pulOn) continue; P.curvas.forEach((c, i) => { for (let j = 0; j < P.n; j++) { const u = (t * P.vel + j / P.n + P.fase[i]) % 1; c.getPoint(u, tmp); P.pos.set([tmp.x, tmp.y, tmp.z], (i * P.n + j) * 3); } }); P.g.attributes.position.needsUpdate = true; } }
   if (XG.rapaces && XG.rapaces.g.visible) rapaces.forEach((b, i) => { const a = t * 0.35 + i * 2.1, r = 70 + i * 22; b.position.set(ZC[0] + Math.cos(a) * r, 70 + i * 14 + Math.sin(t * 1.3 + i) * 4, ZC[1] + Math.sin(a) * r); b.rotation.set(0, -a, Math.sin(t * 6 + i) * 0.25); });
   if (XG.fed && XG.fed.g.visible) { const per = E[escena].voz ? 1.1 : 2.6; const ciclo = Math.floor(t / per); const o = FED.orgs[ciclo % 3]; FED.tok.position.copy(o.cur.getPoint((t % per) / per));
     FED.orgs.forEach((q, i) => { const lit = Math.floor(t / (per * 3)) % q.per.length; q.per.forEach((s, j) => { const on = j === lit; s.scale.setScalar(on ? 1.9 : 1); s.material.color.set(on ? COL.crema : q.c); }); }); }
@@ -1097,7 +1112,7 @@ function cuadro() {
   // etiquetas
   const w = innerWidth, h = innerHeight; const grupo = E[escena].et; const vis = [];
   for (const e of etq) {
-    const on = grupo && (Array.isArray(grupo) ? grupo.some(g => e.grupos.has(g)) : e.grupos.has(grupo));
+    let on = grupo && (Array.isArray(grupo) ? grupo.some(g => e.grupos.has(g)) : e.grupos.has(grupo)); if (on) { const gx = [...e.grupos].map(g => XG[g]).find(Boolean); if (gx && (reloj.elapsedTime < gx.t0 + 0.7 || !gx.o)) on = false; }
     if (!on) { if (e.d.style.opacity !== '0') e.d.style.opacity = 0; continue; }
     if (e.obj) { e.obj.getWorldPosition(tmp); tmp.y += e.dy * (e.obj.parent ? e.obj.parent.getWorldScale(tmp2).x : 1); } else tmp.copy(e.pos); if (e.capa) tmp.y += capas[e.capa].position.y + (e.d.classList.contains('capa') ? 0 : 0);
     tmp.project(cam); let x = (tmp.x + 1) / 2 * w; const y = (1 - tmp.y) / 2 * h;
@@ -1105,7 +1120,9 @@ function cuadro() {
   }
   vis.sort((a, b) => a.sy - b.sy); const puestos = [];
   for (const e of vis) { const ww = e.d.offsetWidth || 120; let y = e.sy; for (const p of puestos) if (Math.abs(p.x - e.sx) < (p.w + ww) / 2 + 4 && Math.abs(p.y - y) < 21) y = p.y + 21; puestos.push({ x: e.sx, y, w: ww }); const cx = Math.max(ww / 2 + 6, Math.min(w - ww / 2 - 6, e.sx)); e.d.style.left = (e.d.classList.contains('capa') ? e.sx : cx) + 'px'; e.d.style.top = y + 'px'; e.d.style.opacity = e.vis ? 1 : 0; }
-  if (!window.__sin3d) renderer.render(scene, cam);
+  // escenas que se transforman: un grupo se apaga a los N segundos (la red de hoy cede su lugar a la propuesta)
+  for (const k in XG) { const X = XG[k]; if (X.offAt && t > X.offAt) { X.o = 0; X.offAt = 0; } }
+  if (!window.__sin3d) composer.render();
   requestAnimationFrame(cuadro);
 }
 
@@ -1145,39 +1162,42 @@ const SL = [
   { b: '11', e: 'g31', l: 'La persona que lleva la voz cambia cada cierto tiempo.', g: 'La vocería rota cada cierto tiempo, de modo que todas las personas de cada asamblea puedan representar a su organización en algún momento.' },
 ];
 const BLOQ = [...new Set(SL.map(s => s.b))];
-let iSl = 0;
-const pintarSl = (i, anim = true) => {
-  iSl = Math.max(0, Math.min(SL.length - 1, i)); const s = SL[iSl];
-  setEscena(s.e);
-  document.body.classList.toggle('es-portada', !!s.ini);
-  $('#kicker').textContent = s.ini ? 'Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo' : `Lámina ${s.b} · ${iSl} de ${SL.length - 1}`;
-  $('#frase').textContent = s.g; $('#lectura').textContent = s.l || ''; $('#lectura').hidden = !s.l;
-  if (anim) for (const id of ['#kicker', '#frase', '#lectura']) { const e = $(id); e.classList.remove('rise'); void e.offsetWidth; e.classList.add('rise'); }
-  $('#count').textContent = `${iSl} / ${SL.length - 1}`; $('#pbar').style.width = (100 * iSl / (SL.length - 1)) + '%';
-  document.querySelectorAll('#bloques button').forEach(b => b.classList.toggle('on', b.dataset.b === s.b));
-  document.querySelectorAll('#prog span').forEach((p, k) => { p.className = (k < iSl ? 'done' : k === iSl ? 'on' : '') + (k && SL[k].b !== SL[k - 1].b ? ' gap' : ''); });
-  $('#prev').disabled = iSl === 0; $('#next').textContent = iSl === SL.length - 1 ? 'Inicio' : 'Siguiente';
-  history.replaceState(null, '', '#' + iSl);
-};
-$('#bloques').innerHTML = BLOQ.map(b => `<button type="button" data-b="${b}">${b === 'Inicio' ? b : 'Lámina ' + b}</button>`).join('');
-$('#bloques').onclick = (ev) => { const b = ev.target.closest('button'); if (b) pintarSl(SL.findIndex(s => s.b === b.dataset.b)); };
-$('#prog').innerHTML = SL.map((s, k) => `<span title="${k}"></span>`).join('');
-$('#prog').onclick = (ev) => { const k = [...$('#prog').children].indexOf(ev.target); if (k >= 0) pintarSl(k); };
-$('#prev').onclick = () => pintarSl(iSl - 1);
-$('#next').onclick = () => pintarSl(iSl === SL.length - 1 ? 0 : iSl + 1);
+const TIT = { '08': 'Una red de abastecimiento con Bavaria como clúster', '09': 'Tecnologías convergentes y huertas en las viviendas', '10': 'Red biótica, sintaxis y pasajes', '11': 'Una federación de asambleas' };
+// relato con scroll: portada, una apertura por lámina y un paso por frase del guion
+{ const esc = (w) => w.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  let h = `<section class="paso portada activo" data-i="0" data-escena="portada"><div class="tarjeta">
+    <p class="kicker">Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo</p>
+    <h1>Bavaria <span>Común</span></h1>
+    <p>Un Distrito de Tecnologías Convergentes en la antigua cervecería, dentro de una red de abastecimiento de alimentos para Kennedy.</p>
+    <p class="autores">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo · 2026</p>
+    <span class="bajar"><i></i>Desplázate</span></div></section>`;
+  let prev = 'Inicio';
+  SL.forEach((s, i) => { if (s.ini) return;
+    if (s.b !== prev) { prev = s.b; h += `<section class="paso apertura" id="lamina-${s.b}" data-escena="${s.e}"><div class="tarjeta"><span class="num" aria-hidden="true">${s.b}</span><p class="kicker">Lámina ${s.b}</p><h2>${TIT[s.b] || ''}</h2></div></section>`; }
+    h += `<section class="paso" data-i="${i}" data-escena="${s.e}"><div class="tarjeta vidrio"><p class="kicker">Lámina ${s.b} · ${String(i).padStart(2, '0')}</p><p class="frase" aria-label="${esc(s.g)}">${s.g.split(' ').map((w, k) => `<span class="w" aria-hidden="true" style="--i:${k}">${esc(w)}</span>`).join(' ')}</p>${s.l ? `<p class="lectura">${esc(s.l)}</p>` : ''}</div></section>`; });
+  h += `<section class="paso fin" data-escena="g31"><div class="tarjeta vidrio"><p class="kicker">Bavaria Común</p><p class="frase">Para recorrer el modelo con el mouse o el dedo, usa «Explorar».</p></div></section>`;
+  $('#relato').innerHTML = h; }
+$('#bloques').innerHTML = BLOQ.filter(b => b !== 'Inicio').map(b => `<button type="button" data-b="${b}">Lámina ${b}</button>`).join('');
+$('#bloques').onclick = (ev) => { const b = ev.target.closest('button'); if (b) document.getElementById('lamina-' + b.dataset.b).scrollIntoView({ behavior: 'smooth' }); };
+const pasos = [...document.querySelectorAll('#relato .paso')];
+let activo = null;
+const activar = (p) => { if (p === activo) return; if (activo) activo.classList.remove('activo'); activo = p; p.classList.add('activo'); setEscena(p.dataset.escena);
+  const s = SL[+p.dataset.i]; const b = s ? s.b : (p.id || '').replace('lamina-', '');
+  document.querySelectorAll('#bloques button').forEach(x => x.classList.toggle('on', x.dataset.b === b));
+  if (s && !s.ini) $('#count').textContent = `${p.dataset.i} / ${SL.length - 1}`; };
+const io = new IntersectionObserver((ents) => { for (const en of ents) if (en.isIntersecting) activar(en.target); }, { rootMargin: '-46% 0px -46% 0px' });
+pasos.forEach(p => io.observe(p));
+addEventListener('scroll', () => { const m = document.documentElement.scrollHeight - innerHeight; $('#pbar').style.width = (m > 0 ? 100 * scrollY / m : 0) + '%'; }, { passive: true });
 addEventListener('keydown', (ev) => {
   if (ev.target.closest && ev.target.closest('input,textarea,dialog')) return;
-  if (['ArrowRight', 'PageDown', ' '].includes(ev.key)) { ev.preventDefault(); $('#next').click(); }
-  else if (['ArrowLeft', 'PageUp'].includes(ev.key)) { ev.preventDefault(); pintarSl(iSl - 1); }
+  const k = pasos.indexOf(activo);
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(ev.key)) { ev.preventDefault(); (pasos[k + 1] || pasos[k]).scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(ev.key)) { ev.preventDefault(); (pasos[k - 1] || pasos[0]).scrollIntoView({ behavior: 'smooth', block: 'center' }); }
   else if (ev.key === 'e' || ev.key === 'E') $('#b-explorar').click();
 });
-// deslizar en el celular (fuera del modo explorar)
-{ let x0 = null, y0 = 0; host.addEventListener('touchstart', (e) => { if (explorar) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
-  host.addEventListener('touchend', (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) pintarSl(iSl + (dx < 0 ? 1 : -1)); }); }
 
 const forzada = new URLSearchParams(location.search).get('escena'); // ?escena=clave: vista fija para capturas
-const ini = Math.max(0, parseInt(location.hash.slice(1), 10) || 0);
-if (forzada && E[forzada]) { setEscena(forzada); document.body.classList.add('fija'); } else pintarSl(ini, false);
+if (forzada && E[forzada]) { setEscena(forzada); document.body.classList.add('fija'); } else { activo = pasos[0]; setEscena('portada'); }
 Object.assign(camAct, camObj); for (const k in est) est[k] = obj[k]; for (const k in XG) XG[k].v = XG[k].o; ponerCam();
 requestAnimationFrame(cuadro);
 setTimeout(() => $('#carga').classList.add('fuera'), 300);
