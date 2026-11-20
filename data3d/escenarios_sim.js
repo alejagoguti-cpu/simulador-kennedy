@@ -420,18 +420,18 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     const pan = document.getElementById('bt-pan'), tr = o.trafico; if (!pan || !tr) return;
     let d = pan.querySelector('#bt-traf');
     if (!d) { d = document.createElement('div'); d.id = 'bt-traf'; const c = pan.querySelector('.bt-cuerpo'); if (!c) return; c.prepend(d); /* arriba del panel: se ve sin bajar */
-      const st = document.createElement('style'); st.textContent = `#bt-traf{margin:4px 0 8px;padding:9px 10px;border-radius:10px;background:var(--ui-glass,rgba(14,22,30,.55));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.12));box-shadow:var(--ui-glass-sh,none);-webkit-backdrop-filter:var(--ui-glass-fx,blur(10px));backdrop-filter:var(--ui-glass-fx,blur(10px));font:400 11px/1.45 var(--ui-sans,Inter,system-ui,sans-serif);color:#e9ebec}
+      const st = document.createElement('style'); st.textContent = `#bt-traf{margin:2px 0 6px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);box-shadow:none;font:400 10.5px/1.4 var(--ui-sans,Inter,system-ui,sans-serif);color:#e9ebec}
 #bt-traf h4{margin:0 0 4px;font:700 9.5px/1.2 var(--ui-sans,system-ui,sans-serif);letter-spacing:.16em;color:#94a3b8;display:flex;justify-content:space-between;gap:6px}#bt-traf h4 span{letter-spacing:.04em;color:#64748b;font-weight:600}
-#bt-traf p{margin:3px 0}#bt-traf b{font-weight:600;color:#f1f5f9;font-variant-numeric:tabular-nums}#bt-traf .tr-esp{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:4px;margin-top:5px}
-#bt-traf .tr-esp b{white-space:nowrap}#bt-traf .tr-esp div{padding:4px 6px;border-radius:7px;background:rgba(255,255,255,.04);font-size:10px;color:#cbd5e1}#bt-traf .tr-esp i{display:block;height:3px;margin-top:3px;border-radius:2px;background:#e15759}
+#bt-traf p{margin:3px 0}#bt-traf b{font-weight:600;color:#f1f5f9;font-variant-numeric:tabular-nums}#bt-traf .tr-esp{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:4px}#bt-traf details{margin-top:3px}#bt-traf summary{cursor:pointer;color:#94a3b8;font-size:10px}
+#bt-traf .tr-esp b{white-space:nowrap;font-size:10px}#bt-traf .tr-esp div{padding:3px 4px;border-radius:6px;background:rgba(255,255,255,.04);font-size:9px;line-height:1.2;color:#cbd5e1;overflow:hidden;text-overflow:ellipsis}#bt-traf .tr-esp b{display:block}#bt-traf .tr-esp i{display:block;height:3px;margin-top:3px;border-radius:2px;background:#e15759}
 #bt-traf small{display:block;margin-top:5px;color:#7c8790;font-size:9.5px}`; document.head.appendChild(st); }
     const T = textoCrece(t), pc = (x) => Math.abs(x) < 5e-4 ? 'igual que hoy' : (x >= 0 ? '+' : '−') + fmt(Math.abs(x) * 100, Math.abs(x) < 0.01 ? 1 : 0) + ' %', fr = (T3.bio && T3.bio.ESTADO && T3.bio.ESTADO.espFrac) || {};
     d.innerHTML = `<h4>TRÁFICO Y FAUNA<span>${e} · año ${T.G.años + 1}</span></h4>
       <p>${T.linea} · vehículos en total <b>${pc(tr.V - 1)}</b></p>
-      <p>Ruido: la zona donde bajan las aves junto a las vías principales pasa de 300 a <b>${fmt(tr.D)} m</b>; calidad de los parches para las aves <b>${pc(tr.mq - 1)}</b>.</p>
-      <p>Atropellos al cruzar: pasar entre dos parches por una vía principal sale <b>${pc(tr.xq - 1)}</b> frente a hoy. Fauna que no vuela en <b>${fmt(tr.ocTer)}</b> parches (semana 1: ${fmt(tr.ocTer0)}).</p>
-      <div class="tr-esp">${Object.keys(NOM_TER).map(k => { const f = fr[k] != null ? fr[k] : 1; return `<div>${NOM_TER[k]} <b>${fmt(f * 100)} %</b><i style="width:${Math.round(f * 100)}%"></i></div>`; }).join('')}</div>
-      <small>Individuos visibles de cada especie = parches ocupados ÷ semana 1. Fuentes: SDH 2025, OAB-RDA, Reijnen y Foppen 1997, J. Avian Biol. 2025, Hels y Buchwald 2001. [SUP] zona de efecto hoy 300 m; la tasa reciente del parque se mantiene. Mismas reglas en A, B y C.</small>`;
+      <details><summary>Cómo afecta: ruido y atropellos</summary><p>Ruido: la zona donde bajan las aves junto a las vías principales pasa de 300 a <b>${fmt(tr.D)} m</b>; calidad de los parches para las aves <b>${pc(tr.mq - 1)}</b>.</p>
+      <p>Atropellos al cruzar: pasar entre dos parches por una vía principal sale <b>${pc(tr.xq - 1)}</b> frente a hoy. Fauna que no vuela en <b>${fmt(tr.ocTer)}</b> parches (semana 1: ${fmt(tr.ocTer0)}).</p></details>
+      <div class="tr-esp">${Object.keys(NOM_TER).map(k => { const f = fr[k] != null ? fr[k] : 1; return `<div title="${NOM_TER[k]}">${NOM_TER[k].split(' ')[0]} <b>${fmt(f * 100)} %</b><i style="width:${Math.round(f * 100)}%"></i></div>`; }).join('')}</div>
+      <details><summary>Fuentes y supuestos</summary><small>Individuos visibles de cada especie = parches ocupados ÷ semana 1. Fuentes: SDH 2025, OAB-RDA, Reijnen y Foppen 1997, J. Avian Biol. 2025, Hels y Buchwald 2001. [SUP] zona de efecto hoy 300 m; la tasa reciente del parque se mantiene. Mismas reglas en A, B y C.</small></details>`;
   }
 
   /* ---------------- estado de la corrida: reglas de game over, comparación A vs B (y C) y panel de C ---------------- */
