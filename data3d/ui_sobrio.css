@@ -128,7 +128,7 @@ body #bt-pan .bt-nota{color:var(--ui-tx3)!important}
   --ui-tx2:#c3cace; --ui-tx3:#949da3; } /* textos secundarios más claros: se leen sobre el vidrio aunque detrás haya cielo */
 body .gs-pan, body #bt-pan, body #cvMarca, body #cvMini, body #dock, body #usos-panel, body #ruido-panel, body #cierre-panel, body #toast, body #cvAyuda,
 body #esc, body #tb, body #cr, body #tp, body #bd, body #hud-c, body #gs-tog, body #bt-tog, body #alivio-et,
-body #vm-panel, body #mercred-ley, body #vev .caja{
+body #vm-panel, body #mercred-ley, body #vev .caja, body #trafficHud{
   background:var(--ui-glass)!important; border:1px solid var(--ui-glass-bd)!important; box-shadow:var(--ui-glass-sh)!important;
   -webkit-backdrop-filter:var(--ui-glass-fx)!important; backdrop-filter:var(--ui-glass-fx)!important; border-radius:18px!important}
 body #hud-c, body #gs-tog, body #bt-tog{border-radius:16px!important}
