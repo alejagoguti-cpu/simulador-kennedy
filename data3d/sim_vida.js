@@ -19,6 +19,7 @@
    cumple 4 semanas seguidas; se registra el motivo y la semana. Todo supuesto que no viene del documento ni de los datos está marcado [SUP].
    Datos fijos (red vial, zonas, mercados, parches): data3d/sim_red_datos.js (tools/sim_red_datos_build.mjs). */
 import { ZONAS, FUENTES, COSTO, LARGO, CIERRES, MERCADOS as MERC_D, PARCHES, BODEGAS, AREA_NAVES } from './sim_red_datos.js?v=2';
+import { EXPO } from './exposicion_trafico.js?v=1'; // tráfico cerca de cada parche y entre parches (tools/exposicion_trafico_build.mjs)
 export const AÑO = 52, POB_K = 1034000;
 export const ARRANQUE = 0; // las reglas cuentan desde la semana 1: los tres escenarios se evalúan el mismo periodo, montaje incluido
 export const MERCADOS = MERC_D;
@@ -105,11 +106,56 @@ export const GRUPOS = {
   suelo: { hab: { humedal: 0.7, parque: 0.5, bosque: 0.8, mod: 0.4 }, D: 500, c: 0.03, e: 0.006 }
 };
 const RESCATE = 0.0005; // [SUP] llegada desde fuera de Kennedy (otros humedales y parques de Bogotá), por semana y por parque apto
+
+/* ---------- TRÁFICO QUE CRECE Y FAUNA (iguales para A, B y C; fijados antes de correr) ----------
+   Crecimiento del parque (por año desde la semana 0 = hoy, año a año):
+   · carros +1,5 %/año: el parque de Bogotá creció 1,5 · 1,4 · 1,3 · 0,9 · 1,1 % en 2020–2024 (media 1,24 %/año; Secretaría Distrital de
+     Hacienda, «Notas de Hacienda: diagnóstico del impuesto de vehículos», dic. 2025, gráfico 1, con el Registro Distrital Automotor) y las
+     motos (18 % del parque) no crecieron, así que automóviles, camperos y camionetas crecen ≈ 1,24 / 0,82 = 1,5 %/año.
+     [SUP] esa tasa se mantiene igual los próximos años (venía bajando: 4,1 % en 2016).
+   · motos 0 %/año: motocicletas particulares inscritas en Bogotá 469.088 (2019) → 468.209 (2024) (Observatorio Ambiental de Bogotá,
+     indicador NMtP con el RDA de la SDM, consulta 17/01/2025). Las motos matriculadas fuera de Bogotá no están en ese registro: su
+     crecimiento es incierto y no se suma.
+   · camiones 0 %/año [SUP]: sin serie encontrada.
+   · índice de vehículos V = 0,70·carros + 0,22·motos + 0,08·camiones (el reparto de la grabación SUMO de index.html), 1 = hoy.
+   MECANISMOS (solo estos dos; la contaminación no se modela porque no se encontró una relación dosis-efecto para estas especies):
+   1 · RUIDO / ZONA DE EFECTO DE LA VÍA (aves): la distancia a la que bajan las aves crece con el tráfico como Q^0,4 (Reijnen y Foppen 1997:
+       de 10.000 a 50.000 veh/día las distancias de las aves de bosque pasan de 30→60 m y de 1.500→2.800 m: exponente 0,39–0,43);
+       dentro de esa zona la densidad de aves es 25 % menor (estudio holandés de autopistas, J. Avian Biol. 2025, doi 10.1002/jav.03572).
+       Cada parche: fracción de su área dentro de la zona (círculo del área del parche, distancia a la vía principal más cercana de
+       data3d/exposicion_trafico.js). La calidad del parche para las aves se multiplica por (1 − 0,25·f(hoy·V)) / (1 − 0,25·f(hoy)):
+       con el tráfico de hoy no cambia nada (el modelo ya está calibrado con el tráfico de hoy).
+       [SUP] distancia de efecto con el tráfico de hoy: ZONA_HOY m.
+   2 · ATROPELLOS AL CRUZAR (barrera; anfibios, reptiles y mamíferos: rana, culebra, curí, lagartija, comadreja): probabilidad de morir al
+       cruzar = 1 − e^(−c·Q) (Hels y Buchwald 2001: 0,34–0,61 en una vía de 3.207 veh/día → c = 1,3·10⁻⁴ a 2,9·10⁻⁴ por veh/día; se usa el
+       menor). La colonización de un parche desde otro se multiplica por e^(−c·ΣQ·(V − 1)), ΣQ = flujo de las vías principales que corta
+       la línea entre los dos (exposicion_trafico.js): con el tráfico de hoy no cambia; con más tráfico cruzar cuesta más. */
+export const TRAFICO = { carros: 0.015, motos: 0, camiones: 0, ZONA_HOY: 300, B_DIST: 0.4, RED_ZONA: 0.25, C_ATROP: 1.3e-4, on: true,
+  fuentes: [
+    { n: 'Secretaría Distrital de Hacienda · Notas de Hacienda, diagnóstico del impuesto de vehículos (dic. 2025)', url: 'https://observatoriofiscal.shd.gov.co/sites/default/files/documentos_informacion_destacada/Primera%20Nota%20de%20Hacienda%20Distrital.pdf' },
+    { n: 'Observatorio Ambiental de Bogotá · Motocicletas particulares NMtP (RDA-SDM, 2007–2024)', url: 'https://oab.ambientebogota.gov.co/descargar/34020' },
+    { n: 'Reijnen y Foppen 1997 · Disturbance by traffic of breeding birds', url: 'https://the-eis.com/elibrary/sites/default/files/downloads/literature/Disturbance%20by%20traffic%20of%20breeding%20birds_1997.pdf' },
+    { n: 'J. Avian Biology 2025 · aves y tráfico en autopistas de Países Bajos', url: 'https://doi.org/10.1002/jav.03572' },
+    { n: 'Hels y Buchwald 2001 · The effect of road kills on amphibian populations (ICOET 2001)', url: 'https://escholarship.org/uc/item/0mf9859v' }] };
+export function crecimiento(t) { // t = semana del modelo (0 = hoy); crece año a año
+  const a = Math.max(0, Math.floor(t / AÑO)), car = Math.pow(1 + TRAFICO.carros, a), moto = Math.pow(1 + TRAFICO.motos, a), cam = Math.pow(1 + TRAFICO.camiones, a);
+  return { años: a, car, moto, cam, V: 0.70 * car + 0.22 * moto + 0.08 * cam }; }
+const TERRESTRE = new Set(['rana', 'culebra', 'curi', 'lagartija', 'comadreja']);
 const NP = PARCHES.length, NS = ESPECIES.length, GK = Object.keys(GRUPOS);
 const TIPO = PARCHES.map(p => p.t === 'modCubierta' ? 'cub' : p.t.startsWith('mod') ? 'mod' : p.t);
 const KER = Object.fromEntries(GK.map(g => { const D = GRUPOS[g].D, a = new Float32Array(NP * NP); for (let p = 0; p < NP; p++) for (let q = 0; q < NP; q++) if (p !== q) a[p * NP + q] = Math.exp(-Math.hypot(PARCHES[p].x - PARCHES[q].x, PARCHES[p].z - PARCHES[q].z) / D) * Math.sqrt(PARCHES[q].ha); return [g, a]; }));
 const SQA = PARCHES.map(p => Math.sqrt(Math.max(0.05, p.ha)));
 const IB = PARCHES.findIndex(p => p.dyn), IV = PARCHES.findIndex(p => p.id === 'vaca'); // borde restaurado de La Vaca (área variable: KER usa 1 ha y se escala en cada semana) y La Vaca
+const ES_TERR = ESPECIES.map(e => TERRESTRE.has(e[0])), ES_AVE = ESPECIES.map(e => !TERRESTRE.has(e[0]));
+const RP = PARCHES.map(p => Math.sqrt(Math.max(0.05, p.ha) * 1e4 / Math.PI)); // radio del círculo con el área del parche (m)
+const fZona = (p, D) => { const d = EXPO.parches[p] ? EXPO.parches[p][0] : Infinity, r = RP[p]; return cl((D - (d - r)) / (2 * r), 0, 1); }; // fracción del parche dentro de la zona de efecto
+const EFT = new Map(); // efecto del tráfico por año (determinista; se calcula una vez por año de crecimiento)
+function efectoTrafico(t) {
+  const G = crecimiento(t), k = TRAFICO.on ? G.años : 0; let E = EFT.get(k); if (E) return E;
+  const V = TRAFICO.on ? G.V : 1, D0 = TRAFICO.ZONA_HOY, D = D0 * Math.pow(V, TRAFICO.B_DIST), mq = new Float32Array(NP), xq = new Float32Array(NP * NP);
+  let sq = 0; for (let p = 0; p < NP; p++) { mq[p] = (1 - TRAFICO.RED_ZONA * fZona(p, D)) / (1 - TRAFICO.RED_ZONA * fZona(p, D0)); sq += mq[p]; }
+  let sx = 0, nx = 0; for (let i = 0; i < NP * NP; i++) { const c = EXPO.cruce[i] || 0; xq[i] = Math.exp(-TRAFICO.C_ATROP * c * (V - 1)); if (c > 0) { sx += xq[i]; nx++; } }
+  E = { G, V, D, mq, xq, mqMedio: sq / NP, xqMedio: nx ? sx / nx : 1, pares: nx }; EFT.set(k, E); return E; }
 function calidad(e, s, P3, out) { // calidad de cada parche esta semana (0 = no existe)
   for (let p = 0; p < NP; p++) { const P = PARCHES[p];
     out[p] = P.dyn ? (s.cora.ha > 0 ? DESMONTE.Q_BORDE * s.cora.mad : 0)
@@ -255,12 +301,17 @@ export function paso(s, PAR) {
   calidad(e, s, P3, s.q);
   const trampa = 1 + 3 * P3.luz * (P3.anti ? 0.3 : 1); // [SUP] luz y vidrio de los módulos: más extinción de aves de árbol en ellos
   const H_ = s.hab, q = s.q, occ = s.occ, raizB = Math.sqrt(Math.max(0.05, s.cora.ha)); let esp = 0; // el borde restaurado pesa según su área de esta semana
-  for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP); let hay = 0;
-    for (let pp = 0; pp < NP; pp++) { const u = H_(), h = apto(i, pp, q); if (h <= 0) { nuevo[pp] = 0; continue; }
+  const ET = efectoTrafico(t), MQ = ET.mq, XQ = ET.xq; // tráfico que crece: ruido para las aves (MQ por parche) y atropellos al cruzar para la fauna terrestre (XQ por par)
+  let ocAve = 0, ocTer = 0;
+  for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP), ave = ES_AVE[i], ter = ES_TERR[i]; let hay = 0;
+    for (let pp = 0; pp < NP; pp++) { const u = H_(), h = apto(i, pp, q) * (ave ? MQ[pp] : 1); if (h <= 0) { nuevo[pp] = 0; continue; }
       if (occ[base + pp]) { const ext = Math.min(1, G.e / (h * (pp === IB ? raizB : SQA[pp])) * (g === 'arbol' && TIPO[pp] !== 'parque' && TIPO[pp] !== 'humedal' && TIPO[pp] !== 'bosque' ? trampa : 1)); nuevo[pp] = u < ext ? 0 : 1; }
-      else { let S = 0; for (let qq = 0; qq < NP; qq++) if (occ[base + qq]) S += K[pp * NP + qq] * apto(i, qq, q) * (qq === IB ? raizB : 1); const col = 1 - Math.exp(-G.c * h * S) + RESCATE * h; nuevo[pp] = u < col ? 1 : 0; }
-      hay |= nuevo[pp]; }
+      else { let S = 0; for (let qq = 0; qq < NP; qq++) if (occ[base + qq]) S += K[pp * NP + qq] * apto(i, qq, q) * (ave ? MQ[qq] : 1) * (ter ? XQ[pp * NP + qq] : 1) * (qq === IB ? raizB : 1); const col = 1 - Math.exp(-G.c * h * S) + RESCATE * h; nuevo[pp] = u < col ? 1 : 0; }
+      hay |= nuevo[pp]; if (nuevo[pp]) { if (ave) ocAve++; else ocTer++; } }
     occ.set(nuevo, base); esp += hay; }
+  if (s.oc0 == null) s.oc0 = { ave: Math.max(1, ocAve), ter: Math.max(1, ocTer) }; // ocupación de la primera semana: referencia para el panel
+  const espOc = new Float32Array(NS); for (let i = 0; i < NS; i++) { let n = 0; for (let pp = 0; pp < NP; pp++) n += occ[i * NP + pp]; espOc[i] = n; }
+  if (!s.espOc0) s.espOc0 = Float32Array.from(espOc, v => Math.max(1, v));
   const conect = !prop ? 0.2 : e === 'B' ? 1 - Math.exp(-P3.disp / 600) : (1 - Math.exp(-P3.disp / 250)) * (0.4 + 0.6 * s.supF);
   const Kav = 900 * (0.6 + 0.6 * s.W + 0.5 * P3.arboles + (prop ? 0.4 * conect + huertas * 0.006 : 0));
   const mm = (e === 'C' ? huertas / 40 * 0.004 * P3.luz * 0.6 : e === 'B' ? 0.0004 * P3.luz : 0.0004) * (P3.anti ? 0.3 : 1);
@@ -284,6 +335,8 @@ export function paso(s, PAR) {
     gen, relleno: colR, desv: trat, rech, compost: comp, vuelve: comp, hongos, pct2: trat / gen * 100, pila, km: colR / 8000 * 28 * 2 + colC / 1500 * dist * 2, ocup: capComp ? Math.min(1.5, s.pcp / Math.max(1, Sp)) : 0,
     aves: s.B, riq: Math.round(42 * (0.45 + 0.35 * conect + 0.3 * s.W)), hum: s.W * 100, trampa: s.muertes, conect,
     need: needT, recib: rec / needT, zMin, zArg, nBajo, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
+    trafico: { años: ET.G.años, car: ET.G.car, moto: ET.G.moto, V: ET.V, D: ET.D, mq: ET.mqMedio, xq: ET.xqMedio, ocAve, ocTer, ocAve0: s.oc0.ave, ocTer0: s.oc0.ter },
+    espOc, espOc0: s.espOc0,
     cora: { lib: DC.lib, desm: DC.ap.length, rest: DC.rest, m2: DC.m2, borde: Math.round(DC.ha * 1e4), mad: DC.mad, total: BODEGAS.length }, perdido,
     cierre: s.cierre ? { via: VIAS[s.cierre.k].n, sem: t - s.cierre.t0 + 1, dur: s.cierre.dur, on: s.cierre.on } : null });
   /* ---- reglas de game over ---- */

@@ -19,7 +19,8 @@ import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con un solo evento al azar, el cierre de una vía (semilla = SIMST.semilla), y reglas de game over fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
-import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS } from './sim_vida.js?v=3';
+import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=4';
+import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=1'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
@@ -50,6 +51,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
   const Y = T3.sueloY != null ? T3.sueloY : 0.35;
   const esc = () => (T3.escenario === 'proyecto' ? SIMST.esc : 'A');
+  const CRECE = instalarCrecimiento({ T3, esA: () => esc() === 'A' }); // vehículos de más en A según la proyección del parque (data3d/trafico_crece.js)
 
   /* ---------------- lugares ---------------- */
   const BURRO = [2095.67, -109.06], CORA = [1132.1, 948.6], BAV = [4136, 96], DJ = [5200, 2900]; // Doña Juana queda al sureste, fuera del mapa
@@ -355,6 +357,8 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     gp.attributes.color.needsUpdate = true;
     // SIM-03 · aves, humedal y trampas
     const BI = T3.bio && T3.bio.ESTADO; if (BI) BI.fauna = Math.max(0.12, Math.min(1, o.aves / 1400));
+    // fauna que no vuela: fracción de sus parches ocupados frente a la semana 1 (sim_vida.js: atropellos al cruzar vías principales con el tráfico que crece)
+    if (BI && o.espOc) { const fr = BI.espFrac || (BI.espFrac = {}); ESP_SIM.forEach(([k], i) => { fr[k] = Math.max(0, Math.min(1, o.espOc[i] / o.espOc0[i])); }); }
     const hum = o.hum / 100; aHum.material.color.setRGB(0.88 - 0.55 * hum, 0.35 + 0.45 * hum, 0.3); aHum.material.opacity = 0.4 + 0.3 * hum;
     const nTr = e === 'A' || P3.anti ? 0 : Math.round(TR.length * Math.min(1, P3.borde / 40) * P3.luz * 1.6); TR.forEach((m) => { m.visible = false; });
     // La Vaca sigue su recuperación de 10 años; [SUP] si el humedal cae bajo el límite de colapso (27 %), su avance retrocede
@@ -387,6 +391,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     { const nH = ab ? ab.abiertas : (e === 'A' ? 0 : null), COLE = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' };
       $('[data-mapa]').innerHTML = `<h5 style="--c:${COLE[e]}">Lo que ves en el mapa<span>${e} · ${NE[e]}</span></h5>
       <button type="button" data-ir="trafico"><i class="sw b" style="height:${(4 + 6 * kTr).toFixed(0)}px;background:${cTr}"></i><span>Franja sobre la <b>Av. Ciudad de Cali</b>: tráfico <b>${nivelTr(kTr)}</b> · ${e === 'A' ? '100 % (hoy)' : `${pctTr} % del de hoy`}</span></button>
+      ${e === 'A' && o.trafico ? (() => { const T = textoCrece(t); return `<button type="button" data-ir="trafico"><i class="sw b" style="height:6px;background:#e15759"></i><span>${T.linea}${CRECE.st.activo ? ` · ${fmt(CRECE.st.n)} vehículos de más en la calle ahora` : ''}<small style="display:block;color:#8d969b;margin-top:2px">${T.fuente}</small></span></button>`; })() : ''}
       <button type="button" data-ir="huertas"><i class="sw p" style="background:#6fcf6a"></i><span>${e === 'A' ? '<b>Sin huertas nuevas</b>: solo las que ya hay en casas' : `Puntos verdes: <b>${nH != null ? fmt(nH) : '…'} huertas abiertas</b> · ${fmt(o.act)} hogares`}</span></button>
       ${e === 'A' ? '' : (() => { const KP = window.KEN_PARCHES; return `<button type="button" data-ir="parches"><i class="sw p" style="background:#1f6b38"></i><span>Puntos verde oscuro: <b>${KP ? KP.parches + ' parches de árboles nativos' : 'parches de árboles nativos'}</b>${KP ? ` · ${fmt(KP.n)} árboles (caucho sabanero, aliso, sauco, chicalá…)` : ''}</span></button>`; })()}
       <button type="button" data-ir="compost"><i class="sw p" style="background:${e === 'A' ? '#9aa1a6' : '#b8875a'}"></i><span>${e === 'A' ? `<b>Sin compostaje</b>: ${fmt(o.relleno / 1000, 1)} t/semana van en camión a Doña Juana` : e === 'C' ? `Círculos café: <b>estaciones de compost en los nodos</b> · ${fmt(o.pct2, 1)} % de los orgánicos se trata` : `Círculo café: <b>1 planta de compost</b> en Bavaria · ${fmt(o.pct2, 1)} % de los orgánicos se trata`}</span></button>
@@ -402,10 +407,30 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
       ['Dependencia de Corabastos', fmt(dep * 100) + ' %', `de la comida que llega${d(dep * 100, oA.dep * 100, true, (v) => fmt(v) + ' pts')}`],
       ['Orgánicos pendientes de tratamiento', fmt(o.pend / 1000) + ' t', `almacenamiento ${fmt(o.alm / 1000)} t · ${fmt(o.pct2, 1)} % se composta`],
       ['Corabastos libera espacio', e === 'A' ? 'no' : fmt(o.cora.m2) + ' m²', e === 'A' ? 'en A Corabastos sigue igual' : `Corabastos libera ${fmt(o.cora.m2)} m² · ${o.cora.desm} de ${o.cora.total} bodegas desmontadas · borde recuperado ${fmt(o.cora.borde)} m²${o.cora.desm > o.cora.rest ? ` (${o.cora.desm - o.cora.rest} en obra)` : ''}${o.cora.rest ? ` · madurez ${fmt(o.cora.mad * 100)} %` : ''} · carga que ya no pasa por Corabastos ${fmt(o.cora.lib * 100, 1)} %`],
-      ['Especies presentes en los parches', `${o.esp} de ${o.esp0}`, `integridad del humedal ${fmt(hum * 100)} %`],
+      ['Especies presentes en los parches', `${o.esp} de ${o.esp0}`, `integridad del humedal ${fmt(hum * 100)} %${o.trafico ? ` · tráfico ${o.trafico.V > 1.0005 ? '+' + fmt((o.trafico.V - 1) * 100) + ' %' : 'como hoy'}: fauna que no vuela en ${fmt(o.trafico.ocTer)} parches (semana 1: ${fmt(o.trafico.ocTer0)})` : ''}`],
       ['Hogares con huerta', fmt(o.act), `huertas abiertas en el mapa${ab ? `: ${ab.abiertas} de ${ab.total}` : ''}${d(o.act, oA.act, false, fmt)}`]
     ].map(([n, v, s2], i) => `<li><span>${n}</span><strong>${v}</strong><small>${s2}</small><button type="button" data-ir="${['trafico', 'trafico', 'compost', 'cora', 'humedal', 'huertas'][i]}">Ver en el mapa →</button></li>`).join('');
     el.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
+    pintarBio(e, t, o);
+  }
+  /* panel «Red biótica» (data3d/biotica.js): bloque del tráfico que crece y su efecto en la fauna, con los números del modelo semanal (mismas reglas en A, B y C) */
+  const NOM_TER = { rana: 'Rana sabanera', culebra: 'Serpiente sabanera', curi: 'Curí', lagartija: 'Lagartija', comadreja: 'Comadreja' };
+  function pintarBio(e, t, o) {
+    const pan = document.getElementById('bt-pan'), tr = o.trafico; if (!pan || !tr) return;
+    let d = pan.querySelector('#bt-traf');
+    if (!d) { d = document.createElement('div'); d.id = 'bt-traf'; const c = pan.querySelector('.bt-cuerpo'); if (!c) return; c.prepend(d); /* arriba del panel: se ve sin bajar */
+      const st = document.createElement('style'); st.textContent = `#bt-traf{margin:4px 0 8px;padding:9px 10px;border-radius:10px;background:var(--ui-glass,rgba(14,22,30,.55));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.12));box-shadow:var(--ui-glass-sh,none);-webkit-backdrop-filter:var(--ui-glass-fx,blur(10px));backdrop-filter:var(--ui-glass-fx,blur(10px));font:400 11px/1.45 var(--ui-sans,Inter,system-ui,sans-serif);color:#e9ebec}
+#bt-traf h4{margin:0 0 4px;font:700 9.5px/1.2 var(--ui-sans,system-ui,sans-serif);letter-spacing:.16em;color:#94a3b8;display:flex;justify-content:space-between;gap:6px}#bt-traf h4 span{letter-spacing:.04em;color:#64748b;font-weight:600}
+#bt-traf p{margin:3px 0}#bt-traf b{font-weight:600;color:#f1f5f9;font-variant-numeric:tabular-nums}#bt-traf .tr-esp{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:4px;margin-top:5px}
+#bt-traf .tr-esp b{white-space:nowrap}#bt-traf .tr-esp div{padding:4px 6px;border-radius:7px;background:rgba(255,255,255,.04);font-size:10px;color:#cbd5e1}#bt-traf .tr-esp i{display:block;height:3px;margin-top:3px;border-radius:2px;background:#e15759}
+#bt-traf small{display:block;margin-top:5px;color:#7c8790;font-size:9.5px}`; document.head.appendChild(st); }
+    const T = textoCrece(t), pc = (x) => Math.abs(x) < 5e-4 ? 'igual que hoy' : (x >= 0 ? '+' : '−') + fmt(Math.abs(x) * 100, Math.abs(x) < 0.01 ? 1 : 0) + ' %', fr = (T3.bio && T3.bio.ESTADO && T3.bio.ESTADO.espFrac) || {};
+    d.innerHTML = `<h4>TRÁFICO Y FAUNA<span>${e} · año ${T.G.años + 1}</span></h4>
+      <p>${T.linea} · vehículos en total <b>${pc(tr.V - 1)}</b></p>
+      <p>Ruido: la zona donde bajan las aves junto a las vías principales pasa de 300 a <b>${fmt(tr.D)} m</b>; calidad de los parches para las aves <b>${pc(tr.mq - 1)}</b>.</p>
+      <p>Atropellos al cruzar: pasar entre dos parches por una vía principal sale <b>${pc(tr.xq - 1)}</b> frente a hoy. Fauna que no vuela en <b>${fmt(tr.ocTer)}</b> parches (semana 1: ${fmt(tr.ocTer0)}).</p>
+      <div class="tr-esp">${Object.keys(NOM_TER).map(k => { const f = fr[k] != null ? fr[k] : 1; return `<div>${NOM_TER[k]} <b>${fmt(f * 100)} %</b><i style="width:${Math.round(f * 100)}%"></i></div>`; }).join('')}</div>
+      <small>Individuos visibles de cada especie = parches ocupados ÷ semana 1. Fuentes: SDH 2025, OAB-RDA, Reijnen y Foppen 1997, J. Avian Biol. 2025, Hels y Buchwald 2001. [SUP] zona de efecto hoy 300 m; la tasa reciente del parque se mantiene. Mismas reglas en A, B y C.</small>`;
   }
 
   /* ---------------- estado de la corrida: reglas de game over, comparación A vs B (y C) y panel de C ---------------- */
@@ -488,9 +513,9 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; pintarPanel(); return; }
     if (b.dataset.sd) { ponerSemilla(VIDA.seed + +b.dataset.sd); return; }
     if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
-    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=3').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
+    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=4').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
-    if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); }
+    if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* A: se prende el flujo de carros (los mismos controles del panel izquierdo) */
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
       RELOJ.entrada('escenario-vida', e); aplicar(); } // A, B y C ya corren juntos: escoger uno solo cambia lo que se mira (sin volver a la semana 0)
   });

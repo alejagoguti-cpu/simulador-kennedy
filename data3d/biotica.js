@@ -939,6 +939,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden (sorteo fijo por id)
       if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = RELOJ.azarDe('bio-fauna', a.id)), fuera = r > ESTADO.fauna;
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }
+      /* fauna que no vuela (data3d/sim_vida.js · metapoblación con atropellos al cruzar vías): ESTADO.espFrac[k] = parches ocupados hoy ÷ los de la
+         semana 1 en el escenario que se mira; los individuos «de más» se esconden (sorteo fijo por id) y sus relaciones se apagan */
+      if (ESTADO.espFrac && !ESP[a.e].ave && !a.h.pro && ESTADO.espFrac[a.e] != null) { const r2 = a._r2 ?? (a._r2 = RELOJ.azarDe('bio-esp', a.id));
+        if (r2 > ESTADO.espFrac[a.e]) { a._sim2 = true; a.vis = false; a.duerme = true; continue; } if (a._sim2) { a._sim2 = false; a.vis = true; a.duerme = false; } }
       if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
     actualizarRed(dt);
     if (t % 5 === 0) contarEncuentros();
