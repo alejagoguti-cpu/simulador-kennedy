@@ -48,10 +48,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ocre);outline-offse
 .et .letra{font:700 14px var(--ui);margin-right:4px}
 .et .pin,#leyenda .pin{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:7px;vertical-align:-4px;flex:none}
 .et .pin .ico,#leyenda .pin .ico{display:block}
-/* la red de problemas (otra página) entra a pantalla completa después de Kennedy y explota en la conectografía */
-#redp{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:3;background:#050607;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 1.1s var(--curva),visibility 0s 1.1s}
-body.red #redp{opacity:1;visibility:visible;transition:opacity 1.1s var(--curva),visibility 0s}
-body.red #atrib,body.red .lado{opacity:0}
 #atrib{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:8px;z-index:5;font:10px var(--ui);color:rgba(255,255,255,.6);pointer-events:none}
 /* carga */
 #carga{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:var(--bg);transition:opacity .8s var(--curva)}
@@ -158,7 +154,6 @@ dialog p{font:12px/1.6 var(--mono);color:var(--tenue)}
 <div id="lienzo" aria-hidden="true"></div>
 <div id="vineta" aria-hidden="true"></div>
 <div id="etiquetas" aria-hidden="true"></div>
-<iframe id="redp" title="Red de problemas de Kennedy" aria-hidden="true" tabindex="-1"></iframe>
 <div id="atrib">Google</div>
 <i id="pbar" aria-hidden="true"></i>
 
