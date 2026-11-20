@@ -1,11 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d0e10">
-<title>Bavaria Común</title>
-<meta name="description" content="Bavaria Común (Kennedy, Bogotá): un Distrito de Tecnologías Convergentes en la antigua cervecería, nodo de una red de mercados barriales. Presentación en 3D que sigue el guion: abastecimiento, NBIC, formación y vivienda, red biótica, sintaxis espacial y federación de asambleas.">
+<title>Bavaria ComÃºn</title>
+<meta name="description" content="Bavaria ComÃºn (Kennedy, BogotÃ¡): un Distrito de TecnologÃ­as Convergentes en la antigua cervecerÃ­a, nodo de una red de mercados barriales. PresentaciÃ³n en 3D que sigue el guion: abastecimiento, NBIC, formaciÃ³n y vivienda, red biÃ³tica, sintaxis espacial y federaciÃ³n de asambleas.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -48,6 +48,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ocre);outline-offse
 .et .letra{font:700 14px var(--ui);margin-right:4px}
 .et .pin,#leyenda .pin{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:7px;vertical-align:-4px;flex:none}
 .et .pin .ico,#leyenda .pin .ico{display:block}
+/* la red de problemas (otra pÃ¡gina) entra a pantalla completa despuÃ©s de Kennedy y explota en la conectografÃ­a */
+#redp{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:3;background:#050607;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 1.1s var(--curva),visibility 0s 1.1s}
+body.red #redp{opacity:1;visibility:visible;transition:opacity 1.1s var(--curva),visibility 0s}
+body.red #atrib,body.red .lado{opacity:0}
+#redc{position:fixed;left:50%;top:50%;transform:translate(-20%,-50%);z-index:4;font:500 11px var(--mono);letter-spacing:.2em;color:var(--suave);display:none;pointer-events:none}
+body.red:not(.redlista) #redc{display:block;animation:latido 1.4s var(--curva) infinite}
+@media (max-width:760px){#redc{transform:translate(-50%,-50%);top:30%}}
 #atrib{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:8px;z-index:5;font:10px var(--ui);color:rgba(255,255,255,.6);pointer-events:none}
 /* carga */
 #carga{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:var(--bg);transition:opacity .8s var(--curva)}
@@ -87,8 +94,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ocre);outline-offse
 @keyframes palabra{from{opacity:0;transform:translateY(.45em);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
 .lectura{margin:0;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:11px 13px;border-radius:12px;background:rgba(242,181,58,.08);font:500 13.5px/1.45 var(--ui);color:var(--suave);opacity:0;transform:translateY(8px);transition:opacity .6s var(--curva) .5s,transform .6s var(--curva) .5s}
 .paso.activo .lectura{opacity:1;transform:none}
-.lectura::before{content:"Qué se ve";font:600 9.5px/1.9 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ocre);white-space:nowrap}
-/* portada y aperturas de lámina */
+.lectura::before{content:"QuÃ© se ve";font:600 9.5px/1.9 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ocre);white-space:nowrap}
+/* portada y aperturas de lÃ¡mina */
 .portada{min-height:100vh;align-items:flex-end;padding-bottom:12vh}
 .portada .tarjeta{opacity:1;transform:none;filter:none;background:none;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;width:min(760px,100%)}
 .portada h1{margin:0;font-size:clamp(54px,8vw,124px);line-height:.9;font-weight:600;letter-spacing:-.05em;text-shadow:0 6px 40px rgba(0,0,0,.6)}
@@ -154,12 +161,14 @@ dialog p{font:12px/1.6 var(--mono);color:var(--tenue)}
 <div id="lienzo" aria-hidden="true"></div>
 <div id="vineta" aria-hidden="true"></div>
 <div id="etiquetas" aria-hidden="true"></div>
+<iframe id="redp" title="Red de problemas de Kennedy" aria-hidden="true" tabindex="-1"></iframe>
+<div id="redc" aria-hidden="true">CARGANDO LA RED DE PROBLEMASâ€¦</div>
 <div id="atrib">Google</div>
 <i id="pbar" aria-hidden="true"></i>
 
 <header class="bar vidrio">
-  <div class="marca">Bavaria Común</div>
-  <nav class="bloques" id="bloques" aria-label="Láminas del guion"></nav>
+  <div class="marca">Bavaria ComÃºn</div>
+  <nav class="bloques" id="bloques" aria-label="LÃ¡minas del guion"></nav>
   <span class="count" id="count"></span>
   <div class="herr">
     <button class="pill" id="b-giro" type="button" aria-pressed="true">Giro</button>
@@ -175,11 +184,11 @@ dialog p{font:12px/1.6 var(--mono);color:var(--tenue)}
 <dialog id="d-fuentes">
   <h2>Fuentes</h2>
   <ul id="fuentes"></ul>
-  <p>Vistas cercanas: malla fotorrealista de Google. Vistas de toda Kennedy: volúmenes de los edificios (buildings.json y Microsoft). Colegios, plazas y fruvers: OpenStreetMap e IPES. Mercados barriales: los 8 sitios en parques del simulador de Kennedy. Las relaciones de la red biótica y las cantidades de diseño son hipótesis de la propuesta.</p>
+  <p>Vistas cercanas: malla fotorrealista de Google. Vistas de toda Kennedy: volÃºmenes de los edificios (buildings.json y Microsoft). Colegios, plazas y fruvers: OpenStreetMap e IPES. Mercados barriales: los 8 sitios en parques del simulador de Kennedy. Las relaciones de la red biÃ³tica y las cantidades de diseÃ±o son hipÃ³tesis de la propuesta.</p>
   <form method="dialog"><button class="pill" type="submit">Cerrar</button></form>
 </dialog>
 
-<script type="module" src="data3d/bavaria_pres.js?v=15"></script>
+<script type="module" src="data3d/bavaria_pres.js?v=16"></script>
 <script>document.getElementById('b-fuentes').onclick=()=>document.getElementById('d-fuentes').showModal();</script>
 </body>
 </html>
