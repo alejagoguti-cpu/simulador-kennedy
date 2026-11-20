@@ -865,6 +865,59 @@ fetch('data3d/kennedy_edif.bin').then(r => { if (!r.ok) throw new Error('edif');
 { const L = SXD.limite; const sel = PQ.filter(q => q.pts.length > 2 && dentroPol(L, q.pts[0][0], q.pts[0][1]));
   if (sel.length) { const g = mergeGeometries(sel.map(q => { const s = new THREE.ShapeGeometry(forma(q.pts)); s.rotateX(-Math.PI / 2); s.translate(0, 0.4, 0); s.deleteAttribute('uv'); return s; }));
     const m = new THREE.Mesh(g, xmat('verdeK', new THREE.MeshBasicMaterial({ color: '#1f4a35' }), 0.95, null, true)); m.renderOrder = 0; xg('verdeK').g.add(m); } }
+
+/* =============================== ESQUEMA 3D SIMPLE DE LA RED DE ABASTECIMIENTO =============================== */
+// Pocos nodos grandes que flotan sobre Kennedy y se reacomodan: hoy (estrella en Corabastos) -> llegan productores -> propuesta (malla distribuida).
+const ESQ = { estado: 'hoy', tCambio: 0, nodos: [], aristas: [] }; const EJE_Y = new THREE.Vector3(0, 1, 0);
+{ const k = 'esquema', X = xg(k); X.g.position.set(KEN_C[0], 0, KEN_C[1]);
+  const R = MOVIL ? 1250 : 1500, Y = { per: 380, ani: 620, prod: 260, c: 760 };
+  const pol = (a, r, y) => new THREE.Vector3(Math.cos(a * Math.PI / 180) * r, y, -Math.sin(a * Math.PI / 180) * r);
+  const geoS = new THREE.SphereGeometry(1, 28, 18), geoC = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true);
+  const nodo = (id, ico, col, hoy, prop, rH, rP, d = 0) => {
+    const g = new THREE.Group(); X.g.add(g);
+    const esf = new THREE.Mesh(geoS, xmat(k, new THREE.MeshBasicMaterial({ color: col }), 0.22)); esf.renderOrder = 12; g.add(esf);
+    const anillo = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 8, 48), xmat(k, new THREE.MeshBasicMaterial({ color: col }), 0.9)); anillo.rotation.x = Math.PI / 2; g.add(anillo);
+    const sp = new THREE.Sprite(xmat(k, new THREE.SpriteMaterial({ map: texIco(ico, col), sizeAttenuation: false }), 1)); sp.renderOrder = 16; g.add(sp);
+    const tallo = new THREE.Mesh(geoC, xmat(k, new THREE.MeshBasicMaterial({ color: col, blending: THREE.AdditiveBlending }), 0.35)); X.g.add(tallo);
+    const base = new THREE.Mesh(new THREE.RingGeometry(0.6, 1, 40), xmat(k, new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }), 0.5)); base.rotation.x = -Math.PI / 2; X.g.add(base);
+    const n = { id, g, esf, anillo, sp, tallo, base, hoy, prop, rH, rP, d, r: 0, p: hoy.clone() }; ESQ.nodos.push(n); return n; };
+  const C = nodo('C', 'corabastos', CC.cora, new THREE.Vector3(0, Y.c, 0), pol(210, R * 0.72, Y.ani), 230, 120);
+  const PER = [['plaza', CC.plaza], ['colegio', CC.cole], ['casa', '#d9c06a'], ['colegio', CC.cole], ['plaza', CC.plaza], ['colegio', CC.cole], ['casa', '#d9c06a'], ['plaza', CC.plaza]]
+    .map(([ic, col], i) => { const v = pol(i * 45 + 22.5, R, Y.per); return nodo('p' + i, ic, col, v, v, 95, 95, 0.1 + i * 0.06); });
+  const PROD = ENTR.slice(0, 3).map((e, i) => { const v = new THREE.Vector3(e[0] - KEN_C[0], Y.prod, e[1] - KEN_C[1]); const n = nodo('q' + i, 'camion', CC.prod, v, v, 0, 95, i * 0.1); n.rD = 95; return n; });
+  const ANI = [[30, 'cluster', CC.bav, 'B'], [90, 'mercado', CC.merc, 'M1'], [150, 'mercado', CC.merc, 'M2'], [270, 'mercado', CC.merc, 'M3'], [330, 'mercado', CC.merc, 'M4']]
+    .map(([a, ic, col, id], i) => nodo(id, ic, col, new THREE.Vector3(0, Y.c, 0), pol(a, R * 0.72, Y.ani + (id === 'B' ? 80 : 0)), 0, id === 'B' ? 160 : 120, 0.5 + i * 0.18));
+  // aristas: cilindros que se estiran entre dos nodos; set = en qué estados se ven
+  const arista = (a, b, col, grosor, sets, d = 0) => { const m = new THREE.Mesh(geoC, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, depthWrite: false, depthTest: false })); m.renderOrder = 10; X.g.add(m);
+    const pul = []; for (let j = 0; j < 2; j++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texGlow, color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthTest: false })); s.renderOrder = 14; X.g.add(s); pul.push(s); }
+    ESQ.aristas.push({ a, b, m, pul, grosor, sets: new Set(sets), d, al: 0, ph: Math.random() }); };
+  PER.forEach((p, i) => arista(C, p, '#e0623f', 16, ['hoy', 'prod'], i * 0.08));
+  PROD.forEach((q, i) => arista(q, C, CC.prod, 20, ['prod'], 0.2 + i * 0.12));
+  const anillo = [ANI[0], ANI[1], ANI[2], C, ANI[3], ANI[4]]; // en orden angular: 30, 90, 150, 210, 270, 330
+  anillo.forEach((n, i) => arista(n, anillo[(i + 1) % 6], CC.merc, 18, ['prop'], 1.3 + i * 0.1));
+  [[0, 3], [1, 4], [2, 5]].forEach(([a, b], i) => arista(anillo[a], anillo[b], CC.merc, 10, ['prop'], 1.9 + i * 0.1));
+  PER.forEach((p, i) => { const h = anillo.reduce((b, n) => n.prop.distanceTo(p.prop) < b.prop.distanceTo(p.prop) ? n : b, anillo[0]); arista(h, p, '#9fe3c3', 9, ['prop'], 2.3 + i * 0.06); });
+  PROD.forEach((q, i) => [...anillo].sort((a, b) => a.prop.distanceTo(q.prop) - b.prop.distanceTo(q.prop)).slice(0, 2).forEach((h, j) => arista(q, h, CC.prod, 11, ['prop'], 2.6 + i * 0.1 + j * 0.05)));
+  // etiquetas (pocas y grandes)
+  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · todo llega aquí'), C.sp, ['esqHoy'], 'fuerte', null, 170);
+  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · un mercado más'), C.sp, ['esqProp'], 'fuerte', null, 170);
+  addEt(etI('plaza', CC.plaza, 'Plazas de mercado'), PER[0].sp, ['esqHoy', 'esqProp'], '', null, 170); addEt(etI('colegio', CC.cole, 'Colegios'), PER[1].sp, ['esqHoy', 'esqProp'], '', null, 170); addEt(etI('casa', '#d9c06a', 'Tiendas de barrio'), PER[2].sp, ['esqHoy', 'esqProp'], '', null, 170);
+  addEt(etI('camion', CC.prod, 'Productores de otros territorios'), PROD[0].sp, ['esqProd', 'esqProp'], '', null, 170);
+  addEt(etI('cluster', CC.bav, '<b>Bavaria Común</b> · clúster'), ANI[0].sp, ['esqProp'], 'fuerte', null, 170); addEt(etI('mercado', CC.merc, '<b>Mercados barriales</b>'), ANI[2].sp, ['esqProp'], 'fuerte', null, 170);
+  X.upd.push((t, dt, XX) => {
+    const ts = t - ESQ.tCambio, prop = ESQ.estado === 'prop', f = Math.min(1, dt * 2.4);
+    for (const n of ESQ.nodos) { const vis = prop ? n.rP : ESQ.estado === 'prod' ? (n.rD ?? n.rH) : n.rH; const listo = ts > (prop ? n.d : 0) ? 1 : 0; const rObj = vis * listo;
+      n.r += (rObj - n.r) * f; const tgt = prop ? n.prop : n.hoy; if (ts > (prop ? 0.3 : 0)) n.p.lerp(tgt, f * 0.8);
+      const s = Math.max(0.001, n.r) * (1 + 0.05 * Math.sin(t * 2 + n.d * 7)); n.g.position.copy(n.p); n.esf.scale.setScalar(s); n.anillo.scale.setScalar(s * 1.25); n.anillo.rotation.z = t * 0.6;
+      n.sp.scale.setScalar(0.032 * Math.min(1, n.r / 60) * (MOVIL ? 0.85 : 1)); n.sp.position.y = 0; n.sp.visible = n.r > 8;
+      n.tallo.position.set(n.p.x, n.p.y / 2, n.p.z); n.tallo.scale.set(Math.max(0.01, n.r * 0.06), n.p.y, Math.max(0.01, n.r * 0.06)); n.tallo.visible = n.r > 8;
+      n.base.position.set(n.p.x, 3, n.p.z); n.base.scale.setScalar(Math.max(0.01, n.r * 1.4 * (1 + 0.25 * ((t * 0.6 + n.d) % 1)))); n.base.visible = n.r > 8; }
+    for (const e of ESQ.aristas) { const on = e.sets.has(ESQ.estado) && ts > (prop ? e.d : e.d * 0.6) && e.a.r > 8 && e.b.r > 8; e.al += ((on ? 1 : 0) - e.al) * Math.min(1, dt * (on ? 2.2 : 5));
+      const A = e.a.p, B = e.b.p; const L = A.distanceTo(B), Lg = Math.max(0.01, L * Math.min(1, e.al * 1.4)); tmp2.copy(B).sub(A).normalize(); e.m.position.copy(A).addScaledVector(tmp2, Lg / 2); e.m.scale.set(e.grosor, Lg, e.grosor);
+      e.m.quaternion.setFromUnitVectors(EJE_Y, tmp2); e.m.material.opacity = 0.85 * e.al * XX.v; e.m.visible = e.al > 0.02;
+      e.pul.forEach((s, j) => { const u = (t * 0.35 + e.ph + j * 0.5) % 1; s.position.copy(A).lerp(B, u); s.scale.setScalar(e.grosor * 9); s.material.opacity = e.al * XX.v * Math.sin(u * Math.PI); s.visible = e.al > 0.3; }); }
+  }); }
+
 /* ---------------- escenas ---------------- */
 // cam: s = tamaño visible (m), az = rumbo de la cámara (grados), el = elevación, t = objetivo [X, Z]
 const E = {
@@ -919,9 +972,9 @@ const E = {
 const ZI2c = centroEdif(2);
 Object.assign(E, {
   g01: { luz: 0.5, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
-  g02: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 6200, az: -18, el: 21, t: 'ken', y: 250 }, ctx: 0, edif: 'ghost', x: ['redHoy'], et: ['redHoy', 'redHoyN'], ley: 'redHoy' },
-  g03: { maqueta: 1, lim: 1, luz: 0.55, cam: { s: 6800, az: -35, el: 22, t: 'ken', y: 250 }, ctx: 0, edif: 'ghost', x: ['redHoy', 'llegan'], et: ['llegan', 'redHoy'], ley: 'llegan' },
-  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 6400, az: 20, el: 22, t: 'ken', y: 250 }, ctx: 0, edif: 'ghost', x: ['redProp', 'lleganProp', 'redHoy'], xOut: { redHoy: 2.4 }, xIn: { redProp: 2.2, lleganProp: 3 }, et: ['redProp', 'lleganProp'], ley: 'redProp' },
+  g02: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 5200, az: -18, el: 32, t: 'ken', y: 480 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'hoy', et: ['esqHoy'], ley: 'redHoy' },
+  g03: { maqueta: 1, lim: 1, luz: 0.55, cam: { s: 6800, az: -30, el: 32, t: 'ken', y: 420 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'prod', et: ['esqHoy', 'esqProd'], ley: 'llegan' },
+  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 5400, az: -18, el: 34, t: 'ken', y: 480 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'prop', et: ['esqProp', 'esqProd'], ley: 'redProp' },
   g05: { luz: 0.85, cam: { s: 1350, az: -35, el: 22 }, ctx: 0, edif: 'ghost', borde: 1, x: ['avs'], et: 'avs', ley: 'avs' },
   g06: { luz: 0.8, cam: { s: 1000, az: -35, el: 36, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['cluster'], et: 'cluster', ley: 'cluster2' },
   g07: { luz: 0.7, cam: { s: 1000, az: -30, el: 18, y: 150 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['actores'], et: 'actores', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
@@ -1009,9 +1062,9 @@ Object.assign(LEY, {
   colectivo: '<div class="t">Salvemos el Bosque de Bavaria</div>' + f_(COL.verde, 'Colectivo ciudadano'),
 });
 Object.assign(LEY, {
-  redHoy: '<div class="t">Cómo se reparten los alimentos</div>' + comparar('hoy') + `<div class="f">${etI('corabastos', CC.cora, 'Corabastos: todo pasa por aquí')}</div><div class="f">${etI('plaza', CC.plaza, `${PLZK.length} plazas y fruvers`)}</div><div class="f">${etI('colegio', CC.cole, `${COLEG.length} colegios`)}</div>`,
+  redHoy: '<div class="t">Cómo se reparten los alimentos</div>' + comparar('hoy') + `<div class="f">${etI('corabastos', CC.cora, 'Corabastos: todo pasa por aquí')}</div><div class="f">${etI('plaza', CC.plaza, `Plazas de mercado y tiendas`)}</div><div class="f">${etI('colegio', CC.cole, `Colegios`)}</div>`,
   llegan: '<div class="t">Llegan de otros territorios</div>' + `<div class="f">${etI('camion', CC.prod, 'Camiones de productores')}</div><div class="f">${etI('corabastos', CC.cora, 'Hoy descargan en Corabastos')}</div>`,
-  redProp: '<div class="t">Cómo se reparten los alimentos</div>' + comparar('prop') + `<div class="f">${etI('mercado', CC.merc, `${MERC.length} mercados barriales nuevos`)}</div><div class="f">${etI('plaza', CC.plaza, 'Plazas y fruvers existentes')}</div><div class="f">${etI('corabastos', CC.cora, 'Corabastos: un nodo más')}</div><div class="f">${etI('cluster', CC.bav, 'Bavaria Común: clúster')}</div><div class="f">${etI('colegio', CC.cole, 'Colegios: del nodo más cercano')}</div>`,
+  redProp: '<div class="t">Cómo se reparten los alimentos</div>' + comparar('prop') + `<div class="f">${etI('mercado', CC.merc, `Mercados barriales nuevos`)}</div><div class="f">${etI('plaza', CC.plaza, 'Plazas y fruvers existentes')}</div><div class="f">${etI('corabastos', CC.cora, 'Corabastos: un nodo más')}</div><div class="f">${etI('cluster', CC.bav, 'Bavaria Común: clúster')}</div><div class="f">${etI('colegio', CC.cole, 'Colegios: del nodo más cercano')}</div>`,
   cluster2: '<div class="t">Bavaria Común · clúster</div>' + CLU.map(([, ic, n, c]) => `<div class="f">${etI(ic, c, n)}</div>`).join(''),
 });
 LEY.nach = LEY.nach.replace('poco paso', 'pocos recorridos').replace('mucho paso', 'muchos recorridos') + f_('#ffffff', 'Recorridos potenciales');
@@ -1025,6 +1078,7 @@ const GRIS_HL = new THREE.Color('#30363d');
 const camAct = { s: 2300, az: -38, el: 34, x: 0, z: 0, y: 0 };
 const setEscena = (k) => {
   const e = E[k]; if (!e) return; escena = k;
+  if (e.esq) { if (e.esq !== ESQ.estado || !XG.esquema.o) ESQ.tCambio = reloj.elapsedTime; ESQ.estado = e.esq; }
   obj.ctx = typeof e.ctx === 'number' ? e.ctx : 1; pintarCtx(e.ctx === 'sector' ? 'sector' : 'gris');
   obj.edif = e.edif === 'ghost' ? 0.25 : 1; obj.prog = e.edif === 'prog' ? 1 : 0; obj.muro = e.muro ? 1 : 0;
   obj.arb = e.arb === 1 ? 1 : e.arb === 'g' ? 0.3 : 0; obj.red = e.red ? 1 : 0; obj.pas = e.pas ? 1 : 0;
