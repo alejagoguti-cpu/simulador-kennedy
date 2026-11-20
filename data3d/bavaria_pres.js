@@ -1188,6 +1188,9 @@ function cuadro() {
 // Una diapositiva por frase del guion; el texto es el del guion, sin cambios. b: bloque (lámina del guion) · e: escena 3D
 const SL = [
   { b: 'Inicio', e: 'portada', g: 'Bavaria Común', ini: true },
+  // la red de problemas (anasoficasca-code.github.io/red-de-problemas) entra después de Kennedy y luego explota en los datos
+  { b: '07', e: 'portada', r: 1, l: 'Cada esfera es un problema; su tamaño, cuántas conexiones tiene. Las partículas son los puntos de la ciudad de Kennedy.', g: 'En Kennedy, seis problemas se alimentan entre sí.' },
+  { b: '07', e: 'portada', r: 2, l: 'La red explota: cada burbuja es una causa, ubicada en su lugar de Kennedy y con el color del problema al que pertenece.', g: 'Al abrir la red aparecen los datos: las causas de cada problema sobre el territorio.' },
   { b: '08', e: 'g02', l: 'HOY · Los alimentos llegan a Corabastos y de ahí se reparten a plazas y colegios de toda Kennedy.', g: 'Por eso, la propuesta empieza por reorganizar el abastecimiento de alimentos en Kennedy.' },
   { b: '08', e: 'g03', l: 'Los productores de otros territorios siguen llegando, pero hoy todos descargan en un solo punto.', g: 'Los alimentos que solo pueden abastecerse desde fuera de la localidad seguirían llegando de otros territorios.' },
   { b: '08', e: 'g04', l: 'PROPUESTA · Los productores llegan a varios mercados barriales. Corabastos es un nodo más y cada colegio se abastece del mercado más cercano.', g: 'Lo que cambia es dónde se reciben y se distribuyen: los productores llegarían a distintos mercados barriales y puntos de abastecimiento, con Corabastos como uno de los mercados de la red.' },
@@ -1220,7 +1223,7 @@ const SL = [
   { b: '11', e: 'g31', l: 'La persona que lleva la voz cambia cada cierto tiempo.', g: 'La vocería rota cada cierto tiempo, de modo que todas las personas de cada asamblea puedan representar a su organización en algún momento.' },
 ];
 const BLOQ = [...new Set(SL.map(s => s.b))];
-const TIT = { '08': 'Una red de abastecimiento con Bavaria como clúster', '09': 'Tecnologías convergentes y huertas en las viviendas', '10': 'Red biótica, sintaxis y pasajes', '11': 'Una federación de asambleas' };
+const TIT = { '07': 'La red de problemas de Kennedy', '08': 'Una red de abastecimiento con Bavaria como clúster', '09': 'Tecnologías convergentes y huertas en las viviendas', '10': 'Red biótica, sintaxis y pasajes', '11': 'Una federación de asambleas' };
 // relato con scroll: portada, una apertura por lámina y un paso por frase del guion
 { const esc = (w) => w.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   let h = `<section class="paso portada activo" data-i="0" data-escena="portada"><div class="tarjeta">
@@ -1231,15 +1234,27 @@ const TIT = { '08': 'Una red de abastecimiento con Bavaria como clúster', '09':
     <span class="bajar"><i></i>Desplázate</span></div></section>`;
   let prev = 'Inicio';
   SL.forEach((s, i) => { if (s.ini) return;
-    if (s.b !== prev) { prev = s.b; h += `<section class="paso apertura" id="lamina-${s.b}" data-escena="${s.e}"><div class="tarjeta"><span class="num" aria-hidden="true">${s.b}</span><p class="kicker">Lámina ${s.b}</p><h2>${TIT[s.b] || ''}</h2></div></section>`; }
-    h += `<section class="paso" data-i="${i}" data-escena="${s.e}"><div class="tarjeta vidrio"><p class="kicker">Lámina ${s.b} · ${String(i).padStart(2, '0')}</p><p class="frase" aria-label="${esc(s.g)}">${s.g.split(' ').map((w, k) => `<span class="w" aria-hidden="true" style="--i:${k}">${esc(w)}</span>`).join(' ')}</p>${s.l ? `<p class="lectura">${esc(s.l)}</p>` : ''}</div></section>`; });
+    if (s.b !== prev) { prev = s.b; h += `<section class="paso apertura" id="lamina-${s.b}" data-escena="${s.e}" data-red="${s.r || 0}"><div class="tarjeta"><span class="num" aria-hidden="true">${s.b}</span><p class="kicker">Lámina ${s.b}</p><h2>${TIT[s.b] || ''}</h2></div></section>`; }
+    h += `<section class="paso" data-i="${i}" data-escena="${s.e}" data-red="${s.r || 0}"><div class="tarjeta vidrio"><p class="kicker">Lámina ${s.b} · ${String(i).padStart(2, '0')}</p><p class="frase" aria-label="${esc(s.g)}">${s.g.split(' ').map((w, k) => `<span class="w" aria-hidden="true" style="--i:${k}">${esc(w)}</span>`).join(' ')}</p>${s.l ? `<p class="lectura">${esc(s.l)}</p>` : ''}</div></section>`; });
   h += `<section class="paso fin" data-escena="g31"><div class="tarjeta vidrio"><p class="kicker">Bavaria Común</p><p class="frase">Para recorrer el modelo con el mouse o el dedo, usa «Explorar».</p></div></section>`;
   $('#relato').innerHTML = h; }
 $('#bloques').innerHTML = BLOQ.filter(b => b !== 'Inicio').map(b => `<button type="button" data-b="${b}">Lámina ${b}</button>`).join('');
 $('#bloques').onclick = (ev) => { const b = ev.target.closest('button'); if (b) document.getElementById('lamina-' + b.dataset.b).scrollIntoView({ behavior: 'smooth' }); };
 const pasos = [...document.querySelectorAll('#relato .paso')];
 let activo = null;
+// red de problemas incrustada: 1 = la red, 2 = explota en la conectografía; mientras la tapa, el 3D de Bavaria no se dibuja
+const REDP = 'https://anasoficasca-code.github.io/red-de-problemas/?incrustado=1&v=1';
+const redF = $('#redp'); let redT = 0;
+const cargarRed = () => { if (!redF.getAttribute('src')) redF.src = REDP; };
+const redModo = (r) => {
+  if (r) cargarRed();
+  document.body.classList.toggle('red', r > 0); clearTimeout(redT);
+  if (r) redT = setTimeout(() => { window.__sin3d = true; }, 1200); else window.__sin3d = false;
+  try { redF.contentWindow && redF.contentWindow.postMessage(r === 2 ? 'red:explota' : 'red:volver', '*'); } catch (e) {}
+};
+let redR = 0; setInterval(() => { if (redR) redModo(redR); }, 1500); // por si el iframe aún cargaba cuando llegó el mensaje
 const activar = (p) => { if (p === activo) return; if (activo) activo.classList.remove('activo'); activo = p; p.classList.add('activo'); setEscena(p.dataset.escena);
+  const r = +(p.dataset.red || 0); if (r !== redR) { redR = r; redModo(r); }
   const s = SL[+p.dataset.i]; const b = s ? s.b : (p.id || '').replace('lamina-', '');
   document.querySelectorAll('#bloques button').forEach(x => x.classList.toggle('on', x.dataset.b === b));
   if (s && !s.ini) $('#count').textContent = `${p.dataset.i} / ${SL.length - 1}`; };
@@ -1259,6 +1274,7 @@ if (forzada && E[forzada]) { setEscena(forzada); document.body.classList.add('fi
 Object.assign(camAct, camObj); for (const k in est) est[k] = obj[k]; for (const k in XG) XG[k].v = XG[k].o; ponerCam();
 requestAnimationFrame(cuadro);
 setTimeout(() => $('#carga').classList.add('fuera'), 300);
+if (!forzada) setTimeout(cargarRed, 4000); // la red se precarga mientras se ve la portada
 
 
 // ---- fuentes
