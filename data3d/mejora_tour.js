@@ -8,7 +8,7 @@ export function iniciarMejoraTour({ T3 }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
-  const CHOY = '#8fb0c9', CPRO = '#e2a55b', NE = { B: 'Nodo central', C: 'Clúster rotativo' };
+  const CHOY = '#8fb0c9', CPRO = '#e2a55b', NE = { B: 'Bavaria central', C: 'Red de mercados' };
   const BURRO = [2095.67, -109.06], CORA = [1132.1, 948.6], BAV = [3966, 49]; // BAV: centro del predio (data3d/bavaria.json)
   const BAVC = () => (window.KEN_BAV && window.KEN_BAV.compost) || [4185.7, 28.9];
   const MID = () => (T3.alivio && T3.alivio.mid) || [1700, 400];

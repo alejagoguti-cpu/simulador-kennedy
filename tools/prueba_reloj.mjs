@@ -192,9 +192,9 @@ try {
     const N = +(process.env.SEMANAS || 260); // 5 años
     const esperar = `new Promise(r=>{const R=KEN_RELOJ; const i=setInterval(()=>{ if(R.pausaSem && R.sem===${N}){ clearInterval(i); const h=R.hashModelo(); r({sem:h.sem, h:h.sistemas.sim_vida, ms:Math.round(performance.now()-window.__m0), dia:R.t}); } },50); })`;
     // referencia sin reloj: las reglas de sim_vida corridas directo, N semanas, misma semilla y mismos parámetros (mismo módulo de la página)
-    H.mRef = await P.ev(`(async()=>{const V=await import('./data3d/sim_vida.js?v=1'), Mo=await import('./data3d/sim_modelos.js?v=6'); const seed=Mo.SIMST.semilla||1; const S={A:V.crear('A',seed),B:V.crear('B',seed),C:V.crear('C',seed)};
+    H.mRef = await P.ev(`(async()=>{const V=await import('./data3d/sim_vida.js?v=2'), Mo=await import('./data3d/sim_modelos.js?v=6'); const seed=Mo.SIMST.semilla||1; const S={A:V.crear('A',seed),B:V.crear('B',seed),C:V.crear('C',seed)};
       while(S.A.t<${N}){V.paso(S.A,Mo.PAR);V.paso(S.B,Mo.PAR);V.paso(S.C,Mo.PAR);}
-      let h=0x811c9dc5; for(const k of 'ABC'){const o=S[k].o; h=Math.imul((h^(S[k].t|0))>>>0,0x01000193)>>>0; for(const q of ['act','dep','pers','aves','hum','relleno']) h=Math.imul((h^(Math.round((o[q]||0)*1000)|0))>>>0,0x01000193)>>>0;} return {sem:${N}, h:h>>>0}})()`);
+      let h=0x811c9dc5; for(const k of 'ABC'){const o=S[k].o; h=Math.imul((h^(S[k].t|0))>>>0,0x01000193)>>>0; for(const q of ['act','dep','pers','aves','hum','relleno','zMin','pend','esp']) h=Math.imul((h^(Math.round((o[q]||0)*1000)|0))>>>0,0x01000193)>>>0;} return {sem:${N}, h:h>>>0}})()`);
     // A) 52 semanas por segundo, el día a 600×
     H.mA = await P.ev(`(()=>{const R=KEN_RELOJ; R.reiniciarModelo(); window.__m0=performance.now(); R.detenerSemEn=${N}; R.ponerVel(600); R.ponerVelAños(52); return 1})()`).then(() => P.ev(esperar));
     // B) 1 → 13 → pausa → 4 → 52 semanas por segundo; el día cambia de 1× a 3600× y se pausa a la mitad
