@@ -130,7 +130,7 @@ export async function crearRedMercados({ T3, cj }) {
       for (const [, i] of cerca.slice(0, 2)) arista(m.id + '>h' + i, HU[i], P, 1); }
     if (!idx.length) { malla = null; return { aristas: 0 }; }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('aSide', new THREE.Float32BufferAttribute(side, 2)); g.setAttribute('aInfo', new THREE.Float32BufferAttribute(info, 3)); g.setAttribute('aKind', new THREE.Float32BufferAttribute(kind, 1)); g.setIndex(idx);
-    malla = new THREE.Mesh(g, matRed); malla.frustumCulled = false; malla.renderOrder = 12; grupo.add(malla); return { aristas: nAr, vertices: nv }; };
+    malla = new THREE.Mesh(g, matRed); malla.visible = false; /* la usuaria pidió quitar las líneas rectas (no son caminos reales); las rutas reales van por las calles en viajes_mercados.js */ malla.frustumCulled = false; malla.renderOrder = 12; grupo.add(malla); return { aristas: nAr, vertices: nv }; };
 
   /* ----- marcas: aro en el suelo y faro de luz sobre cada mercado abierto (instanciados; crecen con la distancia para verse desde arriba) ----- */
   const MAXM = MERCADOS.length;
