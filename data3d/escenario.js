@@ -160,12 +160,16 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* mercados campesinos de barrio en los parques (data3d/mercados_barrio.js): solo con la propuesta */
   let MERC = null, pMerc = null;
   const mercadosBarrio = (on) => { if (MERC) { MERC.ver(on); return; } if (!on || pMerc) return;
-    pMerc = import('./mercados_barrio.js?v=1').then(m => m.crearMercados({ T3, cj })).then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
+    pMerc = import('./mercados_red.js?v=1').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
   const parqueCorabastos = (on) => { if (PCORA) { PCORA.ver(on); return; } if (!on || pPCora) return;
     pPCora = import('./corabastos_parque.js?v=6').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
   import('./escenarios_sim.js?v=31').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
-  Promise.all([import('./alivio_cali.js?v=8'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
+  Promise.all([import('./alivio_cali.js?v=9'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
+  /* viajes de abastecimiento (data3d/viajes_mercados.js): la simulación EVALÚA adónde van los carros y camiones que iban a Corabastos (mercados de
+     barrio, plazoletas y Bavaria) según los mercados abiertos cada año; el tráfico que se quita cerca de Corabastos sale de este modelo. Se carga
+     siempre (el reloj lo pone al día); panel, rutas y vehículos solo con la propuesta */
+  import('./viajes_mercados.js?v=1').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;
@@ -231,7 +235,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); // las parcelas viejas (en diagonal) ya no: las reemplazan las huertas de enseñanza del distrito
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = !hu; // con la propuesta las bodegas junto al humedal se desmontan
     parqueCorabastos(hu); // y en su lugar queda el parque humedal (agua y árboles nativos)
-    mercadosBarrio(hu); // mercados campesinos de barrio en los parques
+    mercadosBarrio(hu); // red de mercados: de barrio y plazoletas en parques grandes, abren año a año
+    if (window.KEN_VIAJES) { window.KEN_VIAJES.ver(hu); window.KEN_VIAJES.panel(hu); } // viajes de abastecimiento hacia mercados y Bavaria
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
     if (CALI) CALI.ver(pro && !solo);
