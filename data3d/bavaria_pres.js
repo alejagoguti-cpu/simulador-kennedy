@@ -770,7 +770,11 @@ const texIco = (() => { const cache = new Map(); return (k, col, anillo = '#0d0e
   for (const d of ICO[k]) { if (d.startsWith('circle')) { const [, x, y, r] = d.split(' ').map(Number); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke(); } else g.stroke(new Path2D(d)); }
   g.restore(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; cache.set(key, t); return t; }; })();
 // ícono que siempre se ve del mismo tamaño en pantalla
-const icono = (k, tipo, col, P, y, tam, d = 0) => { const sp = new THREE.Sprite(xmat(k, new THREE.SpriteMaterial({ map: texIco(tipo, col), sizeAttenuation: false }), 1)); sp.scale.setScalar(tam * (MOVIL ? 0.8 : 1)); sp.position.set(P[0], y, P[1]); sp.renderOrder = 15; xg(k).g.add(sp); crece(k, sp, d, 0.6); return sp; };
+// ícono sobre una columna de luz que sube desde el suelo (lee como torre en 3D)
+const icono = (k, tipo, col, P, y, tam, d = 0, haz = y > 50) => { const sp = new THREE.Sprite(xmat(k, new THREE.SpriteMaterial({ map: texIco(tipo, col), sizeAttenuation: false }), 1)); sp.scale.setScalar(tam * (MOVIL ? 0.8 : 1)); sp.position.set(P[0], y, P[1]); sp.renderOrder = 15; xg(k).g.add(sp); crece(k, sp, d + 0.3, 0.6);
+  if (haz) { const r = Math.max(3, y * 0.018); const c = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.5, r, y, 10, 1, true), xmat(k, new THREE.MeshBasicMaterial({ color: col, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }), 0.55)); c.geometry.translate(0, y / 2, 0); c.position.set(P[0], 0, P[1]); c.renderOrder = 9; xg(k).g.add(c); crece(k, c, d, 0.9, 'sy');
+    const b = new THREE.Mesh(new THREE.CircleGeometry(r * 4, 24), xmat(k, new THREE.MeshBasicMaterial({ color: col, blending: THREE.AdditiveBlending }), 0.35)); b.rotation.x = -Math.PI / 2; b.position.set(P[0], 2, P[1]); xg(k).g.add(b); }
+  return sp; };
 
 const RD = await fetch('data3d/bavaria_red.json').then(r => r.json()).catch(() => ({ colegios: [], plazas: [] }));
 const COLEG = RD.colegios.map(c => ({ n: c.n, p: W(...c.p) }));
@@ -780,11 +784,11 @@ const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const TAM = { cora: 0.05, hub: 0.03, cole: 0.017, bav: 0.042, prod: 0.028 };
 // --- HOY: todo pasa por Corabastos
 { const k = 'redHoy'; const todos = [...PLZK.map(q => q.p), ...COLEG.map(q => q.p)];
-  const cs = todos.map(p => curva(CORA, p, dist(CORA, p) * 0.12, 20, 10)); cs.forEach((c, i) => tubo(k, c, MOVIL ? 13 : 10, '#e0623f', 0.75, 0.3 + i * 0.012));
+  const cs = todos.map(p => curva(CORA, p, dist(CORA, p) * 0.32, 560, 70)); cs.forEach((c, i) => tubo(k, c, MOVIL ? 13 : 10, '#e0623f', 0.75, 0.3 + i * 0.012));
   pulsos(k, cs, '#ffd2c4', 2, 0.12, 6);
-  icono(k, 'corabastos', CC.cora, CORA, 60, TAM.cora, 0); onda(k, CORA, CC.cora, 1300, 8, 3);
-  PLZK.forEach((q, i) => icono(k, 'plaza', CC.plaza, q.p, 30, TAM.hub, 0.2 + i * 0.03)); COLEG.forEach((q, i) => icono(k, 'colegio', CC.cole, q.p, 25, TAM.cole, 0.4 + i * 0.012));
-  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · hoy, el centro de todo'), [CORA[0], 260, CORA[1]], [k], 'fuerte'); }
+  icono(k, 'corabastos', CC.cora, CORA, 600, TAM.cora, 0); onda(k, CORA, CC.cora, 1300, 8, 3);
+  PLZK.forEach((q, i) => icono(k, 'plaza', CC.plaza, q.p, 160, TAM.hub, 0.2 + i * 0.03)); COLEG.forEach((q, i) => icono(k, 'colegio', CC.cole, q.p, 70, TAM.cole, 0.4 + i * 0.012));
+  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · hoy, el centro de todo'), [CORA[0], 680, CORA[1]], [k], 'fuerte'); }
 // productores de otros territorios: camiones que entran (hoy a Corabastos; con la propuesta a varios mercados)
 const camiones = (k, cs) => { const sps = cs.map((c, i) => { const sp = icono(k, 'camion', CC.prod, [0, 0], 0, TAM.prod, 0.2); return { sp, c, ph: i * 0.29 }; }); xg(k).upd.push((t) => sps.forEach(({ sp, c, ph }) => { c.getPoint((t * 0.09 + ph) % 1, sp.position); })); };
 { const k = 'llegan'; const cs = ENTR.map(e => curva(e, CORA, null, 10, 40)); cs.forEach((c, i) => tubo(k, c, MOVIL ? 22 : 16, CC.prod, 0.75, i * 0.1)); camiones(k, cs); pulsos(k, cs, '#ffffff', 3, 0.09, 6);
@@ -795,21 +799,21 @@ const camiones = (k, cs) => { const sps = cs.map((c, i) => { const sp = icono(k,
 const HUBS = [...MERC.map(m => ({ n: 'Mercado ' + m.n, p: m.p, t: 'merc' })), ...PLZK.map(q => ({ n: q.n, p: q.p, t: 'plaza' })), { n: 'Corabastos', p: CORA, t: 'cora' }, { n: 'Bavaria Común', p: [0, 0], t: 'bav' }];
 { const k = 'redProp';
   // malla entre nodos: cada uno con sus 3 vecinos más cercanos
-  const pares = new Set(), mal = []; HUBS.forEach((a, i) => HUBS.map((b, j) => [j, dist(a.p, b.p)]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 3).forEach(([j]) => { const key = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(key)) return; pares.add(key); mal.push(curva(a.p, HUBS[j].p, dist(a.p, HUBS[j].p) * 0.18, 30, 30)); }));
+  const pares = new Set(), mal = []; HUBS.forEach((a, i) => HUBS.map((b, j) => [j, dist(a.p, b.p)]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 3).forEach(([j]) => { const key = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(key)) return; pares.add(key); mal.push(curva(a.p, HUBS[j].p, dist(a.p, HUBS[j].p) * 0.3, 260, 260)); }));
   mal.forEach((c, i) => tubo(k, c, MOVIL ? 17 : 13, CC.merc, 0.9, 0.2 + i * 0.03)); pulsos(k, mal, ['#ffffff', '#a3e8c7'], 3, 0.1, 7);
   // cada colegio se abastece del nodo más cercano
-  const cc = COLEG.map(q => { const h = HUBS.reduce((b, x) => dist(x.p, q.p) < dist(b.p, q.p) ? x : b, HUBS[0]); return curva(h.p, q.p, dist(h.p, q.p) * 0.15, 30, 10); });
+  const cc = COLEG.map(q => { const h = HUBS.reduce((b, x) => dist(x.p, q.p) < dist(b.p, q.p) ? x : b, HUBS[0]); return curva(h.p, q.p, dist(h.p, q.p) * 0.25, 260, 70); });
   cc.forEach((c, i) => tubo(k, c, MOVIL ? 8 : 6, '#bfe8d3', 0.75, 0.8 + i * 0.01)); pulsos(k, cc, '#ffffff', 1, 0.16, 5);
-  HUBS.forEach((h, i) => icono(k, h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, 40, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04));
-  COLEG.forEach((q, i) => icono(k, 'colegio', CC.cole, q.p, 25, TAM.cole, 0.6 + i * 0.01));
+  HUBS.forEach((h, i) => icono(k, h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, h.t === 'bav' ? 380 : 260, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04));
+  COLEG.forEach((q, i) => icono(k, 'colegio', CC.cole, q.p, 70, TAM.cole, 0.6 + i * 0.01));
   onda(k, [0, 0], CC.bav, 700, 8, 2);
-  MERC.forEach((m, i) => { if (MOVIL && i % 2) return; addEt(etI('mercado', CC.merc, m.n), [m.p[0], 220, m.p[1]], [k]); });
-  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · un nodo más'), [CORA[0], 220, CORA[1]], [k], 'fuerte');
-  addEt(etI('cluster', CC.bav, '<b>Bavaria Común</b> · clúster'), [0, 260, 0], [k], 'fuerte'); }
+  MERC.forEach((m, i) => { if (MOVIL && i % 2) return; addEt(etI('mercado', CC.merc, m.n), [m.p[0], 320, m.p[1]], [k]); });
+  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · un nodo más'), [CORA[0], 320, CORA[1]], [k], 'fuerte');
+  addEt(etI('cluster', CC.bav, '<b>Bavaria Común</b> · clúster'), [0, 450, 0], [k], 'fuerte'); }
 // nombres de colegios (los que tienen nombre propio, repartidos) y plazas
 { const sel = COLEG.filter(q => !/^Colegio$/.test(q.n)).filter((_, i) => i % (MOVIL ? 30 : 17) === 0);
-  sel.forEach(q => addEt(etI('colegio', CC.cole, q.n), [q.p[0], 120, q.p[1]], ['redHoyN']));
-  PLZK.filter(q => q.n !== 'Plaza de mercado').forEach(q => addEt(etI('plaza', CC.plaza, q.n), [q.p[0], 150, q.p[1]], ['redHoyN', 'redPropN'])); }
+  sel.forEach(q => addEt(etI('colegio', CC.cole, q.n), [q.p[0], 110, q.p[1]], ['redHoyN']));
+  PLZK.filter(q => q.n !== 'Plaza de mercado').forEach(q => addEt(etI('plaza', CC.plaza, q.n), [q.p[0], 220, q.p[1]], ['redHoyN', 'redPropN'])); }
 // miniatura animada del esquema (va en la leyenda)
 const mini = (tipo) => { const C = [60, 50], R = 38, n = 10; const P = Array.from({ length: n }, (_, i) => [C[0] + Math.cos(i / n * 6.283) * R * (i % 2 ? 0.75 : 1), C[1] + Math.sin(i / n * 6.283) * R * (i % 2 ? 0.75 : 1) * 0.85]);
   let L = ''; if (tipo === 'hoy') L = P.map(p => `<line x1="${C[0]}" y1="${C[1]}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" class="fl r"/>`).join('');
@@ -836,7 +840,7 @@ const CLU = [[3, 'mercado', 'Mercado y registro de pedidos', COL.ocre], [5, 'lab
   const pas = [[ZI[0], ZI[1], 'Formación'], [ZM[0], ZM[1], 'Asistencia técnica']].map(([x, z, n], i) => { const c = curva(P, [x, z], 60, 60, 20); tubo(k, c, 3, COL.verde, 0.85, 0.6 + i * 0.2); return c; }); pulsos(k, pas, '#ffffff', 4, 0.25, 7);
   addEt(etI('huerta', COL.verde, '<b>Referente: Jardín Botánico de Bogotá</b>'), [P[0], 90, P[1]], [k], 'fuerte');
   addEt('Formación en producción urbana', [ZI[0], 40, ZI[1]], [k]); addEt('Asistencia técnica', [ZM[0], 40, ZM[1]], [k]); }
-{ HUBS.forEach((h, i) => icono('hubIco', h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, 40, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04)); }
+{ HUBS.forEach((h, i) => icono('hubIco', h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, h.t === 'bav' ? 380 : 260, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04)); }
 /* ---------------- maqueta 3D de Kennedy: todos los edificios como volúmenes (red-de-problemas/edif.bin) ---------------- */
 // Cajas orientadas por edificio (buildings.json + Microsoft), oscuras con aristas de luz; se levantan al aparecer.
 const MAQ = { u: { uA: { value: 0 }, uRise: { value: 0.001 } }, mesh: null };
@@ -844,7 +848,7 @@ fetch('data3d/kennedy_edif.bin').then(r => { if (!r.ok) throw new Error('edif');
   const dv = new DataView(buf), n = dv.getUint32(4, true); const g = new THREE.BoxGeometry(1, 1, 1); g.translate(0, 0.5, 0);
   const mat = new THREE.ShaderMaterial({ uniforms: MAQ.u, transparent: true,
     vertexShader: `uniform float uRise; varying vec2 vUv; varying float vY, vH, vTop;
-      void main(){ vUv = uv; vec4 p = instanceMatrix * vec4(position, 1.); float h = length(instanceMatrix[1].xyz); p.y *= uRise; vY = position.y; vH = h; vTop = normal.y;
+      void main(){ vUv = uv; vec4 p = instanceMatrix * vec4(position, 1.); float h = length(instanceMatrix[1].xyz); p.y *= uRise * 2.6; vY = position.y; vH = h; vTop = normal.y;
         gl_Position = projectionMatrix * modelViewMatrix * p; }`,
     fragmentShader: `uniform float uA; varying vec2 vUv; varying float vY, vH, vTop;
       void main(){ vec2 e = min(vUv, 1. - vUv); vec2 f = fwidth(vUv) * 1.3; float edge = 1. - min(smoothstep(0., f.x, e.x), smoothstep(0., f.y, e.y));
@@ -915,15 +919,15 @@ const E = {
 const ZI2c = centroEdif(2);
 Object.assign(E, {
   g01: { luz: 0.5, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
-  g02: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 7600, az: -12, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redHoy'], et: ['redHoy', 'redHoyN'], ley: 'redHoy' },
-  g03: { maqueta: 1, lim: 1, luz: 0.55, cam: { s: 10500, az: -12, el: 34, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redHoy', 'llegan'], et: ['llegan', 'redHoy'], ley: 'llegan' },
-  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 8200, az: 15, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redProp', 'lleganProp', 'redHoy'], xOut: { redHoy: 2.4 }, xIn: { redProp: 2.2, lleganProp: 3 }, et: ['redProp', 'lleganProp'], ley: 'redProp' },
+  g02: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 6200, az: -18, el: 21, t: 'ken', y: 250 }, ctx: 0, edif: 'ghost', x: ['redHoy'], et: ['redHoy', 'redHoyN'], ley: 'redHoy' },
+  g03: { maqueta: 1, lim: 1, luz: 0.55, cam: { s: 6800, az: -35, el: 22, t: 'ken', y: 250 }, ctx: 0, edif: 'ghost', x: ['redHoy', 'llegan'], et: ['llegan', 'redHoy'], ley: 'llegan' },
+  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 6400, az: 20, el: 22, t: 'ken', y: 250 }, ctx: 0, edif: 'ghost', x: ['redProp', 'lleganProp', 'redHoy'], xOut: { redHoy: 2.4 }, xIn: { redProp: 2.2, lleganProp: 3 }, et: ['redProp', 'lleganProp'], ley: 'redProp' },
   g05: { luz: 0.85, cam: { s: 1350, az: -35, el: 22 }, ctx: 0, edif: 'ghost', borde: 1, x: ['avs'], et: 'avs', ley: 'avs' },
   g06: { luz: 0.8, cam: { s: 1000, az: -35, el: 36, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['cluster'], et: 'cluster', ley: 'cluster2' },
   g07: { luz: 0.7, cam: { s: 1000, az: -30, el: 18, y: 150 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['actores'], et: 'actores', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
   g08: { luz: 0.7, cam: { s: 620, az: -50, el: 16, t: 'nb', y: 260 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic'], et: 'nbic', ley: 'nbic', giro: 1 },
   g09: { luz: 0.8, cam: { s: 950, az: -62, el: 24, t: 'nb', y: 130 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, flu: 1, x: ['nbic', 'nbB'], nf: { nbic: 'B' }, et: ['nbic', 'nb_b'], ley: 'nb_b', hl: { 23: '#d9c7ef', 0: COL.verde, 2: COL.verde } },
-  g10: { maqueta: 1, luz: 0.55, cam: { s: 5200, az: -20, el: 24, t: 'mid', y: 260 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'hubIco'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
+  g10: { maqueta: 1, luz: 0.55, cam: { s: 4600, az: -20, el: 20, t: 'mid', y: 300 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'hubIco'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
   g11: { luz: 0.75, cam: { s: 2000, az: -30, el: 22, y: 160 }, ctx: 1, edif: 'prog', techos: 1, x: ['nbic', 'nbC', 'cogno'], xt: { nbic: { s: 1.8, y: 480 } }, nf: { nbic: 'C' }, et: ['nbic', 'nb_c'], ley: 'nb_c', hl: { 4: COL.lila, 3: COL.ocre } },
   g12: { luz: 0.75, cam: { s: 650, az: -15, el: 18, t: 'nb', y: 190 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic', 'nbN'], nf: { nbic: 'N' }, et: ['nbic', 'nb_n'], ley: 'nb_n', hl: { 5: COL.lila } },
   g13: { luz: 0.8, cam: { s: 2000, az: -35, el: 24, y: 70 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['viv'], et: 'viv', ley: 'viv', hl: { 2: COL.verde, 11: '#d98f5a' } },
@@ -936,8 +940,8 @@ Object.assign(E, {
   g20: { maqueta: 1, luz: 0.6, cam: { s: 3400, az: -20, el: 26, t: 'bio', y: 40 }, ctx: 0, edif: 'prog', x: ['islas', 'puentes'], et: ['islas', 'puentes'], ley: 'islas' },
   g21: { luz: 0.85, cam: { s: 380, az: -50, el: 20, t: 'comp', y: 45 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'ratas', 'retiro'], nf: { cadena: ['res', 'alm', 'ret'] }, et: ['cadena', 'retiro'], ley: 'ratas' },
   g22: { luz: 0.85, cam: { s: 420, az: -15, el: 20, t: 'comp', y: 60 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'rapaces', 'ratas'], nf: { cadena: ['rap', 'rat'] }, et: ['cadena'], ley: 'ratas' },
-  g23: { maqueta: 1, lim: 1, luz: 0.4, cam: { s: 7200, az: -12, el: 42, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', red: 'a1', borde: 1, x: ['hubIco'], et: 'sxm', ley: 'nain8m' },
-  g24: { maqueta: 1, lim: 1, luz: 0.4, cam: { s: 7200, az: 12, el: 42, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', red: 'a2', borde: 1, x: ['recorridos'], ley: 'nach' },
+  g23: { maqueta: 1, lim: 1, luz: 0.4, cam: { s: 6000, az: -12, el: 26, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', red: 'a1', borde: 1, x: ['hubIco'], et: 'sxm', ley: 'nain8m' },
+  g24: { maqueta: 1, lim: 1, luz: 0.4, cam: { s: 6000, az: 30, el: 26, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', red: 'a2', borde: 1, x: ['recorridos'], ley: 'nach' },
   g25: { luz: 0.8, cam: { s: 1300, az: -24, el: 26 }, ctx: 0.3, edif: 'prog', x: ['pasos'], et: 'puertas', ley: 'pasajes' },
   g26: { luz: 0.8, cam: { s: 1250, az: 15, el: 28 }, ctx: 0.3, edif: 'prog', x: ['ocupado', 'bosqueZona'], et: 'ocupado', ley: 'ocupado' },
   g27: { luz: 0.8, cam: { s: 1000, az: 25, el: 24, t: 'bosq', y: 30 }, ctx: 0.3, edif: 'prog', x: ['limite', 'bosqueZona'], et: 'limite', ley: 'gobB' },
@@ -1047,7 +1051,7 @@ const distCam = (s) => { const asp = innerWidth / innerHeight; const vh = asp >=
 const ajustarCam = () => {
   const w = innerWidth, h = innerHeight;
   // dónde cae el objetivo en pantalla: a la derecha en escritorio (hay texto a la izquierda), arriba en celular
-  const fx = explorar ? 0.5 : MOVIL ? 0.5 : (w > 1000 ? 0.64 : 0.56), fy = explorar ? 0.5 : MOVIL ? 0.34 : 0.5;
+  const fx = explorar ? 0.5 : MOVIL ? 0.5 : (w > 1000 ? 0.62 : 0.56), fy = explorar ? 0.5 : MOVIL ? 0.34 : 0.5;
   cam.aspect = w / h; cam.setViewOffset(w, h, w / 2 - fx * w, h / 2 - fy * h, w, h);
   const R = cam.position.distanceTo(controles.target); cam.near = Math.max(5, R * 0.08); cam.far = R * 4 + 4000; cam.updateProjectionMatrix(); scene.fog.near = R * 1.15; scene.fog.far = R * 3.2;
 };
