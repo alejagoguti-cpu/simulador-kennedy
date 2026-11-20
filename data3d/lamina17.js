@@ -1,16 +1,8 @@
-/* ============ Lámina 17 (lamina17.html) · relato en scroll sobre la malla fotorrealista de Google de Kennedy ============
+/* ============ lamina17.html · relato en scroll sobre el SIMULADOR de Kennedy (index.html en un iframe del mismo origen) ============
    Una escena por frase del guion (texto exacto). Encima de la foto: módulos en sitios reales, las dos fuentes de orgánicos,
    el esquema de la red (B frente a C y la comparación de la vocería) y la red distribuida por sectores.
    Datos (todos del simulador): kennedy.json (límite), colegios.json, parques.json, residuos.json (UAESP), asambleas.json (IDPAC),
    sim_red_datos.js (zonas, mercados y costos de ruta del escenario C) y sim_vida.js (supuestos y las tres reglas). */
-import * as THREE from 'three';
-import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
-import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ZONAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { SUP, REGLAS } from './sim_vida.js?v=l17';
 
@@ -51,93 +43,59 @@ const CONT = RES.p.map(q => [q[0], q[1]]);
 const CONT_U = [...new Map(CONT.map(q => [q[0] + ',' + q[1], q])).values()].filter(q => dentro(LIM, q[0], q[1]));
 const NODO_Z = ZON.map((_, z) => { let b = 0, bc = Infinity; for (let k = 0; k < MERC.length; k++) { const c = COSTO[z][3 + k]; if (c < bc) { bc = c; b = k; } } return b; }); // C: mercado que surte cada zona
 
-/* ---------------- escena ---------------- */
-const host = $('#lienzo');
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, MOVIL ? 1.5 : 2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-host.appendChild(renderer.domElement);
-const scene = new THREE.Scene();
-scene.background = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 512; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#0a0c10'); gr.addColorStop(0.55, '#171d25'); gr.addColorStop(0.85, '#2e343b'); gr.addColorStop(1, '#3a3c3a'); g.fillStyle = gr; g.fillRect(0, 0, 4, 512); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
-const FOV = 38;
-const cam = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 20, 80000);
-scene.fog = new THREE.Fog('#2e343b', 30000, 90000);
-scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x1a1f24, 1.1));
-const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, cam));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), MOVIL ? 0.5 : 0.62, 0.42, 0.9); composer.addPass(bloom); composer.addPass(new OutputPass());
-
-/* ---------------- malla fotorrealista de Google (la misma del simulador) ---------------- */
-const GKEY = 'AIzaSyCF2MXjc0DYRFrHk7j_BCyxVpWOdYqDIC4'; // la misma llave del simulador (index.html)
-const G = { tiles: null, luz: 1, luzObj: 1, mats: new Set(), ok: null, atrib: 0, meta: MOVIL ? 14 : 7 };
-const gradoU = { uSat: { value: 1.12 }, uCon: { value: 0.94 }, uBri: { value: 1.12 } };
-async function crearGoogle() {
-  const [TR, PL] = await Promise.all([import('3d-tiles-renderer'), import('3d-tiles-renderer/plugins')]);
-  const { DRACOLoader } = await import('three/addons/loaders/DRACOLoader.js');
-  const draco = new DRACOLoader().setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');
-  const tiles = new TR.TilesRenderer();
-  tiles.registerPlugin(new PL.GoogleCloudAuthPlugin({ apiToken: GKEY, autoRefreshToken: true }));
-  tiles.registerPlugin(new PL.GLTFExtensionsPlugin({ dracoLoader: draco }));
-  tiles.setCamera(cam); tiles.setResolutionFromRenderer(cam, renderer);
-  tiles.errorTarget = 40;
-  const q = wLL(O[0], O[1]), D2R = Math.PI / 180, frame = new THREE.Matrix4();
-  TR.WGS84_ELLIPSOID.getEastNorthUpFrame(q[1] * D2R, q[0] * D2R, frame);
-  frame.multiply(new THREE.Matrix4().makeTranslation(0, 0, 2564)); // altura elipsoidal del suelo de Kennedy (medida en el simulador)
-  tiles.group.matrixAutoUpdate = false;
-  tiles.group.matrix.copy(new THREE.Matrix4().makeRotationX(-Math.PI / 2).multiply(frame.invert()));
-  tiles.group.matrixWorldNeedsUpdate = true; tiles.group.updateMatrixWorld(true);
-  tiles.addEventListener('load-model', ({ scene: s }) => s.traverse(c => {
-    const m = c.isMesh && c.material; if (!m || !m.map) return;
-    m.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    if (!m.isMeshBasicMaterial) { m.emissiveMap = m.map; m.emissive.setScalar(G.luz); m.color.setScalar(0); m.roughness = 1; m.metalness = 0; }
-    else m.color.setScalar(G.luz);
-    m.toneMapped = false;
-    m.onBeforeCompile = (sh) => { // gradación como el simulador: menos bruma, algo más de saturación
-      Object.assign(sh.uniforms, gradoU);
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uSat, uCon, uBri;')
-        .replace('#include <opaque_fragment>', `{ vec3 c = max(outgoingLight - vec3(0.030, 0.036, 0.048), 0.0) / 0.96; float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-          c = max(mix(vec3(l), c, uSat), 0.0); c += vec3(0.026, 0.032, 0.046) * (1.0 - smoothstep(0.0, 0.16, l)); outgoingLight = pow(c / 0.18, vec3(uCon)) * 0.18 * uBri; }
-          #include <opaque_fragment>`);
-    };
-    m.customProgramCacheKey = () => 'gradoL17'; m.needsUpdate = true;
-    G.mats.add(m); c.renderOrder = -10;
-  }));
-  tiles.addEventListener('dispose-model', ({ scene: s }) => s.traverse(c => { if (c.isMesh) G.mats.delete(c.material); }));
-  tiles.addEventListener('load-error', (e) => console.warn('tesela', e && e.error && e.error.message));
-  scene.add(tiles.group); G.tiles = tiles; G.ok = true;
-}
-function actualizarG(dt) {
-  const tl = G.tiles; if (!tl) return;
-  try {
-    tl.setResolutionFromRenderer(cam, renderer); cam.updateMatrixWorld(); tl.update();
-    const st = tl.stats; if (tl.errorTarget > G.meta && st.downloading === 0 && st.parsing === 0 && st.visible > 3) tl.errorTarget = Math.max(G.meta, Math.round(tl.errorTarget * 0.65));
-    if (Math.abs(G.luz - G.luzObj) > 0.005) { G.luz += (G.luzObj - G.luz) * Math.min(1, dt * 3); for (const m of G.mats) { if (m.isMeshBasicMaterial) m.color.setScalar(G.luz); else m.emissive.setScalar(G.luz); } }
-    if ((G.atrib -= dt) <= 0) { G.atrib = 2; const t = tl.getAttributions().filter(a => a.type === 'string').map(a => a.value).join(' · '); $('#atrib').textContent = /^google/i.test(t) ? t : 'Google' + (t ? ' · ' + t : ''); }
-  } catch (err) { if (!G.fallo) { G.fallo = true; console.warn('malla', err); } }
-}
-const SIN_G = new URLSearchParams(location.search).get('google') === '0';
-if (!SIN_G) crearGoogle().catch(err => { console.warn('sin malla de Google', err); G.ok = false; });
-const piso = new THREE.Mesh(new THREE.PlaneGeometry(90000, 90000), new THREE.MeshBasicMaterial({ color: '#12171c' }));
-piso.rotation.x = -Math.PI / 2; piso.position.y = -60; scene.add(piso);
+/* ---------------- el SIMULADOR real (index.html) en un iframe del mismo origen: su escena, su luz, sus edificios, árboles, agua y carros ---------------- */
+const ifr = $('#sim'); const W = ifr.contentWindow;
+const avisoCarga = (t) => { const e = $('#carga-t'); if (e) e.textContent = t; };
+const espera = (ms) => new Promise(r => setTimeout(r, ms));
+let cssPuesto = false;
+const ponerCSS = () => { // se oculta TODA la interfaz del simulador: solo queda la escena 3D
+  try { const d = W.document; if (cssPuesto || !d || !d.head || d.URL === 'about:blank') return;
+    const s = d.createElement('style'); s.id = 'l17-css';
+    s.textContent = 'body>*:not(#todo3d){display:none!important}#todo3d>*:not(canvas){display:none!important}#todo3d{display:block!important}body{background:#0b0e11!important;cursor:default!important}';
+    d.head.appendChild(s); cssPuesto = true; } catch (e) { /* aún cargando */ } };
+{ const t0 = performance.now(); let n = 0;
+  const base = () => { try { return !!(W.KEN3D && W.KEN3D.THREE && W.KEN3D.scene && W.KEN3D.camera); } catch (e) { return false; } };
+  const todo = () => { try { return base() && !!(W.KEN3D.orbit && W.KEN_ESC && W.KEN_RELOJ); } catch (e) { return false; } };
+  while (!todo()) { // tope: 150 s para lo esencial; con la escena lista, 12 s más para el resto (si falta, se sigue con lo que haya)
+    const s0 = (performance.now() - t0) / 1000; if (s0 > 150 || (base() && (W.__l17b = W.__l17b || performance.now()) && performance.now() - W.__l17b > 12000)) break;
+    ponerCSS(); await espera(250); n++;
+    const s = Math.round((performance.now() - t0) / 1000); avisoCarga(s < 6 ? 'Abriendo el simulador de Kennedy…' : s < 18 ? `Cargando edificios, árboles y agua… ${s} s` : `Ya casi: preparando la escena… ${s} s`);
+  }
+  ponerCSS(); }
+if (!(W.KEN3D && W.KEN3D.THREE && W.KEN3D.scene)) { avisoCarga('El simulador no terminó de cargar. Recarga la página (Ctrl + F5).'); throw new Error('simulador no disponible'); }
+const T3 = W.KEN3D, THREE = T3.THREE, scene = T3.scene, cam = T3.camera;
+const imp = (u) => Promise.race([W.eval(`import('${u}')`), new Promise((_, no) => setTimeout(() => no(new Error('tiempo agotado: ' + u)), 30000))]); // los complementos de three se cargan DENTRO del iframe: mismo THREE que el simulador
+const [{ LineSegments2 }, { LineSegmentsGeometry }, { LineMaterial }] = await Promise.all([imp('three/addons/lines/LineSegments2.js'), imp('three/addons/lines/LineSegmentsGeometry.js'), imp('three/addons/lines/LineMaterial.js')]);
+const F32 = W.Float32Array; const lienzo = () => W.document.createElement('canvas');
+// guía de inicio: «Saltar»; sin límites de zoom para las vistas de toda Kennedy; luz cálida de la tarde
+const saltarGuia = () => { try { [...W.document.querySelectorAll('button')].filter(b => /^(Saltar|Cerrar|Empezar)$/i.test(b.textContent.trim())).forEach(b => b.click()); } catch (e) { } };
+saltarGuia(); setTimeout(saltarGuia, 1500); setTimeout(saltarGuia, 5000);
+if (T3.orbit) { T3.orbit.maxDistance = 60000; T3.orbit.enabled = false; }
+if (cam.far < 60000) { cam.far = 60000; cam.updateProjectionMatrix(); }
+const HORA = (m) => { try { W.KEN_RELOJ.irAMinuto(m, 'presentación'); } catch (e) { } };
+HORA(16 * 60 + 40);
+const FOV = cam.fov;
+const raiz = new THREE.Group(); raiz.name = 'lamina17'; raiz.position.set(O[0], 0, O[1]); scene.add(raiz);
+const OFF = new THREE.Vector3(O[0], 0, O[1]);
 
 /* ---------------- utilidades de dibujo ---------------- */
 const CAPAS = {};
-const capa = (k) => CAPAS[k] || (CAPAS[k] = (() => { const g = new THREE.Group(); scene.add(g); return { g, mats: [], v: 0, o: 0, t0: 0 }; })());
-const encima = (m) => { m.transparent = true; m.depthTest = false; m.depthWrite = false; return m; };
+const capa = (k) => CAPAS[k] || (CAPAS[k] = (() => { const g = new THREE.Group(); raiz.add(g); return { g, mats: [], v: 0, o: 0, t0: 0 }; })());
+const encima = (m) => { m.transparent = true; m.depthTest = false; m.depthWrite = false; m.toneMapped = false; m.fog = false; return m; };
 const reg = (k, m, base = 1) => { encima(m); capa(k).mats.push({ m, base }); return m; };
 const lineMats = [];
 const lineas = (n, ancho, aditivo = true) => { // n segmentos actualizables (posición y color por vértice)
-  const g = new LineSegmentsGeometry(); g.setPositions(new Float32Array(n * 6)); g.setColors(new Float32Array(n * 6));
+  const g = new LineSegmentsGeometry(); g.setPositions(new F32(n * 6)); g.setColors(new F32(n * 6));
   const m = new LineMaterial({ linewidth: ancho, vertexColors: true, transparent: true, worldUnits: false, depthTest: false, depthWrite: false });
-  if (aditivo) m.blending = THREE.AdditiveBlending;
+  if (aditivo) m.blending = THREE.AdditiveBlending; m.toneMapped = false; m.fog = false;
   m.resolution.set(innerWidth, innerHeight); lineMats.push(m);
   const l = new LineSegments2(g, m); l.frustumCulled = false; l.renderOrder = 6;
   l.userData = { pos: g.attributes.instanceStart.data, col: g.attributes.instanceColorStart.data, n };
   return l;
 };
 const listoL = (l) => { l.userData.pos.needsUpdate = true; l.userData.col.needsUpdate = true; };
-const texPunto = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,.9)'); gr.addColorStop(0.6, 'rgba(255,255,255,.25)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t; })();
-const puntos = (n, tam) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+const texPunto = (() => { const c = lienzo(); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,.9)'); gr.addColorStop(0.6, 'rgba(255,255,255,.25)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t; })();
+const puntos = (n, tam) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new F32(n * 3), 3)); g.setAttribute('color', new THREE.BufferAttribute(new F32(n * 3), 3));
   const m = new THREE.PointsMaterial({ size: tam * (MOVIL ? 0.8 : 1), sizeAttenuation: false, map: texPunto, vertexColors: true, blending: THREE.AdditiveBlending });
   encima(m); const p = new THREE.Points(g, m); p.frustumCulled = false; p.renderOrder = 8; return p; };
 const C3 = (h) => new THREE.Color(h);
@@ -155,10 +113,10 @@ const ICO = {
 const icoSVG = (k, col = '#111', px = 12) => `<svg viewBox="0 0 24 24" width="${px}" height="${px}" fill="none" stroke="${col}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${ICO[k].map(d => d.startsWith('circle') ? (([, x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`)(d.split(' ')) : `<path d="${d}"/>`).join('')}</svg>`;
 const pin = (k, col) => `<span class="pin" style="background:${col}">${icoSVG(k)}</span>`;
 const texIco = (() => { const cache = new Map(); return (k, col) => { const key = k + col; if (cache.has(key)) return cache.get(key);
-  const Z = 128, c = document.createElement('canvas'); c.width = c.height = Z; const g = c.getContext('2d');
+  const Z = 128, c = lienzo(); c.width = c.height = Z; const g = c.getContext('2d');
   g.beginPath(); g.arc(Z / 2, Z / 2, Z / 2 - 5, 0, Math.PI * 2); g.fillStyle = col; g.fill(); g.lineWidth = 7; g.strokeStyle = 'rgba(10,12,15,.9)'; g.stroke();
   g.save(); g.translate(Z * 0.22, Z * 0.22); g.scale(Z * 0.56 / 24, Z * 0.56 / 24); g.strokeStyle = '#111'; g.lineWidth = 2.3; g.lineCap = g.lineJoin = 'round';
-  for (const d of ICO[k]) { if (d.startsWith('circle')) { const [, x, y, r] = d.split(' ').map(Number); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke(); } else g.stroke(new Path2D(d)); }
+  for (const d of ICO[k]) { if (d.startsWith('circle')) { const [, x, y, r] = d.split(' ').map(Number); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke(); } else g.stroke(new W.Path2D(d)); }
   g.restore(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; cache.set(key, t); return t; }; })();
 const sprite = (ico, col) => { const m = encima(new THREE.SpriteMaterial({ map: texIco(ico, col), sizeAttenuation: false })); const s = new THREE.Sprite(m); s.renderOrder = 15; return s; };
 const COL = { merc: '#4FB98C', cora: '#5FB3D9', bav: '#B79BE8', mod: '#C9E86A', asa: '#E58A6B', voz: '#F4C95D', abasto: '#7fe3b4', conoc: '#B79BE8', decis: '#E58A6B', alerta: '#ff5a3c' };
@@ -179,20 +137,20 @@ addEt('Kennedy', () => { const p = S(lugar('Kennedy Central')); return new THREE
 
 /* =============================== 1 y 2 · MÓDULOS en sitios reales =============================== */
 const SITIOS = [
-  ...COLEG.map(c => ({ w: c.w, t: 'colegio', col: '#F2EFE6', tam: 120 })),
-  ...PARQS.map(c => ({ w: c.w, t: 'parque', col: '#7FD36A', tam: 150 })),
-  ...ZON.filter(z => z.pob > 2000).map(z => ({ w: z.w, t: 'cubierta', col: '#D9F26B', tam: 105 })),
+  ...COLEG.map(c => ({ w: c.w, t: 'colegio', col: '#F4C95D', tam: 80 })),
+  ...PARQS.map(c => ({ w: c.w, t: 'parque', col: '#3FCB6B', tam: 100 })),
+  ...ZON.filter(z => z.pob > 2000).map(z => ({ w: z.w, t: 'cubierta', col: '#B8F04A', tam: 70 })),
 ].sort((a, b) => d2(a.w, BAV) - d2(b.w, BAV)); // de Bavaria hacia afuera, como el calendario del simulador
 const NS = SITIOS.length;
 const modGeo = new THREE.PlaneGeometry(1, 1); modGeo.rotateX(-Math.PI / 2);
-const modMat = reg('mod', new THREE.MeshBasicMaterial({ color: '#ffffff', blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+const modMat = reg('mod', new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }), 0.92);
 const modMesh = new THREE.InstancedMesh(modGeo, modMat, NS); modMesh.renderOrder = 5; modMesh.frustumCulled = false;
 SITIOS.forEach((s, i) => modMesh.setColorAt(i, C3(s.col)));
 capa('mod').g.add(modMesh);
 // marco tenue de todos los sitios posibles (la «superficie disponible»)
 const sitioPts = puntos(NS, 5); { const P = sitioPts.geometry.attributes.position.array; SITIOS.forEach((s, i) => { const [x, z] = S(s.w); P.set([x, 10, z], i * 3); }); }
 capa('mod').g.add(sitioPts); capa('mod').mats.push({ m: sitioPts.material, base: 1 });
-const bavMod = sprite('cluster', COL.bav); bavMod.scale.setScalar(MOVIL ? 0.05 : 0.032); bavMod.position.set(...(() => { const p = S(BAV); return [p[0], 160, p[1]]; })()); capa('mod').g.add(bavMod); capa('mod').mats.push({ m: bavMod.material, base: 1 });
+const bavMod = sprite('cluster', COL.bav); bavMod.scale.setScalar(MOVIL ? 0.03 : 0.032); bavMod.position.set(...(() => { const p = S(BAV); return [p[0], 160, p[1]]; })()); capa('mod').g.add(bavMod); capa('mod').mats.push({ m: bavMod.material, base: 1 });
 addEt(pin('cluster', COL.bav) + 'Bavaria Común · los módulos se suman desde aquí', () => bavMod.position.clone().setY(260), () => escena === 'f1');
 const M4 = new THREE.Matrix4(), Q0 = new THREE.Quaternion(), V1 = new THREE.Vector3(), V2 = new THREE.Vector3();
 // modelo ilustrativo: rendimiento (r), superficie disponible (s) y ritmo (k), todos en 0..1
@@ -316,7 +274,7 @@ function pintarCopia(cp, t, dt, vCapa) {
   { const P = cp.borde.userData.pos.array, Cc = cp.borde.userData.col.array; const k = 0.7 * cp.pl * A;
     LIM.forEach((p, i) => { const q = LIM[(i + 1) % LIM.length]; P.set([cp.cx + (p[0] - O[0]) * cp.s, cp.cy - 4, cp.cz + (p[1] - O[1]) * cp.s, cp.cx + (q[0] - O[0]) * cp.s, cp.cy - 4, cp.cz + (q[1] - O[1]) * cp.s], i * 6); Cc.set([cBorde.r * k, cBorde.g * k, cBorde.b * k, cBorde.r * k, cBorde.g * k, cBorde.b * k], i * 6); }); listoL(cp.borde); }
   // íconos
-  const tamBase = (MOVIL ? 0.05 : 0.03) * (0.55 + 0.45 * cp.s / 0.46 * 0.75);
+  const tamBase = (MOVIL ? 0.024 : 0.03) * (0.55 + 0.45 * cp.s / 0.46 * 0.75);
   NOD.forEach((n, i) => { const s = cp.spr[i]; s.position.copy(cp.P[i]); let k = 1, v = 1;
     if (n.t === 'bav') k = lerp(1.7, 1.05, cp.m); else if (n.t === 'merc') k = lerp(0.72, 1, cp.m); else if (n.t === 'mod') { k = 0.85; v = cp.m; } else if (n.t === 'asa') k = 0.95; else if (n.t === 'cora') k = 1.15;
     s.scale.setScalar(tamBase * k * Math.max(0.05, v)); s.material.opacity = A * v; });
@@ -327,7 +285,7 @@ function pintarCopia(cp, t, dt, vCapa) {
     for (let j = 0; j < NINT; j++) { const ang = j / NINT * Math.PI * 2 - Math.PI / 2; const x = c.x + Math.cos(ang) * ri, z = c.z + Math.sin(ang) * ri;
       IP.set([x, c.y - 20, z], (a * NINT + j) * 3); const v = 0.75 * A; IC.set([cD.r * v, cD.g * v, cD.b * v], (a * NINT + j) * 3);
       if (j === idx) { TV.set(x, c.y - 20, z); cp.voz[a].lerp(TV, cp.voz[a].lengthSq() ? Math.min(1, dt * 7) : 1); } }
-    const vs = cp.vozS[a]; vs.position.copy(cp.voz[a]); vs.scale.setScalar((MOVIL ? 0.032 : 0.022) * (1 + 0.12 * Math.sin(t * 5))); vs.material.opacity = A * cp.m; });
+    const vs = cp.vozS[a]; vs.position.copy(cp.voz[a]); vs.scale.setScalar((MOVIL ? 0.018 : 0.022) * (1 + 0.12 * Math.sin(t * 5))); vs.material.opacity = A * cp.m; });
   cp.int.geometry.attributes.position.needsUpdate = true; cp.int.geometry.attributes.color.needsUpdate = true; cp.int.material.opacity = 1;
   // federación de asambleas (solo en C): un anillo, no un centro
   const fc = TV2.set(cp.cx + (CENTRO_ASA[0] - O[0]) * cp.s, cp.cy + 380 * cp.s / 0.46 * 0.7, cp.cz + (CENTRO_ASA[1] - O[1]) * cp.s), fr = 700 * cp.s;
@@ -357,10 +315,10 @@ function pintarCopia(cp, t, dt, vCapa) {
 const tituloPos = (cp) => () => new THREE.Vector3(cp.cx, cp.cy + 60, cp.cz - ALTO * 0.52 * cp.s);
 const etL = addEt('', tituloPos(COP[0]), () => escena === 'f4', 'titulo');
 const etR = addEt('', tituloPos(COP[1]), () => escena === 'f4', 'titulo');
-const etRegla = addEt('Solo cambia esta regla', () => MOVIL ? new THREE.Vector3(0, 500, 0) : new THREE.Vector3(0, 560, -ALTO * 0.18), () => escena === 'f4' && sub === 1, 'regla');
+const etRegla = addEt('Solo cambia esta regla', () => MOVIL ? new THREE.Vector3(250, 380, -900) : new THREE.Vector3(250, 420, -900 - ALTO * 0.2), () => escena === 'f4' && sub === 1, 'regla');
 const etB = addEt(pin('cluster', COL.bav) + 'Bavaria: acopio, reparto y decisiones', () => COP[0].P[iBav].clone().setY(COP[0].cy + 90), () => escena === 'f4' && sub === 0);
 const etCB = addEt(pin('cluster', COL.bav) + 'Bavaria: clúster de conocimiento', () => COP[1].P[iBav].clone().setY(COP[1].cy + 90), () => escena === 'f4' && sub === 0 && !MOVIL);
-const etFed = addEt('Federación de asambleas', () => COP[1].fc ? COP[1].fc.clone().add(new THREE.Vector3(0, 40, -COP[1].fr)) : new THREE.Vector3(), () => escena === 'f4' && sub === 1 && !MOVIL);
+const etFed = addEt('Federación de asambleas', () => COP[1].fc ? COP[1].fc.clone().add(new THREE.Vector3(0, 40, -COP[1].fr)) : new THREE.Vector3(), () => false);
 // escena 6: nombres sobre la red a escala real
 const et6 = [
   [iBav, pin('cluster', COL.bav) + 'Bavaria Común · clúster de conocimiento'], [iCora, pin('corabastos', COL.cora) + 'Corabastos · un nodo más'],
@@ -403,7 +361,7 @@ const FED5 = { c: S(KM.C.reduce((s, c) => [s[0] + c[0] / NSEC, s[1] + c[1] / NSE
   const og = puntos(ORGS.length, 5); g.add(og); capa(k).mats.push({ m: og.material, base: 1 });
   { const P = og.geometry.attributes.position.array, Cc = og.geometry.attributes.color.array; ORGS.forEach((o, i) => { const [x, z] = S(o.w); P.set([x, 12, z], i * 3); let b = 0, bd = Infinity; MERC.forEach((m, j) => { const d = d2(m.w, o.w); if (d < bd) { bd = d; b = j; } }); const c = C3(SECT[sectMerc[b]]); Cc.set([c.r, c.g, c.b], i * 3); }); }
   // íconos: mercados (color del sector), Corabastos, Bavaria y asambleas de sector (elevadas) con su ancla
-  const sp = (ico, col, w, y, tam) => { const s = sprite(ico, col); const [x, z] = S(w); s.position.set(x, y, z); s.scale.setScalar(tam * (MOVIL ? 1.5 : 1)); g.add(s); capa(k).mats.push({ m: s.material, base: 1 }); return s; };
+  const sp = (ico, col, w, y, tam) => { const s = sprite(ico, col); const [x, z] = S(w); s.position.set(x, y, z); s.scale.setScalar(tam * (MOVIL ? 1.1 : 1)); g.add(s); capa(k).mats.push({ m: s.material, base: 1 }); return s; };
   MERC.forEach((m, j) => sp('mercado', SECT[sectMerc[j]], m.w, 40, 0.017));
   sp('corabastos', COL.cora, CORA, 120, 0.03);
   const sb = sp('cluster', COL.bav, BAV, 260, 0.03);
@@ -420,7 +378,7 @@ const FED5 = { c: S(KM.C.reduce((s, c) => [s[0] + c[0] / NSEC, s[1] + c[1] / NSE
     for (let i = 0; i < 64; i++) { const a0 = i / 64 * Math.PI * 2, a1 = (i + 1) / 64 * Math.PI * 2; P.set([FC.x + Math.cos(a0) * FED5.r, FC.y, FC.z + Math.sin(a0) * FED5.r, FC.x + Math.cos(a1) * FED5.r, FC.y, FC.z + Math.sin(a1) * FED5.r], i * 6); const b = 0.55; Cc.set([c.r * b, c.g * b, c.b * b, c.r * b, c.g * b, c.b * b], i * 6); }
     ASA_S.forEach((o, s) => { const A = sa[s].position; const dx = A.x - FC.x, dz = A.z - FC.z, n = Math.hypot(dx, dz) || 1; const B = TV2.set(FC.x + dx / n * FED5.r, FC.y, FC.z + dz / n * FED5.r).clone(); const on = s === turno; const col = on ? cv : c; const b = on ? 1 : 0.35;
       for (let j = 0; j < 10; j++) { arco(A, B, 20, j / 10, TV); const ax = TV.x, ay = TV.y, az = TV.z; arco(A, B, 20, (j + 1) / 10, TV); P.set([ax, ay, az, TV.x, TV.y, TV.z], (64 + s * 10 + j) * 6); Cc.set([col.r * b, col.g * b, col.b * b, col.r * b, col.g * b, col.b * b], (64 + s * 10 + j) * 6); }
-      sa[s].scale.setScalar((on ? 0.031 : 0.024) * (MOVIL ? 1.5 : 1)); });
+      sa[s].scale.setScalar((on ? 0.031 : 0.024) * (MOVIL ? 1.1 : 1)); });
     listoL(fed);
     const A = sa[turno].position; const u = (t % 1.4) / 1.4; const dx = A.x - FC.x, dz = A.z - FC.z, n = Math.hypot(dx, dz) || 1; arco(A, TV2.set(FC.x + dx / n * FED5.r, FC.y, FC.z + dz / n * FED5.r).clone(), 20, suave(u), tok.position);
   };
@@ -432,53 +390,53 @@ const FED5 = { c: S(KM.C.reduce((s, c) => [s[0] + c[0] / NSEC, s[1] + c[1] / NSE
 }
 
 /* =============================== ESCENAS (una por frase) =============================== */
-const FR = [
-  { e: 'f1', g: 'Las proyecciones dependen del rendimiento de los cultivos, la superficie disponible y el ritmo de incorporación de los módulos.',
-    l: 'Tres controles mueven la curva de comida producida. Sobre Kennedy, los módulos aparecen en colegios, parques y cubiertas al ritmo elegido, de Bavaria hacia afuera.' },
-  { e: 'f2', g: 'Esos parámetros todavía requieren calibración.',
-    l: 'La curva se vuelve un abanico: cada control se mueve dentro de su rango. En el mapa, los módulos inciertos parpadean entre el escenario bajo y el alto.' },
-  { e: 'f3', g: 'También queda pendiente armonizar los datos de residuos.',
-    l: 'Dos fuentes de orgánicos que no calzan: puntos de contenedores (naranja) y estimación por persona en cada zona (turquesa). Al armonizarlas, se llevan a la misma unidad, zona y periodo.' },
-  { e: 'f4', g: 'Y como entre B y C cambian tanto la distribución de los nodos como la forma de tomar decisiones, para medir el efecto de la vocería rotativa haremos una comparación adicional en la que solo cambie esa regla.', largo: true,
-    l: 'B: todo pasa por Bavaria. C: mercados, módulos y asambleas repartidos, con Bavaria como clúster de conocimiento. Cambian dos cosas a la vez.',
-    l2: 'Comparación adicional: la misma red dos veces. A la izquierda la vocería es fija (siempre la misma persona); a la derecha rota entre los integrantes de cada asamblea.' },
-  { e: 'f5', g: 'Con Bavaria Común proponemos distribuir el abastecimiento entre distintos sectores de Kennedy y darles a las organizaciones barriales un papel en las decisiones.',
-    l: 'Ocho sectores: cada mercado surte sus zonas; las organizaciones barriales del sector forman una asamblea que decide sobre sus mercados y lleva sus acuerdos a la federación.' },
-  { e: 'f6', g: 'La simulación nos permitirá evaluar qué condiciones necesita esa red para sostenerse en el tiempo.',
-    l: 'La red corre año tras año. Un cierre de vía la tensiona. Los tres medidores son las reglas del simulador: hábitat, abastecimiento y residuos.' },
+const FR = [ // rótulos cortos (no el guion completo): la escena del simulador es lo principal
+  { e: 'f1', a: 'Rendimiento · Superficie · Ritmo de módulos', b: 'Las proyecciones dependen de esto' },
+  { e: 'f2', a: 'Parámetros', b: 'Por calibrar' },
+  { e: 'f3', a: 'Residuos', b: 'Armonizar datos' },
+  { e: 'f4', a: 'B vs C', b: 'Nodos y decisiones', a2: 'Comparación adicional', b2: 'Solo cambia la vocería', largo: true },
+  { e: 'f5', a: 'Abastecimiento distribuido', b: 'Organizaciones barriales deciden' },
+  { e: 'f6', a: 'La red en el tiempo', b: '¿Qué necesita para sostenerse?' },
 ];
-const E = {
-  portada: { cam: { x: 0, y: 0, z: 300, s: 1.25, el: 55, az: -14 }, capas: { lim: 1 }, luz: 0.95, giro: true },
-  f1: { cam: { x: 300, y: 0, z: 0, s: 1.05, el: 50, az: 6 }, capas: { lim: 0.8, mod: 1 }, luz: 0.7, pan: 'proy' },
-  f2: { cam: { x: 200, y: 0, z: 200, s: 1.0, el: 42, az: 20 }, capas: { lim: 0.8, mod: 1 }, luz: 0.62, pan: 'proy' },
-  f3: { cam: { x: 0, y: 0, z: 0, s: 1.02, el: 58, az: -8 }, capas: { lim: 0.8, res: 1 }, luz: 0.6, pan: 'res' },
-  f4: { cam: { x: 0, y: 420, z: 300, s: 1.42, el: 32, az: 0 }, capas: { lim: 0.5, esq: 1 }, luz: 0.5, pan: 'esq', fx: 0.665, fy: 0.42 },
-  f5: { cam: { x: 0, y: 150, z: 200, s: 1.22, el: 50, az: -16 }, capas: { lim: 0.9, sect: 1 }, luz: 0.55, pan: 'sect', fx: 0.655, fy: 0.45 },
-  f6: { cam: { x: 0, y: 380, z: 200, s: 1.3, el: 34, az: 0 }, capas: { lim: 0.7, esq: 1 }, luz: 0.52, pan: 'vida', giro: true, fx: 0.655, fy: 0.4 },
+const E = { // vistas cercanas al área detallada del simulador (centro local ≈ 250, -1000): edificios, árboles y agua se ven en 3D
+  portada: { cam: { x: 250, y: 0, z: -900, s: 0.7, el: 36, az: -22 }, capas: { lim: 1 }, giro: true },
+  f1: { cam: { x: 1100, y: 0, z: -800, s: 0.6, el: 44, az: 12 }, capas: { lim: 0.8, mod: 1 }, pan: 'proy' },
+  f2: { cam: { x: 900, y: 0, z: -600, s: 0.58, el: 38, az: 28 }, capas: { lim: 0.8, mod: 1 }, pan: 'proy' },
+  f3: { cam: { x: 0, y: 0, z: -600, s: 0.68, el: 52, az: -10 }, capas: { lim: 0.8, res: 1 }, pan: 'res' },
+  f4: { cam: { x: 250, y: 300, z: -800, s: 0.78, el: 34, az: 0 }, capas: { lim: 0.5, esq: 1 }, pan: 'esq', fx: 0.68, fy: 0.42 },
+  f5: { cam: { x: 0, y: 150, z: -200, s: 0.92, el: 50, az: -16 }, capas: { lim: 0.9, sect: 1 }, pan: 'sect', fx: 0.655, fy: 0.45 },
+  f6: { cam: { x: 250, y: 380, z: -700, s: 0.78, el: 32, az: 0 }, capas: { lim: 0.7, esq: 1 }, pan: 'vida', giro: true, fx: 0.655, fy: 0.4 },
 };
 let escena = 'portada', sub = 0;
 const camAct = { ...E.portada.cam }, camObj = { ...E.portada.cam }; let giroAz = 0;
 function copias() {
-  const [L, R] = COP; const sep = MOVIL ? 0.25 : 0.235;
+  const [L, R] = COP; const BX = 250, BZ = -900;
   if (escena === 'f4') {
-    const sc = MOVIL ? 0.4 : 0.42;
-    Object.assign(L.obj, MOVIL ? { cx: 0, cz: -ALTO * sep, cy: 420 } : { cx: -ANCHO * sep, cz: 0, cy: 420 }, { s: sc, a: 1, pl: 1, anc: 0 });
-    Object.assign(R.obj, MOVIL ? { cx: 0, cz: ALTO * sep, cy: 420 } : { cx: ANCHO * sep, cz: 0, cy: 420 }, { s: sc, a: 1, pl: 1, anc: 0 });
+    const sc = MOVIL ? 0.3 : 0.34, d = MOVIL ? ALTO * 0.19 : ANCHO * 0.19;
+    Object.assign(L.obj, MOVIL ? { cx: BX, cz: BZ - d, cy: 300 } : { cx: BX - d, cz: BZ, cy: 300 }, { s: sc, a: 1, pl: 1, anc: 0 });
+    Object.assign(R.obj, MOVIL ? { cx: BX, cz: BZ + d, cy: 300 } : { cx: BX + d, cz: BZ, cy: 300 }, { s: sc, a: 1, pl: 1, anc: 0 });
     if (sub === 0) { L.obj.m = 0; L.obj.rot = 0; R.obj.m = 1; R.obj.rot = 1; } else { L.obj.m = 1; L.obj.rot = 0; R.obj.m = 1; R.obj.rot = 1; }
   } else if (escena === 'f6') {
-    Object.assign(L.obj, { cx: 0, cz: 0, cy: 650, s: 1, a: 1, pl: 0, anc: 1, m: 1, rot: 1 });
-    Object.assign(R.obj, { cx: 0, cz: 0, cy: 650, s: 1, a: 0, pl: 0, anc: 0, m: 1, rot: 1 });
+    Object.assign(L.obj, { cx: BX, cz: BZ, cy: 420, s: 0.62, a: 1, pl: 0.5, anc: 0, m: 1, rot: 1 });
+    Object.assign(R.obj, { cx: BX, cz: BZ, cy: 420, s: 0.62, a: 0, pl: 0, anc: 0, m: 1, rot: 1 });
   } else { L.obj.a = 0; R.obj.a = 0; }
   setEt(etL, sub === 0 ? '<small>Escenario B</small>Coordinación concentrada' : '<small>Comparación adicional</small>Vocería fija');
   setEt(etR, sub === 0 ? '<small>Escenario C</small>Red distribuida' : '<small>Comparación adicional</small>Vocería rotativa');
   $('#esq-h').textContent = sub === 0 ? 'B frente a C' : 'solo cambia la vocería';
 }
+const ESC_SIM = { portada: 'hoy', f1: 'hoy', f2: 'hoy', f3: 'hoy', f4: 'hoy', f5: 'proyecto', f6: 'hoy' };
+const HORA_SIM = { portada: 16 * 60 + 50, f1: 16 * 60 + 30, f2: 16 * 60 + 30, f3: 16 * 60 + 30, f4: 17 * 60 + 35, f5: 17 * 60 + 35, f6: 17 * 60 + 35 };
+let horaAct = 0;
+function simEscena(k) { // escenario del simulador (hoy / con la propuesta) y hora del día por frase
+  try { const e = ESC_SIM[k]; if (e && W.KEN_ESC.e !== e) W.KEN_ESC.poner(e); } catch (er) { console.warn('escenario', er); }
+  if (HORA_SIM[k] && HORA_SIM[k] !== horaAct) { horaAct = HORA_SIM[k]; HORA(horaAct); }
+}
 function setEscena(k, s = 0) {
   const cambio = k !== escena; escena = k; sub = s; const X = E[k];
   Object.assign(camObj, X.cam);
   for (const c in CAPAS) { const o = X.capas[c] || 0; if (o && !CAPAS[c].o) CAPAS[c].t0 = reloj.elapsedTime; CAPAS[c].o = o; }
-  G.luzObj = X.luz; copias();
-  if (cambio) panel(X.pan);
+  copias();
+  if (cambio) { panel(X.pan); simEscena(k); }
   const tb = $('#tablero'); tb.classList.toggle('fuera', !X.pan); tb.classList.toggle('solo-escritorio', X.pan === 'esq' || X.pan === 'sect'); tb.classList.toggle('abajo', X.pan === 'esq' || X.pan === 'sect' || X.pan === 'vida');
   $('#tag-cal').hidden = k !== 'f2'; $('#c-lab').setAttribute('opacity', k === 'f2' ? 1 : 0);
   document.querySelectorAll('.ctrl').forEach(c => c.classList.remove('act'));
@@ -546,19 +504,20 @@ function tableroVida(t) {
 }
 
 /* ---------------- cámara ---------------- */
-const distCam = (c) => { const asp = innerWidth / innerHeight; const w = ANCHO * c.s * (MOVIL ? 1.05 : 1), h = ALTO * c.s * 0.78; const vh = Math.max(h, w / asp); return vh / 2 / Math.tan(FOV / 2 * Math.PI / 180); };
-const ajustarCam = () => {
-  const w = innerWidth, h = innerHeight; const conPanel = !!(E[escena].pan) && !MOVIL;
-  const X = E[escena]; const fx = MOVIL ? 0.5 : (w > 1000 ? (X.fx || (conPanel ? 0.51 : 0.6)) : 0.55), fy = MOVIL ? 0.47 : (X.fy || 0.52);
-  cam.aspect = w / h; cam.setViewOffset(w, h, w / 2 - fx * w, h / 2 - fy * h, w, h);
-  const R = cam.position.length() + 4000; cam.near = 30; cam.far = R * 6; cam.updateProjectionMatrix(); scene.fog.near = R * 2.5; scene.fog.far = R * 7;
+const distCam = (c) => { const asp = innerWidth / innerHeight; const w = ANCHO * c.s * (MOVIL ? 0.62 : 1), h = ALTO * c.s * 0.78; const vh = Math.max(h, w / asp); return vh / 2 / Math.tan(FOV / 2 * Math.PI / 180); };
+const TG = new THREE.Vector3(); const RMAX = +(new URLSearchParams(location.search).get('rmax') || 0);
+const ponerCam = () => { // mueve la cámara DEL SIMULADOR (y su objetivo de órbita); el contenido se corre a la derecha de la tarjeta corriendo el objetivo
+  const X = E[escena]; const az = (camAct.az + giroAz) * Math.PI / 180, el = camAct.el * Math.PI / 180, R = RMAX ? Math.min(RMAX, distCam(camAct)) : distCam(camAct);
+  const w = innerWidth, asp = w / innerHeight; const fx = MOVIL ? 0.5 : (w > 1000 ? (X.fx || (X.pan ? 0.51 : 0.6)) : 0.55), fy = MOVIL ? 0.47 : (X.fy || 0.52);
+  const Wv = 2 * R * Math.tan(FOV / 2 * Math.PI / 180) * asp, Hv = Wv / asp;
+  const rx = Math.cos(az), rz = -Math.sin(az); const fwx = -Math.sin(az), fwz = -Math.cos(az); // derecha y adelante en el suelo
+  const dx = -(fx - 0.5) * Wv, dv = (fy - 0.5) * Hv / Math.max(0.35, Math.sin(el)) * 0.6;
+  TG.set(O[0] + camAct.x + rx * dx + fwx * dv, camAct.y, O[1] + camAct.z + rz * dx + fwz * dv);
+  T3.anim = null; T3.llegada = null;
+  if (T3.orbit) T3.orbit.target.copy(TG); cam.position.set(TG.x + R * Math.cos(el) * Math.sin(az), TG.y + R * Math.sin(el), TG.z + R * Math.cos(el) * Math.cos(az)); cam.lookAt(TG);
+  cam.updateMatrixWorld();
 };
-const ponerCam = () => {
-  const az = (camAct.az + giroAz) * Math.PI / 180, el = camAct.el * Math.PI / 180, R = distCam(camAct);
-  cam.position.set(camAct.x + R * Math.cos(el) * Math.sin(az), camAct.y + R * Math.sin(el), camAct.z + R * Math.cos(el) * Math.cos(az)); cam.lookAt(camAct.x, camAct.y, camAct.z);
-  ajustarCam();
-};
-addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.resolution.set(innerWidth / 2, innerHeight / 2); lineMats.forEach(m => m.resolution.set(innerWidth, innerHeight)); ajustarCam(); });
+addEventListener('resize', () => { lineMats.forEach(m => m.resolution.set(innerWidth, innerHeight)); });
 
 /* ---------------- bucle ---------------- */
 const reloj = new THREE.Clock(); const tmp = new THREE.Vector3();
@@ -577,31 +536,29 @@ function cuadro() {
     COP.forEach(cp => pintarCopia(cp, t, dt, CAPAS.esq.v));
   }
   if (panAct === 'proy') tableroProy(t); else if (panAct === 'res') tableroRes(); else if (panAct === 'vida') tableroVida(t);
-  actualizarG(dt);
   // etiquetas
   const w = innerWidth, h = innerHeight; const vis = [];
   for (const e of ETS) { let on = false; try { on = e.on(); } catch { on = false; }
     if (!on) { if (e.d.style.opacity !== '0') e.d.style.opacity = 0; continue; }
-    tmp.copy(e.pos()); tmp.project(cam); const x = (tmp.x + 1) / 2 * w, y = (1 - tmp.y) / 2 * h; e.sx = x; e.sy = y; e.vis = tmp.z < 1 && x > -50 && x < w + 50 && y > 0 && y < h; vis.push(e); }
+    tmp.copy(e.pos()).add(OFF); tmp.project(cam); const x = (tmp.x + 1) / 2 * w, y = (1 - tmp.y) / 2 * h; e.sx = x; e.sy = y; e.vis = tmp.z < 1 && x > -50 && x < w + 50 && y > 0 && y < h; vis.push(e); }
   vis.sort((a, b) => a.sy - b.sy); const puestos = [];
   for (const e of vis) { const ww = e.d.offsetWidth || 120, hh = e.d.offsetHeight || 22; let y = e.sy; for (const p of puestos) if (Math.abs(p.x - e.sx) < (p.w + ww) / 2 + 4 && Math.abs(p.y - y) < (p.h + hh) / 2 + 2) y = p.y + (p.h + hh) / 2 + 3; puestos.push({ x: e.sx, y, w: ww, h: hh });
     const cx = Math.max(ww / 2 + 6, Math.min(w - ww / 2 - 6, e.sx)); e.d.style.left = cx + 'px'; e.d.style.top = y + 'px'; e.d.style.opacity = e.vis ? 1 : 0; }
-  composer.render();
   requestAnimationFrame(cuadro);
 }
 
 /* =============================== RELATO EN SCROLL =============================== */
 { const esc = (w) => w.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   let h = `<section class="paso portada activo" data-escena="portada"><div class="tarjeta">
-    <p class="kicker">Bavaria Común · Kennedy, Bogotá</p>
-    <h1>Lámina <b>17</b></h1>
-    <p>Qué falta calibrar en la simulación, qué comparación adicional haremos y qué propone la red distribuida.</p>
+    <p class="kicker">Kennedy · Bogotá</p>
+    <h1>Bavaria <b>Común</b></h1>
+    <p>Calibrar, comparar y distribuir la red.</p>
     <span class="bajar"><i></i>Desplázate</span></div></section>`;
+  const pal = (txt, d = 0) => txt.split(' ').map((w, k) => `<span class="w" style="--i:${k + d}">${esc(w)}</span>`).join(' ');
   FR.forEach((s, i) => {
-    h += `<section class="paso${s.largo ? ' largo' : ''}" data-i="${i + 1}" data-escena="${s.e}"><div class="tarjeta vidrio"><p class="kicker">Lámina 17 · ${i + 1} / ${FR.length}</p>
-      <p class="frase" aria-label="${esc(s.g)}">${s.g.split(' ').map((w, k) => `<span class="w" aria-hidden="true" style="--i:${k}">${esc(w)}</span>`).join(' ')}</p>
-      ${s.largo ? '<div class="fase"><span class="f0 on">B frente a C</span><span class="f1">Solo cambia la regla</span></div>' : ''}
-      <p class="lectura"><span class="uno">${esc(s.l)}</span>${s.l2 ? `<span class="alt">${esc(s.l2)}</span>` : ''}</p></div></section>`; });
+    h += `<section class="paso${s.largo ? ' largo' : ''}" data-i="${i + 1}" data-escena="${s.e}"><div class="tarjeta vidrio corta"><p class="kicker">${i + 1} / ${FR.length}</p>
+      <div class="uno"><p class="rot">${pal(s.a)}</p><p class="frase">${pal(s.b, 3)}</p></div>
+      ${s.a2 ? `<div class="alt"><p class="rot">${pal(s.a2)}</p><p class="frase">${pal(s.b2, 3)}</p></div>` : ''}</div></section>`; });
   h += '<section class="paso fin" data-escena="f6"></section>';
   $('#relato').innerHTML = h; }
 $('#puntos').innerHTML = FR.map((_, i) => `<button type="button" data-i="${i + 1}" aria-label="Frase ${i + 1}">${i + 1}</button>`).join('');
@@ -628,10 +585,10 @@ addEventListener('keydown', (ev) => {
   if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(ev.key)) { ev.preventDefault(); if (escena === 'f4' && sub === 0) ir(4, 1); else ir(Math.min(FR.length, i + 1)); }
   else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(ev.key)) { ev.preventDefault(); if (escena === 'f4' && sub === 1) ir(4, 0); else if (i > 1) ir(i - 1); else scrollTo({ top: 0 }); }
 });
-window.L17 = { ir, estado: () => ({ escena, sub, malla: G.tiles ? { ...G.tiles.stats, err: G.tiles.errorTarget } : null }) };
+window.L17 = { ir, estado: () => ({ escena, sub, esc: W.KEN_ESC && W.KEN_ESC.e }) };
 
-setEscena('portada'); escena = 'portada';
+setEscena('portada'); escena = 'portada'; simEscena('portada');
 Object.assign(camAct, camObj); for (const k in CAPAS) CAPAS[k].v = CAPAS[k].o; ponerCam();
 leerScroll();
 requestAnimationFrame(cuadro);
-setTimeout(() => { $('#loader').classList.add('hidden'); window.KEN3D = true; }, 400);
+setTimeout(() => { $('#loader').classList.add('hidden'); window.KEN3D = true; }, 2500);

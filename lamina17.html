@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0e11">
-<title>Lámina 17 · Bavaria Común</title>
-<meta name="description" content="Lámina 17 de la tesis Bavaria Común (Kennedy, Bogotá): de qué dependen las proyecciones, qué falta calibrar y armonizar, la comparación de la vocería rotativa y la red distribuida sobre la malla 3D de Kennedy.">
+<title>Bavaria Común · Kennedy</title>
+<meta name="description" content="Bavaria Común (Kennedy, Bogotá): de qué dependen las proyecciones, qué falta calibrar y armonizar, la comparación de la vocería rotativa y la red distribuida, sobre el simulador 3D de Kennedy.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -34,8 +34,8 @@ html,body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);
 button,input{font:inherit;color:inherit}
 .vidrio{background:var(--vidrio);border:1px solid var(--vidrio-bd);box-shadow:var(--vidrio-sh);-webkit-backdrop-filter:var(--vidrio-fx);backdrop-filter:var(--vidrio-fx)}
 @media (prefers-reduced-transparency:reduce){.vidrio{background:rgba(12,14,17,.94)}}
-#lienzo{position:fixed;inset:0;z-index:0}
-#lienzo canvas{display:block;width:100%;height:100%}
+#sim{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none;background:#0b0e11}
+
 #vineta{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 95% at 55% 48%,transparent 55%,rgba(4,6,9,.55) 100%),linear-gradient(180deg,rgba(4,6,9,.45),transparent 16%,transparent 78%,rgba(4,6,9,.5))}
 #etiquetas{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
 .et{position:absolute;transform:translate(-50%,-100%);font:500 12px/1.2 var(--sans);color:var(--tx);white-space:nowrap;padding:4px 10px 4px 5px;border-radius:999px;background:rgba(9,12,15,.8);box-shadow:0 4px 14px rgba(0,0,0,.45);transition:opacity .45s var(--curva);opacity:0}
@@ -49,9 +49,12 @@ button,input{font:inherit;color:inherit}
 .et.alerta{background:rgba(224,98,63,.92);color:#fff}
 #atrib{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:6px;z-index:5;font:10px var(--sans);color:rgba(255,255,255,.55);pointer-events:none}
 /* carga */
-#loader{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:var(--bg);transition:opacity .8s var(--curva)}
+#loader{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(80% 70% at 50% 45%,rgba(20,26,32,.75),rgba(8,10,13,.96));transition:opacity .9s var(--curva)}
 #loader.hidden{opacity:0;pointer-events:none}
-#loader .c{display:grid;gap:14px;justify-items:center;font:500 11px var(--mono);letter-spacing:.2em;color:var(--tx3)}
+#loader .c{display:grid;gap:12px;justify-items:center;text-align:center;padding:26px 34px;border-radius:20px;font:500 11px var(--mono);letter-spacing:.2em;color:var(--tx2)}
+#loader .c small{font:400 12.5px var(--sans);letter-spacing:0;color:var(--tx3)}
+#loader .c i{display:block;width:180px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--acc),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:barre 1.6s linear infinite}
+@keyframes barre{from{background-position:-100% 0}to{background-position:200% 0}}
 #loader svg{width:72px;height:72px}
 #loader circle{fill:var(--merc);transform-box:fill-box;transform-origin:center;animation:latido 1.4s var(--curva) infinite}
 #loader line{stroke:rgba(255,255,255,.25);stroke-width:1.2}
@@ -142,6 +145,13 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
 .medidor .barra u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;opacity:.8;border-radius:1px}
 .medidor .r{font:400 10px/1.35 var(--sans);color:var(--tx3)}
 .pregunta{margin:2px 0 0;font:500 15px/1.35 var(--sans);color:var(--tx);letter-spacing:-.01em}
+/* tarjetas cortas: solo rótulos de 2 a 6 palabras, la escena manda */
+.tarjeta.corta{width:min(380px,100%);padding:16px 20px 18px;gap:8px;top:calc(50vh - 90px)}
+.corta .alt{display:none}.paso.sub1 .corta .uno{display:none}.paso.sub1 .corta .alt{display:block}
+.corta .rot{margin:0 0 6px;font:500 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--acc)}
+.corta .frase{font-size:clamp(24px,2.1vw,32px);line-height:1.12;font-weight:400;letter-spacing:-.025em}
+.paso.activo .corta .rot .w{display:inline-block;animation:palabra .6s var(--curva) both;animation-delay:calc(var(--i) * 90ms)}
+.paso.activo .corta .frase .w{animation-delay:calc(var(--i) * 90ms + 120ms)}
 /* abajo a la derecha (esquema, sectores y red en el tiempo): la red queda libre arriba */
 #tablero.abajo{top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(880px,calc(100vw - 540px));padding:12px 16px}
 #tablero.abajo .ley.col{flex-direction:row;flex-wrap:wrap;gap:6px 16px}
@@ -156,11 +166,14 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
  .bar{left:8px;top:calc(8px + env(safe-area-inset-top,0px));padding:5px 8px 5px 12px;gap:8px}
  .marca{font-size:12px}
  .puntos button{width:19px;height:19px;font-size:9px}
- #tablero{left:8px;right:8px;width:auto;top:calc(48px + env(safe-area-inset-top,0px));padding:10px 12px;max-height:34vh;overflow:hidden;font-size:11px}
+ #tablero{left:8px;right:8px;width:auto;top:calc(48px + env(safe-area-inset-top,0px));padding:10px 12px;max-height:40vh;overflow:hidden;font-size:11px}
  #tablero.abajo{top:calc(48px + env(safe-area-inset-top,0px));bottom:auto;width:auto;padding:10px 12px}
  #tablero.abajo #pan-vida.on{grid-template-columns:1fr}
  #tablero.abajo #pan-vida .anio{flex-direction:row;align-items:baseline}
- #tablero.abajo #medidores{gap:6px}
+ #tablero.abajo #medidores{gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .medidor .t em{display:none}
+ .medidor .t{font-size:11px}
+ svg.graf{max-height:96px}
  #tablero.abajo #pan-vida .pregunta{font-size:13px}
  #tablero.solo-escritorio{opacity:0;pointer-events:none}
  .pan{gap:7px}
@@ -171,6 +184,9 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
  .paso{align-items:flex-end;padding:0 10px}
  .tarjeta{top:auto;bottom:10px;padding:13px 15px;gap:9px}
  .frase{font-size:16px}
+ .tarjeta.corta{top:auto;padding:12px 16px 14px}
+ .tarjeta.corta .frase{font-size:22px}
+ .corta .rot{font-size:10.5px}
  .lectura{font-size:12px;grid-template-columns:1fr;gap:2px;padding:8px 10px}
  .portada{padding-bottom:10vh}
  .portada .tarjeta{bottom:auto}
@@ -181,16 +197,16 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
 </style>
 </head>
 <body>
-<div id="loader"><div class="c"><svg viewBox="0 0 72 72" aria-hidden="true"><line x1="36" y1="36" x2="12" y2="18"/><line x1="36" y1="36" x2="62" y2="20"/><line x1="36" y1="36" x2="54" y2="60"/><line x1="36" y1="36" x2="14" y2="56"/><line x1="12" y1="18" x2="62" y2="20"/><line x1="54" y1="60" x2="14" y2="56"/><circle cx="36" cy="36" r="5"/><circle cx="12" cy="18" r="4" style="animation-delay:.2s"/><circle cx="62" cy="20" r="4" style="animation-delay:.4s"/><circle cx="54" cy="60" r="4" style="animation-delay:.6s"/><circle cx="14" cy="56" r="4" style="animation-delay:.8s"/></svg>CARGANDO KENNEDY EN 3D</div></div>
-<div id="lienzo" aria-hidden="true"></div>
+<div id="loader"><div class="c vidrio"><svg viewBox="0 0 72 72" aria-hidden="true"><line x1="36" y1="36" x2="12" y2="18"/><line x1="36" y1="36" x2="62" y2="20"/><line x1="36" y1="36" x2="54" y2="60"/><line x1="36" y1="36" x2="14" y2="56"/><line x1="12" y1="18" x2="62" y2="20"/><line x1="54" y1="60" x2="14" y2="56"/><circle cx="36" cy="36" r="5"/><circle cx="12" cy="18" r="4" style="animation-delay:.2s"/><circle cx="62" cy="20" r="4" style="animation-delay:.4s"/><circle cx="54" cy="60" r="4" style="animation-delay:.6s"/><circle cx="14" cy="56" r="4" style="animation-delay:.8s"/></svg>SIMULADOR DE KENNEDY<i></i><small id="carga-t">Abriendo el simulador…</small><small>La primera carga tarda unos 25 segundos.</small></div></div>
+<iframe id="sim" src="index.html" title="Simulador de Kennedy" tabindex="-1" aria-hidden="true"></iframe>
 <div id="vineta" aria-hidden="true"></div>
 <div id="etiquetas" aria-hidden="true"></div>
 <div id="atrib">Google</div>
 <i id="pbar" aria-hidden="true"></i>
 
 <header class="bar vidrio">
-  <div class="marca">Lámina 17</div>
-  <nav class="puntos" id="puntos" aria-label="Frases de la lámina"></nav>
+  <div class="marca">Bavaria Común</div>
+  <nav class="puntos" id="puntos" aria-label="Frases"></nav>
 </header>
 
 <aside id="tablero" class="vidrio fuera" aria-live="polite">
@@ -214,7 +230,7 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
       <circle id="c-pt" r="4" fill="#fff"/>
       <text id="c-lab" x="300" y="30" text-anchor="end" style="fill:#F4C95D;font-weight:600" opacity="0">por calibrar</text>
     </svg>
-    <div class="ley"><span><i style="background:#F2EFE6"></i>colegios</span><span><i style="background:#7FD36A"></i>parques</span><span><i style="background:#D9F26B"></i>cubiertas compartidas</span><span style="margin-left:auto;font-family:var(--mono);color:var(--tx)">año <b id="anio-p">0</b> · <b id="nmod">0</b> módulos</span></div>
+    <div class="ley"><span><i style="background:#F4C95D"></i>colegios</span><span><i style="background:#3FCB6B"></i>parques</span><span><i style="background:#B8F04A"></i>cubiertas compartidas</span><span style="margin-left:auto;font-family:var(--mono);color:var(--tx)">año <b id="anio-p">0</b> · <b id="nmod">0</b> módulos</span></div>
     <p class="nota" id="nota-proy">Valores ilustrativos: el rendimiento usa el rango de los supuestos del proyecto (3 a 10 kg/m² al año). Los sitios son reales (colegios, parques y zonas del modelo); los módulos se suman de Bavaria hacia afuera, como en el simulador.</p>
   </div>
   <!-- 3 · residuos -->
@@ -249,6 +265,7 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
 
 <main id="relato"></main>
 
-<script type="module" src="data3d/lamina17.js?v=1"></script>
+<script>{const m=(t)=>{const e=document.getElementById('carga-t');if(e&&!document.getElementById('loader').classList.contains('hidden'))e.textContent='No se pudo abrir: '+t+'. Recarga la página.';};addEventListener('error',(e)=>m(e.message||'error'));addEventListener('unhandledrejection',(e)=>m(String(e.reason&&e.reason.message||e.reason)));}</script>
+<script type="module" src="data3d/lamina17.js?v=4"></script>
 </body>
 </html>
