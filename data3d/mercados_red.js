@@ -1,7 +1,7 @@
 /* ============ RED DE MERCADOS: mercados de barrio y plazoletas de mercado en parques grandes (solo con la propuesta) ============
    TIPOS
-   · Mercado de barrio: cubierta de zinc, 20 puestos, en parques vecinales (los 8 de data3d/carga.json + 4 más hacia Bavaria; data3d/mercados_barrio.js).
-   · Plazoleta de mercado: en los parques grandes de Kennedy (OpenStreetMap/IDRD, data3d/parques.json); piso duro, dos naves, calle de toldos, ~56 puestos
+   · Mercado de barrio: cubierta de zinc, 40 puestos (dos hileras bajo cubierta + toldos), bodega con cuarto frío y 2 bahías, en parques vecinales (los 8 de data3d/carga.json + 4 más hacia Bavaria; data3d/mercados_barrio.js).
+   · Plazoleta de mercado: en los parques grandes de Kennedy (OpenStreetMap/IDRD, data3d/parques.json); piso duro, dos naves de 60 m, calle de toldos, ~112 puestos, 2 bodegas con cuarto frío y 4 bahías
      de frutas y verduras, zona de carga y descarga con furgonetas, bancas y árboles (también en data3d/mercados_barrio.js, que dibuja ambos tipos).
    UBICACIÓN: calculada fuera de línea con el mismo método de los mercados de barrio (claro sin copas del censo de árboles, canchas, edificios, agua ni huertas;
      lado largo paralelo al borde del parque); los parques son los de mayor área real dentro del límite de Kennedy que no tenían ya un mercado.
@@ -20,41 +20,41 @@ const BAVC = [4136, 96];              // Bavaria Común en el mundo (centro de a
 const lwc = (x, y) => [x - LC.x, LC.y - y];
 /* sitios (coordenadas del modelo [mx, my], ángulo del lado largo, escala, parque): los 8 de barrio ya existentes + 4 de barrio nuevos + 9 plazoletas */
 const BASE = [
-  ['barrio', 'Biblioteca El Tintal', 6946.4, 3553.6, 2.4229, 1, 'Biblioteca El Tintal (parque metropolitano)'],
-  ['barrio', 'Castilla', 8573.8, 3166, 0.4721, 0.8, 'Castilla (parque zonal)'],
-  ['barrio', 'Ciudad Urbisa I', 8370.2, 3858.9, 1.1016, 1, 'Ciudad Urbisa I y II Sector - Castilla Real (2 Sector) (parque vecinal)'],
-  ['barrio', 'Rincón de los Ángeles', 7789.6, 2316.6, 1.6821, 0.8, 'Rincon De Los Angeles (parque vecinal)'],
-  ['barrio', 'La Magdalena II', 6541.4, 4941.2, -2.2081, 0.8, 'La Magdalena Etapa II (parque vecinal)'],
-  ['barrio', 'Patio Bonito II', 6325, 3270, 0.8197, 0.8, 'Patio Bonito II Sector (parque vecinal)'],
-  ['barrio', 'Ciudad Urbisa II', 8266.2, 3700.9, -2.3534, 1, 'Ciudad Urbisa I y II Sector - Castilla Real (2 Sector) (parque vecinal)'],
-  ['barrio', 'Otero de Francisco', 7266.3, 4006.7, -0.7694, 1, 'Otero de Francisco (parque vecinal)'],
-  ['barrio', 'La Fayette', 9463.7, 4013.5, -1.576, 0.8, 'La Fayette (parque vecinal)'],
-  ['barrio', 'El Recodo y Petaluma', 10483.2, 3010.6, 0.6316, 0.8, 'El Recodo y Petaluma (parque vecinal)'],
-  ['barrio', 'El Rincón (parque oriental)', 8007.8, 2483.4, -3.0638, 0.8, 'Urbanización El Rincón de los Ángeles (parque vecinal)'],
-  ['barrio', 'Visión de Colombia', 9155.4, 4566.2, 2.3825, 0.8, 'Visión de Colombia (parque vecinal)'],
-  ['plazoleta', 'Timiza', 6842.6, -399.1, -3.0307, 1, 'Parque metropolitano Timiza'],
-  ['plazoleta', 'Mundo Aventura', 8899.6, 1217.8, -1.4634, 1, 'Parque metropolitano Mundo Aventura (Las Américas)'],
-  ['plazoleta', 'Las Margaritas', 4539.2, 1425.5, -1.4038, 0.7, 'Parque zonal Las Margaritas (Gilma Jiménez)'],
-  ['plazoleta', 'Marsella', 9991.8, 2172.4, 1.9518, 1, 'Parque Marsella Sector Norte (Pinos de Marsella)'],
-  ['plazoleta', 'La Igualdad', 9925, 1893.9, 1.6604, 0.7, 'Parque zonal La Igualdad'],
-  ['plazoleta', 'Carvajal', 8525.1, 302.6, 0.1637, 0.85, 'Parque vecinal Carvajal'],
-  ['plazoleta', 'Floralia', 9222, -333.7, -0.2591, 1, 'Parque vecinal Floralia I Sector'],
-  ['plazoleta', 'El Carmelo - Gran Britalia', 4403.2, 665.9, 0.9689, 0.7, 'Parque vecinal El Carmelo (Favidi) y Gran Britalia'],
-  ['plazoleta', 'Bertha Hernández de Ospina', 4534.3, 22.6, -0.7762, 0.7, 'Parque vecinal Bertha Hernández de Ospina'],
+  ['barrio', 'Biblioteca El Tintal', 6946.4, 3559.6, 2.4229, 0.7, 'Biblioteca El Tintal (parque metropolitano)'],
+  ['barrio', 'Castilla', 8567.8, 3160.0, 0.4721, 0.5, 'Castilla (parque zonal)'],
+  ['barrio', 'Ciudad Urbisa I', 8376.2, 3846.9, 1.1016, 1.0, 'Ciudad Urbisa I y II Sector - Castilla Real (2 Sector) (parque vecinal)'],
+  ['barrio', 'Rincón de los Ángeles', 7795.6, 2316.6, 1.6821, 0.5, 'Rincon De Los Angeles (parque vecinal)'],
+  ['barrio', 'La Magdalena II', 6541.4, 4941.2, -2.2081, 0.5, 'La Magdalena Etapa II (parque vecinal)'],
+  ['barrio', 'Patio Bonito II', 6319.0, 3276.0, 0.8197, 0.6, 'Patio Bonito II Sector (parque vecinal)'],
+  ['barrio', 'Ciudad Urbisa II', 8260.2, 3712.9, -2.3534, 1.0, 'Ciudad Urbisa I y II Sector - Castilla Real (2 Sector) (parque vecinal)'],
+  ['barrio', 'Otero de Francisco', 7266.3, 4006.7, -0.7694, 1.0, 'Otero de Francisco (parque vecinal)'],
+  ['barrio', 'La Fayette', 9469.7, 3995.5, -1.576, 0.5, 'La Fayette (parque vecinal)'],
+  ['barrio', 'El Recodo y Petaluma', 10477.2, 3016.6, 0.6316, 0.7, 'El Recodo y Petaluma (parque vecinal)'],
+  ['barrio', 'El Rincón (parque oriental)', 8019.8, 2483.4, -3.0638, 0.8, 'Urbanización El Rincón de los Ángeles (parque vecinal)'],
+  ['barrio', 'Visión de Colombia', 9155.4, 4566.2, 2.3825, 0.4, 'Visión de Colombia (parque vecinal)'],
+  ['plazoleta', 'Timiza', 6842.6, -399.1, -3.0307, 1.0, 'Parque metropolitano Timiza'],
+  ['plazoleta', 'Mundo Aventura', 8899.6, 1217.8, -1.4634, 0.9, 'Parque metropolitano Mundo Aventura (Las Américas)'],
+  ['plazoleta', 'Las Margaritas', 4587.2, 1455.5, -1.4038, 0.35, 'Parque zonal Las Margaritas (Gilma Jiménez)'],
+  ['plazoleta', 'Marsella', 9949.8, 2166.4, 1.9518, 1.0, 'Parque Marsella Sector Norte (Pinos de Marsella)'],
+  ['plazoleta', 'La Igualdad', 9931.0, 1911.9, 1.6604, 0.3, 'Parque zonal La Igualdad'],
+  ['plazoleta', 'Carvajal', 8615.1, 284.6, 0.1637, 0.4, 'Parque vecinal Carvajal'],
+  ['plazoleta', 'Floralia', 9234.0, -327.7, -0.2591, 1.0, 'Parque vecinal Floralia I Sector'],
+  ['plazoleta', 'El Carmelo - Gran Britalia', 4367.2, 665.9, 0.9689, 0.3, 'Parque vecinal El Carmelo (Favidi) y Gran Britalia'],
+  ['plazoleta', 'Bertha Hernández de Ospina', 4528.3, 22.6, -0.7762, 0.5, 'Parque vecinal Bertha Hernández de Ospina'],
   // MERCADOS EN LOTES VACÍOS REALES (14): polígonos OSM landuse=construction|brownfield|meadow dentro de Kennedy (tools/cache/kennedy_osm.json), de 1.100 m² o más y forma compacta; el rectángulo del mercado queda
   // a 7 m o más de toda vía de net.json y a 25 m o más de cualquier intersección, sin tocar edificios, copas del censo, canchas, agua, parques, huertas ni mercados; mínimo 500 m entre mercados; la bodega mira a la calle más cercana.
   ['barrio', 'Lote recuperado 01', 4746.6, 4590.2, -0.2822, 1.0, 'Lote vacío (OSM construction 1567706460)'],
   ['barrio', 'Lote recuperado 02', 8734.5, -1628.9, 0.5696, 1.0, 'Lote vacío (OSM construction 1446413983)'],
-  ['barrio', 'Lote recuperado 03', 7202.6, 722.3, 1.3886, 1.0, 'Lote vacío (OSM construction 1318223728)'],
-  ['barrio', 'Lote recuperado 04', 5592.2, 1257.4, -2.1087, 1.0, 'Lote vacío (OSM construction 1318206770)'],
-  ['barrio', 'Lote recuperado 05', 6214.4, 472.9, -0.1857, 1.0, 'Lote vacío (OSM construction 1318223727)'],
+  ['barrio', 'Lote recuperado 03', 7190.6, 722.3, 2.9594, 1.0, 'Lote vacío (OSM construction 1318223728)'],
+  ['barrio', 'Lote recuperado 04', 5598.2, 1251.4, -2.1087, 1.0, 'Lote vacío (OSM construction 1318206770)'],
+  ['barrio', 'Lote recuperado 05', 6292.4, 484.9, -0.1857, 0.8, 'Lote vacío (OSM construction 1318223727)'],
   ['barrio', 'Lote recuperado 06', 6855.3, 2665.8, -0.7751, 1.0, 'Lote vacío (OSM construction 320051680)'],
   ['barrio', 'Lote recuperado 07', 5419.6, 379.4, 0.9468, 1.0, 'Lote vacío (OSM meadow 641331647)'],
-  ['barrio', 'Lote recuperado 08', 9425.9, 3274.4, -1.1005, 0.7, 'Lote vacío (OSM brownfield 26696903)'],
+  ['barrio', 'Lote recuperado 08', 9425.9, 3280.4, -1.1005, 0.5, 'Lote vacío (OSM brownfield 26696903)'],
   ['barrio', 'Lote recuperado 09', 5844.1, 4815.2, 2.7091, 1.0, 'Lote vacío (OSM construction 1567706450)'],
   ['barrio', 'Lote recuperado 10', 7144.0, 4617.1, -0.6236, 1.0, 'Lote vacío (OSM construction 962454347)'],
   ['barrio', 'Lote recuperado 11', 7023.1, 5261.6, 0.0168, 1.0, 'Lote vacío (OSM construction 1567706455)'],
-  ['barrio', 'Lote recuperado 12', 7817.2, 4162.8, 0.8151, 1.0, 'Lote vacío (OSM meadow 411105334)'],
+  ['barrio', 'Lote recuperado 12', 7823.2, 4162.8, 0.8151, 0.8, 'Lote vacío (OSM meadow 411105334)'],
   ['barrio', 'Lote recuperado 13', 5256.0, 4673.8, -0.0276, 1.0, 'Lote vacío (OSM construction 1567706458)'],
   ['barrio', 'Lote recuperado 14', 8448.4, 799.6, -2.4029, 1.0, 'Lote vacío (OSM construction 1145845064)']
 ];
@@ -86,7 +86,7 @@ if (typeof window !== 'undefined') window.KEN_MERCADOS = { abiertos: mercadosAbi
 export async function crearRedMercados({ T3, cj }) {
   const THREE = T3.THREE;
   const sitios = MERCADOS.map(m => ({ id: m.id, n: m.n, tipo: m.tipo === 'plazoleta' ? 'plaza' : 'barrio', mx: m.mx, my: m.my, a: m.a, s: m.s, parque: m.parque }));
-  const { crearMercados } = await import('./mercados_barrio.js?v=3');
+  const { crearMercados } = await import('./mercados_barrio.js?v=4');
   const dib = await crearMercados({ T3, cj, sitios });
   const grupo = new THREE.Group(); grupo.name = 'red-mercados'; grupo.visible = false; T3.scene.add(grupo);
   const POR = new Map(MERCADOS.map(m => [m.id, m]));

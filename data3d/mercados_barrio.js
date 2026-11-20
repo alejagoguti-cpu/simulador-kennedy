@@ -37,10 +37,10 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     [7266.3, 4006.7, -0.7694, 1, "Otero de Francisco (parque vecinal)"]
   ];
   const SIT = sitios ? sitios.map((r, i) => { const w = T3.lw(r.mx, r.my), plaza = r.tipo === 'plaza';
-      return { id: r.id != null ? r.id : i, n: r.n, tipo: plaza ? 'plaza' : 'barrio', x: w[0], z: w[1], a: r.a || 0, s: r.s || 1, parque: r.parque || null, y: null, ok: false, abierto: false, geo: null, hu: plaza ? 36 : 16, hv: plaza ? 22 : 12 }; })
+      return { id: r.id != null ? r.id : i, n: r.n, tipo: plaza ? 'plaza' : 'barrio', x: w[0], z: w[1], a: r.a || 0, s: r.s || 1, parque: r.parque || null, y: null, ok: false, abierto: false, geo: null, hu: plaza ? 51 : 26, hv: plaza ? 22 : 12 }; })
     : MER.map((m, i) => { const r = SITIOS[i]; const w = T3.lw((r ? r[0] : m.p[0]), (r ? r[1] : m.p[1]));
-      return { id: i, n: m.n || ('Mercado de barrio ' + (i + 1)), tipo: 'barrio', x: w[0], z: w[1], a: r ? r[2] : 0, s: r ? r[3] : 1, parque: r ? r[4] : null, y: null, ok: false, abierto: true, geo: null, hu: 16, hv: 12 }; });
-  const HU = 16, HV = 12; // medio largo y medio ancho de la huella de barrio (piso incluido); la plazoleta usa S.hu x S.hv = 36 x 22
+      return { id: i, n: m.n || ('Mercado de barrio ' + (i + 1)), tipo: 'barrio', x: w[0], z: w[1], a: r ? r[2] : 0, s: r ? r[3] : 1, parque: r ? r[4] : null, y: null, ok: false, abierto: true, geo: null, hu: 26, hv: 12 }; });
+  const HU = 26, HV = 12; // medio largo y medio ancho de la huella de barrio (piso incluido, 52 x 24 m, ~40 puestos); la plazoleta usa S.hu x S.hv = 51 x 22 (102 x 44 m, ~112 puestos)
   /* ---------- 2. texturas procedurales ---------- */
   const texAdo = lienzo(256, 256, (g, w, h) => { // adoquín de concreto 20x10 cm en hiladas trabadas; la textura cubre 1,6 m
     g.fillStyle = '#4a4742'; g.fillRect(0, 0, w, h); const pw = 32, ph = 16;
@@ -186,15 +186,15 @@ export async function crearMercados({ T3, cj, sitios = null }) {
      vf = v de la cara del podio, n = sentido (+1/-1) hacia afuera de la cara, D = fondo, ap = andén que sale de la cara, pw = repisa frente a las puertas, c0..c1 = cuarto frío, h0..h1 = bodega, ub/bw = centro y ancho de la bahía. */
   const rotulo = (w, h, sup, u, y, v, ry) => { const g = new THREE.PlaneGeometry(w, h), U = g.attributes.uv; for (let i = 0; i < U.count; i++) U.setY(i, sup ? 0.5 + U.getY(i) * 0.5 : U.getY(i) * 0.5); poner('bod', g, '#ffffff', u, y, v, 0, ry, 0, 0); };
   const bodega = (c) => {
-    const { vf, n, D, ap, pw, c0, c1, h0, h1, ub, bw, fill } = c, V = (b) => vf - n * b, VF = V(pw), P = 1.05, YF = 0.07 + P, HH = 3.7, ry = n > 0 ? 0 : Math.PI;
+    const { vf, n, D, pw, c0, c1, h0, h1, fill, bays } = c, V = (b) => vf - n * b, VF = V(pw), P = 1.05, YF = 0.07 + P, HH = 4.0, ry = n > 0 ? 0 : Math.PI;
     const u0 = c0, u1 = h1, uc = (u0 + u1) / 2, vm = V((pw + D) / 2), dm = D - pw;
     caja('conc', u1 - u0, P, D, uc, 0.07 + P / 2, V(D / 2), '#b3afa5', 1.6); // podio a la altura del andén
     if (fill) caja('conc', fill[1] - fill[0], P, 0.3, (fill[0] + fill[1]) / 2, 0.07 + P / 2, V(-0.15), '#bdb9ae', 1.6); // empata con el andén de la zona de carga
-    if (ap > 0) caja('conc', c.apw, P, ap, ub, 0.07 + P / 2, V(-ap / 2), '#bdb9ae', 1.6); // andén que sale de la cara
-    const fb = -ap, vb = V(fb); // cara del muelle: donde reciben los topes
-    for (const sg of [-1, 1]) caja('plas', 0.5, 0.46, 0.14, ub + sg * (bw / 2 + 0.2), YF - 0.36, vb + n * 0.07, '#17181a', 0.5); // topes de caucho
-    caja('met', bw - 0.5, 0.03, pw - fb, ub, YF + 0.015, V((pw + fb) / 2), '#7b8280', 0.5); // nivelador
-    caja('plas', bw + 1.0, 0.02, 0.12, ub, YF + 0.01, V(fb + 0.1), '#e3bd22', 0.5); // línea amarilla del borde del andén
+    for (const { ub, bw, ap = 0, apw, plat } of bays) { // por bahía: andén (si sale de la cara), topes de caucho, nivelador y línea amarilla
+      if (ap > 0) caja('conc', apw, P, ap, ub, 0.07 + P / 2, V(-ap / 2), '#bdb9ae', 1.6);
+      const fb = plat ? -0.3 : -ap, vb = V(fb);
+      if (!plat) { for (const sg of [-1, 1]) caja('plas', 0.5, 0.46, 0.14, ub + sg * (bw / 2 + 0.2), YF - 0.36, vb + n * 0.07, '#17181a', 0.5); caja('plas', bw + 1.0, 0.02, 0.12, ub, YF + 0.01, V(fb + 0.1), '#e3bd22', 0.5); }
+      caja('met', bw - 0.5, 0.03, pw - fb, ub, YF + 0.015, V((pw + fb) / 2), '#7b8280', 0.5); }
     // bodega: bloque repellado, zócalo, columnas de esquina, antepecho y cubierta de lámina
     const hl = h1 - h0, hc = (h0 + h1) / 2;
     caja('plas', hl, HH, dm, hc, YF + HH / 2, vm, '#ece1ca', 0.5); caja('plas', hl + 0.06, 0.5, dm + 0.06, hc, YF + 0.25, vm, '#8c8576', 0.5);
@@ -205,16 +205,17 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     cil('met', 0.045, 0.045, HH - 0.15, 8, h1 - 0.35, YF + (HH - 0.15) / 2, VF + n * 0.14, '#6a716d', 0.5); // bajante
     caja('met', 0.04, 0.5, 1.4, h1 + 0.02, YF + 3.0, V(pw + dm * 0.5), '#59615d', 0.5); for (let k = 0; k < 4; k++) caja('met', 0.05, 0.025, 1.36, h1 + 0.04, YF + 2.82 + k * 0.12, V(pw + dm * 0.5), '#8d9290', 0.5); // rejilla de ventilación
     // bahía: puerta enrollable de lámina con ranuras, guías, cajón del rollo y sello inferior
-    const dh = 2.9; caja('met', bw, dh, 0.06, ub, YF + dh / 2, VF + n * 0.03, '#cdd2d4', 0.5);
+    const dh = 2.9; for (const { ub, bw } of bays) {
+    caja('met', bw, dh, 0.06, ub, YF + dh / 2, VF + n * 0.03, '#cdd2d4', 0.5);
     for (let k = 1; k < 10; k++) caja('met', bw, 0.022, 0.075, ub, YF + k * 0.29, VF + n * 0.035, '#9aa0a2', 0.5);
     for (const sg of [-1, 1]) caja('met', 0.16, dh + 0.1, 0.14, ub + sg * (bw / 2 + 0.08), YF + (dh + 0.1) / 2, VF + n * 0.07, '#5f6663', 0.5);
     caja('met', bw + 0.4, 0.42, 0.3, ub, YF + dh + 0.2, VF + n * 0.15, '#7d8583', 0.5); caja('plas', bw, 0.09, 0.08, ub, YF + 0.045, VF + n * 0.04, '#17181a', 0.5);
     caja('plas', 0.12, 0.3, 0.05, ub + bw / 2 - 0.5, YF + 1.0, VF + n * 0.08, '#e3bd22', 0.5); // manija de la puerta
-    rotulo(2.6, 0.487, true, ub, YF + dh + 0.55, VF + n * 0.035, ry); // letrero discreto «Bodega · recibo 24 h»
-    for (const sg of [-1, 1]) { const ul = ub + sg * (bw / 2 + 0.75), yl = YF + dh + 0.1; // lámparas de muelle: brazo con cabeza luminosa
-      caja('met', 0.05, 0.05, 0.62, ul, yl, VF + n * 0.31, '#454b48', 0.5); caja('met', 0.05, 0.3, 0.05, ul, yl - 0.12, VF + n * 0.02, '#454b48', 0.5); caja('luz', 0.34, 0.07, 0.2, ul, yl - 0.07, VF + n * 0.6, '#fff0bf', 0.5); caja('plas', 0.38, 0.05, 0.24, ul, yl + 0.0, VF + n * 0.6, '#2b2e30', 0.5); }
+    for (const sg of [-1, 1]) { const ul = ub + sg * (bw / 2 + 0.55), yl = YF + dh + 0.1; // lámparas de muelle: brazo con cabeza luminosa
+      caja('met', 0.05, 0.05, 0.62, ul, yl, VF + n * 0.31, '#454b48', 0.5); caja('met', 0.05, 0.3, 0.05, ul, yl - 0.12, VF + n * 0.02, '#454b48', 0.5); caja('luz', 0.34, 0.07, 0.2, ul, yl - 0.07, VF + n * 0.6, '#fff0bf', 0.5); caja('plas', 0.38, 0.05, 0.24, ul, yl + 0.0, VF + n * 0.6, '#2b2e30', 0.5); } }
+    rotulo(2.6, 0.487, true, (h0 + h1) / 2, YF + 3.6, VF + n * 0.035, ry); // letrero discreto «Bodega · recibo 24 h»
     // cuarto frío: panel sándwich blanco, zócalo de acero, juntas de panel, puerta aislada, placa y unidad condensadora
-    const cw = c1 - c0, cc = (c0 + c1) / 2, CH = 4.3;
+    const cw = c1 - c0, cc = (c0 + c1) / 2, CH = 4.6;
     caja('plas', cw, CH, dm, cc, YF + CH / 2, vm, '#f1f3f1', 0.5); caja('met', cw + 0.05, 0.28, dm + 0.05, cc, YF + 0.14, vm, '#98a09e', 0.5); caja('met', cw + 0.08, 0.06, dm + 0.08, cc, YF + CH + 0.03, vm, '#aab1af', 0.5);
     for (let k = 1; k < cw; k++) { caja('plas', 0.014, CH - 0.35, 0.012, c0 + k, YF + 0.28 + (CH - 0.35) / 2, VF + n * 0.006, '#c7ccca', 0.5); }
     for (let k = 1; k < dm; k += 1) caja('plas', 0.012, CH - 0.35, 0.014, c0 - 0.006, YF + 0.28 + (CH - 0.35) / 2, V(pw + k), '#c7ccca', 0.5);
@@ -222,8 +223,8 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     caja('met', 1.3, 2.3, 0.05, cc, YF + 1.2, VF + n * 0.025, '#b4bab9', 0.5); caja('plas', 1.1, 2.1, 0.09, cc, YF + 1.15, VF + n * 0.05, '#e6e9e7', 0.5);
     caja('met', 0.05, 0.55, 0.07, cc + 0.4, YF + 1.1, VF + n * 0.13, '#8a9190', 0.5); for (const y of [0.45, 1.7]) caja('met', 0.07, 0.16, 0.06, cc - 0.58, YF + y, VF + n * 0.1, '#8a9190', 0.5);
     caja('luz', 0.2, 0.1, 0.02, cc + 0.0, YF + 2.38, VF + n * 0.1, '#8fe39a', 0.5); caja('plas', 1.1, 0.26, 0.05, cc, YF + 0.16, VF + n * 0.07, '#17181a', 0.5); // visor de temperatura y burlete
-    const ty = YF + CH + 0.06; caja('met', 1.9, 0.14, 1.3, cc, ty + 0.07, vm, '#5f6663', 0.5); caja('met', 1.8, 0.78, 1.2, cc, ty + 0.14 + 0.39, vm, '#dfe3e2', 0.5); // unidad condensadora en el techo
-    for (const sg of [-1, 1]) { cil('met', 0.4, 0.4, 0.04, 16, cc + sg * 0.45, ty + 0.94, vm, '#2a2d2f', 0.5); cil('met', 0.16, 0.16, 0.05, 10, cc + sg * 0.45, ty + 0.96, vm, '#565c5a', 0.5); }
+    const ty = YF + CH + 0.06; for (const uu of cw > 5.5 ? [cc - cw * 0.22, cc + cw * 0.22] : [cc]) { caja('met', 1.9, 0.14, 1.3, uu, ty + 0.07, vm, '#5f6663', 0.5); caja('met', 1.8, 0.78, 1.2, uu, ty + 0.14 + 0.39, vm, '#dfe3e2', 0.5); // unidades condensadoras en el techo
+      for (const sg of [-1, 1]) { cil('met', 0.4, 0.4, 0.04, 16, uu + sg * 0.45, ty + 0.94, vm, '#2a2d2f', 0.5); cil('met', 0.16, 0.16, 0.05, 10, uu + sg * 0.45, ty + 0.96, vm, '#565c5a', 0.5); } }
     caja('met', 0.08, 0.08, dm * 0.6, c0 + 0.3, ty + 0.3, vm, '#b87333', 0.5); cil('met', 0.04, 0.04, CH, 8, c0 + 0.06, YF + CH / 2, V(pw + 0.4), '#b87333', 0.5); // línea de refrigerante
   };
 
@@ -236,29 +237,29 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     for (const [w, d, x, z] of [[2 * HU + 0.3, 0.16, 0, -HV], [2 * HU + 0.3, 0.16, 0, HV], [0.16, 2 * HV, -HU, 0], [0.16, 2 * HV, HU, 0]]) caja('plas', w, 0.2, d, x, 0.07 + 0.04, z, '#b9b5ab', 0.5);
     // cubierta: 5 pórticos de acero (columnas, tirante, cabios y pendolón), correas y dos aguas de teja de zinc con cumbrera y canales
     const ST = '#59615d', FI = 0.262; let ic = 0;
-    for (const fu of [-10, -5, 0, 5, 10]) {
+    for (const fu of [-20, -15, -10, -5, 0, 5, 10, 15, 20]) {
       for (const sg of [-1, 1]) { caja('met', 0.16, 3.1, 0.16, fu, 0.07 + 1.55, sg * 5, ST, 0.5); caja('met', 0.1, 0.22, 0.6, fu, 0.07 + 3.0, sg * 5, ST, 0.5); // columna y cartela
         const L = Math.hypot(5.6, 1.5); caja('met', 0.08, 0.13, L, fu, 0.07 + 3.0 + 0.75 - 0.08, sg * 2.8, ST, 0.5, sg * FI, 0, 0); }
       caja('met', 0.07, 0.12, 10.2, fu, 0.07 + 3.0 - 0.02, 0, ST, 0.5); caja('met', 0.06, 1.3, 0.06, fu, 0.07 + 3.0 + 0.62, 0, ST, 0.5);
       for (const sg of [-1, 1]) caja('met', 0.04, 0.04, 3.1, fu, 0.07 + 3.0 + 0.25, sg * 1.25, ST, 0.5, sg * 0.38, 0, 0); // tornapuntas
     }
-    for (const v of [-5.4, -2.8, 0, 2.8, 5.4]) caja('met', 25, 0.06, 0.08, 0, 0.07 + 4.5 - Math.abs(v) * 0.268 + 0.02, v, ST, 0.5);
-    for (const sg of [-1, 1]) { caja('teja', 25.2, 0.045, Math.hypot(5.6, 1.5), 0, 0.07 + 3.75 + 0.14, sg * 2.8, '#cfd3cf', 0.5, sg * FI, 0, 0);
-      caja('met', 25.4, 0.12, 0.14, 0, 0.07 + 2.95, sg * 5.65, '#6a716d', 0.5); // canal
-      for (const du of [-10.5, 10.5]) cil('met', 0.045, 0.045, 3.0, 8, du, 0.07 + 1.5, sg * 5.75, '#6a716d', 0.5); } // bajantes
-    caja('met', 25.4, 0.05, 0.46, 0, 0.07 + 4.64, 0, '#7a8280', 0.5); // cumbrera
+    for (const v of [-5.4, -2.8, 0, 2.8, 5.4]) caja('met', 45, 0.06, 0.08, 0, 0.07 + 4.5 - Math.abs(v) * 0.268 + 0.02, v, ST, 0.5);
+    for (const sg of [-1, 1]) { caja('teja', 45.2, 0.045, Math.hypot(5.6, 1.5), 0, 0.07 + 3.75 + 0.14, sg * 2.8, '#cfd3cf', 0.5, sg * FI, 0, 0);
+      caja('met', 45.4, 0.12, 0.14, 0, 0.07 + 2.95, sg * 5.65, '#6a716d', 0.5); // canal
+      for (const du of [-20.5, -10.5, 0, 10.5, 20.5]) cil('met', 0.045, 0.045, 3.0, 8, du, 0.07 + 1.5, sg * 5.75, '#6a716d', 0.5); } // bajantes
+    caja('met', 45.4, 0.05, 0.46, 0, 0.07 + 4.64, 0, '#7a8280', 0.5); // cumbrera
     // avisos en los dos extremos
-    for (const sg of [-1, 1]) { poner('cartel', new THREE.PlaneGeometry(4.4, 0.83), '#ffffff', sg * 12.115, 0.07 + 3.28, 0, 0, sg * Math.PI / 2, 0, 0); poner('cartel', new THREE.PlaneGeometry(4.4, 0.83), '#ffffff', sg * 12.025, 0.07 + 3.28, 0, 0, -sg * Math.PI / 2, 0, 0); // aviso legible por las dos caras
-      caja('mad', 0.07, 0.95, 4.5, sg * 12.07, 0.07 + 3.28, 0, '#7a5a38', 1); for (const dv of [-2, 2]) caja('met', 0.07, 3.3, 0.07, sg * 12.1, 0.07 + 1.65, dv, ST, 0.5); }
-    // puestos bajo la cubierta (pasillo central de 3 m) y puestos de toldo por fuera
-    for (const sg of [-1, 1]) for (let k = 0; k < 6; k++) puesto(-7.5 + k * 3, sg * 3.7, sg, false, ic++);
-    for (const sg of [-1, 1]) for (let k = 0; k < 4; k++) { const ik = ic++; if (sg > 0 && k >= 2) continue; puesto(-6.75 + k * 4.5, sg * 8.6, sg, true, ik); } // en la banda +v dos puestos de toldo ceden su lugar a la bodega
-    [[-13.6, -2.2], [-13.6, 2.4], [13.6, -2.4], [13.6, 2.2]].forEach(([u, v], i) => sombrilla(u, v, ic++ + i));
-    for (const [u, v, sg] of [[-6.5, 10.7, 1], [-6.5, -10.7, -1], [6.5, -10.7, -1]]) banca(u, v, sg);
-    bodega({ vf: 11.9, n: 1, D: 4.1, ap: 0, pw: 0.6, c0: 0.6, c1: 4.6, h0: 4.6, h1: 12.4, ub: 8.5, bw: 2.8 }); // bodega con cuarto frío en el borde de la calle
-    canecas(14.4, -7); canecas(-14.4, 7);
+    for (const sg of [-1, 1]) { poner('cartel', new THREE.PlaneGeometry(4.4, 0.83), '#ffffff', sg * 22.115, 0.07 + 3.28, 0, 0, sg * Math.PI / 2, 0, 0); poner('cartel', new THREE.PlaneGeometry(4.4, 0.83), '#ffffff', sg * 22.025, 0.07 + 3.28, 0, 0, -sg * Math.PI / 2, 0, 0); // aviso legible por las dos caras
+      caja('mad', 0.07, 0.95, 4.5, sg * 22.07, 0.07 + 3.28, 0, '#7a5a38', 1); for (const dv of [-2, 2]) caja('met', 0.07, 3.3, 0.07, sg * 22.1, 0.07 + 1.65, dv, ST, 0.5); }
+    // puestos bajo la cubierta (pasillo central de 3 m: 14 por hilera = 28) y puestos de toldo por fuera (8 al lado -v; 4 al lado +v, donde la bodega ocupa el resto) = 40
+    for (const sg of [-1, 1]) for (let k = 0; k < 14; k++) puesto(-19.5 + k * 3, sg * 3.7, sg, false, ic++);
+    for (const sg of [-1, 1]) for (let k = 0; k < (sg > 0 ? 4 : 8); k++) puesto(-15.75 + k * 4.5, sg * 8.6, sg, true, ic++);
+    [[-24.2, -2.3], [-24.2, 2.3], [24.2, -2.3]].forEach(([u, v], i) => sombrilla(u, v, ic++ + i));
+    for (const [u, v, sg] of [[-6.5, 10.7, 1], [-6.5, -10.7, -1], [6.5, -10.7, -1], [-18, 10.7, 1], [-18, -10.7, -1], [18, -10.7, -1]]) banca(u, v, sg);
+    bodega({ vf: 11.9, n: 1, D: 4.3, pw: 0.6, c0: 6.6, c1: 12.6, h0: 12.6, h1: 25.4, bays: [{ ub: 16.2, bw: 2.8 }, { ub: 21.8, bw: 2.8 }] }); // bodega con cuarto frío y 2 bahías en el borde de la calle
+    canecas(24.8, -7); canecas(-24.8, 7);
     // pilas de huacales vacíos y sacos de papa junto a los puestos de las esquinas
-    for (const [u, v] of [[-14.3, -9.6], [14.3, 9.6]]) { for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) caja('mad', 0.6, 0.22, 0.4, u + j * 0.64, 0.07 + 0.11 + i * 0.22, v, '#c4a070', 0.8);
+    for (const [u, v] of [[-24.3, -9.6], [-24.3, 9.6]]) { for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) caja('mad', 0.6, 0.22, 0.4, u + j * 0.64, 0.07 + 0.11 + i * 0.22, v, '#c4a070', 0.8);
       for (let i = 0; i < 4; i++) caja('plas', 0.55, 0.2 + (i % 2) * 0.04, 0.38, u + 0.5 * (i % 2), 0.07 + 0.11 + (i >> 1) * 0.2, v + 0.55 + (i % 2) * 0.1, i % 2 ? '#b99b6a' : '#c8aa78', 0.5, 0, i * 0.3, 0); }
   };
 
@@ -339,22 +340,22 @@ export async function crearMercados({ T3, cj, sitios = null }) {
   const pilaCajas = (u, v, ry = 0) => { for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) caja('mad', 0.6, 0.22, 0.4, u + j * 0.64, 0.07 + 0.11 + i * 0.22, v, '#c4a070', 0.8, 0, ry, 0);
     for (let i = 0; i < 4; i++) caja('plas', 0.55, 0.2 + (i % 2) * 0.04, 0.38, u + 0.5 * (i % 2), 0.07 + 0.11 + (i >> 1) * 0.2, v + 0.55 + (i % 2) * 0.1, i % 2 ? '#b99b6a' : '#c8aa78', 0.5, 0, i * 0.3, 0); };
   const plazoleta = (S) => {
-    const PHU = 36, PHV = 22; npP = 0; MS = [8, 3]; sem = 31 + (S.id | 0) * 7;
-    M0.compose(new THREE.Vector3(S.x, S.y, S.z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -S.a, 0)), new THREE.Vector3(S.s, S.s, S.s));
-    caja('ado', 2 * PHU, 0.4, 2 * PHV, 0, 0.07 - 0.2, 0, '#e2ddd3', 1.6);
-    for (const [w, d, x, z] of [[2 * PHU + 0.3, 0.16, 0, -PHV], [2 * PHU + 0.3, 0.16, 0, PHV], [0.16, 2 * PHV, -PHU, 0], [0.16, 2 * PHV, PHU, 0]]) caja('plas', w, 0.2, d, x, 0.07 + 0.04, z, '#b9b5ab', 0.5);
-    const US = [-20, -15, -10, -5, 0, 5, 10]; nave(-10.5, US); nave(10.5, US);
+    const PHU = 51, PHV = 22, UC = -15; npP = 0; MS = [8, 3]; sem = 31 + (S.id | 0) * 7; // huella 102 x 44 m: u de -66 a 36, centrada en S.x,S.z (el origen local va 15 m al este del centro)
+    M0.compose(new THREE.Vector3(S.x - UC * Math.cos(S.a) * S.s, S.y, S.z - UC * Math.sin(S.a) * S.s), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -S.a, 0)), new THREE.Vector3(S.s, S.s, S.s));
+    caja('ado', 2 * PHU, 0.4, 2 * PHV, UC, 0.07 - 0.2, 0, '#e2ddd3', 1.6);
+    for (const [w, d, x, z] of [[2 * PHU + 0.3, 0.16, UC, -PHV], [2 * PHU + 0.3, 0.16, UC, PHV], [0.16, 2 * PHV, UC - PHU, 0], [0.16, 2 * PHV, UC + PHU, 0]]) caja('plas', w, 0.2, d, x, 0.07 + 0.04, z, '#b9b5ab', 0.5);
+    const US = []; for (let u = -50; u <= 10; u += 5) US.push(u); nave(-10.5, US); nave(10.5, US); // dos naves de 60 m
     let ic = 0;
-    for (let k = 0; k < 10; k++) { const u = -18.5 + k * 3;
+    for (let k = 0; k < 20; k++) { const u = -48.5 + k * 3;
       puestoP(u, -10.5 - 3.7, -1, false, ic++, TIPOS_FRUTA); puestoP(u, -10.5 + 3.7, 1, false, ic++, TIPOS_FRUTA); // nave de frutas
       puestoP(u, 10.5 - 3.7, -1, false, ic++, ic % 3 ? TIPOS_VERDURA : TIPOS_FRUTA); puestoP(u, 10.5 + 3.7, 1, false, ic++, TIPOS_VERDURA); } // nave de verduras y hortalizas
-    for (let k = 0; k < 6; k++) { const u = -15 + k * 4.5; puestoP(u, -2.6, 1, true, ic++, TIPOS_FRUTA); puestoP(u, 2.6, -1, true, ic++, k % 2 ? TIPOS_VERDURA : TIPOS_FRUTA); } // calle central, con toldos de lona
-    [[-27, -6.5], [-27, 6.5], [-31, -12.5], [-31, 12.5]].forEach(([u, v], i) => sombrillaP(u, v, ic++ + i, TIPOS_FRUTA));
-    carretilla(-24, 0.8, 0.15, 'naranja'); carretilla(13, -4, -0.4, 'platano'); carretilla(12.6, 5.2, 0.3, 'papaya');
+    for (let k = 0; k < 12; k++) { const u = -45 + k * 4.5; puestoP(u, -2.6, 1, true, ic++, TIPOS_FRUTA); puestoP(u, 2.6, -1, true, ic++, k % 2 ? TIPOS_VERDURA : TIPOS_FRUTA); } // calle central, con toldos de lona
+    [[-56, -5], [-56, 5], [-56, -13], [-56, 13], [-61, -9], [-61, 9], [-61, -16], [-61, 16]].forEach(([u, v], i) => sombrillaP(u, v, ic++ + i, TIPOS_FRUTA));
+    carretilla(-24, 0.8, 0.15, 'naranja'); carretilla(-44, -0.8, 0.1, 'tomate'); carretilla(13, -4, -0.4, 'platano'); carretilla(12.6, 5.2, 0.3, 'papaya');
     // portal de entrada con el aviso a dos caras
-    for (const dv of [-4.6, 4.6]) { caja('met', 0.16, 5.0, 0.16, -34, 0.07 + 2.5, dv, ST_, 0.5); }
-    caja('mad', 0.09, 1.65, 9.6, -34, 0.07 + 4.35, 0, '#6a4a30', 1);
-    for (const sg of [-1, 1]) poner('cartelP', new THREE.PlaneGeometry(8.4, 1.575), '#ffffff', sg * 0.053 - 34, 0.07 + 4.35, 0, 0, sg * Math.PI / 2, 0, 0);
+    for (const dv of [-4.6, 4.6]) { caja('met', 0.16, 5.0, 0.16, -64, 0.07 + 2.5, dv, ST_, 0.5); }
+    caja('mad', 0.09, 1.65, 9.6, -64, 0.07 + 4.35, 0, '#6a4a30', 1);
+    for (const sg of [-1, 1]) poner('cartelP', new THREE.PlaneGeometry(8.4, 1.575), '#ffffff', sg * 0.053 - 64, 0.07 + 4.35, 0, 0, sg * Math.PI / 2, 0, 0);
     // zona de carga y descarga: losa con bahías pintadas, andén de 1 m con bordillos de caucho y marquesina
     caja('conc', 17, 0.03, 31, 22.5, 0.07 + 0.015, 0, '#cfcbc1', 1.6);
     for (const v of [-15, -5, 5, 15]) caja('plas', 13, 0.012, 0.12, 21.5, 0.07 + 0.033, v, '#e3bd22', 0.5); for (const [u, v] of [[15, -10], [15, 0], [15, 10]]) caja('plas', 0.12, 0.012, 9.8, u, 0.07 + 0.033, v, '#e3bd22', 0.5);
@@ -365,13 +366,12 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     furgon(29.5, -10); camion(29.7, 0); camioneta(29.4, 10);
     for (const [u, v] of [[34.5, -9], [34.5, 9]]) pilaCajas(u, v, 0.1); // huacales vacíos y costales sobre el andén
     for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) huacalP(0.62, 0.3, 0.42, 33.2 + j * 0.66, 0.07 + 1.05 + 0.15 + (i % 2) * 0.3, -3.2 + i * 0.7 - (i % 2) * 0.0, TIPOS_FRUTA[(i + j) % TIPOS_FRUTA.length]);
-    // dos módulos de bodega con cuarto frío (uno a cada lado de la losa de carga): cada uno con su bahía y andén; reciben a cualquier hora
-    for (const n of [-1, 1]) bodega({ vf: -n * 15.8, n, D: 5.5, ap: 1.0, apw: 3.3, pw: 0.7, c0: 22.6, c1: 26.9, h0: 26.9, h1: 35.6, ub: 29.35, bw: 3.0, fill: [31, 35.6] });
+    // dos módulos de bodega con cuarto frío (uno a cada lado de la losa de carga): cada uno con 2 bahías (una con andén sobre la losa y otra sobre el andén de carga) = 4 bahías; reciben a cualquier hora
+    for (const n of [-1, 1]) bodega({ vf: -n * 15.8, n, D: 5.5, pw: 0.7, c0: 20.4, c1: 27.2, h0: 27.2, h1: 35.6, fill: [31, 35.6], bays: [{ ub: 29.4, bw: 3.0, ap: 1.0, apw: 3.3 }, { ub: 33.5, bw: 3.0, plat: true }] });
     // perímetro: bancas, residuos, farolas y árboles
-    for (const sg of [-1, 1]) { for (const u of [-28, -14, 0, 14]) banca(u, sg * 18.4, sg); for (const u of [-33, -16, 2, 20]) arbolP(u, sg * 20, 3.2 + rnd() * 0.8, 2.0 + rnd() * 0.5, (ic++ + (sg > 0 ? 3 : 0)));
-      farola(-33, sg * 19); farola(18, sg * 19); }
-    canecas(-30.4, -17); canecas(-30.4, 17); canecas(14.8, -17.2); canecas(14.8, 17.2);
-    arbolP(-24.5, -10.5, 3.4, 2.1, 7); arbolP(-24.5, 10.5, 3.2, 2.0, 11);
+    for (const sg of [-1, 1]) { for (const u of [-58, -44, -28, -14, 0, 14]) banca(u, sg * 18.4, sg); for (const u of [-62, -48, -33, -16, 2]) arbolP(u, sg * 20, 3.2 + rnd() * 0.8, 2.0 + rnd() * 0.5, (ic++ + (sg > 0 ? 3 : 0)));
+      farola(-63, sg * 19); farola(-33, sg * 19); farola(18, sg * 19); }
+    canecas(-30.4, -17); canecas(-30.4, 17); canecas(-60.4, -17.5); canecas(-60.4, 17.5); canecas(14.8, -17.2); canecas(14.8, 17.2);
     S.puestos = npP; MS = [12, 5];
   };
 
@@ -413,7 +413,7 @@ export async function crearMercados({ T3, cj, sitios = null }) {
 
   return {
     grupo, stats: () => stats, mostrar,
-    lista: SIT.map(S => ({ get id() { return S.id; }, get n() { return S.n; }, get tipo() { return S.tipo; }, get x() { return S.x; }, get z() { return S.z; }, get a() { return S.a; }, s: S.s, parque: S.parque, get y() { return S.y; }, get abierto() { return S.abierto; }, get puestos() { return S.puestos || 20; } })),
+    lista: SIT.map(S => ({ get id() { return S.id; }, get n() { return S.n; }, get tipo() { return S.tipo; }, get x() { return S.x; }, get z() { return S.z; }, get a() { return S.a; }, s: S.s, parque: S.parque, get y() { return S.y; }, get abierto() { return S.abierto; }, get puestos() { return S.puestos || 40; } })),
     ver(on) { grupo.visible = !!on; if (on) apoyar(); },
     quitar() { clearInterval(timer); limpiar(); for (const S of SIT) soltar(S); T3.scene.remove(grupo); }
   };

@@ -207,7 +207,7 @@ export async function crearViajesMercados({ T3, cj }) {
   const [usos, carga] = await Promise.all([cargar('data3d/usos_edif.json?v=1'), cargar('data3d/carga.json?v=2').catch(() => ({ mercados: [] }))]);
   const R = construirRed(net, lw), Z = construirZonas(usos, lw, R);
   // red de mercados (otro módulo); si no está, respaldo: los 8 de carga.json, uno cada 26 semanas desde la semana 26 [SUP]
-  let RED = null; try { RED = await import('./mercados_red.js?v=4'); } catch (e) { RED = null; }
+  let RED = null; try { RED = await import('./mercados_red.js?v=5'); } catch (e) { RED = null; }
   const RESPALDO = (carga.mercados || []).map((m, k) => { const w = lw(m.p[0], m.p[1]); return { id: 'm' + (k + 1), n: m.n || 'Mercado de barrio ' + (k + 1), tipo: 'barrio', x: w[0], z: w[1], cap: PAR.KG.barrio, desde: 26 + 26 * k }; });
   const fuenteMerc = () => RED ? 'data3d/mercados_red.js' : 'respaldo: 8 mercados de data3d/carga.json';
   /* mercados abiertos en la semana: con la propuesta a la vista, los mismos que dibuja mercados_red.js (mercadosAbiertos(): semana y avance

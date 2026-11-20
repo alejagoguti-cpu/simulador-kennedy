@@ -160,7 +160,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* mercados campesinos de barrio en los parques (data3d/mercados_barrio.js): solo con la propuesta */
   let MERC = null, pMerc = null;
   const mercadosBarrio = (on) => { if (MERC) { MERC.ver(on); return; } if (!on || pMerc) return;
-    pMerc = import('./mercados_red.js?v=4').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
+    pMerc = import('./mercados_red.js?v=5').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
   const parqueCorabastos = (on) => { if (PCORA) { PCORA.ver(on); return; } if (!on || pPCora) return;
     pPCora = import('./corabastos_parque.js?v=6').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
@@ -169,7 +169,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* viajes de abastecimiento (data3d/viajes_mercados.js): la simulación EVALÚA adónde van los carros y camiones que iban a Corabastos (mercados de
      barrio, plazoletas y Bavaria) según los mercados abiertos cada año; el tráfico que se quita cerca de Corabastos sale de este modelo. Se carga
      siempre (el reloj lo pone al día); panel, rutas y vehículos solo con la propuesta */
-  import('./viajes_mercados.js?v=5').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
+  import('./viajes_mercados.js?v=6').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;
