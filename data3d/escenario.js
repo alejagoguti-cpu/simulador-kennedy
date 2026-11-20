@@ -169,7 +169,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* viajes de abastecimiento (data3d/viajes_mercados.js): la simulación EVALÚA adónde van los carros y camiones que iban a Corabastos (mercados de
      barrio, plazoletas y Bavaria) según los mercados abiertos cada año; el tráfico que se quita cerca de Corabastos sale de este modelo. Se carga
      siempre (el reloj lo pone al día); panel, rutas y vehículos solo con la propuesta */
-  import('./viajes_mercados.js?v=1').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
+  import('./viajes_mercados.js?v=2').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;

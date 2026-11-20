@@ -6,7 +6,7 @@
         · comerciantes de barrio que se surten (camiones, furgones y furgonetas): comercios × PAR.FR_COM_ALIM × PAR.TASA_COM; el 75 % en la madrugada (2:00-6:00)
         · hogares que compran frescos al por mayor (carros y motos): hogares × PAR.TASA_HOG; sobre todo de día
       La parte que ya cubren las huertas (sim_vida: personas que comen de las huertas / población; o el slider «Hogares con huerta») no viaja.
-   2. ELECCIÓN DE DESTINO (logit multinomial por zona, segmento y franja). Destinos: Corabastos, los mercados abiertos esa semana (de barrio y
+   2. ELECCIÓN DE DESTINO: cada viaje va al destino abierto MÁS CERCANO por la red vial (si está lleno, al siguiente); mercados abren a las 7:00. (Antes: logit multinomial por zona, segmento y franja; el detalle de abajo describe esa versión anterior.) Destinos: Corabastos, los mercados abiertos esa semana (de barrio y
       plazoletas en parques grandes: data3d/mercados_red.js; si no está, los 8 de data3d/carga.json con apertura escalonada) y el centro de
       acopio de Bavaria Común. Utilidad: V = −β·km por la red vial real (camino más corto sobre net.json) + constante del destino
       (Corabastos: precio mayorista y surtido − congestión; mercados y Bavaria: + surtido cuando las compras directas a la región de sim_vida
@@ -36,7 +36,7 @@ export const PAR = {
   ASC: { barrio: { hog: -0.3, com: -0.9 }, plazoleta: { hog: 0.0, com: -0.6 }, bavaria: { hog: -0.6, com: 0.0 } }, // [SUP] sin surtido regional
   SURT_REG: { hog: 0.8, com: 1.4 }, // [SUP] + cuando las compras directas a la región (sim_vida: reg) están armadas: surtido y precio
   REG_REF: 0.45,                  // compras a la región de referencia (P1.regional por defecto)
-  HORAS_MADR: { cora: 1, bavaria: 1, plazoleta: 0.5, barrio: 0.25 }, // [SUP] parte de 2-6 h abierta: Bavaria 2:00, plazoletas 4:00, barrio 5:00
+  HORAS_MADR: { cora: 1, bavaria: 1, plazoleta: 0, barrio: 0 }, // horario: los mercados (de barrio y plazoletas) abren a las 7:00 → cerrados de 2:00 a 6:00; Corabastos y el acopio de Bavaria abren a las 2:00
   ALFA_CAP: 0.4, CAP_REF: 100,    // [SUP] atractivo por tamaño del mercado (capacidad en compras-equivalentes/día)
   EQ: { hog: 1, com: 4 },         // [SUP] un tendero carga lo de 4 compras de hogar (uso de la capacidad)
   KG_EQ: 25,                      // [SUP] kg de frutas y verduras de una compra de hogar en carro (un tendero: 4 × 25 = 100 kg)
@@ -148,16 +148,20 @@ export function evaluar(R, Z, E) {
     for (let i = 0; i < Z.length; i++) V[s][i * nD + j] = isFinite(KM[i * nD + j]) ? asc - PAR.BETA[c] * KM[i * nD + j] : -Infinity; } });
   // viajes que salen de cada zona por segmento (descontando lo que cubren las huertas)
   const TS = SEG.map(([c, f]) => Z.map(z => z.T[c] * (f === 'm' ? PAR.MADR[c] : 1 - PAR.MADR[c]) * (1 - (c === 'hog' ? E.cubreHog : E.cubreCom))));
+  /* ELECCIÓN (regla de la usuaria): cada viaje va al destino ABIERTO MÁS CERCANO por la red vial; si ese mercado ya está lleno, al siguiente más
+     cercano; Corabastos no tiene tope. En la madrugada (2-6 h) los mercados están cerrados (abren a las 7:00): solo Corabastos y Bavaria.
+     Las zonas más cercanas a cada destino llenan primero (orden determinista). La capacidad de cada mercado sigue siendo un supuesto [SUP]. */
   const lam = new Float64Array(nD), P = SEG.map(() => new Float64Array(Z.length * nD)), carga = new Float64Array(nD);
-  for (let it = 0; it < 40; it++) {
-    carga.fill(0);
-    SEG.forEach(([c], s) => { for (let i = 0; i < Z.length; i++) { let m = -Infinity; for (let j = 0; j < nD; j++) m = Math.max(m, V[s][i * nD + j] - lam[j]);
-      let S = 0; for (let j = 0; j < nD; j++) { const e = Math.exp(V[s][i * nD + j] - lam[j] - m); P[s][i * nD + j] = e; S += e; }
-      for (let j = 0; j < nD; j++) { P[s][i * nD + j] /= S || 1; carga[j] += TS[s][i] * P[s][i * nD + j] * PAR.EQ[c]; } } });
-    let cambio = 0;
-    for (let j = 0; j < nD; j++) { if (D[j].tipo === 'cora') continue; const r = Math.log(Math.max(1e-6, carga[j]) / D[j].cap), nl = Math.max(0, lam[j] + 0.6 * r); cambio = Math.max(cambio, Math.abs(nl - lam[j])); lam[j] = nl; }
-    if (cambio < 0.01) break;
-  }
+  const abierto = (t, f) => !(f === 'm' && PAR.HORAS_MADR[t] === 0);
+  const ORDEN = Z.map((z, i) => [...Array(nD).keys()].filter(j => isFinite(KM[i * nD + j])).sort((a, b) => KM[i * nD + a] - KM[i * nD + b] || a - b));
+  const dMin = (i) => ORDEN[i].length ? KM[i * nD + ORDEN[i][0]] : 1e9, zOrd = [...Array(Z.length).keys()].sort((a, b) => dMin(a) - dMin(b) || a - b);
+  const jCora = D.findIndex(d => d.tipo === 'cora');
+  SEG.forEach(([c, f], s) => { for (const i of zOrd) { const tot = TS[s][i]; let resto = tot; if (!(tot > 0)) continue;
+    for (const j of ORDEN[i]) { const t = D[j].tipo; if (!abierto(t, f)) continue;
+      const toma = t === 'cora' ? resto : Math.min(resto, Math.max(0, D[j].cap - carga[j]) / PAR.EQ[c]); if (!(toma > 0)) continue;
+      P[s][i * nD + j] += toma / tot; carga[j] += toma * PAR.EQ[c]; resto -= toma; if (resto <= 1e-9) break; }
+    if (resto > 1e-9 && jCora >= 0) { P[s][i * nD + jCora] += resto / tot; carga[jCora] += resto * PAR.EQ[c]; } } });
+  for (let j = 0; j < nD; j++) if (D[j].tipo !== 'cora' && carga[j] >= D[j].cap * 0.999) lam[j] = 1; // «lleno»
   // resultados por destino
   const out = { dest: D.map((d, j) => ({ id: d.id, n: d.n, tipo: d.tipo, cap: d.cap, lam: lam[j], carga: carga[j], hog: { m: 0, r: 0 }, com: { m: 0, r: 0 }, vkm: 0 })), vkm: { hog: 0, com: 0 },
     viajes: SEG.map(() => new Float64Array(Z.length * nD)), nD, flujo: new Float32Array(R.M), flujoCom: new Float32Array(R.M) };
@@ -377,7 +381,7 @@ export async function crearViajesMercados({ T3, cj }) {
 <div class="vm-fila v2" data-veh><button type="button" data-v="1">Ver</button><button type="button" data-v="">Apagar</button></div>
 <div class="vm-nota" data-vnota></div>
 <details><summary>Cada mercado abierto</summary><div class="vm-merc" data-merc></div></details>
-<details><summary>Cómo se evalúa (supuestos)</summary><p class="vm-nota">Zonas de 500 m con los lotes residenciales y comerciales del catastro de usos. Hogares: ${PAR.TASA_HOG} viajes/día en carro o moto [SUP]. Tenderos: ${Math.round(PAR.FR_COM_ALIM * 100)} % de los comercios, ${PAR.TASA_COM} viajes/día, ${Math.round(PAR.MADR.com * 100)} % entre 2 y 6 a. m. [SUP]. Cada zona elige destino con un logit: −${PAR.BETA.hog} (hogares) y −${PAR.BETA.com} (tenderos) por km de red vial real (camino más corto en net.json), Corabastos con precio y surtido pero congestión (+${PAR.PEN_CORA_NAVES} por % de naves retiradas), mercados y Bavaria con más surtido cuando las compras a la región de la simulación de vida están armadas, horas abiertas en la madrugada y capacidad limitada (un mercado lleno deja de recibir) [SUP]. Lo que cubren las huertas no viaja. Hipótesis cumplida si Corabastos baja ${Math.round(PAR.HIP_MIN_BAJA * 100)} % o más y ${Math.round(PAR.HIP_MIN_REPARTO * 100)} % o más de esa baja llega a los mercados y a Bavaria. El tráfico del mapa cerca de Corabastos quita ${Math.round(PAR.FR.car * 100)} % (carros) y ${Math.round(PAR.FR.cam * 100)} % (camiones) × la baja de viajes de cada franja [SUP]. Mercados: <span data-fuente></span>.</p></details>`;
+<details><summary>Cómo se evalúa (supuestos)</summary><p class="vm-nota">Zonas de 500 m con los lotes residenciales y comerciales del catastro de usos. Hogares: ${PAR.TASA_HOG} viajes/día en carro o moto [SUP]. Tenderos: ${Math.round(PAR.FR_COM_ALIM * 100)} % de los comercios, ${PAR.TASA_COM} viajes/día, ${Math.round(PAR.MADR.com * 100)} % entre 2 y 6 a. m. [SUP]. Cada viaje va al destino abierto más cercano por la red vial real (camino más corto en net.json); si ese mercado está lleno, al siguiente más cercano; Corabastos no tiene tope. Los mercados de barrio y las plazoletas abren a las 7:00 (en la madrugada, de 2 a 6 h, solo están Corabastos y el acopio de Bavaria). Capacidad de cada mercado limitada [SUP]. Lo que cubren las huertas no viaja. Hipótesis cumplida si Corabastos baja ${Math.round(PAR.HIP_MIN_BAJA * 100)} % o más y ${Math.round(PAR.HIP_MIN_REPARTO * 100)} % o más de esa baja llega a los mercados y a Bavaria. El tráfico del mapa cerca de Corabastos quita ${Math.round(PAR.FR.car * 100)} % (carros) y ${Math.round(PAR.FR.cam * 100)} % (camiones) × la baja de viajes de cada franja [SUP]. Mercados: <span data-fuente></span>.</p></details>`;
   el.querySelector('.vm-x').onclick = () => panel(false);
   el.querySelectorAll('[data-rutas] button').forEach(b => b.onclick = () => { modoRutas = b.dataset.m || modoRutas; verRutas = !!b.dataset.m; aplicarVis(); pintar(true); });
   el.querySelectorAll('[data-veh] button').forEach(b => b.onclick = () => { verVeh = !!b.dataset.v; aplicarVis(); pintar(true); });
