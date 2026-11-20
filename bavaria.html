@@ -98,6 +98,13 @@ body.con-guion .guion{display:block}
 .herr{display:flex;gap:6px;padding:5px;border-radius:999px}
 #leyenda{border-radius:12px;padding:10px 12px;min-width:200px;max-width:290px;font-size:12px;line-height:1.4;color:var(--soft)}
 #leyenda:empty{display:none}
+.et .pin,#leyenda .pin{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:7px;vertical-align:-4px;flex:none}
+.et .pin .ico,#leyenda .pin .ico{display:block}
+.mini{display:block;width:100%;height:86px;margin:2px 0 8px}
+.mini .fl{stroke-width:1.6;stroke-dasharray:3 4;animation:flujo 1.1s linear infinite}
+.mini .fl.r{stroke:#E0623F}.mini .fl.v{stroke:#4FB98C}
+@keyframes flujo{to{stroke-dashoffset:-14}}
+@media (prefers-reduced-motion:reduce){.mini .fl{animation:none}}
 #leyenda .t{font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
 #leyenda .f{display:flex;align-items:center;gap:8px;margin:4px 0}
 #leyenda .f i{width:9px;height:9px;border-radius:50%;flex:none}
@@ -117,7 +124,9 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
  .bar{left:8px;right:8px;top:8px;gap:8px;padding:6px 8px}
  .brand,.pline,.count{display:none}
  .lado{top:58px;right:8px}
- #leyenda{display:none}
+ #leyenda{max-width:58vw;min-width:0;padding:8px 10px;font-size:11px}
+ #leyenda .f:nth-of-type(n+4){display:none}
+ .mini{height:60px}
  .panel{left:8px;right:8px;bottom:8px;width:auto;max-height:50vh}
  .panel .cuerpo{padding:14px 16px 10px}
  #frase{font-size:16.5px}
@@ -169,7 +178,7 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
   <form method="dialog"><button class="pill" type="submit">Cerrar</button></form>
 </dialog>
 
-<script type="module" src="data3d/bavaria_pres.js?v=4"></script>
+<script type="module" src="data3d/bavaria_pres.js?v=5"></script>
 <script>document.getElementById('b-fuentes').onclick=()=>document.getElementById('d-fuentes').showModal();</script>
 </body>
 </html>

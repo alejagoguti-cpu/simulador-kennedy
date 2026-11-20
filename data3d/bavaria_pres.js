@@ -469,10 +469,10 @@ addEt(`<i style="background:${COL.ocre}"></i>Comerciantes`, [ZM[0], 70, ZM[1]], 
 { const dest = [ZM, ...MERC.map(m => m.p)]; const cs = TECHS.map(t => curva(t.p, masCerca(t.p, dest), null, t.h, 8)); cs.forEach(c => linea('exc', c, COL.verde, 0.5)); pulsos('exc', cs, COL.verde, 2, 0.08, 5); }
 // etiquetas del clúster y del NBIC sobre los edificios
 const sobre = (i, dy = 14) => { const [X, Z] = centroEdif(i); return [X, D.edif[i].h + dy, Z]; };
-addEt(`<i style="background:${COL.lila}"></i>Universidades`, sobre(5, 30), ['cluster']);
-addEt(`<i style="background:${COL.ocre}"></i>Comerciantes`, sobre(3, 30), ['cluster']);
-addEt(`<i style="background:#d98f5a"></i>Promotores barriales`, sobre(11, 30), ['cluster']);
-addEt(`<i style="background:${COL.rojo}"></i>Organizaciones barriales`, sobre(4, 30), ['cluster']);
+addEt(`<i style="background:${COL.lila}"></i>Universidades`, sobre(5, 30), ['clusterOld']);
+addEt(`<i style="background:${COL.ocre}"></i>Comerciantes`, sobre(3, 30), ['clusterOld']);
+addEt(`<i style="background:#d98f5a"></i>Promotores barriales`, sobre(11, 30), ['clusterOld']);
+addEt(`<i style="background:${COL.rojo}"></i>Organizaciones barriales`, sobre(4, 30), ['clusterOld']);
 addEt(`<i style="background:${COL.verde}"></i>Hidroponía`, sobre(0, 10), ['nb_b']);
 addEt(`<i style="background:${COL.verde}"></i>Hidroponía y módulos`, sobre(2, 10), ['nb_b']);
 addEt('<i style="background:#d9c7ef"></i>Hongos con materiales vegetales', sobre(23, 10), ['nb_b']);
@@ -705,10 +705,10 @@ const barras = (k, ix) => {
   S.forEach((s, i) => { const a = s.p[0], b = s.p[s.p.length - 1]; const [ax, az] = W(...a), [bx, bz] = W(...b); const L = Math.max(2, Math.hypot(bx - ax, bz - az)); const v = pct(s.a[ix], ix);
     const h = 4 + 480 * Math.pow(v, 6); p.set((ax + bx) / 2, 0, (az + bz) / 2); q.setFromAxisAngle(Y, -Math.atan2(bz - az, bx - ax)); sc.set(L, h, MOVIL ? 14 : 10); M.compose(p, q, sc); m.setMatrixAt(i, M); m.setColorAt(i, rampa(v)); });
   m.renderOrder = 5; xg(k).g.add(m); crece(k, m, 0.1, 2.2, 'sy'); return m; };
-barras('sxI', 1); barras('sxE', 2);
+
 { const top = existentes.map(s => ({ s, v: s.a[2] })).sort((a, b) => b.v - a.v).slice(0, MOVIL ? 160 : 360);
   const cs = top.map(({ s }) => { const pts = s.p.map(([x, y]) => { const [X, Z] = W(x, y); return new THREE.Vector3(X, 8, Z); }); return pts.length > 1 ? new THREE.CatmullRomCurve3(pts) : null; }).filter(Boolean);
-  pulsos('sxE', cs, '#ffffff', 2, 0.35, 5); }
+  pulsos('recorridos', cs, '#ffffff', 2, 0.35, 5); }
 // 10.6 pasajes: peatones que entran por las puertas hasta las naves
 { const cs = nuevos.map(s => { const pts = chaikin(s.p).map(([x, y]) => { const [X, Z] = W(x, y); return new THREE.Vector3(X, 3, Z); }); return new THREE.CatmullRomCurve3(pts); });
   cs.forEach((c, i) => tubo('pasos', c, 2.2, '#F2EFE8', 0.95, i * 0.08)); pulsos('pasos', cs, [COL.ocre, '#ffffff'], 5, 0.07, 7);
@@ -733,6 +733,94 @@ barras('sxI', 1); barras('sxE', 2);
   addEt(`<i style="background:${COL.verde}"></i>Salvemos el Bosque de Bavaria · colectivo ciudadano`, [ZB[0], 320, ZB[1]], ['colectivo'], 'fuerte');
   addEt('Conservación del bosque frente a la tala', [ZB[0] + 250, 30, ZB[1]], ['colectivo']); }
 
+
+/* =============================== RED DE ABASTECIMIENTO CON ÍCONOS (hoy centralizada · propuesta distribuida) =============================== */
+// Íconos de trazo (estilo Lucide, 24 × 24). 'circle cx cy r' se dibuja como círculo.
+const ICO = {
+  colegio: ['M22 10v6', 'M2 10l10-5 10 5-10 5z', 'M6 12v5c3 3 9 3 12 0v-5'],
+  plaza: ['m2 7 3-4h14l3 4', 'M4 11v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9', 'M9 21v-5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5', 'M2 7h20'],
+  mercado: ['m15 11-1 9', 'm19 11-4-7', 'M2 11h20', 'm3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4', 'M4.5 15.5h15', 'm5 11 4-7', 'm9 11 1 9'],
+  corabastos: ['M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z', 'M6 18h12', 'M6 14h12', 'M6 10h12'],
+  camion: ['M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2', 'M15 18H9', 'M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14', 'circle 17 18 2', 'circle 7 18 2'],
+  cluster: ['circle 12 5 2.6', 'circle 5 18.5 2.6', 'circle 19 18.5 2.6', 'M10.6 7.3 6.4 16.2', 'M13.4 7.3l4.2 8.9', 'M7.6 18.5h8.8'],
+  lab: ['M9 3h6', 'M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3', 'M7 15h10'],
+  asamblea: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'circle 9 7 4', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
+  huerta: ['M7 20h10', 'M10 20c5.5-2.5.8-6.4 3-10', 'M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z', 'M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z'],
+  hongo: ['M12 21v-8', 'M3.5 13a8.5 8.5 0 0 1 17 0z', 'M9 21h6'],
+  compost: ['M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.5', 'M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.2-2.1', 'm14 16-3 3 3 3', 'M8.3 13.6 7.2 9.5 3.1 10.6', 'm9.3 5.8 1.1-1.9a1.8 1.8 0 0 1 3.1 0l3.9 6.8', 'm13.4 9.6 4.1 1.1 1.1-4.1'],
+  cocina: ['M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2', 'M7 2v20', 'M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7'],
+  persona: ['M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2', 'circle 12 7 4'],
+  casa: ['m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M9 22V12h6v10'],
+};
+const icoSVG = (k, col = 'currentColor', px = 14) => `<svg class="ico" viewBox="0 0 24 24" width="${px}" height="${px}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICO[k].map(d => d.startsWith('circle') ? (([, x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`)(d.split(' ')) : `<path d="${d}"/>`).join('')}</svg>`;
+const etI = (k, col, txt) => `<span class="pin" style="background:${col}">${icoSVG(k, '#111', 12)}</span>${txt}`;
+const texIco = (() => { const cache = new Map(); return (k, col, anillo = '#0d0e10') => { const key = k + col + anillo; if (cache.has(key)) return cache.get(key);
+  const S = 128, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+  g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 4, 0, Math.PI * 2); g.fillStyle = col; g.fill(); g.lineWidth = 6; g.strokeStyle = anillo; g.stroke();
+  g.save(); g.translate(S * 0.22, S * 0.22); g.scale(S * 0.56 / 24, S * 0.56 / 24); g.strokeStyle = '#111'; g.lineWidth = 2.3; g.lineCap = g.lineJoin = 'round';
+  for (const d of ICO[k]) { if (d.startsWith('circle')) { const [, x, y, r] = d.split(' ').map(Number); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke(); } else g.stroke(new Path2D(d)); }
+  g.restore(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; cache.set(key, t); return t; }; })();
+// ícono que siempre se ve del mismo tamaño en pantalla
+const icono = (k, tipo, col, P, y, tam, d = 0) => { const sp = new THREE.Sprite(xmat(k, new THREE.SpriteMaterial({ map: texIco(tipo, col), sizeAttenuation: false }), 1)); sp.scale.setScalar(tam * (MOVIL ? 0.8 : 1)); sp.position.set(P[0], y, P[1]); sp.renderOrder = 15; xg(k).g.add(sp); crece(k, sp, d, 0.6); return sp; };
+
+const RD = await fetch('data3d/bavaria_red.json').then(r => r.json()).catch(() => ({ colegios: [], plazas: [] }));
+const COLEG = RD.colegios.map(c => ({ n: c.n, p: W(...c.p) }));
+const PLZK = RD.plazas.map(c => ({ n: c.n, p: W(...c.p) }));
+const CC = { cora: '#E0623F', plaza: '#4EAECF', merc: '#4FB98C', cole: '#F2EFE8', bav: '#F2B53A', prod: '#cfc6b4' };
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+const TAM = { cora: 0.05, hub: 0.03, cole: 0.021, bav: 0.042, prod: 0.03 };
+// --- HOY: todo pasa por Corabastos
+{ const k = 'redHoy'; const todos = [...PLZK.map(q => q.p), ...COLEG.map(q => q.p)];
+  const cs = todos.map(p => curva(CORA, p, dist(CORA, p) * 0.12, 20, 10)); cs.forEach((c, i) => tubo(k, c, MOVIL ? 13 : 10, '#e0623f', 0.75, 0.3 + i * 0.012));
+  pulsos(k, cs, '#ffd2c4', 2, 0.12, 6);
+  icono(k, 'corabastos', CC.cora, CORA, 60, TAM.cora, 0); onda(k, CORA, CC.cora, 1300, 8, 3);
+  PLZK.forEach((q, i) => icono(k, 'plaza', CC.plaza, q.p, 30, TAM.hub, 0.2 + i * 0.03)); COLEG.forEach((q, i) => icono(k, 'colegio', CC.cole, q.p, 25, TAM.cole, 0.4 + i * 0.012));
+  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · hoy, el centro de todo'), [CORA[0], 260, CORA[1]], [k], 'fuerte'); }
+// productores de otros territorios: camiones que entran (hoy a Corabastos; con la propuesta a varios mercados)
+const camiones = (k, cs) => { const sps = cs.map((c, i) => { const sp = icono(k, 'camion', CC.prod, [0, 0], 0, TAM.prod, 0.2); return { sp, c, ph: i * 0.29 }; }); xg(k).upd.push((t) => sps.forEach(({ sp, c, ph }) => { c.getPoint((t * 0.09 + ph) % 1, sp.position); })); };
+{ const k = 'llegan'; const cs = ENTR.map(e => curva(e, CORA, null, 10, 40)); cs.forEach((c, i) => tubo(k, c, MOVIL ? 22 : 16, CC.prod, 0.75, i * 0.1)); camiones(k, cs); pulsos(k, cs, '#ffffff', 3, 0.09, 6);
+  ENTR.forEach((e, i) => icono(k, 'huerta', '#a3b845', e, 40, TAM.hub, i * 0.08));
+  addEt(etI('huerta', '#a3b845', 'Productores de otros territorios'), [ENTR[0][0], 260, ENTR[0][1]], [k], 'fuerte');
+  addEt(etI('huerta', '#a3b845', 'Productores de otros territorios'), [ENTR[3][0], 260, ENTR[3][1]], [k]); }
+// --- PROPUESTA: red distribuida. Nodos que reciben: mercados barriales nuevos, plazas existentes, Corabastos (uno más) y Bavaria Común (clúster)
+const HUBS = [...MERC.map(m => ({ n: 'Mercado ' + m.n, p: m.p, t: 'merc' })), ...PLZK.map(q => ({ n: q.n, p: q.p, t: 'plaza' })), { n: 'Corabastos', p: CORA, t: 'cora' }, { n: 'Bavaria Común', p: [0, 0], t: 'bav' }];
+{ const k = 'redProp';
+  // malla entre nodos: cada uno con sus 3 vecinos más cercanos
+  const pares = new Set(), mal = []; HUBS.forEach((a, i) => HUBS.map((b, j) => [j, dist(a.p, b.p)]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 3).forEach(([j]) => { const key = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(key)) return; pares.add(key); mal.push(curva(a.p, HUBS[j].p, dist(a.p, HUBS[j].p) * 0.18, 30, 30)); }));
+  mal.forEach((c, i) => tubo(k, c, MOVIL ? 17 : 13, CC.merc, 0.9, 0.2 + i * 0.03)); pulsos(k, mal, ['#ffffff', '#a3e8c7'], 3, 0.1, 7);
+  // cada colegio se abastece del nodo más cercano
+  const cc = COLEG.map(q => { const h = HUBS.reduce((b, x) => dist(x.p, q.p) < dist(b.p, q.p) ? x : b, HUBS[0]); return curva(h.p, q.p, dist(h.p, q.p) * 0.15, 30, 10); });
+  cc.forEach((c, i) => tubo(k, c, MOVIL ? 8 : 6, '#bfe8d3', 0.75, 0.8 + i * 0.01)); pulsos(k, cc, '#ffffff', 1, 0.16, 5);
+  HUBS.forEach((h, i) => icono(k, h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, 40, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04));
+  COLEG.forEach((q, i) => icono(k, 'colegio', CC.cole, q.p, 25, TAM.cole, 0.6 + i * 0.01));
+  onda(k, [0, 0], CC.bav, 700, 8, 2);
+  MERC.forEach((m, i) => { if (MOVIL && i % 2) return; addEt(etI('mercado', CC.merc, m.n), [m.p[0], 220, m.p[1]], [k]); });
+  addEt(etI('corabastos', CC.cora, '<b>Corabastos</b> · un nodo más'), [CORA[0], 220, CORA[1]], [k], 'fuerte');
+  addEt(etI('cluster', CC.bav, '<b>Bavaria Común</b> · clúster'), [0, 260, 0], [k], 'fuerte'); }
+// nombres de colegios (los que tienen nombre propio, repartidos) y plazas
+{ const sel = COLEG.filter(q => !/^Colegio$/.test(q.n)).filter((_, i) => i % (MOVIL ? 16 : 11) === 0);
+  sel.forEach(q => addEt(etI('colegio', CC.cole, q.n), [q.p[0], 120, q.p[1]], ['redHoyN']));
+  PLZK.filter(q => q.n !== 'Plaza de mercado').forEach(q => addEt(etI('plaza', CC.plaza, q.n), [q.p[0], 150, q.p[1]], ['redHoyN', 'redPropN'])); }
+// miniatura animada del esquema (va en la leyenda)
+const mini = (tipo) => { const C = [60, 50], R = 38, n = 10; const P = Array.from({ length: n }, (_, i) => [C[0] + Math.cos(i / n * 6.283) * R * (i % 2 ? 0.75 : 1), C[1] + Math.sin(i / n * 6.283) * R * (i % 2 ? 0.75 : 1) * 0.85]);
+  let L = ''; if (tipo === 'hoy') L = P.map(p => `<line x1="${C[0]}" y1="${C[1]}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" class="fl r"/>`).join('');
+  else { P.forEach((p, i) => { const q = P[(i + 1) % n], r = P[(i + 3) % n]; L += `<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="fl v"/>` + (i % 2 ? '' : `<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${r[0].toFixed(1)}" y2="${r[1].toFixed(1)}" class="fl v"/>`); }); }
+  const nodos = P.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${tipo === 'hoy' ? 3.5 : i === 3 ? 5 : 4}" fill="${tipo === 'hoy' ? '#4EAECF' : i === 3 ? '#E0623F' : i === 7 ? '#F2B53A' : '#4FB98C'}"/>`).join('');
+  const centro = tipo === 'hoy' ? `<circle cx="${C[0]}" cy="${C[1]}" r="9" fill="#E0623F"/>` : '';
+  return `<svg class="mini" viewBox="0 0 120 100">${L}${centro}${nodos}</svg>`; };
+// ---- el clúster de Bavaria Común: las naves con nombre, unidas entre sí y con la red
+const CLU = [[3, 'mercado', 'Mercado y registro de pedidos', COL.ocre], [5, 'lab', 'Laboratorio universitario', COL.lila], [4, 'asamblea', 'Casa de la federación', COL.rojo], [0, 'huerta', 'Invernadero hidropónico', COL.verde], [2, 'huerta', 'Módulos demostrativos', COL.verde], [23, 'hongo', 'Laboratorio de hongos', '#d9c7ef'], [7, 'cocina', 'Cocina comunitaria', '#e58aa8'], [11, 'persona', 'Promotores barriales', '#d98f5a'], [-1, 'compost', 'Compostaje', '#b98a57']];
+{ const k = 'cluster'; const P = CLU.map(([i]) => i < 0 ? ZC : centroEdif(i)); const Y = (i) => i < 0 ? 12 : D.edif[i].h + 10;
+  const pares = new Set(), cs = []; P.forEach((a, i) => P.map((b, j) => [j, dist(a, b)]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 3).forEach(([j]) => { const key = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(key)) return; pares.add(key); cs.push(curva(a, P[j], dist(a, P[j]) * 0.3, Y(CLU[i][0]), Y(CLU[j][0]))); }));
+  cs.forEach((c, i) => tubo(k, c, 2.6, COL.ocre, 0.9, 0.3 + i * 0.05)); pulsos(k, cs, '#ffffff', 3, 0.2, 7);
+  CLU.forEach(([i, ic, n, c], q) => { icono(k, ic, c, P[q], Y(i) + 6, 0.034, 0.1 + q * 0.08); addEt(etI(ic, c, n), [P[q][0], Y(i) + 6, P[q][1]], [k]); });
+  // hacia la red: los mercados barriales más cercanos
+  const fuera = [...MERC].sort((a, b) => dist(a.p, ZM) - dist(b.p, ZM)).slice(0, 3); const co = fuera.map(m => curva(ZM, m.p, 140, 20, 20)); co.forEach((c, i) => tubo(k, c, 4, CC.merc, 0.8, 1 + i * 0.1)); pulsos(k, co, '#ffffff', 4, 0.12, 7);
+  addEt(etI('mercado', CC.merc, 'Hacia los mercados barriales'), (() => { const p = co[0].getPoint(0.45); return [p.x, p.y + 10, p.z]; })(), [k]);
+}
+
+{ const k = 'lleganProp'; const cs = []; ENTR.forEach(e => [...HUBS].sort((a, b) => dist(a.p, e) - dist(b.p, e)).slice(0, 3).forEach(h => cs.push(curva(e, h.p, null, 10, 40)))); cs.forEach((c, i) => tubo(k, c, MOVIL ? 9 : 7, CC.prod, 0.7, i * 0.05)); camiones(k, cs.filter((_, i) => i % 2 === 0)); ENTR.forEach((e, i) => icono(k, 'huerta', '#a3b845', e, 40, TAM.hub, i * 0.08)); addEt(etI('huerta', '#a3b845', 'Productores de otros territorios'), [ENTR[0][0], 260, ENTR[0][1]], [k]); }
+{ HUBS.forEach((h, i) => icono('hubIco', h.t === 'merc' ? 'mercado' : h.t === 'plaza' ? 'plaza' : h.t === 'cora' ? 'corabastos' : 'cluster', CC[h.t], h.p, 40, h.t === 'bav' ? TAM.bav : TAM.hub, 0.1 + i * 0.04)); }
 /* ---------------- escenas ---------------- */
 // cam: s = tamaño visible (m), az = rumbo de la cámara (grados), el = elevación, t = objetivo [X, Z]
 const E = {
@@ -787,29 +875,29 @@ const E = {
 const ZI2c = centroEdif(2);
 Object.assign(E, {
   g01: { luz: 0.5, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
-  g02: { luz: 0.5, cam: { s: 5600, az: -15, el: 20, t: 'mid', y: 380 }, ctx: 0, edif: 'ghost', x: ['problemas', 'foco'], nf: { problemas: ['F', 'A'] }, et: ['problemas', 'foco'], ley: 'prob2' },
-  g03: { lim: 1, luz: 0.5, cam: { s: 8800, az: -12, el: 24, t: 'ken', y: 200 }, ctx: 0, edif: 'ghost', x: ['abHoy', 'prod'], et: 'abHoy', ley: 'abHoy' },
-  g04: { lim: 1, luz: 0.5, cam: { s: 8800, az: 18, el: 26, t: 'ken', y: 200 }, ctx: 0, edif: 'ghost', x: ['abRed', 'nodos', 'prod'], et: 'abRed', ley: 'abRed' },
+  g02: { lim: 1, luz: 0.6, cam: { s: 7600, az: -12, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redHoy'], et: ['redHoy', 'redHoyN'], ley: 'redHoy' },
+  g03: { lim: 1, luz: 0.55, cam: { s: 10500, az: -12, el: 34, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redHoy', 'llegan'], et: ['llegan', 'redHoy'], ley: 'llegan' },
+  g04: { lim: 1, luz: 0.6, cam: { s: 8200, az: 15, el: 38, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', x: ['redProp', 'lleganProp'], et: ['redProp', 'lleganProp'], ley: 'redProp' },
   g05: { luz: 0.85, cam: { s: 1350, az: -35, el: 22 }, ctx: 0, edif: 'ghost', borde: 1, x: ['avs'], et: 'avs', ley: 'avs' },
-  g06: { luz: 0.55, cam: { s: !SIN_G ? 1450 : 2300, az: -40, el: 20, y: !SIN_G ? 300 : 540 }, ctx: 0, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, expl: 1, flu: 1, et: 'capas', ley: 'capas' },
+  g06: { luz: 0.8, cam: { s: 1000, az: -35, el: 36, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['cluster'], et: 'cluster', ley: 'cluster2' },
   g07: { luz: 0.7, cam: { s: 1000, az: -30, el: 18, y: 150 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['actores'], et: 'actores', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
   g08: { luz: 0.7, cam: { s: 620, az: -50, el: 16, t: 'nb', y: 260 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic'], et: 'nbic', ley: 'nbic', giro: 1 },
   g09: { luz: 0.8, cam: { s: 950, az: -62, el: 24, t: 'nb', y: 130 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, flu: 1, x: ['nbic', 'nbB'], nf: { nbic: 'B' }, et: ['nbic', 'nb_b'], ley: 'nb_b', hl: { 23: '#d9c7ef', 0: COL.verde, 2: COL.verde } },
-  g10: { luz: 0.55, cam: { s: 5200, az: -20, el: 24, t: 'mid', y: 260 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'nodos'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
+  g10: { luz: 0.55, cam: { s: 5200, az: -20, el: 24, t: 'mid', y: 260 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'hubIco'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
   g11: { luz: 0.75, cam: { s: 2000, az: -30, el: 22, y: 160 }, ctx: 1, edif: 'prog', techos: 1, x: ['nbic', 'nbC', 'cogno'], xt: { nbic: { s: 1.8, y: 480 } }, nf: { nbic: 'C' }, et: ['nbic', 'nb_c'], ley: 'nb_c', hl: { 4: COL.lila, 3: COL.ocre } },
   g12: { luz: 0.75, cam: { s: 650, az: -15, el: 18, t: 'nb', y: 190 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic', 'nbN'], nf: { nbic: 'N' }, et: ['nbic', 'nb_n'], ley: 'nb_n', hl: { 5: COL.lila } },
   g13: { luz: 0.8, cam: { s: 2000, az: -35, el: 24, y: 70 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['viv'], et: 'viv', ley: 'viv', hl: { 2: COL.verde, 11: '#d98f5a' } },
   g14: { luz: 0.85, cam: { s: 950, az: -20, el: 22, t: 'casaMid', y: 30 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['ciclos'], et: 'ciclos', ley: 'form', hl: { 2: COL.verde, 11: '#d98f5a' } },
   g15: { luz: 0.9, cam: { s: 420, az: -30, el: 18, t: 'casa', y: 50 }, ctx: 1, edif: 'prog', techos: 1, x: ['incentivo'], et: 'incentivo', ley: 'viv' },
-  g16: { luz: 0.6, cam: { s: 3600, az: -25, el: 26, t: 'midc', y: 90 }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'nodos'], et: ['exc', 'abBav'], ley: 'exc', hl: { 3: COL.ocre } },
+  g16: { luz: 0.6, cam: { s: 3600, az: -25, el: 26, t: 'midc', y: 90 }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'hubIco'], et: ['exc', 'abBav'], ley: 'exc', hl: { 3: COL.ocre } },
   g17: { luz: 0.5, cam: { s: 9500, az: -25, el: 24, t: 'jbMid', y: 200 }, ctx: 0, edif: 'prog', x: ['jb'], et: 'jb', ley: 'jb' },
   g18: { luz: 0.45, cam: { s: 950, az: 20, el: 10, t: 'bosq', y: 470 }, ctx: 0, edif: 'prog', x: ['bioRed'], et: 'bioRed', ley: 'bioRed', giro: 1 },
   g19: { luz: 0.85, cam: { s: 950, az: 10, el: 24, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['flores', 'abejas', 'puentes'], et: ['parches', 'puentes'], ley: 'parches' },
   g20: { luz: 0.6, cam: { s: 3400, az: -20, el: 26, t: 'bio', y: 40 }, ctx: 0, edif: 'prog', x: ['islas', 'puentes'], et: ['islas', 'puentes'], ley: 'islas' },
   g21: { luz: 0.85, cam: { s: 380, az: -50, el: 20, t: 'comp', y: 45 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'ratas', 'retiro'], nf: { cadena: ['res', 'alm', 'ret'] }, et: ['cadena', 'retiro'], ley: 'ratas' },
   g22: { luz: 0.85, cam: { s: 420, az: -15, el: 20, t: 'comp', y: 60 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'rapaces', 'ratas'], nf: { cadena: ['rap', 'rat'] }, et: ['cadena'], ley: 'ratas' },
-  g23: { lim: 1, luz: 0.32, cam: { s: 6800, az: -15, el: 28, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', borde: 1, x: ['sxI', 'nodos'], et: 'sxm', ley: 'nain8m' },
-  g24: { lim: 1, luz: 0.32, cam: { s: 6800, az: 22, el: 28, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', borde: 1, x: ['sxE'], ley: 'nach' },
+  g23: { lim: 1, luz: 0.4, cam: { s: 7200, az: -12, el: 42, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', red: 'a1', borde: 1, x: ['hubIco'], et: 'sxm', ley: 'nain8m' },
+  g24: { lim: 1, luz: 0.4, cam: { s: 7200, az: 12, el: 42, t: 'ken', y: 0 }, ctx: 0, edif: 'ghost', red: 'a2', borde: 1, x: ['recorridos'], ley: 'nach' },
   g25: { luz: 0.8, cam: { s: 1300, az: -24, el: 26 }, ctx: 0.3, edif: 'prog', x: ['pasos'], et: 'puertas', ley: 'pasajes' },
   g26: { luz: 0.8, cam: { s: 1250, az: 15, el: 28 }, ctx: 0.3, edif: 'prog', x: ['ocupado', 'bosqueZona'], et: 'ocupado', ley: 'ocupado' },
   g27: { luz: 0.8, cam: { s: 1000, az: 25, el: 24, t: 'bosq', y: 30 }, ctx: 0.3, edif: 'prog', x: ['limite', 'bosqueZona'], et: 'limite', ley: 'gobB' },
@@ -875,6 +963,12 @@ Object.assign(LEY, {
   islas: '<div class="t">De islas a red</div>' + f_(COL.verde, 'Parches de árboles y parques') + f_('#ffffff', 'Aves que se desplazan') + f_('#f2c230', 'Polinizadores'),
   ocupado: '<div class="t">Dónde se interviene</div>' + f_(COL.ocre, 'Huellas ya ocupadas') + f_(COL.verde, 'Bosque sin intervenir'),
   colectivo: '<div class="t">Salvemos el Bosque de Bavaria</div>' + f_(COL.verde, 'Colectivo ciudadano'),
+});
+Object.assign(LEY, {
+  redHoy: '<div class="t">Hoy · red centralizada</div>' + mini('hoy') + `<div class="f">${etI('corabastos', CC.cora, 'Corabastos: todo pasa por aquí')}</div><div class="f">${etI('plaza', CC.plaza, `${PLZK.length} plazas y fruvers`)}</div><div class="f">${etI('colegio', CC.cole, `${COLEG.length} colegios`)}</div>`,
+  llegan: '<div class="t">Llegan de otros territorios</div>' + `<div class="f">${etI('camion', CC.prod, 'Camiones de productores')}</div><div class="f">${etI('corabastos', CC.cora, 'Hoy descargan en Corabastos')}</div>`,
+  redProp: '<div class="t">Propuesta · red distribuida</div>' + mini('prop') + `<div class="f">${etI('mercado', CC.merc, `${MERC.length} mercados barriales nuevos`)}</div><div class="f">${etI('plaza', CC.plaza, 'Plazas y fruvers existentes')}</div><div class="f">${etI('corabastos', CC.cora, 'Corabastos: un nodo más')}</div><div class="f">${etI('cluster', CC.bav, 'Bavaria Común: clúster')}</div><div class="f">${etI('colegio', CC.cole, 'Colegios: del nodo más cercano')}</div>`,
+  cluster2: '<div class="t">Bavaria Común · clúster</div>' + CLU.map(([, ic, n, c]) => `<div class="f">${etI(ic, c, n)}</div>`).join(''),
 });
 LEY.nach = LEY.nach.replace('poco paso', 'pocos recorridos').replace('mucho paso', 'muchos recorridos') + f_('#ffffff', 'Recorridos potenciales');
 if (MOVIL) for (const k of ['prog', 'sectores']) LEY[k] = LEY[k].replace(/<div class="f">.*$/s, '<div class="f">Ver etiquetas en el modelo</div>');
@@ -993,7 +1087,6 @@ function cuadro() {
 // Una diapositiva por frase del guion; el texto es el del guion, sin cambios. b: bloque (lámina del guion) · e: escena 3D
 const SL = [
   { b: 'Inicio', e: 'portada', g: 'Bavaria Común', ini: true },
-  { b: '08', e: 'g01', g: 'Esta red nos ayudó a identificar la centralización de servicios como el problema con más conexiones.' },
   { b: '08', e: 'g02', g: 'Por eso, la propuesta empieza por reorganizar el abastecimiento de alimentos en Kennedy.' },
   { b: '08', e: 'g03', g: 'Los alimentos que solo pueden abastecerse desde fuera de la localidad seguirían llegando de otros territorios.' },
   { b: '08', e: 'g04', g: 'Lo que cambia es dónde se reciben y se distribuyen: los productores llegarían a distintos mercados barriales y puntos de abastecimiento, con Corabastos como uno de los mercados de la red.' },
