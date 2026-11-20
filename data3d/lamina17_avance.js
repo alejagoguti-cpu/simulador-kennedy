@@ -54,19 +54,23 @@ const ponerCSS = () => { // se oculta TODA la interfaz del simulador: solo queda
     s.textContent = 'body>*:not(#todo3d){display:none!important}#todo3d>*:not(canvas){display:none!important}#todo3d{display:block!important}body{background:#0b0e11!important;cursor:default!important}';
     d.head.appendChild(s); cssPuesto = true; } catch (e) { /* aún cargando */ } };
 { const t0 = performance.now(); let n = 0;
-  while (!(W.KEN3D && W.KEN3D.THREE && W.KEN3D.scene && W.KEN3D.camera && W.KEN3D.orbit && W.KEN_ESC && W.KEN_RELOJ)) {
+  const base = () => { try { return !!(W.KEN3D && W.KEN3D.THREE && W.KEN3D.scene && W.KEN3D.camera); } catch (e) { return false; } };
+  const todo = () => { try { return base() && !!(W.KEN3D.orbit && W.KEN_ESC && W.KEN_RELOJ); } catch (e) { return false; } };
+  while (!todo()) { // tope: 150 s para lo esencial; con la escena lista, 12 s más para el resto (si falta, se sigue con lo que haya)
+    const s0 = (performance.now() - t0) / 1000; if (s0 > 150 || (base() && (W.__l17b = W.__l17b || performance.now()) && performance.now() - W.__l17b > 12000)) break;
     ponerCSS(); await espera(250); n++;
     const s = Math.round((performance.now() - t0) / 1000); avisoCarga(s < 6 ? 'Abriendo el simulador de Kennedy…' : s < 18 ? `Cargando edificios, árboles y agua… ${s} s` : `Ya casi: preparando la escena… ${s} s`);
   }
   ponerCSS(); }
+if (!(W.KEN3D && W.KEN3D.THREE && W.KEN3D.scene)) { avisoCarga('El simulador no terminó de cargar. Recarga la página (Ctrl + F5).'); throw new Error('simulador no disponible'); }
 const T3 = W.KEN3D, THREE = T3.THREE, scene = T3.scene, cam = T3.camera;
-const imp = (u) => W.eval(`import('${u}')`); // los complementos de three se cargan DENTRO del iframe: mismo THREE que el simulador
+const imp = (u) => Promise.race([W.eval(`import('${u}')`), new Promise((_, no) => setTimeout(() => no(new Error('tiempo agotado: ' + u)), 30000))]); // los complementos de three se cargan DENTRO del iframe: mismo THREE que el simulador
 const [{ LineSegments2 }, { LineSegmentsGeometry }, { LineMaterial }] = await Promise.all([imp('three/addons/lines/LineSegments2.js'), imp('three/addons/lines/LineSegmentsGeometry.js'), imp('three/addons/lines/LineMaterial.js')]);
 const F32 = W.Float32Array; const lienzo = () => W.document.createElement('canvas');
 // guía de inicio: «Saltar»; sin límites de zoom para las vistas de toda Kennedy; luz cálida de la tarde
 const saltarGuia = () => { try { [...W.document.querySelectorAll('button')].filter(b => /^(Saltar|Cerrar|Empezar)$/i.test(b.textContent.trim())).forEach(b => b.click()); } catch (e) { } };
 saltarGuia(); setTimeout(saltarGuia, 1500); setTimeout(saltarGuia, 5000);
-T3.orbit.maxDistance = 60000; T3.orbit.enabled = false;
+if (T3.orbit) { T3.orbit.maxDistance = 60000; T3.orbit.enabled = false; }
 if (cam.far < 60000) { cam.far = 60000; cam.updateProjectionMatrix(); }
 const HORA = (m) => { try { W.KEN_RELOJ.irAMinuto(m, 'presentación'); } catch (e) { } };
 HORA(16 * 60 + 40);
@@ -133,13 +137,13 @@ addEt('Kennedy', () => { const p = S(lugar('Kennedy Central')); return new THREE
 
 /* =============================== 1 y 2 · MÓDULOS en sitios reales =============================== */
 const SITIOS = [
-  ...COLEG.map(c => ({ w: c.w, t: 'colegio', col: '#F2EFE6', tam: 120 })),
-  ...PARQS.map(c => ({ w: c.w, t: 'parque', col: '#7FD36A', tam: 150 })),
-  ...ZON.filter(z => z.pob > 2000).map(z => ({ w: z.w, t: 'cubierta', col: '#D9F26B', tam: 105 })),
+  ...COLEG.map(c => ({ w: c.w, t: 'colegio', col: '#F4C95D', tam: 80 })),
+  ...PARQS.map(c => ({ w: c.w, t: 'parque', col: '#3FCB6B', tam: 100 })),
+  ...ZON.filter(z => z.pob > 2000).map(z => ({ w: z.w, t: 'cubierta', col: '#B8F04A', tam: 70 })),
 ].sort((a, b) => d2(a.w, BAV) - d2(b.w, BAV)); // de Bavaria hacia afuera, como el calendario del simulador
 const NS = SITIOS.length;
 const modGeo = new THREE.PlaneGeometry(1, 1); modGeo.rotateX(-Math.PI / 2);
-const modMat = reg('mod', new THREE.MeshBasicMaterial({ color: '#ffffff', blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+const modMat = reg('mod', new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }), 0.92);
 const modMesh = new THREE.InstancedMesh(modGeo, modMat, NS); modMesh.renderOrder = 5; modMesh.frustumCulled = false;
 SITIOS.forEach((s, i) => modMesh.setColorAt(i, C3(s.col)));
 capa('mod').g.add(modMesh);
@@ -311,7 +315,7 @@ function pintarCopia(cp, t, dt, vCapa) {
 const tituloPos = (cp) => () => new THREE.Vector3(cp.cx, cp.cy + 60, cp.cz - ALTO * 0.52 * cp.s);
 const etL = addEt('', tituloPos(COP[0]), () => escena === 'f4', 'titulo');
 const etR = addEt('', tituloPos(COP[1]), () => escena === 'f4', 'titulo');
-const etRegla = addEt('Solo cambia esta regla', () => MOVIL ? new THREE.Vector3(0, 500, 0) : new THREE.Vector3(0, 560, -ALTO * 0.18), () => escena === 'f4' && sub === 1, 'regla');
+const etRegla = addEt('Solo cambia esta regla', () => MOVIL ? new THREE.Vector3(250, 380, -900) : new THREE.Vector3(250, 420, -900 - ALTO * 0.2), () => escena === 'f4' && sub === 1, 'regla');
 const etB = addEt(pin('cluster', COL.bav) + 'Bavaria: acopio, reparto y decisiones', () => COP[0].P[iBav].clone().setY(COP[0].cy + 90), () => escena === 'f4' && sub === 0);
 const etCB = addEt(pin('cluster', COL.bav) + 'Bavaria: clúster de conocimiento', () => COP[1].P[iBav].clone().setY(COP[1].cy + 90), () => escena === 'f4' && sub === 0 && !MOVIL);
 const etFed = addEt('Federación de asambleas', () => COP[1].fc ? COP[1].fc.clone().add(new THREE.Vector3(0, 40, -COP[1].fr)) : new THREE.Vector3(), () => false);
@@ -394,33 +398,33 @@ const FR = [ // rótulos cortos (no el guion completo): la escena del simulador 
   { e: 'f5', a: 'Abastecimiento distribuido', b: 'Organizaciones barriales deciden' },
   { e: 'f6', a: 'La red en el tiempo', b: '¿Qué necesita para sostenerse?' },
 ];
-const E = {
-  portada: { cam: { x: 0, y: 0, z: 300, s: 1.25, el: 55, az: -14 }, capas: { lim: 1 }, luz: 0.95, giro: true },
-  f1: { cam: { x: 300, y: 0, z: 0, s: 1.05, el: 50, az: 6 }, capas: { lim: 0.8, mod: 1 }, luz: 0.7, pan: 'proy' },
-  f2: { cam: { x: 200, y: 0, z: 200, s: 1.0, el: 42, az: 20 }, capas: { lim: 0.8, mod: 1 }, luz: 0.62, pan: 'proy' },
-  f3: { cam: { x: 0, y: 0, z: 0, s: 1.02, el: 58, az: -8 }, capas: { lim: 0.8, res: 1 }, luz: 0.6, pan: 'res' },
-  f4: { cam: { x: 0, y: 420, z: 300, s: 1.18, el: 34, az: 0 }, capas: { lim: 0.5, esq: 1 }, luz: 0.5, pan: 'esq', fx: 0.68, fy: 0.4 },
-  f5: { cam: { x: 0, y: 150, z: 200, s: 1.22, el: 50, az: -16 }, capas: { lim: 0.9, sect: 1 }, luz: 0.55, pan: 'sect', fx: 0.655, fy: 0.45 },
-  f6: { cam: { x: 0, y: 380, z: 200, s: 1.3, el: 34, az: 0 }, capas: { lim: 0.7, esq: 1 }, luz: 0.52, pan: 'vida', giro: true, fx: 0.655, fy: 0.4 },
+const E = { // vistas cercanas al área detallada del simulador (centro local ≈ 250, -1000): edificios, árboles y agua se ven en 3D
+  portada: { cam: { x: 250, y: 0, z: -900, s: 0.7, el: 36, az: -22 }, capas: { lim: 1 }, giro: true },
+  f1: { cam: { x: 1100, y: 0, z: -800, s: 0.6, el: 44, az: 12 }, capas: { lim: 0.8, mod: 1 }, pan: 'proy' },
+  f2: { cam: { x: 900, y: 0, z: -600, s: 0.58, el: 38, az: 28 }, capas: { lim: 0.8, mod: 1 }, pan: 'proy' },
+  f3: { cam: { x: 0, y: 0, z: -600, s: 0.68, el: 52, az: -10 }, capas: { lim: 0.8, res: 1 }, pan: 'res' },
+  f4: { cam: { x: 250, y: 300, z: -800, s: 0.78, el: 34, az: 0 }, capas: { lim: 0.5, esq: 1 }, pan: 'esq', fx: 0.68, fy: 0.42 },
+  f5: { cam: { x: 0, y: 150, z: -200, s: 0.92, el: 50, az: -16 }, capas: { lim: 0.9, sect: 1 }, pan: 'sect', fx: 0.655, fy: 0.45 },
+  f6: { cam: { x: 250, y: 380, z: -700, s: 0.78, el: 32, az: 0 }, capas: { lim: 0.7, esq: 1 }, pan: 'vida', giro: true, fx: 0.655, fy: 0.4 },
 };
 let escena = 'portada', sub = 0;
 const camAct = { ...E.portada.cam }, camObj = { ...E.portada.cam }; let giroAz = 0;
 function copias() {
-  const [L, R] = COP; const sep = MOVIL ? 0.25 : 0.245;
+  const [L, R] = COP; const BX = 250, BZ = -900;
   if (escena === 'f4') {
-    const sc = MOVIL ? 0.4 : 0.47;
-    Object.assign(L.obj, MOVIL ? { cx: 0, cz: -ALTO * sep, cy: 420 } : { cx: -ANCHO * sep, cz: 0, cy: 420 }, { s: sc, a: 1, pl: 1, anc: 0 });
-    Object.assign(R.obj, MOVIL ? { cx: 0, cz: ALTO * sep, cy: 420 } : { cx: ANCHO * sep, cz: 0, cy: 420 }, { s: sc, a: 1, pl: 1, anc: 0 });
+    const sc = MOVIL ? 0.3 : 0.34, d = MOVIL ? ALTO * 0.19 : ANCHO * 0.19;
+    Object.assign(L.obj, MOVIL ? { cx: BX, cz: BZ - d, cy: 300 } : { cx: BX - d, cz: BZ, cy: 300 }, { s: sc, a: 1, pl: 1, anc: 0 });
+    Object.assign(R.obj, MOVIL ? { cx: BX, cz: BZ + d, cy: 300 } : { cx: BX + d, cz: BZ, cy: 300 }, { s: sc, a: 1, pl: 1, anc: 0 });
     if (sub === 0) { L.obj.m = 0; L.obj.rot = 0; R.obj.m = 1; R.obj.rot = 1; } else { L.obj.m = 1; L.obj.rot = 0; R.obj.m = 1; R.obj.rot = 1; }
   } else if (escena === 'f6') {
-    Object.assign(L.obj, { cx: 0, cz: 0, cy: 650, s: 1, a: 1, pl: 0, anc: 1, m: 1, rot: 1 });
-    Object.assign(R.obj, { cx: 0, cz: 0, cy: 650, s: 1, a: 0, pl: 0, anc: 0, m: 1, rot: 1 });
+    Object.assign(L.obj, { cx: BX, cz: BZ, cy: 420, s: 0.62, a: 1, pl: 0.5, anc: 0, m: 1, rot: 1 });
+    Object.assign(R.obj, { cx: BX, cz: BZ, cy: 420, s: 0.62, a: 0, pl: 0, anc: 0, m: 1, rot: 1 });
   } else { L.obj.a = 0; R.obj.a = 0; }
   setEt(etL, sub === 0 ? '<small>Escenario B</small>Coordinación concentrada' : '<small>Comparación adicional</small>Vocería fija');
   setEt(etR, sub === 0 ? '<small>Escenario C</small>Red distribuida' : '<small>Comparación adicional</small>Vocería rotativa');
   $('#esq-h').textContent = sub === 0 ? 'B frente a C' : 'solo cambia la vocería';
 }
-const ESC_SIM = { portada: 'hoy', f1: 'hoy', f2: 'hoy', f3: 'hoy', f4: 'proyecto', f5: 'proyecto', f6: 'proyecto' };
+const ESC_SIM = { portada: 'hoy', f1: 'hoy', f2: 'hoy', f3: 'hoy', f4: 'hoy', f5: 'proyecto', f6: 'hoy' };
 const HORA_SIM = { portada: 16 * 60 + 50, f1: 16 * 60 + 30, f2: 16 * 60 + 30, f3: 16 * 60 + 30, f4: 17 * 60 + 35, f5: 17 * 60 + 35, f6: 17 * 60 + 35 };
 let horaAct = 0;
 function simEscena(k) { // escenario del simulador (hoy / con la propuesta) y hora del día por frase
@@ -510,7 +514,7 @@ const ponerCam = () => { // mueve la cámara DEL SIMULADOR (y su objetivo de ór
   const dx = -(fx - 0.5) * Wv, dv = (fy - 0.5) * Hv / Math.max(0.35, Math.sin(el)) * 0.6;
   TG.set(O[0] + camAct.x + rx * dx + fwx * dv, camAct.y, O[1] + camAct.z + rz * dx + fwz * dv);
   T3.anim = null; T3.llegada = null;
-  T3.orbit.target.copy(TG); cam.position.set(TG.x + R * Math.cos(el) * Math.sin(az), TG.y + R * Math.sin(el), TG.z + R * Math.cos(el) * Math.cos(az)); cam.lookAt(TG);
+  if (T3.orbit) T3.orbit.target.copy(TG); cam.position.set(TG.x + R * Math.cos(el) * Math.sin(az), TG.y + R * Math.sin(el), TG.z + R * Math.cos(el) * Math.cos(az)); cam.lookAt(TG);
   cam.updateMatrixWorld();
 };
 addEventListener('resize', () => { lineMats.forEach(m => m.resolution.set(innerWidth, innerHeight)); });

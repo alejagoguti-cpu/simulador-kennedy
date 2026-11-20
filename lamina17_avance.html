@@ -230,7 +230,7 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
       <circle id="c-pt" r="4" fill="#fff"/>
       <text id="c-lab" x="300" y="30" text-anchor="end" style="fill:#F4C95D;font-weight:600" opacity="0">por calibrar</text>
     </svg>
-    <div class="ley"><span><i style="background:#F2EFE6"></i>colegios</span><span><i style="background:#7FD36A"></i>parques</span><span><i style="background:#D9F26B"></i>cubiertas compartidas</span><span style="margin-left:auto;font-family:var(--mono);color:var(--tx)">año <b id="anio-p">0</b> · <b id="nmod">0</b> módulos</span></div>
+    <div class="ley"><span><i style="background:#F4C95D"></i>colegios</span><span><i style="background:#3FCB6B"></i>parques</span><span><i style="background:#B8F04A"></i>cubiertas compartidas</span><span style="margin-left:auto;font-family:var(--mono);color:var(--tx)">año <b id="anio-p">0</b> · <b id="nmod">0</b> módulos</span></div>
     <p class="nota" id="nota-proy">Valores ilustrativos: el rendimiento usa el rango de los supuestos del proyecto (3 a 10 kg/m² al año). Los sitios son reales (colegios, parques y zonas del modelo); los módulos se suman de Bavaria hacia afuera, como en el simulador.</p>
   </div>
   <!-- 3 · residuos -->
@@ -265,6 +265,7 @@ svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
 
 <main id="relato"></main>
 
-<script type="module" src="data3d/lamina17_avance.js?v=1522"></script>
+<script>{const m=(t)=>{const e=document.getElementById('carga-t');if(e&&!document.getElementById('loader').classList.contains('hidden'))e.textContent='No se pudo abrir: '+t+'. Recarga la página.';};addEventListener('error',(e)=>m(e.message||'error'));addEventListener('unhandledrejection',(e)=>m(String(e.reason&&e.reason.message||e.reason)));}</script>
+<script type="module" src="data3d/lamina17_avance.js?v=1532"></script>
 </body>
 </html>
