@@ -380,12 +380,40 @@ export async function crearMercados({ T3, cj, sitios = null }) {
   const grupoMallas = new THREE.Group(); grupoMallas.name = 'mercados-mallas'; grupo.add(grupoMallas);
   const limpiar = () => { for (const k in MESH) { grupoMallas.remove(MESH[k]); MESH[k].geometry.dispose(); delete MESH[k]; } };
   let stats = { llamadas: 0, triangulos: 0, abiertos: 0 };
-  const soltar = (S) => { if (S.geo) for (const k in S.geo) S.geo[k].dispose(); S.geo = null; };
+  const soltar = (S) => { const i = SIT.indexOf(S); if (i >= 0 && i < enAcu) acuCortar(i); if (S.geo) for (const k in S.geo) S.geo[k].dispose(); S.geo = null; };
   const construir = (S) => { // la geometría del sitio, ya en coordenadas del mundo y agrupada por material
     ACC = {}; if (S.y == null) S.y = (T3.sueloY != null ? T3.sueloY : 0.35) + 0.02;
     if (S.tipo === 'plaza') plazoleta(S); else mercado(S);
     S.geo = {}; for (const k in ACC) { const g = mergeGeometries(ACC[k]); for (const x of ACC[k]) x.dispose(); if (g) S.geo[k] = g; } ACC = {}; };
+  /* rendimiento (52 semanas por segundo): los abiertos son siempre los PRIMEROS de la lista (abren en orden y, si la red se encoge, cierran
+     los últimos), así que cada sitio se copia una sola vez, en orden, al final de una malla por material que solo crece, y abrir o cerrar
+     mercados solo cambia cuántos vértices se dibujan (drawRange): las mismas mallas, en el mismo orden y con los mismos vértices que fundir los
+     abiertos cada vez, sin rehacer ni volver a subir la geometría. Si alguna vez los abiertos no son los primeros, se funde como antes. */
+  const ACU = {}; let enAcu = 0; // ACU[k] = { n vértices usados, cap, at {nombre: BufferAttribute}, fin[i] = vértices al terminar el sitio i, geo, mesh, caja }
+  const _caja = new THREE.Box3();
+  const acuCortar = (i) => { for (const k in ACU) { const A = ACU[k]; A.n = i ? A.fin[i - 1] : 0; A.fin.length = i; } enAcu = Math.min(enAcu, i); };
+  const acuGeo = (A) => { const g = new THREE.BufferGeometry(); for (const nom in A.at) g.setAttribute(nom, A.at[nom]); g.boundingBox = A.caja.clone(); g.boundingSphere = A.caja.getBoundingSphere(new THREE.Sphere());
+    if (A.geo) A.geo.dispose(); A.geo = g; if (A.mesh) A.mesh.geometry = g; };
+  const acuAgregar = (S) => { // copia el sitio S (ya construido) al final de las mallas acumuladas; false si sus atributos no encajan
+    for (const k in S.geo) { const g = S.geo[k], A = ACU[k]; if (g.index) return false; for (const nom in g.attributes) { const v = g.attributes[nom]; if (!(v.array instanceof Float32Array) || v.normalized || v.isInterleavedBufferAttribute) return false; } if (A) { const nn = Object.keys(g.attributes); if (nn.length !== Object.keys(A.at).length || nn.some(nom => !A.at[nom] || A.at[nom].itemSize !== g.attributes[nom].itemSize)) return false; } }
+    const i = enAcu;
+    for (const k in S.geo) { const g = S.geo[k], m = g.attributes.position.count; let A = ACU[k];
+      if (!A) { A = ACU[k] = { n: 0, cap: 0, at: {}, fin: new Array(i).fill(0), geo: null, mesh: null, caja: new THREE.Box3() }; for (const nom in g.attributes) A.at[nom] = new THREE.BufferAttribute(new Float32Array(0), g.attributes[nom].itemSize); }
+      if (A.n + m > A.cap) { const cap = Math.max(A.n + m, Math.ceil(A.cap * 1.6)); for (const nom in A.at) { const v = A.at[nom], a = new Float32Array(cap * v.itemSize); a.set(v.array.subarray(0, A.n * v.itemSize)); A.at[nom] = new THREE.BufferAttribute(a, v.itemSize); } A.cap = cap; A.nueva = true; }
+      for (const nom in A.at) { const v = A.at[nom]; v.array.set(g.attributes[nom].array, A.n * v.itemSize); if (!A.nueva) { if (v.addUpdateRange) v.addUpdateRange(A.n * v.itemSize, m * v.itemSize); v.needsUpdate = true; } }
+      if (!g.boundingBox) g.computeBoundingBox(); A.caja.union(_caja.copy(g.boundingBox)); A.n += m;
+      if (A.nueva || !A.geo) { A.nueva = false; acuGeo(A); } else { A.geo.boundingBox.copy(A.caja); A.caja.getBoundingSphere(A.geo.boundingSphere); } }
+    for (const k in ACU) ACU[k].fin[i] = ACU[k].n; enAcu = i + 1; return true; };
+  const acuVer = (p) => { // dibuja los p primeros sitios
+    limpiar(); stats = { llamadas: 0, triangulos: 0, abiertos: p };
+    for (const k of Object.keys(ACU)) { const A = ACU[k], c = p ? A.fin[p - 1] : 0;
+      if (!A.mesh) { const m = new THREE.Mesh(A.geo, MATS[k]); m.castShadow = !!SOMBRA[k][0]; m.receiveShadow = !!SOMBRA[k][1]; m.name = 'mercados-' + k; A.mesh = m; grupoMallas.add(m); }
+      A.geo.setDrawRange(0, c); A.mesh.visible = c > 0; if (c > 0) { stats.llamadas++; stats.triangulos += c / 3; } } };
   const armar = () => {
+    let p = 0; while (p < SIT.length && SIT[p].abierto) p++;
+    let prefijo = true; for (let i = p; i < SIT.length; i++) if (SIT[i].abierto) { prefijo = false; break; }
+    if (prefijo) { let ok = true; for (let i = enAcu; i < p && ok; i++) { const S = SIT[i]; if (!S.geo) construir(S); ok = acuAgregar(S); } if (ok) { acuVer(p); return; } }
+    for (const k in ACU) if (ACU[k].mesh) ACU[k].mesh.visible = false; // respaldo: fundir los abiertos (como antes)
     limpiar(); const por = {}; let ab = 0;
     for (const S of SIT) { if (!S.abierto) continue; ab++; if (!S.geo) construir(S); for (const k in S.geo) (por[k] = por[k] || []).push(S.geo[k]); }
     stats = { llamadas: 0, triangulos: 0, abiertos: ab };

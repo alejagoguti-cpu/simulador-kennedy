@@ -86,7 +86,7 @@ if (typeof window !== 'undefined') window.KEN_MERCADOS = { abiertos: mercadosAbi
 export async function crearRedMercados({ T3, cj }) {
   const THREE = T3.THREE;
   const sitios = MERCADOS.map(m => ({ id: m.id, n: m.n, tipo: m.tipo === 'plazoleta' ? 'plaza' : 'barrio', mx: m.mx, my: m.my, a: m.a, s: m.s, parque: m.parque }));
-  const { crearMercados } = await import('./mercados_barrio.js?v=4');
+  const { crearMercados } = await import('./mercados_barrio.js?v=5');
   const dib = await crearMercados({ T3, cj, sitios });
   const grupo = new THREE.Group(); grupo.name = 'red-mercados'; grupo.visible = false; T3.scene.add(grupo);
   const POR = new Map(MERCADOS.map(m => [m.id, m]));
