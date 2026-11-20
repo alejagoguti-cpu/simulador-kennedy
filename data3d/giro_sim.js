@@ -568,7 +568,7 @@ export async function iniciarSimulacion(cfg = {}) {
         let MER = [], HUE = [], tEsc = 0, tElec = 0, listo = false; const ahora = () => RELOJ.tAnim * 1000; // la aparición de la capa (~8 s) corre con el tiempo de animación del reloj (se detiene en pausa)
         const resumen = { sube: 0, baja: 0, mer: 0, hue: 0, max: 0 };
         const aplicar = () => {
-          const pro = T3.escenario === 'proyecto', rampa = pro ? Math.min(1, (ahora() - tEsc) / 8000) : 0, CSx = T3.coraCS || { merc: 20, huer: 10 };
+          const pro = T3.escenario === 'proyecto', rampa = pro ? Math.min(1, (ahora() - tEsc) / 8000) : 0, CSx = T3.coraCS || { merc: 26, huer: 10 };
           const AL = T3.alivio, M = AL && AL.manual, redC = AL ? 1 - (M ? M.keep : 1) * AL.KEEP : 0.4, redK = AL ? 1 - (M ? M.keepCam : 1) * AL.KEEP_CAM : 0.7, rT = 0.35 * redC + 0.65 * redK;
           const fm = enRango(CSx.merc / 20, 0, 1.5), fh = enRango(CSx.huer / 10, 0, 2); let sube = 0, baja = 0, mx = 0;
           for (const [si, r] of donde) { const c0 = S[si].c;
@@ -724,7 +724,7 @@ export async function iniciarSimulacion(cfg = {}) {
          · Corabastos reducido: cada 10 % de naves retiradas evita 5 % de los carros y 12 % de los camiones (la carga grande se queda en el patio de transferencia)
          · Mercados de barrio: cada mercado evita 1,2 % de los carros y 0,8 % de los camiones
          · Hogares con huerta: cada 10 % de hogares evita 8 % de los carros y 3 % de los camiones */
-      const CS = { cora: 19, merc: 20, huer: 10 }; T3.coraCS = CS; /* la capa «Elección» (más abajo) escala la ganancia de los mercados y las huertas con estos sliders */
+      const CS = { cora: 19, merc: 26, huer: 10 }; T3.coraCS = CS; /* la capa «Elección» (más abajo) escala la ganancia de los mercados y las huertas con estos sliders */
       const calcCora = () => { const a = CS.cora / 100, b = CS.merc, c = CS.huer / 100;
         const car = 1 - (1 - a * 0.5) * (1 - Math.min(0.6, b * 0.012)) * (1 - c * 0.8), cam = 1 - (1 - Math.min(0.85, a * 1.2)) * (1 - Math.min(0.4, b * 0.008)) * (1 - c * 0.3);
         return { car, cam }; };

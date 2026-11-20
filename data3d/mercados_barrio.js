@@ -94,6 +94,11 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     g.fillStyle = '#7a2e1c'; g.fillRect(0, 0, w, h); g.strokeStyle = '#f1e2c0'; g.lineWidth = 5; g.strokeRect(12, 12, w - 24, h - 24);
     g.fillStyle = '#f6ead0'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '600 74px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; g.fillText('PLAZOLETA DE MERCADO', w / 2, 80);
     g.fillStyle = '#f2c46a'; g.font = '400 36px Arial, sans-serif'; g.fillText('Frutas y verduras del campo  ·  de la huerta al parque', w / 2, 148); }, false);
+  const texBod = lienzo(1024, 384, (g, w, h) => { // atlas de rótulos de la bodega: arriba el letrero del recibo 24 h, abajo la placa del cuarto frío
+    g.fillStyle = '#2b3236'; g.fillRect(0, 0, w, 192); g.fillStyle = '#e3bd22'; g.fillRect(0, 0, 18, 192); g.fillStyle = '#d8dedb'; g.textBaseline = 'middle'; g.textAlign = 'left';
+    g.font = '600 92px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; g.fillText('BODEGA  ·  RECIBO 24 H', 50, 82); g.fillStyle = '#9fb3ad'; g.font = '400 36px Arial, sans-serif'; g.fillText('Cuarto frío  ·  descargue a cualquier hora', 52, 152);
+    g.fillStyle = '#e9efee'; g.fillRect(0, 192, w, 192); g.fillStyle = '#1c5fa8'; g.fillRect(0, 192, w, 22); g.fillStyle = '#243038'; g.textAlign = 'center';
+    g.font = '600 96px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; g.fillText('CUARTO FRÍO', w / 2, 290); g.font = '500 44px Arial, sans-serif'; g.fillText('Cadena de frío  ·  2 a 6 °C', w / 2, 352); }, false);
   const texConc = lienzo(256, 256, (g, w, h) => { // concreto con juntas cada 1,6 m y manchas
     g.fillStyle = '#9d9a93'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${rnd() < 0.5 ? '60,58,52' : '225,222,210'},${0.03 + rnd() * 0.09})`; g.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 3, 1 + rnd() * 3); }
     g.strokeStyle = 'rgba(40,38,34,.55)'; g.lineWidth = 2; g.strokeRect(0, 0, w, h); });
@@ -104,9 +109,10 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     ado: mat({ map: texAdo, roughness: 0.96 }), mad: mat({ map: texMad, roughness: 0.88 }), met: mat({ roughness: 0.55, metalness: 0.2 }),
     teja: mat({ map: texZinc, roughness: 0.5, metalness: 0.12, side: THREE.DoubleSide }), lona: mat({ map: texLona, roughness: 0.92, side: THREE.DoubleSide }),
     plas: mat({ roughness: 0.62 }), fruta: mat({ map: texFruta, roughness: 0.7 }), cartel: mat({ map: texCartel, roughness: 0.6, side: THREE.DoubleSide }),
-    cartelP: mat({ map: texCartelP, roughness: 0.6, side: THREE.DoubleSide }), conc: mat({ map: texConc, roughness: 0.95 }), hoja: mat({ roughness: 0.88, side: THREE.DoubleSide }), vidrio: mat({ roughness: 0.12, metalness: 0.5 })
+    cartelP: mat({ map: texCartelP, roughness: 0.6, side: THREE.DoubleSide }), conc: mat({ map: texConc, roughness: 0.95 }), hoja: mat({ roughness: 0.88, side: THREE.DoubleSide }), vidrio: mat({ roughness: 0.12, metalness: 0.5 }),
+    bod: mat({ map: texBod, roughness: 0.55, side: THREE.DoubleSide }), luz: new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true })
   };
-  const SOMBRA = { mad: [1, 1], met: [1, 0], teja: [1, 1], lona: [1, 0], plas: [1, 1], ado: [0, 1], fruta: [0, 1], cartel: [1, 0], cartelP: [1, 0], conc: [1, 1], hoja: [1, 1], vidrio: [0, 0] };
+  const SOMBRA = { bod: [1, 0], luz: [0, 0],mad: [1, 1], met: [1, 0], teja: [1, 1], lona: [1, 0], plas: [1, 1], ado: [0, 1], fruta: [0, 1], cartel: [1, 0], cartelP: [1, 0], conc: [1, 1], hoja: [1, 1], vidrio: [0, 0] };
   const LONAS = ['#a9573c', '#6d7b40', '#c49a3b', '#3f6c76', '#d5c9ae', '#7e4141', '#4e6d56', '#8f6a3a'];
 
   /* ---------- 4. piezas: cada una se transforma al mundo y se acumula por material ---------- */
@@ -174,8 +180,55 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     caja('plas', 0.04, 1.5, 1.9, u - 0.34, 0.07 + 0.75, v, '#d9d4c4', 0.5); // tablero con las tres categorías
     caja('plas', 0.045, 0.4, 0.6, u - 0.35, 0.07 + 1.28, v - 0.62, '#2f7d3a', 0.5); caja('plas', 0.045, 0.4, 0.6, u - 0.35, 0.07 + 1.28, v, '#cfd2cc', 0.5); caja('plas', 0.045, 0.4, 0.6, u - 0.35, 0.07 + 1.28, v + 0.62, '#26292c', 0.5); };
 
+  /* ---------- 4a. MÓDULO DE BODEGA con cuarto frío (recibo 24 h): junto a la zona de carga de cada mercado ----------
+     Podio de concreto a la altura del andén (1,05 m), bodega de bloque repellado con cubierta de lámina bajo antepecho, cuarto frío de panel sándwich blanco con unidad condensadora en el techo,
+     puerta enrollable con guías y cajón, nivelador, topes de caucho, lámparas de muelle y el letrero «Bodega · recibo 24 h». c = {vf, n, D, ap, pw, c0, c1, h0, h1, ub, bw, fill}:
+     vf = v de la cara del podio, n = sentido (+1/-1) hacia afuera de la cara, D = fondo, ap = andén que sale de la cara, pw = repisa frente a las puertas, c0..c1 = cuarto frío, h0..h1 = bodega, ub/bw = centro y ancho de la bahía. */
+  const rotulo = (w, h, sup, u, y, v, ry) => { const g = new THREE.PlaneGeometry(w, h), U = g.attributes.uv; for (let i = 0; i < U.count; i++) U.setY(i, sup ? 0.5 + U.getY(i) * 0.5 : U.getY(i) * 0.5); poner('bod', g, '#ffffff', u, y, v, 0, ry, 0, 0); };
+  const bodega = (c) => {
+    const { vf, n, D, ap, pw, c0, c1, h0, h1, ub, bw, fill } = c, V = (b) => vf - n * b, VF = V(pw), P = 1.05, YF = 0.07 + P, HH = 3.7, ry = n > 0 ? 0 : Math.PI;
+    const u0 = c0, u1 = h1, uc = (u0 + u1) / 2, vm = V((pw + D) / 2), dm = D - pw;
+    caja('conc', u1 - u0, P, D, uc, 0.07 + P / 2, V(D / 2), '#b3afa5', 1.6); // podio a la altura del andén
+    if (fill) caja('conc', fill[1] - fill[0], P, 0.3, (fill[0] + fill[1]) / 2, 0.07 + P / 2, V(-0.15), '#bdb9ae', 1.6); // empata con el andén de la zona de carga
+    if (ap > 0) caja('conc', c.apw, P, ap, ub, 0.07 + P / 2, V(-ap / 2), '#bdb9ae', 1.6); // andén que sale de la cara
+    const fb = -ap, vb = V(fb); // cara del muelle: donde reciben los topes
+    for (const sg of [-1, 1]) caja('plas', 0.5, 0.46, 0.14, ub + sg * (bw / 2 + 0.2), YF - 0.36, vb + n * 0.07, '#17181a', 0.5); // topes de caucho
+    caja('met', bw - 0.5, 0.03, pw - fb, ub, YF + 0.015, V((pw + fb) / 2), '#7b8280', 0.5); // nivelador
+    caja('plas', bw + 1.0, 0.02, 0.12, ub, YF + 0.01, V(fb + 0.1), '#e3bd22', 0.5); // línea amarilla del borde del andén
+    // bodega: bloque repellado, zócalo, columnas de esquina, antepecho y cubierta de lámina
+    const hl = h1 - h0, hc = (h0 + h1) / 2;
+    caja('plas', hl, HH, dm, hc, YF + HH / 2, vm, '#ece1ca', 0.5); caja('plas', hl + 0.06, 0.5, dm + 0.06, hc, YF + 0.25, vm, '#8c8576', 0.5);
+    caja('conc', hl + 0.14, 0.08, dm + 0.14, hc, YF + HH + 0.04, vm, '#cbc5b8', 1.6);
+    caja('teja', hl + 0.3, 0.05, dm + 0.45, hc, YF + HH + 0.2, vm + n * 0.1, '#cfd3cf', 0.5, n * 0.05, 0, 0); for (const sg of [-1, 1]) caja('met', 0.05, 0.14, dm + 0.4, hc + sg * (hl / 2 + 0.15), YF + HH + 0.12, vm + n * 0.1, '#6a716d', 0.5, n * 0.05, 0, 0); // cubierta de lámina con remates laterales
+    for (const u of [h0 + 0.12, h1 - 0.12]) caja('conc', 0.26, HH, 0.1, u, YF + HH / 2, VF + n * 0.05, '#dccfb6', 1.6);
+    caja('met', hl + 0.1, 0.1, 0.12, hc, YF + HH - 0.1, VF + n * 0.08, '#6a716d', 0.5); // canal
+    cil('met', 0.045, 0.045, HH - 0.15, 8, h1 - 0.35, YF + (HH - 0.15) / 2, VF + n * 0.14, '#6a716d', 0.5); // bajante
+    caja('met', 0.04, 0.5, 1.4, h1 + 0.02, YF + 3.0, V(pw + dm * 0.5), '#59615d', 0.5); for (let k = 0; k < 4; k++) caja('met', 0.05, 0.025, 1.36, h1 + 0.04, YF + 2.82 + k * 0.12, V(pw + dm * 0.5), '#8d9290', 0.5); // rejilla de ventilación
+    // bahía: puerta enrollable de lámina con ranuras, guías, cajón del rollo y sello inferior
+    const dh = 2.9; caja('met', bw, dh, 0.06, ub, YF + dh / 2, VF + n * 0.03, '#cdd2d4', 0.5);
+    for (let k = 1; k < 10; k++) caja('met', bw, 0.022, 0.075, ub, YF + k * 0.29, VF + n * 0.035, '#9aa0a2', 0.5);
+    for (const sg of [-1, 1]) caja('met', 0.16, dh + 0.1, 0.14, ub + sg * (bw / 2 + 0.08), YF + (dh + 0.1) / 2, VF + n * 0.07, '#5f6663', 0.5);
+    caja('met', bw + 0.4, 0.42, 0.3, ub, YF + dh + 0.2, VF + n * 0.15, '#7d8583', 0.5); caja('plas', bw, 0.09, 0.08, ub, YF + 0.045, VF + n * 0.04, '#17181a', 0.5);
+    caja('plas', 0.12, 0.3, 0.05, ub + bw / 2 - 0.5, YF + 1.0, VF + n * 0.08, '#e3bd22', 0.5); // manija de la puerta
+    rotulo(2.6, 0.487, true, ub, YF + dh + 0.55, VF + n * 0.035, ry); // letrero discreto «Bodega · recibo 24 h»
+    for (const sg of [-1, 1]) { const ul = ub + sg * (bw / 2 + 0.75), yl = YF + dh + 0.1; // lámparas de muelle: brazo con cabeza luminosa
+      caja('met', 0.05, 0.05, 0.62, ul, yl, VF + n * 0.31, '#454b48', 0.5); caja('met', 0.05, 0.3, 0.05, ul, yl - 0.12, VF + n * 0.02, '#454b48', 0.5); caja('luz', 0.34, 0.07, 0.2, ul, yl - 0.07, VF + n * 0.6, '#fff0bf', 0.5); caja('plas', 0.38, 0.05, 0.24, ul, yl + 0.0, VF + n * 0.6, '#2b2e30', 0.5); }
+    // cuarto frío: panel sándwich blanco, zócalo de acero, juntas de panel, puerta aislada, placa y unidad condensadora
+    const cw = c1 - c0, cc = (c0 + c1) / 2, CH = 4.3;
+    caja('plas', cw, CH, dm, cc, YF + CH / 2, vm, '#f1f3f1', 0.5); caja('met', cw + 0.05, 0.28, dm + 0.05, cc, YF + 0.14, vm, '#98a09e', 0.5); caja('met', cw + 0.08, 0.06, dm + 0.08, cc, YF + CH + 0.03, vm, '#aab1af', 0.5);
+    for (let k = 1; k < cw; k++) { caja('plas', 0.014, CH - 0.35, 0.012, c0 + k, YF + 0.28 + (CH - 0.35) / 2, VF + n * 0.006, '#c7ccca', 0.5); }
+    for (let k = 1; k < dm; k += 1) caja('plas', 0.012, CH - 0.35, 0.014, c0 - 0.006, YF + 0.28 + (CH - 0.35) / 2, V(pw + k), '#c7ccca', 0.5);
+    caja('plas', cw, 0.22, 0.02, cc, YF + 3.45, VF + n * 0.012, '#1c5fa8', 0.5); rotulo(1.9, 0.355, false, cc, YF + 3.0, VF + n * 0.02, ry);
+    caja('met', 1.3, 2.3, 0.05, cc, YF + 1.2, VF + n * 0.025, '#b4bab9', 0.5); caja('plas', 1.1, 2.1, 0.09, cc, YF + 1.15, VF + n * 0.05, '#e6e9e7', 0.5);
+    caja('met', 0.05, 0.55, 0.07, cc + 0.4, YF + 1.1, VF + n * 0.13, '#8a9190', 0.5); for (const y of [0.45, 1.7]) caja('met', 0.07, 0.16, 0.06, cc - 0.58, YF + y, VF + n * 0.1, '#8a9190', 0.5);
+    caja('luz', 0.2, 0.1, 0.02, cc + 0.0, YF + 2.38, VF + n * 0.1, '#8fe39a', 0.5); caja('plas', 1.1, 0.26, 0.05, cc, YF + 0.16, VF + n * 0.07, '#17181a', 0.5); // visor de temperatura y burlete
+    const ty = YF + CH + 0.06; caja('met', 1.9, 0.14, 1.3, cc, ty + 0.07, vm, '#5f6663', 0.5); caja('met', 1.8, 0.78, 1.2, cc, ty + 0.14 + 0.39, vm, '#dfe3e2', 0.5); // unidad condensadora en el techo
+    for (const sg of [-1, 1]) { cil('met', 0.4, 0.4, 0.04, 16, cc + sg * 0.45, ty + 0.94, vm, '#2a2d2f', 0.5); cil('met', 0.16, 0.16, 0.05, 10, cc + sg * 0.45, ty + 0.96, vm, '#565c5a', 0.5); }
+    caja('met', 0.08, 0.08, dm * 0.6, c0 + 0.3, ty + 0.3, vm, '#b87333', 0.5); cil('met', 0.04, 0.04, CH, 8, c0 + 0.06, YF + CH / 2, V(pw + 0.4), '#b87333', 0.5); // línea de refrigerante
+  };
+
   const mercado = (S) => {
-    const cu = Math.cos(S.a), su = Math.sin(S.a);
+    const cu =Math.cos(S.a), su = Math.sin(S.a);
     M0.compose(new THREE.Vector3(S.x, S.y, S.z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -S.a, 0)), new THREE.Vector3(S.s, S.s, S.s));
     kt = 0;
     // piso duro: losa de adoquín con sardinel claro; se hunde 0,3 m para sentarse en terrenos con pendiente
@@ -199,9 +252,10 @@ export async function crearMercados({ T3, cj, sitios = null }) {
       caja('mad', 0.07, 0.95, 4.5, sg * 12.07, 0.07 + 3.28, 0, '#7a5a38', 1); for (const dv of [-2, 2]) caja('met', 0.07, 3.3, 0.07, sg * 12.1, 0.07 + 1.65, dv, ST, 0.5); }
     // puestos bajo la cubierta (pasillo central de 3 m) y puestos de toldo por fuera
     for (const sg of [-1, 1]) for (let k = 0; k < 6; k++) puesto(-7.5 + k * 3, sg * 3.7, sg, false, ic++);
-    for (const sg of [-1, 1]) for (let k = 0; k < 4; k++) puesto(-6.75 + k * 4.5, sg * 8.6, sg, true, ic++);
+    for (const sg of [-1, 1]) for (let k = 0; k < 4; k++) { const ik = ic++; if (sg > 0 && k >= 2) continue; puesto(-6.75 + k * 4.5, sg * 8.6, sg, true, ik); } // en la banda +v dos puestos de toldo ceden su lugar a la bodega
     [[-13.6, -2.2], [-13.6, 2.4], [13.6, -2.4], [13.6, 2.2]].forEach(([u, v], i) => sombrilla(u, v, ic++ + i));
-    for (const [u, v, sg] of [[-6.5, 10.7, 1], [6.5, 10.7, 1], [-6.5, -10.7, -1], [6.5, -10.7, -1]]) banca(u, v, sg);
+    for (const [u, v, sg] of [[-6.5, 10.7, 1], [-6.5, -10.7, -1], [6.5, -10.7, -1]]) banca(u, v, sg);
+    bodega({ vf: 11.9, n: 1, D: 4.1, ap: 0, pw: 0.6, c0: 0.6, c1: 4.6, h0: 4.6, h1: 12.4, ub: 8.5, bw: 2.8 }); // bodega con cuarto frío en el borde de la calle
     canecas(14.4, -7); canecas(-14.4, 7);
     // pilas de huacales vacíos y sacos de papa junto a los puestos de las esquinas
     for (const [u, v] of [[-14.3, -9.6], [14.3, 9.6]]) { for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) caja('mad', 0.6, 0.22, 0.4, u + j * 0.64, 0.07 + 0.11 + i * 0.22, v, '#c4a070', 0.8);
@@ -311,8 +365,10 @@ export async function crearMercados({ T3, cj, sitios = null }) {
     furgon(29.5, -10); camion(29.7, 0); camioneta(29.4, 10);
     for (const [u, v] of [[34.5, -9], [34.5, 9]]) pilaCajas(u, v, 0.1); // huacales vacíos y costales sobre el andén
     for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) huacalP(0.62, 0.3, 0.42, 33.2 + j * 0.66, 0.07 + 1.05 + 0.15 + (i % 2) * 0.3, -3.2 + i * 0.7 - (i % 2) * 0.0, TIPOS_FRUTA[(i + j) % TIPOS_FRUTA.length]);
+    // dos módulos de bodega con cuarto frío (uno a cada lado de la losa de carga): cada uno con su bahía y andén; reciben a cualquier hora
+    for (const n of [-1, 1]) bodega({ vf: -n * 15.8, n, D: 5.5, ap: 1.0, apw: 3.3, pw: 0.7, c0: 22.6, c1: 26.9, h0: 26.9, h1: 35.6, ub: 29.35, bw: 3.0, fill: [31, 35.6] });
     // perímetro: bancas, residuos, farolas y árboles
-    for (const sg of [-1, 1]) { for (const u of [-28, -14, 0, 14]) banca(u, sg * 18.4, sg); for (const u of [-33, -16, 2, 20, 31]) arbolP(u, sg * 20, 3.2 + rnd() * 0.8, 2.0 + rnd() * 0.5, (ic++ + (sg > 0 ? 3 : 0)));
+    for (const sg of [-1, 1]) { for (const u of [-28, -14, 0, 14]) banca(u, sg * 18.4, sg); for (const u of [-33, -16, 2, 20]) arbolP(u, sg * 20, 3.2 + rnd() * 0.8, 2.0 + rnd() * 0.5, (ic++ + (sg > 0 ? 3 : 0)));
       farola(-33, sg * 19); farola(18, sg * 19); }
     canecas(-30.4, -17); canecas(-30.4, 17); canecas(14.8, -17.2); canecas(14.8, 17.2);
     arbolP(-24.5, -10.5, 3.4, 2.1, 7); arbolP(-24.5, 10.5, 3.2, 2.0, 11);

@@ -40,7 +40,23 @@ const BASE = [
   ['plazoleta', 'Carvajal', 8525.1, 302.6, 0.1637, 0.85, 'Parque vecinal Carvajal'],
   ['plazoleta', 'Floralia', 9222, -333.7, -0.2591, 1, 'Parque vecinal Floralia I Sector'],
   ['plazoleta', 'El Carmelo - Gran Britalia', 4403.2, 665.9, 0.9689, 0.7, 'Parque vecinal El Carmelo (Favidi) y Gran Britalia'],
-  ['plazoleta', 'Bertha Hernández de Ospina', 4534.3, 22.6, -0.7762, 0.7, 'Parque vecinal Bertha Hernández de Ospina']
+  ['plazoleta', 'Bertha Hernández de Ospina', 4534.3, 22.6, -0.7762, 0.7, 'Parque vecinal Bertha Hernández de Ospina'],
+  // MERCADOS EN LOTES VACÍOS REALES (14): polígonos OSM landuse=construction|brownfield|meadow dentro de Kennedy (tools/cache/kennedy_osm.json), de 1.100 m² o más y forma compacta; el rectángulo del mercado queda
+  // a 7 m o más de toda vía de net.json y a 25 m o más de cualquier intersección, sin tocar edificios, copas del censo, canchas, agua, parques, huertas ni mercados; mínimo 500 m entre mercados; la bodega mira a la calle más cercana.
+  ['barrio', 'Lote recuperado 01', 4746.6, 4590.2, -0.2822, 1.0, 'Lote vacío (OSM construction 1567706460)'],
+  ['barrio', 'Lote recuperado 02', 8734.5, -1628.9, 0.5696, 1.0, 'Lote vacío (OSM construction 1446413983)'],
+  ['barrio', 'Lote recuperado 03', 7202.6, 722.3, 1.3886, 1.0, 'Lote vacío (OSM construction 1318223728)'],
+  ['barrio', 'Lote recuperado 04', 5592.2, 1257.4, -2.1087, 1.0, 'Lote vacío (OSM construction 1318206770)'],
+  ['barrio', 'Lote recuperado 05', 6214.4, 472.9, -0.1857, 1.0, 'Lote vacío (OSM construction 1318223727)'],
+  ['barrio', 'Lote recuperado 06', 6855.3, 2665.8, -0.7751, 1.0, 'Lote vacío (OSM construction 320051680)'],
+  ['barrio', 'Lote recuperado 07', 5419.6, 379.4, 0.9468, 1.0, 'Lote vacío (OSM meadow 641331647)'],
+  ['barrio', 'Lote recuperado 08', 9425.9, 3274.4, -1.1005, 0.7, 'Lote vacío (OSM brownfield 26696903)'],
+  ['barrio', 'Lote recuperado 09', 5844.1, 4815.2, 2.7091, 1.0, 'Lote vacío (OSM construction 1567706450)'],
+  ['barrio', 'Lote recuperado 10', 7144.0, 4617.1, -0.6236, 1.0, 'Lote vacío (OSM construction 962454347)'],
+  ['barrio', 'Lote recuperado 11', 7023.1, 5261.6, 0.0168, 1.0, 'Lote vacío (OSM construction 1567706455)'],
+  ['barrio', 'Lote recuperado 12', 7817.2, 4162.8, 0.8151, 1.0, 'Lote vacío (OSM meadow 411105334)'],
+  ['barrio', 'Lote recuperado 13', 5256.0, 4673.8, -0.0276, 1.0, 'Lote vacío (OSM construction 1567706458)'],
+  ['barrio', 'Lote recuperado 14', 8448.4, 799.6, -2.4029, 1.0, 'Lote vacío (OSM construction 1145845064)']
 ];
 const CAP = { barrio: 1200, plazoleta: 4800 }; // kg de frutas y verduras por día a escala 1 (20 y ~56 puestos); baja con la escala del sitio
 const A_TOTAL = 10;                              // años hasta que la red está completa
@@ -70,7 +86,7 @@ if (typeof window !== 'undefined') window.KEN_MERCADOS = { abiertos: mercadosAbi
 export async function crearRedMercados({ T3, cj }) {
   const THREE = T3.THREE;
   const sitios = MERCADOS.map(m => ({ id: m.id, n: m.n, tipo: m.tipo === 'plazoleta' ? 'plaza' : 'barrio', mx: m.mx, my: m.my, a: m.a, s: m.s, parque: m.parque }));
-  const { crearMercados } = await import('./mercados_barrio.js?v=2');
+  const { crearMercados } = await import('./mercados_barrio.js?v=3');
   const dib = await crearMercados({ T3, cj, sitios });
   const grupo = new THREE.Group(); grupo.name = 'red-mercados'; grupo.visible = false; T3.scene.add(grupo);
   const POR = new Map(MERCADOS.map(m => [m.id, m]));
@@ -157,7 +173,7 @@ export async function crearRedMercados({ T3, cj }) {
   const avisar = (t) => { if (cola.length > 3) cola.shift(); cola.push(t); if (!mostrando) siguiente(); };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const leyenda = (ab) => { const nb = ab.filter(m => m.tipo === 'barrio').length, np = ab.length - nb, tb = MERCADOS.filter(m => m.tipo === 'barrio').length, tp = MERCADOS.length - tb;
-    elLey.innerHTML = `<b>Red de mercados</b>${ab.length} abiertos de ${MERCADOS.length} · <i style="background:#ffc86a"></i>${nb}/${tb} de barrio <i style="background:#9be88a"></i>${np}/${tp} plazoletas`;
+    elLey.innerHTML = `<b>Red de mercados</b>${ab.length} abiertos de ${MERCADOS.length} · <i style="background:#ffc86a"></i>${nb}/${tb} de barrio <i style="background:#9be88a"></i>${np}/${tp} plazoletas<br><span style="color:#bfe3d4">Bodega con cuarto frío: recibe a cualquier hora</span>`;
     elLey.style.display = visible ? 'block' : 'none'; };
 
   /* ----- estado: qué está abierto ahora; solo se rehace lo que cambió ----- */

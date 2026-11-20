@@ -36,7 +36,7 @@ export const PAR = {
   ASC: { barrio: { hog: -0.3, com: -0.9 }, plazoleta: { hog: 0.0, com: -0.6 }, bavaria: { hog: -0.6, com: 0.0 } }, // [SUP] sin surtido regional
   SURT_REG: { hog: 0.8, com: 1.4 }, // [SUP] + cuando las compras directas a la región (sim_vida: reg) están armadas: surtido y precio
   REG_REF: 0.45,                  // compras a la región de referencia (P1.regional por defecto)
-  HORAS_MADR: { cora: 1, bavaria: 1, plazoleta: 0, barrio: 0 }, // horario: los mercados (de barrio y plazoletas) abren a las 7:00 → cerrados de 2:00 a 6:00; Corabastos y el acopio de Bavaria abren a las 2:00
+  HORAS_MADR: { cora: 1, bavaria: 1, plazoleta: 1, barrio: 1 }, // horario: los mercados venden desde las 7:00, pero tienen BODEGA (cuarto frío y muelle de carga) y reciben mercancía a cualquier hora, también de 2:00 a 6:00; Corabastos y el acopio de Bavaria abren a las 2:00
   ALFA_CAP: 0.4, CAP_REF: 100,    // [SUP] atractivo por tamaño del mercado (capacidad en compras-equivalentes/día)
   EQ: { hog: 1, com: 4 },         // [SUP] un tendero carga lo de 4 compras de hogar (uso de la capacidad)
   KG_EQ: 25,                      // [SUP] kg de frutas y verduras de una compra de hogar en carro (un tendero: 4 × 25 = 100 kg)
@@ -207,7 +207,7 @@ export async function crearViajesMercados({ T3, cj }) {
   const [usos, carga] = await Promise.all([cargar('data3d/usos_edif.json?v=1'), cargar('data3d/carga.json?v=2').catch(() => ({ mercados: [] }))]);
   const R = construirRed(net, lw), Z = construirZonas(usos, lw, R);
   // red de mercados (otro módulo); si no está, respaldo: los 8 de carga.json, uno cada 26 semanas desde la semana 26 [SUP]
-  let RED = null; try { RED = await import('./mercados_red.js?v=1'); } catch (e) { RED = null; }
+  let RED = null; try { RED = await import('./mercados_red.js?v=3'); } catch (e) { RED = null; }
   const RESPALDO = (carga.mercados || []).map((m, k) => { const w = lw(m.p[0], m.p[1]); return { id: 'm' + (k + 1), n: m.n || 'Mercado de barrio ' + (k + 1), tipo: 'barrio', x: w[0], z: w[1], cap: PAR.KG.barrio, desde: 26 + 26 * k }; });
   const fuenteMerc = () => RED ? 'data3d/mercados_red.js' : 'respaldo: 8 mercados de data3d/carga.json';
   /* mercados abiertos en la semana: con la propuesta a la vista, los mismos que dibuja mercados_red.js (mercadosAbiertos(): semana y avance
@@ -228,7 +228,7 @@ export async function crearViajesMercados({ T3, cj }) {
   /* ---------- entradas del modelo (semana, escenario de sim_vida, sliders) ---------- */
   function entradas() {
     const sem = RELOJ.sem, e = SIMST.esc || 'C', V = window.KEN_ESIM && window.KEN_ESIM.vida, o = V && V.S && V.S[e] && V.S[e].o, oA = V && V.S && V.S.A && V.S.A.o;
-    const CS = T3.coraCS || { cora: 19, merc: 20, huer: 10 };
+    const CS = T3.coraCS || { cora: 19, merc: 26, huer: 10 };
     const pers = o && isFinite(o.pct) ? o.pct / 100 : 0, persA = oA && isFinite(oA.pct) ? oA.pct / 100 : 0;
     const cubre = Math.min(0.9, Math.max(pers, (CS.huer || 0) / 100 * PAR.HUERTA_SLIDER));
     let ab = abiertosEn(sem); const barrio = ab.filter(m => m.tipo !== 'plazoleta'); // slider «Mercados de barrio»: tope de mercados de barrio abiertos
@@ -381,7 +381,7 @@ export async function crearViajesMercados({ T3, cj }) {
 <div class="vm-fila v2" data-veh><button type="button" data-v="1">Ver</button><button type="button" data-v="">Apagar</button></div>
 <div class="vm-nota" data-vnota></div>
 <details><summary>Cada mercado abierto</summary><div class="vm-merc" data-merc></div></details>
-<details><summary>Cómo se evalúa (supuestos)</summary><p class="vm-nota">Zonas de 500 m con los lotes residenciales y comerciales del catastro de usos. Hogares: ${PAR.TASA_HOG} viajes/día en carro o moto [SUP]. Tenderos: ${Math.round(PAR.FR_COM_ALIM * 100)} % de los comercios, ${PAR.TASA_COM} viajes/día, ${Math.round(PAR.MADR.com * 100)} % entre 2 y 6 a. m. [SUP]. Cada viaje va al destino abierto más cercano por la red vial real (camino más corto en net.json); si ese mercado está lleno, al siguiente más cercano; Corabastos no tiene tope. Los mercados de barrio y las plazoletas abren a las 7:00 (en la madrugada, de 2 a 6 h, solo están Corabastos y el acopio de Bavaria). Capacidad de cada mercado limitada [SUP]. Lo que cubren las huertas no viaja. Hipótesis cumplida si Corabastos baja ${Math.round(PAR.HIP_MIN_BAJA * 100)} % o más y ${Math.round(PAR.HIP_MIN_REPARTO * 100)} % o más de esa baja llega a los mercados y a Bavaria. El tráfico del mapa cerca de Corabastos quita ${Math.round(PAR.FR.car * 100)} % (carros) y ${Math.round(PAR.FR.cam * 100)} % (camiones) × la baja de viajes de cada franja [SUP]. Mercados: <span data-fuente></span>.</p></details>`;
+<details><summary>Cómo se evalúa (supuestos)</summary><p class="vm-nota">Zonas de 500 m con los lotes residenciales y comerciales del catastro de usos. Hogares: ${PAR.TASA_HOG} viajes/día en carro o moto [SUP]. Tenderos: ${Math.round(PAR.FR_COM_ALIM * 100)} % de los comercios, ${PAR.TASA_COM} viajes/día, ${Math.round(PAR.MADR.com * 100)} % entre 2 y 6 a. m. [SUP]. Cada viaje va al destino abierto más cercano por la red vial real (camino más corto en net.json); si ese mercado está lleno, al siguiente más cercano; Corabastos no tiene tope. Los mercados venden desde las 7:00, pero tienen bodega con cuarto frío y reciben mercancía a cualquier hora, también en la madrugada. Capacidad de cada mercado limitada [SUP]. Lo que cubren las huertas no viaja. Hipótesis cumplida si Corabastos baja ${Math.round(PAR.HIP_MIN_BAJA * 100)} % o más y ${Math.round(PAR.HIP_MIN_REPARTO * 100)} % o más de esa baja llega a los mercados y a Bavaria. El tráfico del mapa cerca de Corabastos quita ${Math.round(PAR.FR.car * 100)} % (carros) y ${Math.round(PAR.FR.cam * 100)} % (camiones) × la baja de viajes de cada franja [SUP]. Mercados: <span data-fuente></span>.</p></details>`;
   el.querySelector('.vm-x').onclick = () => panel(false);
   el.querySelectorAll('[data-rutas] button').forEach(b => b.onclick = () => { modoRutas = b.dataset.m || modoRutas; verRutas = !!b.dataset.m; aplicarVis(); pintar(true); });
   el.querySelectorAll('[data-veh] button').forEach(b => b.onclick = () => { verVeh = !!b.dataset.v; aplicarVis(); pintar(true); });
