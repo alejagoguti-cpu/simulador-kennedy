@@ -1274,7 +1274,8 @@ if (forzada && E[forzada]) { setEscena(forzada); document.body.classList.add('fi
 Object.assign(camAct, camObj); for (const k in est) est[k] = obj[k]; for (const k in XG) XG[k].v = XG[k].o; ponerCam();
 requestAnimationFrame(cuadro);
 setTimeout(() => $('#carga').classList.add('fuera'), 300);
-if (!forzada) setTimeout(cargarRed, 4000); // la red se precarga mientras se ve la portada
+if (!forzada) setTimeout(cargarRed, 800); // la red se precarga mientras se ve la portada
+addEventListener('message', (ev) => { if (ev.data === 'red:lista') { document.body.classList.add('redlista'); if (redR) redModo(redR); } });
 
 
 // ---- fuentes
