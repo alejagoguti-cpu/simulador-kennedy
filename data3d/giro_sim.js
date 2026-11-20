@@ -17,6 +17,16 @@
    TIEMPO: lo lleva el reloj universal (data3d/reloj.js). Esta simulación es un sistema del reloj: step(1 s) mueve los agentes con
    su lógica y su azar con semilla; el dibujo (alDibujar) solo lee las posiciones e interpola entre el paso anterior y el actual. */
 import { RELOJ, DIA, vistaT3, hashNum } from './reloj.js?v=5';
+/* HORA AL INSTANTE (pedido de la usuaria): mover la hora cambia el día, el atardecer y la noche de inmediato, sin correr paso a paso
+   todas las horas intermedias. Solo la hora del día salta; los años (modelo semanal) no cambian. Los saltos «+2 h» y «+6 h» y las
+   pruebas de determinismo siguen corriendo la lógica paso a paso (RELOJ.saltar). */
+RELOJ.irAMinuto = function (min, motivo = '') {
+  if (RELOJ.salto) return false; min = ((Math.round(min) % 1440) + 1440) % 1440;
+  const hoy = RELOJ.diaN * DIA + min * 60, t = hoy > RELOJ.t ? hoy : hoy + DIA;
+  if (RELOJ.destino) RELOJ.cancelarDestino();
+  RELOJ.t = t; RELOJ.acum = 0; RELOJ.alfa = 1; RELOJ.entrada('hora', { t, motivo: motivo || ('las ' + RELOJ.hhmm(min * 60)) });
+  return true;
+};
 
 const DEPTHMAP = [[0, 0, 255], [0, 102, 255], [0, 204, 255], [0, 255, 204], [0, 255, 102], [51, 255, 0], [153, 255, 0], [255, 255, 0], [255, 204, 0], [255, 136, 0], [255, 68, 0], [255, 0, 0]]; // escala DepthmapX
 const colorDM = (v) => { const c = DEPTHMAP[Math.min(DEPTHMAP.length - 1, Math.floor(v * DEPTHMAP.length))]; return `rgb(${c[0]},${c[1]},${c[2]})`; };
@@ -222,7 +232,7 @@ export async function iniciarSimulacion(cfg = {}) {
   const st0 = { capa: '', agentes: true, conv: !SINP }; // con estrategias, arrancan apagadas · la hora, el día, la pausa y la velocidad son del reloj universal (RELOJ)
   const izq = document.createElement('div'); izq.className = 'gs-pan gs-act'; izq.id = 'gs-izq';
   izq.innerHTML = `<h3>HORA DEL DÍA <em id="gs-dia">DÍA 1</em></h3><p style="margin:-2px 0 8px;font-size:11px;line-height:1.4;color:var(--ui-tx2,#c3cace)">Un solo reloj con dos ritmos: el día mueve carros, personas, fauna y cielo; los años los mueve el modelo semanal. Pausa y velocidad de cada uno: en el control de tiempo.</p>
-    <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Ir a una hora del día: arrastra alrededor (el reloj avanza hasta esa hora)" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola y suelta: la simulación avanza hasta esa hora (el tiempo no se devuelve)</em></div></div>
+    <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día: arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola: el cielo cambia a esa hora al instante (día, atardecer, noche)</em></div></div>
     <div class="gs-sub">SINTAXIS ESPACIAL <span>DepthmapX</span></div>
     <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="d" class="gs-cambio" title="Qué calles ganan o pierden elección e integración con la propuesta">Cambio</button><button data-c="" class="on">Apagar</button></div>
     <div class="gs-ley" id="gs-ley-sx"><span>baja</span><i></i><span>alta</span></div>
