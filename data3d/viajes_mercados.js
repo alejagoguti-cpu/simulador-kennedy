@@ -40,7 +40,7 @@ export const PAR = {
   ALFA_CAP: 0.4, CAP_REF: 100,    // [SUP] atractivo por tamaño del mercado (capacidad en compras-equivalentes/día)
   EQ: { hog: 1, com: 4 },         // [SUP] un tendero carga lo de 4 compras de hogar (uso de la capacidad)
   KG_EQ: 25,                      // [SUP] kg de frutas y verduras de una compra de hogar en carro (un tendero: 4 × 25 = 100 kg)
-  KG: { barrio: 1200, plazoleta: 4800 }, // kg/día si el mercado no trae capacidad (los de data3d/mercados_red.js)
+  KG: { barrio: 2400, plazoleta: 9600 }, // kg/día si el mercado no trae capacidad (los de data3d/mercados_red.js)
   CAP_BAV: 80000 / 25,            // [SUP] acopio de Bavaria Común: 80 t/día para el barrio (completo; arranca con el 30 %) en compras-equivalentes
   HUERTA_SLIDER: 0.6, HUERTA_COM: 0.5, // [SUP] un hogar con huerta deja 60 % de sus compras de frescos; la tienda vende menos frescos (50 % del efecto)
   FR: { car: 0.5, cam: 0.8 },     // [SUP] de los vehículos de la grabación cerca de Corabastos, la parte que son viajes de abastecimiento del barrio
@@ -207,7 +207,7 @@ export async function crearViajesMercados({ T3, cj }) {
   const [usos, carga] = await Promise.all([cargar('data3d/usos_edif.json?v=1'), cargar('data3d/carga.json?v=2').catch(() => ({ mercados: [] }))]);
   const R = construirRed(net, lw), Z = construirZonas(usos, lw, R);
   // red de mercados (otro módulo); si no está, respaldo: los 8 de carga.json, uno cada 26 semanas desde la semana 26 [SUP]
-  let RED = null; try { RED = await import('./mercados_red.js?v=3'); } catch (e) { RED = null; }
+  let RED = null; try { RED = await import('./mercados_red.js?v=4'); } catch (e) { RED = null; }
   const RESPALDO = (carga.mercados || []).map((m, k) => { const w = lw(m.p[0], m.p[1]); return { id: 'm' + (k + 1), n: m.n || 'Mercado de barrio ' + (k + 1), tipo: 'barrio', x: w[0], z: w[1], cap: PAR.KG.barrio, desde: 26 + 26 * k }; });
   const fuenteMerc = () => RED ? 'data3d/mercados_red.js' : 'respaldo: 8 mercados de data3d/carga.json';
   /* mercados abiertos en la semana: con la propuesta a la vista, los mismos que dibuja mercados_red.js (mercadosAbiertos(): semana y avance

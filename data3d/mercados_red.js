@@ -58,7 +58,7 @@ const BASE = [
   ['barrio', 'Lote recuperado 13', 5256.0, 4673.8, -0.0276, 1.0, 'Lote vacío (OSM construction 1567706458)'],
   ['barrio', 'Lote recuperado 14', 8448.4, 799.6, -2.4029, 1.0, 'Lote vacío (OSM construction 1145845064)']
 ];
-const CAP = { barrio: 1200, plazoleta: 4800 }; // kg de frutas y verduras por día a escala 1 (20 y ~56 puestos); baja con la escala del sitio
+const CAP = { barrio: 2400, plazoleta: 9600 }; // kg de frutas y verduras por día a escala 1 (40 y ~112 puestos: mercados AMPLIADOS ×2, con bodega más grande; probado ×1/×2/×3/×5: camiones de madrugada a Corabastos −15/−24/−27/−31 %, desde ×2 rinde poco); baja con la escala del sitio
 const A_TOTAL = 10;                              // años hasta que la red está completa
 
 export const MERCADOS = (() => {
@@ -66,7 +66,7 @@ export const MERCADOS = (() => {
   L.forEach(m => { m.score = m.d * (m.tipo === 'plazoleta' ? 1.35 : 1); });
   L.sort((p, q) => p.score - q.score || p.k - q.k);
   const M = L.length;
-  return L.map((m, i) => { const cuota = (i + 0.5) / M, t = 0.5 + (A_TOTAL - 0.5) * Math.pow(cuota, 0.9), desde = Math.round(t * 52), puestos = m.tipo === 'plazoleta' ? 56 : 20;
+  return L.map((m, i) => { const cuota = (i + 0.5) / M, t = 0.5 + (A_TOTAL - 0.5) * Math.pow(cuota, 0.9), desde = Math.round(t * 52), puestos = m.tipo === 'plazoleta' ? 112 : 40;
     return { id: 'M' + String(i + 1).padStart(2, '0'), n: m.n, tipo: m.tipo, parque: m.parque, x: Math.round(m.x * 10) / 10, z: Math.round(m.z * 10) / 10, mx: m.mx, my: m.my, a: m.a, s: m.s,
       puestos, cap: Math.round(CAP[m.tipo] * (0.6 + 0.4 * m.s) / 50) * 50, desde, anio: Math.floor(desde / 52) + 1, cuota, distBavaria: Math.round(m.d) }; });
 })();
