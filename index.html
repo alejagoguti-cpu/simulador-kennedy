@@ -3722,9 +3722,9 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
       if (KEN && !document.getElementById('rc-btn')) { /* ruido de los carros y cierre de vía (data3d/ruido_cierre.js, como en el módulo 08) */
-        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=8'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
+        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=9'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
         const b1 = document.createElement('button'); b1.id = 'rc-btn'; b1.textContent = 'Ruido de carros'; b1.title = 'Mapa de ruido en vivo según dónde van los carros'; b1.style.cssText = 'width:100%;margin-top:6px';
-        b1.onclick = async () => { const on = !b1.classList.contains('on'); b1.classList.toggle('on', on); try { const a = await rcApi(); a.ruido.ver(on); T3.rcMod.panelRuido(on); } catch (e) { console.warn('ruido:', e); } };
+        b1.onclick = async () => { const on = !b1.classList.contains('on'); b1.classList.toggle('on', on); try { const a = await rcApi(); a.ruido.ver(on); if (!on) T3.rcMod.panelRuido(false); /* la usuaria: al prender el ruido solo se ve el mapa, sin abrir el panel */ } catch (e) { console.warn('ruido:', e); } };
         const b2 = document.createElement('button'); b2.id = 'ci-open'; b2.textContent = 'Cerrar una vía'; b2.title = 'Cierra una vía crítica y desvía los carros por las calles vecinas'; b2.style.cssText = 'width:100%;margin-top:6px';
         b2.onclick = async () => { const on = !b2.classList.contains('on'); b2.classList.toggle('on', on); try { const a = await rcApi(); T3.rcMod.panelCierre(a, on); } catch (e) { console.warn('cierre:', e); } };
         const ref = document.getElementById('us-btn') || document.getElementById('ar-btn'); (ref || ag.parentElement).insertAdjacentElement('afterend', b2); (ref || ag.parentElement).insertAdjacentElement('afterend', b1);
