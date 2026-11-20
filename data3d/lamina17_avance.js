@@ -62,7 +62,7 @@ const ponerCSS = () => { // se oculta TODA la interfaz del simulador: solo queda
 const T3 = W.KEN3D, THREE = T3.THREE, scene = T3.scene, cam = T3.camera;
 const imp = (u) => W.eval(`import('${u}')`); // los complementos de three se cargan DENTRO del iframe: mismo THREE que el simulador
 const [{ LineSegments2 }, { LineSegmentsGeometry }, { LineMaterial }] = await Promise.all([imp('three/addons/lines/LineSegments2.js'), imp('three/addons/lines/LineSegmentsGeometry.js'), imp('three/addons/lines/LineMaterial.js')]);
-const F32 = W.Float32Array; const lienzo = () => W.lienzo();
+const F32 = W.Float32Array; const lienzo = () => W.document.createElement('canvas');
 // guía de inicio: «Saltar»; sin límites de zoom para las vistas de toda Kennedy; luz cálida de la tarde
 const saltarGuia = () => { try { [...W.document.querySelectorAll('button')].filter(b => /^(Saltar|Cerrar|Empezar)$/i.test(b.textContent.trim())).forEach(b => b.click()); } catch (e) { } };
 saltarGuia(); setTimeout(saltarGuia, 1500); setTimeout(saltarGuia, 5000);
