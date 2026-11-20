@@ -391,12 +391,12 @@ const FED5 = { c: S(KM.C.reduce((s, c) => [s[0] + c[0] / NSEC, s[1] + c[1] / NSE
 
 /* =============================== ESCENAS (una por frase) =============================== */
 const FR = [ // rótulos cortos (no el guion completo): la escena del simulador es lo principal
-  { e: 'f1', a: 'Rendimiento · Superficie · Ritmo de módulos', b: 'Las proyecciones dependen de esto' },
-  { e: 'f2', a: 'Parámetros', b: 'Por calibrar' },
-  { e: 'f3', a: 'Residuos', b: 'Armonizar datos' },
-  { e: 'f4', a: 'B vs C', b: 'Nodos y decisiones', a2: 'Comparación adicional', b2: 'Solo cambia la vocería', largo: true },
-  { e: 'f5', a: 'Abastecimiento distribuido', b: 'Organizaciones barriales deciden' },
-  { e: 'f6', a: 'La red en el tiempo', b: '¿Qué necesita para sostenerse?' },
+  { e: 'f1', a: 'Rendimiento · Superficie · Ritmo de módulos', b: '' },
+  { e: 'f2', a: 'Parámetros · Calibración', b: '' },
+  { e: 'f3', a: 'Residuos · Datos', b: '' },
+  { e: 'f4', a: 'Escenario B · Escenario C', b: '', a2: 'Vocería fija · Vocería rotativa', b2: '', largo: true },
+  { e: 'f5', a: 'Abastecimiento distribuido · Organizaciones barriales', b: '' },
+  { e: 'f6', a: 'Red en el tiempo · Sostenibilidad', b: '' },
 ];
 const E = { // vistas cercanas al área detallada del simulador (centro local ≈ 250, -1000): edificios, árboles y agua se ven en 3D
   portada: { cam: { x: 250, y: 0, z: -900, s: 0.7, el: 36, az: -22 }, capas: { lim: 1 }, giro: true },
@@ -552,13 +552,13 @@ function cuadro() {
   let h = `<section class="paso portada activo" data-escena="portada"><div class="tarjeta">
     <p class="kicker">Kennedy · Bogotá</p>
     <h1>Bavaria <b>Común</b></h1>
-    <p>Calibrar, comparar y distribuir la red.</p>
+    <p>Calibrar · Comparar · Distribuir</p>
     <span class="bajar"><i></i>Desplázate</span></div></section>`;
   const pal = (txt, d = 0) => txt.split(' ').map((w, k) => `<span class="w" style="--i:${k + d}">${esc(w)}</span>`).join(' ');
   FR.forEach((s, i) => {
     h += `<section class="paso${s.largo ? ' largo' : ''}" data-i="${i + 1}" data-escena="${s.e}"><div class="tarjeta vidrio corta"><p class="kicker">${i + 1} / ${FR.length}</p>
-      <div class="uno"><p class="rot">${pal(s.a)}</p><p class="frase">${pal(s.b, 3)}</p></div>
-      ${s.a2 ? `<div class="alt"><p class="rot">${pal(s.a2)}</p><p class="frase">${pal(s.b2, 3)}</p></div>` : ''}</div></section>`; });
+      <div class="uno"><p class="rot">${pal(s.a)}</p>${s.b ? `<p class="frase">${pal(s.b, 3)}</p>` : ''}</div>
+      ${s.a2 ? `<div class="alt"><p class="rot">${pal(s.a2)}</p>${s.b2 ? `<p class="frase">${pal(s.b2, 3)}</p>` : ''}</div>` : ''}</div></section>`; });
   h += '<section class="paso fin" data-escena="f6"></section>';
   $('#relato').innerHTML = h; }
 $('#puntos').innerHTML = FR.map((_, i) => `<button type="button" data-i="${i + 1}" aria-label="Frase ${i + 1}">${i + 1}</button>`).join('');
