@@ -248,6 +248,15 @@ body.tb-abierto #esim{display:none}
 <p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta abierta (se cierran si la red se cae)</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Bavaria central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Red de mercados</button></div>
 <p class="exp que" data-que></p>
+<details class="ctl" open><summary>Controles del modelo · mueve y mira cómo cambian A, B y C</summary>
+${slider(P1, 'rend', 'Rendimiento de los cultivos (kg/m²·año)', 1, 12, 1, fmt, 'más comida de huertas y módulos: las zonas compran menos')}
+${slider(P1, 'auto', 'Proporción para autoconsumo', 0.1, 0.7, 0.05, pct, 'lo que se come en casa; el resto es excedente que entra por el acopio (en A, sin acopio, se pierde la mitad)')}
+${slider(P1, 'precio', 'Precio de referencia de los alimentos ($/kg)', 1500, 4500, 100, FMT.precio, 'más alto: más hogares siembran (elasticidad 0,5) y los hogares compran menos (−0,3); más bajo no hace comprar más de lo que se necesita [SUP]')}
+${slider(P1, 'capAcopio', 'Capacidad de acopio de la red (t/día)', 30, 400, 2, (v) => fmt(v), 'B: lo que mueve Bavaria; C: la suma de los mercados nodo (cada uno en proporción a su tamaño)')}
+${slider(P1, 'acopio', 'Acopio de excedentes de las huertas (kg/semana)', 2000, 40000, 1000, fmt, 'excedente que la red recoge (B en Bavaria, C en los mercados); lo que pasa de ahí se pierde')}
+${slider(P1, 'cupos', 'Cupos de formación en Bavaria (por trimestre)', 0, 40, 1, fmt, 'promotores nuevos cada 13 semanas en B y C: más huertas y más producción')}
+${slider(P2, 'frac', 'Proporción de residuos que va a compostaje', 0.05, 0.9, 0.05, pct, 'de los orgánicos de los hogares del programa, lo que se separa para compost (B y C); el resto va al relleno')}
+</details>
 <div class="cmp" data-cmp aria-live="polite"></div>
 <div class="tl"><div class="tlb" role="progressbar" aria-label="Semana del año de la simulación" aria-valuemin="1" aria-valuemax="52" data-t><i></i></div><output data-año></output></div>
 <p class="exp tlr">Los años los mueve el modelo semanal (control de tiempo, fila «Años»); los carros y animales muestran un día de esa semana.</p>
@@ -266,15 +275,7 @@ body.tb-abierto #esim{display:none}
 <details class="reglas" open><summary>Reglas de game over · fijas antes de correr</summary><div data-reglas></div><canvas data-spark height="56" aria-label="Zona peor abastecida a lo largo de la corrida" role="img"></canvas><div class="senales" data-senales></div></details>
 <details class="panc" data-panc><summary>Escenario C · mercados y solicitudes</summary><div data-pc></div></details>
 <ul data-kpi></ul>
-<details class="ctl" open><summary>Controles principales · entran en A, B, C y en «Evaluar»</summary>
-${slider(P1, 'rend', 'Rendimiento de los cultivos (kg/m²·año)', 1, 12, 1, fmt, 'más comida de huertas y módulos: las zonas compran menos')}
-${slider(P1, 'auto', 'Proporción para autoconsumo', 0.1, 0.7, 0.05, pct, 'lo que se come en casa; el resto es excedente que entra por el acopio (en A, sin acopio, se pierde la mitad)')}
-${slider(P1, 'precio', 'Precio de referencia de los alimentos ($/kg)', 1500, 4500, 100, FMT.precio, 'más alto: más hogares siembran (elasticidad 0,5) y los hogares compran menos (−0,3); más bajo no hace comprar más de lo que se necesita [SUP]')}
-${slider(P1, 'capAcopio', 'Capacidad de acopio de la red (t/día)', 30, 400, 2, (v) => fmt(v), 'B: lo que mueve Bavaria; C: la suma de los mercados nodo (cada uno en proporción a su tamaño)')}
-${slider(P1, 'acopio', 'Acopio de excedentes de las huertas (kg/semana)', 2000, 40000, 1000, fmt, 'excedente que la red recoge (B en Bavaria, C en los mercados); lo que pasa de ahí se pierde')}
-${slider(P1, 'cupos', 'Cupos de formación en Bavaria (por trimestre)', 0, 40, 1, fmt, 'promotores nuevos cada 13 semanas en B y C: más huertas y más producción')}
-${slider(P2, 'frac', 'Proporción de residuos que va a compostaje', 0.05, 0.9, 0.05, pct, 'de los orgánicos de los hogares del programa, lo que se separa para compost (B y C); el resto va al relleno')}
-</details>
+
 <details><summary>Huertas, promotores y decisiones</summary>
 ${slider(P1, 'alcance', 'Alcance sobre lotes y techos', 0.1, 1, 0.05, pct, 'qué tanto llega la formación a los hogares (adopción)')}
 ${slider(P1, 'retardo', 'Retardo de aprendizaje (semanas)', 2, 40, 1, fmt, 'semanas entre el cupo y el promotor formado')}
