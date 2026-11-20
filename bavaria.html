@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1015">
-<title>Distrito Bavaria Común</title>
-<meta name="description" content="Distrito Bavaria Común (Kennedy, Bogotá): el predio de la antigua fábrica de Bavaria como federación de huertas, compostaje, mercado y bosque. Sintaxis espacial antes y después, alimentación, residuos, Corabastos, gobernanza y especies.">
+<title>Bavaria Común</title>
+<meta name="description" content="Bavaria Común (Kennedy, Bogotá): un Distrito de Tecnologías Convergentes en la antigua cervecería, nodo de una red de mercados barriales. Enfoque NBIC, formación y producción en las viviendas, red biótica, sintaxis espacial y federación de asambleas.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -111,6 +111,10 @@ main{position:relative;z-index:3}
 .chip{display:inline-block;font:500 10.5px var(--mono);padding:2px 7px;border-radius:20px;border:1px solid var(--line2);color:var(--mu);margin:2px 4px 2px 0}
 .nota{font:12px/1.55 var(--mono);color:var(--mu);border-left:2px solid var(--line2);padding-left:12px;margin-top:20px;max-width:900px}
 .fuentes li{font:12px/1.6 var(--mono);color:var(--mu);margin-bottom:6px;word-break:break-word}
+.nbic .dato{position:relative;padding-top:16px}
+.nbic .letra{display:block;font:600 44px/1 var(--sans);margin-bottom:8px}
+.nbic .k,.pasos4 .k{margin-bottom:6px}
+.pasos4 .in{display:inline;font:600 14px var(--sans);color:var(--tx)}
 #atrib{position:fixed;left:10px;bottom:8px;z-index:5;font:10px/1.3 var(--sans);color:rgba(255,255,255,.75);text-shadow:0 1px 3px #000;pointer-events:none;max-width:60vw}
 #carga{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:var(--bg);font:12px var(--mono);color:var(--mu);letter-spacing:.14em;transition:opacity .6s}
 #carga.fuera{opacity:0;pointer-events:none}
@@ -150,25 +154,69 @@ main{position:relative;z-index:3}
   <div class="paso" data-escena="portada" style="min-height:100vh;padding:0">
     <div id="portada">
       <div class="k">Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo</div>
-      <h1>Distrito Bavaria Común</h1>
-      <p class="sub">La antigua fábrica de Bavaria como una federación de huertas, compostaje, mercado y bosque, gobernada por quienes viven alrededor.</p>
+      <h1>Bavaria Común</h1>
+      <p class="sub">Un Distrito de Tecnologías Convergentes en la antigua cervecería, entre las avenidas Boyacá y Américas: un clúster de conocimiento para reorganizar el abastecimiento de alimentos en Kennedy.</p>
       <div class="autores">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo · 2026</div>
       <div class="bajar">Desplazarse para empezar ↓</div>
     </div>
   </div>
 </section>
 
-<!-- ============ 01 EL LUGAR ============ -->
+<!-- ============ 01 EL PROBLEMA ============ -->
 <section class="cap">
   <div class="cabeza-cap paso" data-escena="kennedy"><div class="caja">
-    <div class="num">01 · EL LUGAR</div>
-    <h2>Un millón de personas y un predio cerrado</h2>
-    <p>El lote de la antigua cervecería queda en la UPZ 113 Bavaria, entre la Av. Boyacá, la Av. Américas y los barrios Marsella, Aloha y San José de Bavaria. Lleva cerrado desde 2010.</p>
+    <div class="num">01 · EL PROBLEMA CON MÁS CONEXIONES</div>
+    <h2>La centralización de servicios</h2>
+    <p>La red de problemas de Kennedy señaló la centralización de servicios como el problema con más conexiones. Por eso la propuesta empieza por reorganizar el abastecimiento de alimentos de la localidad.</p>
   </div></div>
+</section>
+
+<section class="lamina" id="l-abasto">
+  <div class="enc">
+    <div class="k">Lámina 1 · Red de abastecimiento</div>
+    <h2>Lo que cambia es dónde llegan los alimentos</h2>
+    <p>Los alimentos que solo pueden abastecerse desde fuera de la localidad siguen llegando de otros territorios. Lo que cambia es dónde se reciben y se distribuyen: los productores llegan a distintos mercados barriales y puntos de abastecimiento, y Corabastos pasa a ser uno de los mercados de la red.</p>
+  </div>
+  <div class="dos">
+    <figure class="fig"><div class="tit">Hoy · un solo punto de llegada</div>
+      <svg viewBox="0 0 420 260" role="img" aria-label="Hoy los productores llegan a Corabastos y desde allí se reparte a los barrios">
+        <g font-family="JetBrains Mono, monospace" font-size="10" fill="#8b9aa7">
+          <text x="10" y="18">PRODUCTORES</text><text x="170" y="18">RECEPCIÓN</text><text x="330" y="18">BARRIOS</text>
+        </g>
+        <g stroke="#5f6e7a" stroke-width="1.2" fill="none">
+          <path d="M40 50 C120 50 150 130 205 130"/><path d="M40 100 C120 100 150 130 205 130"/><path d="M40 160 C120 160 150 130 205 130"/><path d="M40 210 C120 210 150 130 205 130"/>
+          <path d="M235 130 C290 130 300 40 360 40"/><path d="M235 130 C290 130 300 90 360 90"/><path d="M235 130 C290 130 300 140 360 140"/><path d="M235 130 C290 130 300 190 360 190"/><path d="M235 130 C290 130 300 235 360 235"/>
+        </g>
+        <g fill="#b98a57"><circle cx="40" cy="50" r="6"/><circle cx="40" cy="100" r="6"/><circle cx="40" cy="160" r="6"/><circle cx="40" cy="210" r="6"/></g>
+        <circle cx="220" cy="130" r="22" fill="#e0664f"/>
+        <text x="220" y="168" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="12" fill="#e6ecf0">Corabastos</text>
+        <g fill="#5f6e7a"><circle cx="365" cy="40" r="5"/><circle cx="365" cy="90" r="5"/><circle cx="365" cy="140" r="5"/><circle cx="365" cy="190" r="5"/><circle cx="365" cy="235" r="5"/></g>
+      </svg>
+      <figcaption>Todo pasa por un nodo: recorridos largos hasta cada barrio.</figcaption></figure>
+    <figure class="fig"><div class="tit">Propuesta · una red de mercados</div>
+      <svg viewBox="0 0 420 260" role="img" aria-label="En la propuesta los productores llegan a varios mercados barriales, uno de ellos Corabastos">
+        <g font-family="JetBrains Mono, monospace" font-size="10" fill="#8b9aa7">
+          <text x="10" y="18">PRODUCTORES</text><text x="150" y="18">MERCADOS BARRIALES</text><text x="330" y="18">BARRIOS</text>
+        </g>
+        <g stroke="#5f6e7a" stroke-width="1.2" fill="none">
+          <path d="M40 50 C110 50 150 55 205 55"/><path d="M40 100 C110 100 150 55 205 55"/><path d="M40 100 C110 100 150 125 205 125"/><path d="M40 160 C110 160 150 125 205 125"/><path d="M40 160 C110 160 150 200 205 200"/><path d="M40 210 C110 210 150 200 205 200"/>
+          <path d="M215 55 C290 55 300 40 360 40"/><path d="M215 55 C290 55 300 90 360 90"/><path d="M215 125 C290 125 300 140 360 140"/><path d="M215 200 C290 200 300 190 360 190"/><path d="M215 200 C290 200 300 235 360 235"/>
+        </g>
+        <g stroke="#e3a64a" stroke-width="1" stroke-dasharray="3 3" fill="none"><path d="M210 63 L210 117"/><path d="M210 133 L210 192"/></g>
+        <g fill="#b98a57"><circle cx="40" cy="50" r="6"/><circle cx="40" cy="100" r="6"/><circle cx="40" cy="160" r="6"/><circle cx="40" cy="210" r="6"/></g>
+        <circle cx="210" cy="55" r="10" fill="#8fc46a"/><circle cx="210" cy="125" r="10" fill="#e0664f"/><circle cx="210" cy="200" r="10" fill="#8fc46a"/>
+        <g font-family="Space Grotesk, sans-serif" font-size="11" fill="#e6ecf0"><text x="226" y="48">Mercado barrial</text><text x="226" y="118">Corabastos</text><text x="226" y="217">Punto de abastecimiento</text></g>
+        <g fill="#8fc46a"><circle cx="365" cy="40" r="5"/><circle cx="365" cy="90" r="5"/><circle cx="365" cy="140" r="5"/><circle cx="365" cy="190" r="5"/><circle cx="365" cy="235" r="5"/></g>
+      </svg>
+      <figcaption>Varios puntos de recepción cerca de cada barrio; Corabastos es uno de ellos.</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap">
   <div class="paso" data-escena="predio"><div class="tarj">
-    <div class="k">El predio hoy</div>
-    <h3><span data-v="area_ha"></span> ha detrás de un muro</h3>
-    <p>Las huellas de OpenStreetMap delimitan <span data-v="area_ha"></span> ha (las fuentes del plan parcial hablan de 78 ha). Adentro quedan las naves de la fábrica: dos esqueletos de concreto sin cubierta, bloques de ladrillo, la torre administrativa, los silos y el tanque elevado.</p>
+    <div class="k">Un nodo de la red</div>
+    <h3>La antigua cervecería, entre la Boyacá y las Américas</h3>
+    <p>Como parte de esta red, proponemos recuperar parte de la antigua cervecería de Bavaria. Las huellas de OpenStreetMap delimitan <span data-v="area_ha"></span> ha, cerradas desde 2010, con las naves de la fábrica todavía en pie.</p>
     <div class="cifras">
       <div><b data-v="edif_n"></b><span>edificios en pie</span></div>
       <div><b data-v="edif_m2"></b><span>m² de huella construida</span></div>
@@ -176,166 +224,94 @@ main{position:relative;z-index:3}
   </div></div>
   <div class="paso" data-escena="bosque"><div class="tarj">
     <div class="k">El bosque</div>
-    <h3>Un bosque que nadie planeó</h3>
-    <p>Entre las naves creció un bosque de eucaliptos, pinos, acacias y urapanes. En la foto aérea se detectan <b data-v="arboles"></b> copas, <b data-v="arboles_bosque"></b> de ellas en masas densas. El modelo es la malla fotorrealista de Google: lo que se ve es el bosque real.</p>
-    <p>El estudio de Torres-Ariza y Gil-T (<i>Intropica</i>, 2023) registró en el bosque y el humedal Madre de Agua <b>80 especies de aves</b>, 33 migratorias y 4 amenazadas.</p>
-  </div></div>
-  <div class="paso" data-escena="cerrado"><div class="tarj">
-    <div class="k">Lo que está en juego</div>
-    <h3>El plan parcial vigente</h3>
-    <p>El Decreto 364 de 2017 preveía unas 12.300 viviendas y la tala del 97 % del arbolado. Tras la presión vecinal, el Decreto 448 de 2023 conserva más de 14.000 árboles y deja cerca del 70 % como espacio público, pero mantiene más de 14.000 viviendas en torres.</p>
-    <p>Esta tesis propone otra cosa: que el predio sea un <b>bien común productivo</b> para los barrios que ya existen.</p>
+    <h3>Un bosque que ya existe</h3>
+    <p>Entre las naves creció un bosque: en la foto aérea se detectan <b data-v="arboles"></b> copas, <b data-v="arboles_bosque"></b> de ellas en masas densas. Torres-Ariza y Gil-T (<i>Intropica</i>, 2023) registraron allí y en el humedal Madre de Agua <b>80 especies de aves</b>.</p>
   </div></div>
 </section>
 
-<section class="lamina" id="l-kennedy">
-  <div class="enc">
-    <div class="k">Lámina 1 · Kennedy en cifras</div>
-    <h2>Quiénes viven alrededor</h2>
-    <p>Kennedy es la localidad más poblada de Bogotá después de Suba. Tiene poco verde, pocos árboles por habitante y una parte grande de sus hogares se declara pobre.</p>
-  </div>
-  <div class="rejilla" id="kennedy-datos"></div>
-  <div class="dos">
-    <figure class="fig"><div class="tit">Espacio público verde (m² por habitante)</div><div id="g-epv"></div>
-      <figcaption>Fuente: SDS, ACCVSyE Kennedy 2021. Meta nacional: 15 m²/hab de espacio público efectivo (Decreto 1504 de 1998).</figcaption></figure>
-    <figure class="fig"><div class="tit">Estrato de las personas de Kennedy (EM 2021)</div><div id="g-estrato"></div>
-      <figcaption>Fuente: Encuesta Multipropósito 2021, citada en el ASIS Kennedy 2024.</figcaption></figure>
-  </div>
-</section>
-
-<section class="lamina" id="l-colectivo">
-  <div class="enc">
-    <div class="k">Lámina 2 · Colectivo Salvemos el Bosque Bavaria</div>
-    <h2>La defensa del bosque ya es una forma de gobierno</h2>
-    <p>Desde 2017, vecinas y vecinos de Marsella, Aloha, Bavaria y San José de Bavaria se organizaron contra la tala. Marcharon, presentaron acciones judiciales, propusieron alternativas y lograron que 21 propuestas ciudadanas entraran al decreto de 2023. Esa experiencia es el punto de partida de la federación.</p>
-  </div>
-  <figure class="fig"><div class="tit">Línea de tiempo</div><div id="g-linea"></div>
-    <figcaption>Fuentes: El Espectador (2019, 2020, 2021, 2022), El Tiempo (2023), Las2orillas (2018), Alcaldía de Bogotá (2023), Rama Judicial (radicado 2017-0356).</figcaption></figure>
-</section>
-
-<!-- ============ 02 SINTAXIS ============ -->
-<section class="cap">
-  <div class="cabeza-cap paso" data-escena="sx_base"><div class="caja">
-    <div class="num">02 · SINTAXIS ESPACIAL</div>
-    <h2>Un hueco en la red</h2>
-    <p>La sintaxis espacial mide cómo la forma de las calles reparte el movimiento. Antes de proponer, se analiza la red de toda Kennedy tal como está, con el predio cerrado: cerca de 30.000 tramos de calle de la localidad.</p>
-  </div></div>
-  <div class="paso" data-escena="sx_nain"><div class="tarj">
-    <div class="k">Integración angular · radio n</div>
-    <h3>Qué tan a mano queda cada calle</h3>
-    <p>Cada tramo se colorea según cuántos giros, en promedio, hay que hacer para llegar a él desde todos los demás (NAIN, Hillier et al. 2012). Rojo: muy integrado. Azul: segregado.</p>
-    <p>La Av. Boyacá y las avenidas que bordean el predio concentran la integración (rojo). Los barrios pegados al oriente y al sur del lote quedan en azul y verde: están al lado, pero el muro de <span data-v="perimetro"></span> km los deja al fondo de la red.</p>
-  </div></div>
-  <div class="paso" data-escena="sx_r800"><div class="tarj">
-    <div class="k">Integración angular · radio 800 m</div>
-    <h3>La escala de quien camina</h3>
-    <p>Con un radio de 800 m (unos diez minutos a pie) aparecen los centros de barrio, las calles comerciales que se recorren a pie. El predio es un hueco de <span data-v="area_ha"></span> ha en medio de esa escala.</p>
-  </div></div>
-  <div class="paso" data-escena="sx_nach"><div class="tarj">
-    <div class="k">Elección angular · radio n</div>
-    <h3>Por dónde pasa el movimiento</h3>
-    <p>La elección cuenta cuántos de los recorridos más directos atraviesan cada tramo (NACH). El paso se carga sobre las avenidas que rodean el predio; adentro no hay ninguna ruta.</p>
-  </div></div>
-  <div class="paso" data-escena="sx_desp"><div class="tarj">
-    <div class="k">Después · pasajes nuevos</div>
-    <h3>Abrir el predio: <span data-v="pasajes_km"></span> km de pasajes</h3>
-    <p>La propuesta abre <b data-v="entradas"></b> puertas en los cruces existentes del borde y las une con la plaza central. Cada pasaje sigue el camino más corto por el suelo abierto: rodea las naves (siempre a 7 m o más), aprovecha los patios y vías internas de la fábrica y solo cruza el bosque denso donde no hay otra salida. Los pasajes son peatonales y de bicicleta; no entran carros.</p>
-  </div></div>
-  <div class="paso" data-escena="sx_desp_nain"><div class="tarj">
-    <div class="k">Integración después</div>
-    <h3>El interior entra a la red</h3>
-    <p>Se recalculó la red completa con los pasajes. La mediana de los pasajes queda más integrada que el <span data-v="sx_nuevo"></span> % de las calles existentes. El promedio de las calles cercanas cambia poco porque el predio ya está rodeado de avenidas muy integradas: el efecto es abrir un centro nuevo, no reordenar la ciudad.</p>
-    <div class="cifras" id="sx-cifras1"></div>
-  </div></div>
-  <div class="paso" data-escena="sx_desp_nach"><div class="tarj">
-    <div class="k">Elección después</div>
-    <h3>Un lugar para estar, no una vía de paso</h3>
-    <p>En elección, los pasajes quedan en un nivel medio (percentil <span data-v="sx_nach"></span>): el movimiento de paso sigue en las avenidas. Para un lugar de huertas, mercado y asambleas eso es lo que conviene: recorridos de barrio, sin tráfico de paso.</p>
-    <div class="cifras" id="sx-cifras2"></div>
-  </div></div>
-  <div class="paso" data-escena="sx_delta"><div class="tarj">
-    <div class="k">Diferencia</div>
-    <h3>Dónde cambia la red</h3>
-    <p>A escala de 800 m, el <span data-v="sx_suben"></span> % de las calles gana integración y el <span data-v="sx_bajan"></span> % pierde un poco; las que más suben (hasta +<span data-v="sx_topmax"></span> %) están a una mediana de <span data-v="sx_top"></span> m del predio. Son las calles donde tienen sentido las tiendas de barrio que venden lo que sale de las huertas.</p>
-  </div></div>
-</section>
-
-<section class="lamina" id="l-sintaxis">
-  <div class="enc">
-    <div class="k">Lámina 3 · Sintaxis antes y después</div>
-    <h2>Lo que mide la red</h2>
-    <p>La red de toda Kennedy se recalculó con los pasajes. El gráfico compara los promedios ponderados por longitud de los tramos a menos de 600 m del predio; la nota de abajo da el cambio en toda la localidad.</p>
-  </div>
-  <div class="dos">
-    <figure class="fig"><div class="tit">Antes y después · tramos a menos de 600 m</div><div id="g-sx"></div>
-      <figcaption>NAIN = NC<sup>1,2</sup>/(TD+2). NACH = log(E+1)/log(TD+3). Profundidad = giros promedio (90° = 1).</figcaption></figure>
-    <figure class="fig"><div class="tit">Cómo se lee</div><div id="g-sx-lee"></div></figure>
-  </div>
-  <p class="nota" id="sx-metodo"></p>
-</section>
-
-<!-- ============ 03 PROPUESTA ============ -->
+<!-- ============ 02 BAVARIA COMÚN ============ -->
 <section class="cap">
   <div class="cabeza-cap paso" data-escena="capas"><div class="caja">
-    <div class="num">03 · LA PROPUESTA</div>
-    <h2>El predio por capas</h2>
-    <p>La axonometría separa el proyecto en cinco capas: el suelo que se cultiva, los pasajes, los edificios recuperados, el bosque y los flujos que conectan todo con el barrio.</p>
-  </div></div>
-  <div class="paso" data-escena="capa_suelo"><div class="tarj">
-    <div class="k">Capa 1 · Suelo productivo</div>
-    <h3><span data-v="bloques"></span> manzanas de huerta</h3>
-    <p>Las huertas se ordenan en <b data-v="bloques"></b> manzanas de 30 × 26 m alineadas con la retícula de las naves y separadas por calles de 4 m. Cada manzana tiene dos filas de 14 bancales de 1,2 × 10 m. Solo se ponen donde caben completas: fuera de los edificios, los pasajes, las plazas y el bosque denso. Los árboles sueltos que caen dentro se conservan y el bancal que los toca se omite.</p>
-    <div class="cifras">
-      <div><b data-v="bancales_m2"></b><span>m² de bancal</span></div>
-      <div><b data-v="libre_ha"></b><span>ha de suelo libre</span></div>
-    </div>
-    <p class="mu" style="font-size:13px">Antes de sembrar se hace el estudio de suelo. Si hay contaminación de la fábrica, los bancales se elevan con sustrato nuevo.</p>
-  </div></div>
-  <div class="paso" data-escena="capa_inv"><div class="tarj">
-    <div class="k">Capa 1 · Invernaderos bajo la retícula</div>
-    <h3>Las naves sin techo se vuelven invernaderos</h3>
-    <p>Los dos esqueletos de concreto conservan su retícula de columnas y vigas. Sobre ella va una cubierta liviana de policarbonato: invernaderos para tomate, pimentón, pepino, plántulas y el vivero de especies nativas.</p>
-    <div class="cifras">
-      <div><b data-v="inv_m2"></b><span>m² cultivables bajo cubierta</span></div>
-      <div><b data-v="techos_m2"></b><span>m² en cubiertas del barrio</span></div>
-    </div>
-  </div></div>
-  <div class="paso" data-escena="capa_techos"><div class="tarj">
-    <div class="k">Red de huertas</div>
-    <h3>Huertas también fuera del predio</h3>
-    <p>El distrito no se queda dentro del muro: <b data-v="techos_n"></b> cubiertas planas de casas y edificios a menos de 600 m (de 150 a 900 m² y menos de 15 m de altura) se suman como huertas en techo. Cada una se conecta con el predio por los pasajes.</p>
+    <div class="num">02 · BAVARIA COMÚN</div>
+    <h2>Un Distrito de Tecnologías Convergentes</h2>
+    <p>Bavaria Común funciona como un clúster de conocimiento. Universidades, comerciantes, promotores y organizaciones barriales disponen de espacios para experimentar, aprender y organizar iniciativas propias.</p>
   </div></div>
   <div class="paso" data-escena="capa_prog"><div class="tarj">
-    <div class="k">Capa 3 · Programa</div>
-    <h3>Qué hace cada edificio</h3>
-    <p>Se recuperan las naves existentes en lugar de demolerlas: mercado de proximidad, casa de la federación, laboratorio, cocina comunitaria, cuidados, cooperativa de trabajo, laboratorio de hongos, energía y compostaje.</p>
-  </div></div>
-  <div class="paso" data-escena="capa_bosque"><div class="tarj">
-    <div class="k">Capa 4 · Bosque</div>
-    <h3>El bosque no se toca</h3>
-    <p>Ningún pasaje ni bancal ocupa las masas densas de árboles. El bosque se observa, se mide y se enriquece con nativas del vivero, y se conecta con los humedales de Techo (0,8 km) y El Burro (1,3 km).</p>
-  </div></div>
-  <div class="paso" data-escena="capa_flujos"><div class="tarj">
-    <div class="k">Capa 5 · Flujos</div>
-    <h3>Lo orgánico entra, la comida sale</h3>
-    <p>Los residuos orgánicos de los hogares llegan en bicicarga por los pasajes al compostaje; el compost vuelve a los bancales y a las cubiertas, y la cosecha sale al mercado, a la cocina comunitaria y a las tiendas del barrio.</p>
-  </div></div>
-  <div class="paso" data-escena="plan"><div class="tarj">
-    <div class="k">El plan completo</div>
-    <h3>Distrito Bavaria Común</h3>
-    <p>Todo junto: un predio abierto, productivo y arbolado, con edificios recuperados y una red de huertas que se extiende sobre los techos del barrio.</p>
+    <div class="k">El clúster</div>
+    <h3>Las naves recuperadas</h3>
+    <p>Las naves existentes se recuperan en lugar de demolerse y alojan los espacios del clúster: laboratorios, aulas, módulos demostrativos, el mercado y los lugares de reunión de las organizaciones.</p>
+    <div class="chips" style="margin-top:6px"><span class="chip">Universidades</span><span class="chip">Comerciantes</span><span class="chip">Promotores barriales</span><span class="chip">Organizaciones barriales</span></div>
   </div></div>
 </section>
 
-<!-- ============ 04 ALIMENTACIÓN ============ -->
+<section class="lamina" id="l-nbic">
+  <div class="enc">
+    <div class="k">Lámina 2 · Enfoque NBIC</div>
+    <h2>Cuatro tecnologías, un mismo programa</h2>
+    <p>El enfoque NBIC de Roco y Bainbridge (convergencia de nano, bio, info y cogno) orienta el programa de Bavaria Común. Cada línea se aplica a un eslabón del abastecimiento de alimentos.</p>
+  </div>
+  <div class="rejilla nbic">
+    <div class="dato"><span class="letra" style="color:var(--verde)">B</span><div class="k">Biotecnología</div><div class="l">Producción hidropónica, compostaje y cultivo experimental de hongos con materiales vegetales adecuados.</div></div>
+    <div class="dato"><span class="letra" style="color:var(--agua)">I</span><div class="k">Tecnologías de la información</div><div class="l">Registro de pedidos, entregas y excedentes de la red de mercados.</div></div>
+    <div class="dato"><span class="letra" style="color:var(--lila)">C</span><div class="k">Ciencias cognitivas</div><div class="l">Diseño de herramientas para que familias y comerciantes usen esa información al tomar decisiones.</div></div>
+    <div class="dato"><span class="letra" style="color:var(--amb)">N</span><div class="k">Nanotecnología</div><div class="l">Línea de investigación universitaria sobre materiales de empaque para conservar alimentos.</div></div>
+  </div>
+  <p class="nota">Referencia: Roco, M. C. y Bainbridge, W. S. (eds.) (2003). <i>Converging Technologies for Improving Human Performance: Nanotechnology, Biotechnology, Information Technology and Cognitive Science</i>. NSF/DOC.</p>
+</section>
+
+<section class="cap">
+  <div class="paso" data-escena="capa_inv"><div class="tarj">
+    <div class="k">Bio · Bajo cubierta</div>
+    <h3>Hidroponía y hongos en las naves</h3>
+    <p>Los esqueletos de concreto conservan su retícula y reciben una cubierta liviana. Allí se ensaya la producción hidropónica y el cultivo experimental de hongos.</p>
+    <div class="cifras">
+      <div><b data-v="inv_m2"></b><span>m² bajo cubierta</span></div>
+      <div><b data-v="bancales_m2"></b><span>m² de módulos demostrativos</span></div>
+    </div>
+  </div></div>
+  <div class="paso" data-escena="capa_flujos"><div class="tarj">
+    <div class="k">Bio + Info · Flujos</div>
+    <h3>Del residuo al compost, del pedido a la entrega</h3>
+    <p>Los residuos orgánicos llegan al compostaje y el compost vuelve a la producción. Pedidos, entregas y excedentes quedan registrados para que la red de mercados sepa qué hay y dónde.</p>
+  </div></div>
+</section>
+
+<!-- ============ 03 FORMACIÓN Y VIVIENDA ============ -->
+<section class="cap">
+  <div class="cabeza-cap paso" data-escena="capa_suelo"><div class="caja">
+    <div class="num">03 · FORMACIÓN Y VIVIENDA</div>
+    <h2>Se aprende en Bavaria, se produce en casa</h2>
+    <p>La formación se realiza en Bavaria y la producción se lleva a las viviendas. Las familias practican en módulos demostrativos y reciben acompañamiento de promotores barriales durante los primeros ciclos.</p>
+  </div></div>
+  <div class="paso" data-escena="capa_techos"><div class="tarj">
+    <div class="k">La producción en las viviendas</div>
+    <h3>Huertas en <span data-v="techos_n"></span> cubiertas del barrio</h3>
+    <p>El incentivo es cosechar hortalizas frescas, conocer los insumos utilizados y sustituir parte de las compras del hogar. Cuando hay excedentes, su venta en los mercados barriales ofrece un ingreso complementario.</p>
+    <p class="mu" style="font-size:13px">Referente local: el Jardín Botánico de Bogotá, por su trabajo en formación y asistencia técnica para la producción urbana.</p>
+  </div></div>
+</section>
+
+<section class="lamina" id="l-ciclo">
+  <div class="enc">
+    <div class="k">Lámina 3 · El ciclo de una familia</div>
+    <h2>De aprender a vender excedentes</h2>
+  </div>
+  <div class="rejilla pasos4">
+    <div class="dato"><b>1</b><div class="l"><b class="in">Aprende en Bavaria.</b> Práctica en módulos demostrativos.</div></div>
+    <div class="dato"><b>2</b><div class="l"><b class="in">Produce en casa.</b> Acompañamiento de promotores barriales en los primeros ciclos.</div></div>
+    <div class="dato"><b>3</b><div class="l"><b class="in">Cosecha y sustituye.</b> Hortalizas frescas, insumos conocidos, menos compras del hogar.</div></div>
+    <div class="dato"><b>4</b><div class="l"><b class="in">Vende excedentes.</b> En los mercados barriales, como ingreso complementario.</div></div>
+  </div>
+</section>
+
 <section class="lamina" id="l-dieta">
   <div class="enc">
     <div class="k">Lámina 4 · Qué se come y qué se siembra</div>
     <h2>Sembrar lo que falta en el plato</h2>
-    <p>La dieta de los hogares de estratos 2 y 3 se apoya en arroz, papa y plátano, y se queda corta en frutas y verduras. El arroz y el plátano no se dan a 2.600 m; las hortalizas, las aromáticas y los tubérculos andinos sí. La huerta no reemplaza la canasta: complementa lo que más falta.</p>
+    <p>La dieta de los hogares de estratos 2 y 3 se apoya en arroz, papa y plátano, y se queda corta en frutas y verduras. El arroz y el plátano no se dan a 2.600 m; las hortalizas, las aromáticas y los tubérculos andinos sí. La huerta no reemplaza la canasta: sustituye parte de las compras.</p>
   </div>
   <div class="rejilla" id="dieta-datos"></div>
-  <figure class="fig"><div class="tit">Cultivos del distrito · ciclo y rendimiento</div><div class="tabla-scroll"><table class="tabla" id="t-cultivos"></table></div>
+  <figure class="fig"><div class="tit">Cultivos · ciclo y rendimiento</div><div class="tabla-scroll"><table class="tabla" id="t-cultivos"></table></div>
     <figcaption>Cultivos recomendados por el programa de agricultura urbana del Jardín Botánico de Bogotá y huertas de la ciudad. Rendimientos de huerta comunitaria a cielo abierto: 3 a 8 kg/m²/año (estimación); bajo cubierta, más.</figcaption></figure>
   <figure class="fig"><div class="tit">Calendario de siembra y cosecha (meses)</div><div id="g-calendario"></div>
     <figcaption>Bogotá tiene dos temporadas de lluvia (marzo-mayo y septiembre-noviembre). Los ciclos cortos permiten cosechas continuas con siembras escalonadas.</figcaption></figure>
@@ -345,19 +321,18 @@ main{position:relative;z-index:3}
   <div class="enc">
     <div class="k">Lámina 5 · Para cuántas personas</div>
     <h2>Cuánta comida y para quién</h2>
-    <p>La población de referencia es la de la UPZ 113 Bavaria: 40.320 personas (SDS, 2021), unos 13.900 hogares. La meta de la huerta se mide frente a una porción diaria de 200 g de hortalizas por persona, la mitad de los 400 g de frutas y verduras que recomienda la OMS.</p>
+    <p>La población de referencia es la de la UPZ 113 Bavaria: 40.320 personas (SDS, 2021), unos 13.900 hogares. La meta se mide frente a una porción diaria de 200 g de hortalizas por persona, la mitad de los 400 g de frutas y verduras que recomienda la OMS.</p>
   </div>
   <div class="rejilla" id="prod-datos"></div>
   <figure class="fig"><div class="tit">Producción anual por tipo de superficie</div><div id="g-prod"></div>
     <figcaption id="prod-cap"></figcaption></figure>
 </section>
 
-<!-- ============ 05 RESIDUOS ============ -->
 <section class="lamina" id="l-residuos">
   <div class="enc">
     <div class="k">Lámina 6 · Residuos y compostaje</div>
-    <h2>Lo que hoy va a Doña Juana</h2>
-    <p>Cada habitante de Bogotá genera cerca de 0,8 kg de residuos al día, y la mitad es orgánica. Con la separación en la fuente, la mayor parte de lo orgánico de la UPZ Bavaria deja de ir al relleno y vuelve como abono a las huertas.</p>
+    <h2>Lo orgánico vuelve como abono</h2>
+    <p>Cada habitante de Bogotá genera cerca de 0,8 kg de residuos al día, y la mitad es orgánica. Con la separación en la fuente, parte de lo orgánico de la UPZ Bavaria deja de ir al relleno y vuelve al compostaje del distrito.</p>
   </div>
   <div class="rejilla" id="res-datos"></div>
   <figure class="fig"><div class="tit">Flujo diario de residuos (toneladas por día)</div><div id="g-sankey"></div>
@@ -365,70 +340,183 @@ main{position:relative;z-index:3}
   <figure class="fig"><div class="tit">Cómo se organiza la recolección</div><div id="g-ruta"></div></figure>
 </section>
 
-<!-- ============ 06 CORABASTOS ============ -->
 <section class="lamina" id="l-corabastos">
   <div class="enc">
-    <div class="k">Lámina 7 · Corabastos y el trabajo</div>
-    <h2>De la central al barrio</h2>
-    <p>Corabastos, también en Kennedy, mueve unos 1,98 millones de toneladas al año y da trabajo directo a 20.000-25.000 personas; con los indirectos, la Alcaldía habla de 260.000. Buena parte de ese trabajo es informal: coteros sin seguridad social, recicladores y vendedores. El distrito no compite con la central: crea trabajo formal y cercano para parte de esas personas.</p>
+    <div class="k">Lámina 7 · Corabastos en la red</div>
+    <h2>Uno de los mercados, no el único</h2>
+    <p>Corabastos mueve unos 1,98 millones de toneladas al año y da trabajo directo a 20.000-25.000 personas. En la propuesta sigue siendo un mercado de la red; lo que se suma son los mercados barriales y el trabajo cercano que crean.</p>
   </div>
   <div class="rejilla" id="cora-datos"></div>
-  <figure class="fig"><div class="tit">Del oficio actual al oficio en el distrito</div><div id="g-trabajo"></div>
-    <figcaption>Los puestos del distrito son una estimación de la propuesta, calculada con las superficies del plan (ver tabla). La prioridad de contratación es para trabajadores informales de Corabastos y recicladores de oficio de Kennedy.</figcaption></figure>
+  <figure class="fig"><div class="tit">Del oficio actual al oficio en la red</div><div id="g-trabajo"></div>
+    <figcaption>Los puestos son una estimación de la propuesta, calculada con las superficies del plan (ver tabla).</figcaption></figure>
   <figure class="fig"><div class="tit">Puestos de trabajo por área</div><div class="tabla-scroll"><table class="tabla" id="t-trabajo"></table></div></figure>
 </section>
 
-<!-- ============ 07 GOBERNANZA ============ -->
-<section class="cap">
-  <div class="cabeza-cap paso" data-escena="sectores"><div class="caja">
-    <div class="num">07 · GOBERNANZA</div>
-    <h2>Una federación de asambleas</h2>
-    <p>Cada puerta del predio corresponde a un sector de barrios. Cada sector tiene su asamblea; las asambleas se federan y mandan voceras y voceros rotativos al consejo.</p>
-  </div></div>
-</section>
-
-<section class="lamina" id="l-federacion">
-  <div class="enc">
-    <div class="k">Lámina 8 · Cómo se organiza</div>
-    <h2>Nadie manda solo, todas las personas pueden llevar la voz</h2>
-    <p>El distrito se gobierna como una federación: las decisiones nacen en los núcleos de huerta y en las asambleas de sector, y suben al consejo federal con un mandato. Quien representa a una asamblea no decide por ella: lleva lo que se acordó y vuelve a rendir cuentas. La vocería rota cada seis meses y se sortea entre quienes se postulan, con paridad de género, para que cualquier vecina o vecino pueda ejercerla. El Colectivo Salvemos el Bosque Bavaria tiene un asiento propio en el consejo como guardián del bosque.</p>
-  </div>
-  <figure class="fig"><div class="tit">Estructura federal</div><div id="g-federacion"></div></figure>
-  <div class="rejilla" id="fed-datos" style="margin-top:18px"></div>
-  <div class="dos">
-    <figure class="fig"><div class="tit">Reuniones al año</div><div class="tabla-scroll"><table class="tabla" id="t-reuniones"></table></div></figure>
-    <figure class="fig"><div class="tit">Rotación de vocerías en cinco años</div><div id="g-rotacion"></div>
-      <figcaption>Cada semestre cambian todas las vocerías del consejo. Nadie repite hasta que hayan pasado quienes se postularon.</figcaption></figure>
-  </div>
-  <p class="nota">Las cantidades de esta lámina son de diseño. La participación esperada (5 % de las personas adultas en asamblea de sector) está por encima de la habitual en juntas de acción comunal; Kennedy tiene unas 203 JAC activas (IDPAC, 2023), que se integran como miembros de las asambleas de sector.</p>
-</section>
-
-<!-- ============ 08 ESPECIES ============ -->
+<!-- ============ 04 RED BIÓTICA ============ -->
 <section class="cap">
   <div class="cabeza-cap paso" data-escena="corredor"><div class="caja">
-    <div class="num">08 · ESPECIES</div>
-    <h2>Un predio para más que personas</h2>
-    <p>El bosque de Bavaria es un nodo entre los humedales de Techo, El Burro y la ronda del río Fucha. La propuesta se mide también por lo que hace por las aves, los polinizadores y el suelo.</p>
+    <div class="num">04 · RED DE RELACIONES BIÓTICAS</div>
+    <h2>Qué vínculos queremos fortalecer</h2>
+    <p>La red de relaciones bióticas de Kennedy nos ayuda a definir qué vínculos fortalecer entre plantas, polinizadores, aves y fauna urbana.</p>
+  </div></div>
+  <div class="paso" data-escena="capa_bosque"><div class="tarj">
+    <div class="k">Parches conectados</div>
+    <h3>Que los parches dejen de ser islas</h3>
+    <p>Alrededor de los espacios de producción incorporamos plantas en flor para atraer polinizadores y conectamos los parches de árboles con la vegetación existente. Así ofrecen alimento y refugio en distintos puntos, y las aves y los polinizadores pueden desplazarse entre ellos.</p>
+  </div></div>
+  <div class="paso" data-escena="capa_flujos"><div class="tarj">
+    <div class="k">Control de ratas</div>
+    <h3>Primero, almacenamiento y residuos</h3>
+    <p>El control de ratas empieza con el almacenamiento cerrado y el retiro oportuno de residuos. Las aves rapaces pueden contribuir a ese control mediante la depredación.</p>
   </div></div>
 </section>
 
 <section class="lamina" id="l-especies">
   <div class="enc">
-    <div class="k">Lámina 9 · Red de especies y propuesta</div>
+    <div class="k">Lámina 8 · Red de especies y propuesta</div>
     <h2>Qué especie usa qué parte del proyecto</h2>
-    <p>Las especies son las registradas en el bosque y el humedal Madre de Agua (Torres-Ariza y Gil-T, 2023) y en la red biótica de Kennedy. Las relaciones con cada elemento del proyecto son esperadas: son hipótesis de diseño para monitorear, no observaciones.</p>
+    <p>Las especies son las registradas en el bosque y el humedal Madre de Agua (Torres-Ariza y Gil-T, 2023) y en la red biótica de Kennedy. Las relaciones con cada elemento del proyecto son esperadas: hipótesis de diseño para monitorear, no observaciones.</p>
   </div>
   <figure class="fig"><div class="tit">Elementos del proyecto ↔ especies</div><div id="g-especies"></div>
     <figcaption>Color de la línea: tipo de interacción (paleta de la red biótica de Kennedy).</figcaption></figure>
   <div class="rejilla" id="esp-datos" style="margin-top:18px"></div>
 </section>
 
+<!-- ============ 05 SINTAXIS ============ -->
+<section class="cap">
+  <div class="cabeza-cap paso" data-escena="sx_base"><div class="caja">
+    <div class="num">05 · SINTAXIS ESPACIAL</div>
+    <h2>Dónde ubicar los mercados</h2>
+    <p>Con la sintaxis espacial usamos la integración para identificar tramos accesibles donde ubicar mercados, y la elección para reconocer por dónde pasan más recorridos potenciales.</p>
+  </div></div>
+  <div class="paso" data-escena="sx_nain"><div class="tarj">
+    <div class="k">Integración angular · radio n</div>
+    <h3>Tramos accesibles para los mercados</h3>
+    <p>Cada tramo se colorea según qué tan a mano queda desde todos los demás (NAIN, Hillier et al. 2012). Rojo: muy integrado. Azul: segregado. Los tramos más integrados son candidatos para mercados barriales.</p>
+  </div></div>
+  <div class="paso" data-escena="sx_r800"><div class="tarj">
+    <div class="k">Integración angular · radio 800 m</div>
+    <h3>La escala de quien camina</h3>
+    <p>Con un radio de 800 m (unos diez minutos a pie) aparecen los centros de barrio: la escala de un mercado barrial.</p>
+  </div></div>
+  <div class="paso" data-escena="sx_nach"><div class="tarj">
+    <div class="k">Elección angular · radio n</div>
+    <h3>Por dónde pasan más recorridos</h3>
+    <p>La elección cuenta cuántos de los recorridos más directos atraviesan cada tramo (NACH). Muestra por dónde pasan más recorridos potenciales y, con ellos, más compradores.</p>
+  </div></div>
+  <div class="paso" data-escena="sx_desp"><div class="tarj">
+    <div class="k">Pasajes nuevos</div>
+    <h3>Las naves se conectan con las calles</h3>
+    <p>En Bavaria, <span data-v="pasajes_km"></span> km de pasajes nuevos conectan las naves recuperadas con las calles del entorno a través de <b data-v="entradas"></b> puertas. Concentramos las intervenciones en áreas ya ocupadas.</p>
+  </div></div>
+  <div class="paso" data-escena="sx_desp_nain"><div class="tarj">
+    <div class="k">Integración después</div>
+    <h3>El interior entra a la red</h3>
+    <p>Con los pasajes, la mediana de los tramos nuevos queda más integrada que el <span data-v="sx_nuevo"></span> % de las calles existentes.</p>
+    <div class="cifras" id="sx-cifras1"></div>
+  </div></div>
+  <div class="paso" data-escena="sx_desp_nach"><div class="tarj">
+    <div class="k">Elección después</div>
+    <h3>Recorridos de barrio, no vía de paso</h3>
+    <p>En elección, los pasajes quedan en un nivel medio (percentil <span data-v="sx_nach"></span>): el tráfico de paso sigue en las avenidas.</p>
+    <div class="cifras" id="sx-cifras2"></div>
+  </div></div>
+  <div class="paso" data-escena="sx_delta"><div class="tarj">
+    <div class="k">Diferencia</div>
+    <h3>Dónde cambia la red</h3>
+    <p>A escala de 800 m, el <span data-v="sx_suben"></span> % de las calles gana integración; las que más suben (hasta +<span data-v="sx_topmax"></span> %) están a una mediana de <span data-v="sx_top"></span> m del predio.</p>
+  </div></div>
+</section>
+
+<section class="lamina" id="l-sintaxis">
+  <div class="enc">
+    <div class="k">Lámina 9 · Sintaxis antes y después</div>
+    <h2>Lo que mide la red</h2>
+    <p>La red de toda Kennedy se recalculó con los pasajes. El gráfico compara los promedios ponderados por longitud de los tramos a menos de 600 m del predio.</p>
+  </div>
+  <div class="dos">
+    <figure class="fig"><div class="tit">Antes y después · tramos a menos de 600 m</div><div id="g-sx"></div>
+      <figcaption>NAIN = NC<sup>1,2</sup>/(TD+2). NACH = log(E+1)/log(TD+3). Profundidad = giros promedio (90° = 1).</figcaption></figure>
+    <figure class="fig"><div class="tit">Cómo se lee</div><div id="g-sx-lee"></div></figure>
+  </div>
+  <p class="nota" id="sx-metodo"></p>
+</section>
+
+<!-- ============ 06 GOBERNANZA ============ -->
+<section class="cap">
+  <div class="paso" data-escena="sx_desp"><div class="tarj">
+    <div class="k">06 · Gobernanza</div>
+    <h3>Hasta dónde llegan los pasajes</h3>
+    <p>Definir hasta dónde llegan los pasajes y qué actividades se ubican cerca del bosque también es una decisión de la comunidad.</p>
+  </div></div>
+  <div class="paso" data-escena="bosque"><div class="tarj">
+    <div class="k">Salvemos el Bosque de Bavaria</div>
+    <h3>Quienes ya defienden el bosque</h3>
+    <p>Por eso participa Salvemos el Bosque de Bavaria, un colectivo ciudadano que defiende la conservación del bosque de la antigua cervecería frente a la tala de árboles.</p>
+  </div></div>
+</section>
+
+<section class="lamina" id="l-colectivo">
+  <div class="enc">
+    <div class="k">Lámina 10 · Colectivo Salvemos el Bosque de Bavaria</div>
+    <h2>La defensa del bosque</h2>
+    <p>Desde 2017, vecinas y vecinos de Marsella, Aloha, Bavaria y San José de Bavaria se organizaron contra la tala: marcharon, presentaron acciones judiciales y propusieron alternativas.</p>
+  </div>
+  <figure class="fig"><div class="tit">Línea de tiempo</div><div id="g-linea"></div>
+    <figcaption>Fuentes: El Espectador (2019, 2020, 2021, 2022), El Tiempo (2023), Las2orillas (2018), Alcaldía de Bogotá (2023), Rama Judicial (radicado 2017-0356).</figcaption></figure>
+</section>
+
+<section class="cap">
+  <div class="cabeza-cap paso" data-escena="plan"><div class="caja">
+    <div class="num">06 · GOBERNANZA</div>
+    <h2>Una federación de asambleas</h2>
+    <p>El colectivo, las organizaciones barriales y los comerciantes participan en una federación de asambleas.</p>
+  </div></div>
+</section>
+
+<section class="lamina" id="l-federacion">
+  <div class="enc">
+    <div class="k">Lámina 11 · Cómo se decide</div>
+    <h2>Cada organización discute, una persona lleva los acuerdos</h2>
+    <p>Cada organización discute sus propuestas y una persona lleva sus acuerdos a la asamblea de la federación, donde se toman las decisiones comunes sobre el uso de los espacios, el cuidado del bosque y el abastecimiento de alimentos. La vocería rota cada cierto tiempo, de modo que todas las personas de cada asamblea puedan representar a su organización en algún momento.</p>
+  </div>
+  <div class="rejilla pasos4" style="margin-bottom:18px">
+    <div class="dato"><div class="k">Participan</div><div class="l">Salvemos el Bosque de Bavaria · organizaciones barriales · comerciantes</div></div>
+    <div class="dato"><div class="k">Se decide</div><div class="l">Uso de los espacios · cuidado del bosque · abastecimiento de alimentos</div></div>
+    <div class="dato"><div class="k">Vocería</div><div class="l">Rota cada cierto tiempo: todas las personas pueden representar a su organización</div></div>
+  </div>
+  <figure class="fig"><div class="tit">Federación de asambleas</div>
+    <div class="desliza"><svg class="ancho" viewBox="0 0 900 380" role="img" aria-label="Tres organizaciones con su asamblea envían una vocería rotativa a la asamblea de la federación, que decide sobre espacios, bosque y abastecimiento">
+      <g font-family="JetBrains Mono, monospace" font-size="10" fill="#8b9aa7" letter-spacing="1.2">
+        <text x="20" y="22">ASAMBLEA DE CADA ORGANIZACIÓN</text><text x="370" y="22">ASAMBLEA DE LA FEDERACIÓN</text><text x="680" y="22">DECISIONES COMUNES</text>
+      </g>
+      <g fill="none" stroke-width="1.5" opacity=".7">
+        <path d="M250 80 C320 80 330 190 390 190" stroke="#4f8a3c"/><path d="M250 190 L390 190" stroke="#e3a64a"/><path d="M250 300 C320 300 330 190 390 190" stroke="#a98bd6"/>
+        <path d="M530 190 C600 190 610 80 680 80" stroke="#5f6e7a"/><path d="M530 190 L680 190" stroke="#5f6e7a"/><path d="M530 190 C600 190 610 300 680 300" stroke="#5f6e7a"/>
+      </g>
+      <g font-family="Space Grotesk, sans-serif" fill="#e6ecf0">
+        <rect x="20" y="50" width="230" height="60" rx="8" fill="#111820" stroke="#4f8a3c"/><text x="36" y="76" font-size="14" font-weight="600">Salvemos el Bosque</text><text x="36" y="96" font-size="12" fill="#8b9aa7">de Bavaria · colectivo</text>
+        <rect x="20" y="160" width="230" height="60" rx="8" fill="#111820" stroke="#e3a64a"/><text x="36" y="186" font-size="14" font-weight="600">Organizaciones</text><text x="36" y="206" font-size="12" fill="#8b9aa7">barriales</text>
+        <rect x="20" y="270" width="230" height="60" rx="8" fill="#111820" stroke="#a98bd6"/><text x="36" y="296" font-size="14" font-weight="600">Comerciantes</text><text x="36" y="316" font-size="12" fill="#8b9aa7">mercados barriales</text>
+        <circle cx="460" cy="190" r="70" fill="#111820" stroke="#e3a64a" stroke-width="1.5"/><text x="460" y="186" font-size="14" font-weight="600" text-anchor="middle">Asamblea de</text><text x="460" y="204" font-size="14" font-weight="600" text-anchor="middle">la federación</text>
+        <rect x="680" y="55" width="200" height="50" rx="8" fill="#111820" stroke="#2a3540"/><text x="696" y="85" font-size="13">Uso de los espacios</text>
+        <rect x="680" y="165" width="200" height="50" rx="8" fill="#111820" stroke="#2a3540"/><text x="696" y="195" font-size="13">Cuidado del bosque</text>
+        <rect x="680" y="275" width="200" height="50" rx="8" fill="#111820" stroke="#2a3540"/><text x="696" y="300" font-size="13">Abastecimiento</text><text x="696" y="316" font-size="13">de alimentos</text>
+      </g>
+      <g font-family="JetBrains Mono, monospace" font-size="10" fill="#e3a64a">
+        <text x="262" y="120">vocería ↻</text><text x="262" y="182">vocería ↻</text><text x="262" y="280">vocería ↻</text>
+      </g>
+      <text x="20" y="366" font-family="JetBrains Mono, monospace" font-size="11" fill="#8b9aa7">↻ La vocería rota cada cierto tiempo: cada persona de la asamblea puede representar a su organización en algún momento.</text>
+    </svg></div></figure>
+</section>
+<div hidden aria-hidden="true"><div id="kennedy-datos"></div><div id="g-epv"></div><div id="g-estrato"></div><div id="g-federacion"></div><div id="fed-datos"></div><table id="t-reuniones"></table><div id="g-rotacion"></div></div>
+
 <!-- ============ CIERRE ============ -->
 <section class="cap">
   <div class="paso" data-escena="final"><div class="tarj">
     <div class="k">Cierre</div>
-    <h3>Un bien común productivo</h3>
-    <p>El Distrito Bavaria Común conserva el bosque, abre el predio a los barrios, convierte los residuos en suelo y comida, crea trabajo cercano y se gobierna por asambleas federadas con vocerías que rotan.</p>
+    <h3>Bavaria Común</h3>
+    <p>Un nodo de la red de abastecimiento de Kennedy: forma a las familias para producir en casa, conecta los parches de bosque, abre las naves a las calles del entorno y se gobierna en una federación de asambleas con vocerías que rotan.</p>
     <p>Para explorar el modelo, usar el botón «Explorar el 3D».</p>
   </div></div>
 </section>
@@ -436,7 +524,7 @@ main{position:relative;z-index:3}
 <section class="lamina" id="l-fuentes">
   <div class="enc"><div class="k">Fuentes y límites</div><h2>De dónde sale cada cifra</h2></div>
   <ul class="fuentes" id="fuentes"></ul>
-  <p class="nota">Las marcas <span class="sup p">propuesta</span> indican cantidades de diseño y <span class="sup">est.</span> estimaciones. El modelo 3D usa huellas de OpenStreetMap con alturas del modelo de Kennedy; los árboles están en las posiciones de las copas detectadas en la imagen Esri World Imagery. La sintaxis se calculó con la red vial OSM ya procesada para el simulador de Kennedy, que no incluye senderos peatonales lejos del humedal El Burro; por eso los valores absolutos pueden diferir de un cálculo en DepthmapX.</p>
+  <p class="nota">Las marcas <span class="sup p">propuesta</span> indican cantidades de diseño y <span class="sup">est.</span> estimaciones. El modelo 3D usa huellas de OpenStreetMap con alturas del modelo de Kennedy; los árboles están en las posiciones de las copas detectadas en la imagen Esri World Imagery. La sintaxis se calculó con la red vial OSM ya procesada para el simulador de Kennedy; por eso los valores absolutos pueden diferir de un cálculo en DepthmapX.</p>
 </section>
 </main>
 
