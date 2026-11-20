@@ -58,7 +58,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
     const img = go.createImageData(W, H), d = img.data, c3 = [0, 0, 0];
     for (let p = 0; p < W * H; p++) { const q = pxIdx[p]; if (q < 0) continue; const c = cov[q]; if (c < 0.9) continue; const o = p * 4, al = Math.min(1, (c - 0.8) / 2.2);
       const Lh = 10 * Math.log10(campoH[q] / c), Lp = 10 * Math.log10(campoP[q] / c);
-      if (ve === 'dif') { const dl = Lp - Lh; colDif(dl, c3); d[o + 3] = 225 * al * (0.3 + 0.7 * Math.min(1, Math.abs(dl) / 3)); } else { colNivel(ve === 'pro' ? Lp : Lh, c3); d[o + 3] = 225 * al; }
+      if (ve === 'dif') { const dl = Lp - Lh; colDif(dl, c3); d[o + 3] = 225 * al * (0.3 + 0.7 * Math.min(1, Math.abs(dl) / 3)); } else { const Lv = ve === 'pro' ? Lp : Lh; colNivel(Lv, c3); const rp = suave((Lv - 52) / 20); d[o + 3] = 230 * al * rp * rp; /* como antes: lo tranquilo casi transparente, el ruido brilla sobre las vías (sin manchas en las manzanas) */ }
       d[o] = c3[0]; d[o + 1] = c3[1]; d[o + 2] = c3[2]; }
     go.putImageData(img, 0, 0); tex.needsUpdate = true; sigMapa = ve + '|' + nv.sig + '|' + RM.ver;
     const b = badge(); b.className = 'v-' + ve; b.textContent = ve === 'hoy' ? 'MAPA DE RUIDO · KENNEDY HOY' : ve === 'pro' ? 'MAPA DE RUIDO · CON LA PROPUESTA' : 'MAPA DE RUIDO · CUÁNTO BAJA CADA CALLE';
