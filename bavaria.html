@@ -103,6 +103,13 @@ body.con-guion .guion{display:block}
 .mini{display:block;width:100%;height:86px;margin:2px 0 8px}
 .mini .fl{stroke-width:1.6;stroke-dasharray:3 4;animation:flujo 1.1s linear infinite}
 .mini .fl.r{stroke:#E0623F}.mini .fl.v{stroke:#4FB98C}
+#lectura{position:fixed;left:12px;top:72px;z-index:9;margin:0;max-width:min(620px,calc(100vw - 360px));padding:10px 16px 10px 14px;border-radius:12px;border-left:3px solid var(--ochre);font:500 15px/1.45 var(--ui);color:var(--ink)}
+#lectura[hidden]{display:none}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:2px 0 8px}
+.cmp>div{border:1px solid var(--line2);border-radius:8px;padding:2px 2px 6px;opacity:.38;text-align:center}
+.cmp>div.on{opacity:1;border-color:var(--ochre)}
+.cmp .mini{height:62px;margin:0}
+.cmp span{display:block;font:600 10px var(--mono);letter-spacing:.04em;color:var(--ink)}
 @keyframes flujo{to{stroke-dashoffset:-14}}
 @media (prefers-reduced-motion:reduce){.mini .fl{animation:none}}
 #leyenda .t{font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
@@ -127,6 +134,9 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
  #leyenda{max-width:58vw;min-width:0;padding:8px 10px;font-size:11px}
  #leyenda .f:nth-of-type(n+4){display:none}
  .mini{height:60px}
+ #lectura{top:52px;left:8px;right:8px;max-width:none;font-size:13px;padding:8px 12px}
+ .lado{top:auto;bottom:calc(50vh + 16px)}
+ #leyenda{display:none!important}
  .panel{left:8px;right:8px;bottom:8px;width:auto;max-height:50vh}
  .panel .cuerpo{padding:14px 16px 10px}
  #frase{font-size:16.5px}
@@ -150,6 +160,7 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
   <span class="count" id="count"></span><span class="pline"><i id="pbar"></i></span>
 </header>
 
+<p id="lectura" class="glass" hidden></p>
 <div class="lado">
   <div class="herr glass">
     <button class="pill" id="b-giro" type="button" aria-pressed="true">Giro</button>
@@ -178,7 +189,7 @@ dialog p{font:12px/1.6 var(--mono);color:var(--mute)}
   <form method="dialog"><button class="pill" type="submit">Cerrar</button></form>
 </dialog>
 
-<script type="module" src="data3d/bavaria_pres.js?v=5"></script>
+<script type="module" src="data3d/bavaria_pres.js?v=7"></script>
 <script>document.getElementById('b-fuentes').onclick=()=>document.getElementById('d-fuentes').showModal();</script>
 </body>
 </html>
