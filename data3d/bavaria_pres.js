@@ -971,37 +971,37 @@ const E = {
 };
 const ZI2c = centroEdif(2);
 Object.assign(E, {
-  g01: { luz: 0.5, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
-  g02: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 5200, az: -18, el: 32, t: 'ken', y: 480 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'hoy', et: ['esqHoy'], ley: 'redHoy' },
-  g03: { maqueta: 1, lim: 1, luz: 0.55, cam: { s: 6800, az: -30, el: 32, t: 'ken', y: 420 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'prod', et: ['esqHoy', 'esqProd'], ley: 'llegan' },
-  g04: { maqueta: 1, lim: 1, luz: 0.6, cam: { s: 5400, az: -18, el: 34, t: 'ken', y: 480 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'prop', et: ['esqProp', 'esqProd'], ley: 'redProp' },
+  g01: { luz: 0.75, cam: { s: 1900, az: -20, el: 12, t: 'mid', y: 640 }, ctx: 0, edif: 'ghost', x: ['problemas'], et: 'problemas', ley: 'prob' },
+  g02: { lim: 1, luz: 0.9, cam: { s: 5200, az: -18, el: 32, t: 'ken', y: 480 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'hoy', et: ['esqHoy'], ley: 'redHoy' },
+  g03: { lim: 1, luz: 0.9, cam: { s: 6800, az: -30, el: 32, t: 'ken', y: 420 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'prod', et: ['esqHoy', 'esqProd'], ley: 'llegan' },
+  g04: { lim: 1, luz: 0.9, cam: { s: 5400, az: -18, el: 34, t: 'ken', y: 480 }, ctx: 0, edif: 'ghost', x: ['esquema'], esq: 'prop', et: ['esqProp', 'esqProd'], ley: 'redProp' },
   g05: { luz: 0.85, cam: { s: 1350, az: -35, el: 22 }, ctx: 0, edif: 'ghost', borde: 1, x: ['avs'], et: 'avs', ley: 'avs' },
   g06: { luz: 0.8, cam: { s: 1000, az: -35, el: 36, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['cluster'], et: 'cluster', ley: 'cluster2' },
   g07: { luz: 0.7, cam: { s: 1000, az: -30, el: 18, y: 150 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['actores'], et: 'actores', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
   g08: { luz: 0.7, cam: { s: 620, az: -50, el: 16, t: 'nb', y: 260 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic'], et: 'nbic', ley: 'nbic', giro: 1 },
   g09: { luz: 0.8, cam: { s: 950, az: -62, el: 24, t: 'nb', y: 130 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, flu: 1, x: ['nbic', 'nbB'], nf: { nbic: 'B' }, et: ['nbic', 'nb_b'], ley: 'nb_b', hl: { 23: '#d9c7ef', 0: COL.verde, 2: COL.verde } },
-  g10: { maqueta: 1, luz: 0.55, cam: { s: 4600, az: -20, el: 20, t: 'mid', y: 300 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'hubIco'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
+  g10: { luz: 0.9, cam: { s: 4600, az: -20, el: 20, t: 'mid', y: 300 }, ctx: 0, edif: 'prog', x: ['nbic', 'nbI', 'hubIco'], xt: { nbic: { s: 4, y: 900 } }, nf: { nbic: 'I' }, et: ['nbic', 'info', 'abBav'], ley: 'info', hl: { 3: COL.azul } },
   g11: { luz: 0.75, cam: { s: 2000, az: -30, el: 22, y: 160 }, ctx: 1, edif: 'prog', techos: 1, x: ['nbic', 'nbC', 'cogno'], xt: { nbic: { s: 1.8, y: 480 } }, nf: { nbic: 'C' }, et: ['nbic', 'nb_c'], ley: 'nb_c', hl: { 4: COL.lila, 3: COL.ocre } },
   g12: { luz: 0.75, cam: { s: 650, az: -15, el: 18, t: 'nb', y: 190 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['nbic', 'nbN'], nf: { nbic: 'N' }, et: ['nbic', 'nb_n'], ley: 'nb_n', hl: { 5: COL.lila } },
   g13: { luz: 0.8, cam: { s: 2000, az: -35, el: 24, y: 70 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['viv'], et: 'viv', ley: 'viv', hl: { 2: COL.verde, 11: '#d98f5a' } },
   g14: { luz: 0.85, cam: { s: 950, az: -20, el: 22, t: 'casaMid', y: 30 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['ciclos'], et: 'ciclos', ley: 'form', hl: { 2: COL.verde, 11: '#d98f5a' } },
   g15: { luz: 0.9, cam: { s: 420, az: -30, el: 18, t: 'casa', y: 50 }, ctx: 1, edif: 'prog', techos: 1, x: ['incentivo'], et: 'incentivo', ley: 'viv' },
-  g16: { maqueta: 1, luz: 0.6, cam: { s: 3600, az: -25, el: 26, t: 'midc', y: 90 }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'hubIco'], et: ['exc', 'abBav'], ley: 'exc', hl: { 3: COL.ocre } },
+  g16: { luz: 0.9, cam: { s: 3600, az: -25, el: 26, t: 'midc', y: 90 }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'hubIco'], et: ['exc', 'abBav'], ley: 'exc', hl: { 3: COL.ocre } },
   g17: { luz: 0.85, cam: { s: 950, az: -30, el: 30, y: 30 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['jbRef'], et: 'jbRef', ley: 'jb' },
-  g18: { luz: 0.45, cam: { s: 950, az: 20, el: 10, t: 'bosq', y: 470 }, ctx: 0, edif: 'prog', x: ['bioRed'], et: 'bioRed', ley: 'bioRed', giro: 1 },
+  g18: { luz: 0.75, cam: { s: 950, az: 20, el: 10, t: 'bosq', y: 470 }, ctx: 0, edif: 'prog', x: ['bioRed'], et: 'bioRed', ley: 'bioRed', giro: 1 },
   g19: { luz: 0.85, cam: { s: 950, az: 10, el: 24, y: 20 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['flores', 'abejas', 'puentes'], et: ['parches', 'puentes'], ley: 'parches' },
-  g20: { maqueta: 1, luz: 0.6, cam: { s: 3400, az: -20, el: 26, t: 'bio', y: 40 }, ctx: 0, edif: 'prog', x: ['islas', 'puentes'], et: ['islas', 'puentes'], ley: 'islas' },
+  g20: { luz: 0.9, cam: { s: 3400, az: -20, el: 26, t: 'bio', y: 40 }, ctx: 0, edif: 'prog', x: ['islas', 'puentes'], et: ['islas', 'puentes'], ley: 'islas' },
   g21: { luz: 0.85, cam: { s: 380, az: -50, el: 20, t: 'comp', y: 45 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'ratas', 'retiro'], nf: { cadena: ['res', 'alm', 'ret'] }, et: ['cadena', 'retiro'], ley: 'ratas' },
   g22: { luz: 0.85, cam: { s: 420, az: -15, el: 20, t: 'comp', y: 60 }, ctx: 0.3, edif: 'prog', banc: 1, x: ['cadena', 'rapaces', 'ratas'], nf: { cadena: ['rap', 'rat'] }, et: ['cadena'], ley: 'ratas' },
-  g23: { maqueta: 1, lim: 1, luz: 0.4, cam: { s: 6000, az: -12, el: 26, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', red: 'a1', borde: 1, x: ['hubIco'], et: 'sxm', ley: 'nain8m' },
-  g24: { maqueta: 1, lim: 1, luz: 0.4, cam: { s: 6000, az: 30, el: 26, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', red: 'a2', borde: 1, x: ['recorridos'], ley: 'nach' },
+  g23: { lim: 1, luz: 0.7, cam: { s: 6000, az: -12, el: 26, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', red: 'a1', borde: 1, x: ['hubIco'], et: 'sxm', ley: 'nain8m' },
+  g24: { lim: 1, luz: 0.7, cam: { s: 6000, az: 30, el: 26, t: 'ken', y: 100 }, ctx: 0, edif: 'ghost', red: 'a2', borde: 1, x: ['recorridos'], ley: 'nach' },
   g25: { luz: 0.8, cam: { s: 1300, az: -24, el: 26 }, ctx: 0.3, edif: 'prog', x: ['pasos'], et: 'puertas', ley: 'pasajes' },
   g26: { luz: 0.8, cam: { s: 1250, az: 15, el: 28 }, ctx: 0.3, edif: 'prog', x: ['ocupado', 'bosqueZona'], et: 'ocupado', ley: 'ocupado' },
   g27: { luz: 0.8, cam: { s: 1000, az: 25, el: 24, t: 'bosq', y: 30 }, ctx: 0.3, edif: 'prog', x: ['limite', 'bosqueZona'], et: 'limite', ley: 'gobB' },
   g28: { luz: 0.8, cam: { s: 1150, az: 30, el: 16, t: 'bosq', y: 140 }, ctx: 0.3, edif: 'ghost', x: ['colectivo', 'bosqueZona'], et: 'colectivo', ley: 'colectivo' },
-  g29: { luz: 0.6, cam: { s: 1050, az: -35, el: 16, y: 200 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
-  g30: { luz: 0.6, cam: { s: 1150, az: -10, el: 20, y: 160 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
-  g31: { luz: 0.55, cam: { s: 780, az: -55, el: 16, y: 230 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'voz', ley: 'voz', voz: 1 },
+  g29: { luz: 0.75, cam: { s: 1050, az: -35, el: 16, y: 200 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
+  g30: { luz: 0.75, cam: { s: 1150, az: -10, el: 20, y: 160 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
+  g31: { luz: 0.75, cam: { s: 780, az: -55, el: 16, y: 230 }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['fed'], et: 'voz', ley: 'voz', voz: 1 },
 });
 const TGT = { nb: ZNB, casa: TCASA.p, casaMid: [(ZI2c[0] + TCASA.p[0]) / 2, (ZI2c[1] + TCASA.p[1]) / 2], jbMid: [JB[0] * 0.5, JB[1] * 0.5], mid: [KEN_C[0] * 0.45, KEN_C[1] * 0.45], midc: [MERC[1].p[0] * 0.5, MERC[1].p[1] * 0.5], lab: centroEdif(5), comp: ZC, bosq: ZB,
   bio: (() => { const h = HUM.filter(q => !q.cora); return [h.reduce((t, q) => t + q.v.x, 0) / (h.length + 1), h.reduce((t, q) => t + q.v.z, 0) / (h.length + 1)]; })() };
@@ -1107,7 +1107,7 @@ const ajustarCam = () => {
   // dónde cae el objetivo en pantalla: a la derecha en escritorio (hay texto a la izquierda), arriba en celular
   const fx = explorar ? 0.5 : MOVIL ? 0.5 : (w > 1000 ? 0.62 : 0.56), fy = explorar ? 0.5 : MOVIL ? 0.34 : 0.5;
   cam.aspect = w / h; cam.setViewOffset(w, h, w / 2 - fx * w, h / 2 - fy * h, w, h);
-  const R = cam.position.distanceTo(controles.target); cam.near = Math.max(5, R * 0.08); cam.far = R * 4 + 4000; cam.updateProjectionMatrix(); scene.fog.near = R * 1.15; scene.fog.far = R * 3.2;
+  const R = cam.position.distanceTo(controles.target); cam.near = Math.max(5, R * 0.08); cam.far = R * 4 + 4000; cam.updateProjectionMatrix(); scene.fog.near = R * 1.8; scene.fog.far = R * 6;
 };
 const ponerCam = () => {
   const az = (camAct.az + giroAz) * Math.PI / 180, el = camAct.el * Math.PI / 180, R = distCam(camAct.s);
