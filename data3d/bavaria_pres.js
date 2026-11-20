@@ -1,5 +1,5 @@
-/* ============ Presentación «Distrito Bavaria Común» (bavaria.html) ============
-   Escena 3D en axonometría (cámara ortográfica) que cambia con el relato, más láminas de diagramas en SVG.
+/* ============ Presentación «Bavaria Común» (bavaria.html) ============
+   Presentación por diapositivas que sigue el guion: todo ocurre en la escena 3D (malla fotorrealista de Google + lo propuesto encima).
    Datos: data3d/bavaria_pres.json (tools/bavaria_pres_datos.py). Cifras externas: ver la lista FUENTES al final. */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -24,16 +24,16 @@ const poligonoArea = (p) => { let a = 0; for (let i = 0; i < p.length; i++) { co
 const perim = (p) => { let l = 0; for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length]; l += Math.hypot(b[0] - a[0], b[1] - a[1]); } return l; };
 // programa: índice del edificio en bavaria.json -> uso propuesto
 const PROG = {
-  0: { n: 'Invernadero norte', c: '#8fc46a', inv: true },
-  2: { n: 'Invernadero central y vivero de nativas', c: '#8fc46a', inv: true },
-  3: { n: 'Mercado de proximidad', c: '#e3a64a' },
+  0: { n: 'Invernadero hidropónico', c: '#8fc46a', inv: true },
+  2: { n: 'Módulos demostrativos e invernadero', c: '#8fc46a', inv: true },
+  3: { n: 'Mercado y registro de pedidos', c: '#e3a64a' },
   4: { n: 'Casa de la federación: asambleas y talleres', c: '#e0664f' },
-  5: { n: 'Laboratorio biotecnológico y semillas', c: '#a98bd6' },
+  5: { n: 'Laboratorio universitario', c: '#a98bd6' },
   6: { n: 'Silos: banco de semillas y mirador de aves', c: '#5fb3d9' },
   7: { n: 'Cocina y comedor comunitario', c: '#e58aa8' },
   8: { n: 'Cuidados: niñez y personas mayores', c: '#f0c6d6' },
   9: { n: 'Energía: biodigestor y paneles', c: '#e8d26a' },
-  11: { n: 'Cooperativa de trabajo', c: '#d98f5a' },
+  11: { n: 'Promotores barriales', c: '#d98f5a' },
   23: { n: 'Laboratorio de hongos', c: '#d9c7ef' },
   19: { n: 'Taller de bicicargas', c: '#7fb0c9' },
 };
@@ -96,11 +96,11 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 host.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#0b1015');
+scene.background = new THREE.Color('#0d0e10');
 // cámara de lente larga (casi axonométrica) para que la malla fotorrealista de Google cargue su detalle
 const FOV = 30;
 const cam = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 10, 60000);
-scene.fog = new THREE.Fog('#0b1015', 20000, 40000);
+scene.fog = new THREE.Fog('#0d0e10', 45000, 90000);
 scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x1a1f24, 1.1));
 const sol = new THREE.DirectionalLight(0xfff1dc, 2.1); sol.position.set(-600, 900, 400); scene.add(sol);
 const sol2 = new THREE.DirectionalLight(0x9fb7d0, 0.6); sol2.position.set(700, 500, -300); scene.add(sol2);
@@ -387,6 +387,153 @@ ENT.forEach(([x, y], k) => { if (k % 2 && MOVIL) return; const [X, Z] = W(x, y);
 sectAng.forEach((a, k) => addEt(`<i style="background:${COL_SECT[k]}"></i>Sector ${k + 1}`, [Math.cos(a) * 820, 30, -Math.sin(a) * 820], ['sectores']));
 addEt('Av. Boyacá', (() => { const p = W(8840, 2700); return [p[0] - 40, 10, p[1]]; })(), ['sx']);
 
+/* =============================== CAPAS DEL GUION (todo en 3D) =============================== */
+// Cada grupo se enciende por escena (propiedad x de la escena) y se desvanece solo.
+const XG = {};
+const xg = (k) => XG[k] || (XG[k] = (() => { const g = new THREE.Group(); g.visible = false; scene.add(g); return { g, mats: [], v: 0, o: 0, pul: [] }; })());
+const xmat = (k, m, base = 1) => { m.transparent = true; m.opacity = 0; m.depthWrite = false; m.depthTest = false; xg(k).mats.push({ m, base }); return m; };
+const V3 = (p, y) => new THREE.Vector3(p[0], y, p[1]);
+const curva = (a, b, alt, y0 = 6, y1 = 6) => { const A = V3(a, y0), B = V3(b, y1); const M = A.clone().lerp(B, 0.5); M.y = Math.max(y0, y1) + (alt ?? A.distanceTo(B) * 0.2); return new THREE.QuadraticBezierCurve3(A, M, B); };
+const tubo = (k, cur, r, col, op = 0.85) => { const m = new THREE.Mesh(new THREE.TubeGeometry(cur, 56, r, 6), xmat(k, new THREE.MeshBasicMaterial({ color: col }), op)); m.renderOrder = 8; xg(k).g.add(m); return m; };
+const linea = (k, cur, col, op = 0.55) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(cur.getPoints(36)), xmat(k, new THREE.LineBasicMaterial({ color: col }), op)); l.renderOrder = 8; xg(k).g.add(l); return l; };
+const pulsos = (k, curvas, cols, n = 3, vel = 0.1, tam = 5) => {
+  if (!curvas.length) return; const N = curvas.length * n; const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+  curvas.forEach((c, i) => { const cc = new THREE.Color(Array.isArray(cols) ? cols[i % cols.length] : cols); for (let j = 0; j < n; j++) col.set([cc.r, cc.g, cc.b], (i * n + j) * 3); });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const p = new THREE.Points(g, xmat(k, new THREE.PointsMaterial({ size: MOVIL ? tam * 0.8 : tam, sizeAttenuation: false, vertexColors: true }), 1)); p.renderOrder = 11; p.frustumCulled = false; xg(k).g.add(p);
+  xg(k).pul.push({ curvas, n, vel, pos, g, fase: curvas.map((_, i) => (i * 0.618) % 1) });
+};
+const pin = (k, P, col, h, r) => {
+  const g = new THREE.Group(); const mat = xmat(k, new THREE.MeshBasicMaterial({ color: col }), 0.95);
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.16, r * 0.16, h, 8), mat); c.position.y = h / 2;
+  const s = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), mat); s.position.y = h;
+  const d = new THREE.Mesh(new THREE.RingGeometry(r * 1.4, r * 2, 40), xmat(k, new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }), 0.55)); d.rotation.x = -Math.PI / 2; d.position.y = 3;
+  g.add(c, s, d); g.children.forEach(o => { o.renderOrder = 9; }); g.position.set(P[0], 0, P[1]); xg(k).g.add(g); return g;
+};
+const corto = (s) => s.replace(/\s*\(.*$/, '').replace(/\s*-.*$/, '');
+const COL = { ocre: '#F2B53A', rojo: '#E0623F', verde: '#4FB98C', azul: '#4EAECF', lila: '#B48AD6', crema: '#F2EFE8', gris: '#77736b' };
+
+// ---- 1. red de abastecimiento de Kennedy
+// mercados barriales de la propuesta: los 8 sitios en parques del simulador (data3d/mercados_barrio.js, carga.json)
+const SITIOS = [[6946.4, 3553.6, 'Biblioteca El Tintal'], [8573.8, 3166, 'Castilla'], [8370.2, 3858.9, 'Ciudad Urbisa'], [7789.6, 2316.6, 'Rincón de los Ángeles'], [6541.4, 4941.2, 'La Magdalena'], [6325, 3270, 'Patio Bonito II'], [8266.2, 3700.9, 'Castilla Real'], [7266.3, 4006.7, 'Otero de Francisco']];
+const MERC = SITIOS.map(([x, y, n]) => ({ n, p: W(x, y) }));
+const PLZ = await fetch('data3d/plazas.json').then(r => r.json()).then(j => j.plazas.map(p => ({ n: p.n, p: W(...p.p) }))).catch(() => []);
+const NODOS = [...MERC.map(m => ({ ...m, t: 'm' })), ...PLZ.map(p => ({ ...p, t: 'p' })), { n: 'Bavaria Común', p: [0, 0], t: 'b' }];
+// productores de otros territorios: llegan desde fuera de la localidad (cinco direcciones de entrada)
+const ENTR = [200, 165, 240, 300, 120].map((a, i) => { const r = a * Math.PI / 180, R = 4700; return [KEN_C[0] + Math.cos(r) * R, KEN_C[1] - Math.sin(r) * R]; });
+const masCerca = (p, L) => L.reduce((b, q) => (Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.hypot(b[0] - p[0], b[1] - p[1]) ? q : b), L[0]);
+ENTR.forEach((e, i) => pin('prod', e, COL.crema, 200, 70));
+addEt('Productores de otros territorios', [ENTR[0][0], 140, ENTR[0][1]], ['abHoy', 'abRed']);
+{ // hoy: todo entra a Corabastos y de ahí se reparte
+  const cIn = ENTR.map(e => curva(e, CORA, null, 10, 10)); cIn.forEach(c => tubo('abHoy', c, MOVIL ? 34 : 26, COL.rojo, 0.85)); pulsos('abHoy', cIn, COL.crema, 4, 0.08, 8);
+  const dest = NODOS.filter(n => n.t !== 'p').map(n => n.p); const cOut = dest.map(d => curva(CORA, d, null, 10, 6)); cOut.forEach(c => tubo('abHoy', c, 7, '#a9a39a', 0.55)); pulsos('abHoy', cOut, COL.rojo, 2, 0.06, 6);
+  pin('abHoy', CORA, COL.rojo, 560, 130); dest.forEach(d => pin('abHoy', d, '#a9a39a', 120, 40));
+}
+{ // propuesta: los productores llegan a varios mercados; Corabastos es uno de ellos
+  const cs = []; NODOS.forEach(n => { const e = masCerca(n.p, ENTR); cs.push(curva(e, n.p, null, 10, 6)); });
+  ENTR.forEach(e => cs.push(curva(e, CORA, null, 10, 10)));
+  cs.forEach(c => tubo('abRed', c, MOVIL ? 20 : 15, COL.verde, 0.7)); pulsos('abRed', cs, COL.crema, 3, 0.09, 7);
+  MERC.forEach(m => pin('nodos', m.p, COL.verde, 320, 70)); PLZ.forEach(m => pin('nodos', m.p, '#9bd3b8', 200, 45));
+  pin('nodos', CORA, COL.rojo, 320, 70); pin('nodos', [0, 0], COL.ocre, 460, 95);
+}
+addEt(`<i style="background:${COL.rojo}"></i>Corabastos`, [CORA[0], 720, CORA[1]], ['abHoy']);
+addEt(`<i style="background:${COL.rojo}"></i>Corabastos`, [CORA[0], 420, CORA[1]], ['abRed', 'abBav', 'sxm', 'info']);
+addEt(`<i style="background:${COL.ocre}"></i>Bavaria Común`, [0, 580, 0], ['abRed', 'abBav', 'sxm', 'info']);
+MERC.forEach((m, i) => { if (MOVIL && i % 2) return; addEt(`<i style="background:${COL.verde}"></i>${m.n}`, [m.p[0], 420, m.p[1]], ['abRed', 'abBav', 'sxm']); });
+addEt('<i style="background:#9bd3b8"></i>Plazas existentes', [PLZ[0] ? PLZ[0].p[0] : 0, 180, PLZ[0] ? PLZ[0].p[1] : 0], ['abRed']);
+
+// ---- 2. NBIC
+// Info: el mercado de Bavaria registra pedidos (ida) y entregas (vuelta) con los mercados barriales y Corabastos
+{ const dest = [...MERC.map(m => m.p), CORA]; const ida = dest.map(d => curva(ZM, d, null, 30, 8)), vuelta = dest.map(d => curva(d, ZM, null, 8, 30));
+  ida.forEach(c => tubo('info', c, MOVIL ? 16 : 12, COL.azul, 0.6)); pulsos('info', ida, COL.azul, 3, 0.11, 8); pulsos('info', vuelta, COL.crema, 3, 0.09, 7);
+  pin('info', ZM, COL.azul, 260, 50); }
+addEt(`<i style="background:${COL.azul}"></i>Pedidos`, (() => { const c = curva(ZM, MERC[1].p, null, 30, 8).getPoint(0.5); return [c.x, c.y + 20, c.z]; })(), ['info']);
+addEt(`<i style="background:${COL.crema}"></i>Entregas y excedentes`, (() => { const c = curva(ZM, MERC[3].p, null, 30, 8).getPoint(0.5); return [c.x, c.y + 20, c.z]; })(), ['info']);
+// techos productivos (viviendas): centroides y alturas
+const TECH = D.techos.map(p => { const x = p.reduce((t, q) => t + q[0], 0) / p.length, y = p.reduce((t, q) => t + q[1], 0) / p.length; return { p: W(x, y), h: (altCtx.get(p[0][0] + ',' + p[0][1]) || 6) + 1 }; });
+const TECHS = TECH.filter((_, i) => i % Math.max(1, Math.ceil(TECH.length / (MOVIL ? 40 : 90))) === 0);
+// Cogno: herramientas para que familias (viviendas) y comerciantes (mercado) decidan con esa información
+{ const ZF = centroEdif(4); const cs = TECHS.filter((_, i) => i % 2 === 0).map(t => curva(ZF, t.p, null, 25, t.h)); cs.forEach(c => linea('cogno', c, COL.lila, 0.45)); pulsos('cogno', cs, COL.lila, 2, 0.12, 5);
+  const cm = curva(ZF, ZM, 60, 25, 25); tubo('cogno', cm, 3, COL.lila, 0.8); pulsos('cogno', [cm], COL.crema, 4, 0.2, 6); }
+{ const t = TECHS[Math.floor(TECHS.length / 3)] || { p: [300, 300], h: 10 }; addEt(`<i style="background:${COL.lila}"></i>Familias`, [t.p[0], t.h + 30, t.p[1]], ['nb_c']); }
+addEt(`<i style="background:${COL.ocre}"></i>Comerciantes`, [ZM[0], 70, ZM[1]], ['nb_c']);
+// Formación en Bavaria -> producción en las viviendas (promotores barriales acompañan los primeros ciclos)
+{ const ZF = centroEdif(2); const cs = TECHS.filter((_, i) => i % 2).map(t => curva(ZF, t.p, null, 12, t.h)); cs.forEach(c => linea('viv', c, COL.ocre, 0.5)); pulsos('viv', cs, COL.ocre, 2, 0.1, 5); }
+// excedentes de las viviendas -> mercados barriales (el más cercano, incluido el de Bavaria)
+{ const dest = [ZM, ...MERC.map(m => m.p)]; const cs = TECHS.map(t => curva(t.p, masCerca(t.p, dest), null, t.h, 8)); cs.forEach(c => linea('exc', c, COL.verde, 0.5)); pulsos('exc', cs, COL.verde, 2, 0.08, 5); }
+// etiquetas del clúster y del NBIC sobre los edificios
+const sobre = (i, dy = 14) => { const [X, Z] = centroEdif(i); return [X, D.edif[i].h + dy, Z]; };
+addEt(`<i style="background:${COL.lila}"></i>Universidades`, sobre(5, 30), ['cluster']);
+addEt(`<i style="background:${COL.ocre}"></i>Comerciantes`, sobre(3, 30), ['cluster']);
+addEt(`<i style="background:#d98f5a"></i>Promotores barriales`, sobre(11, 30), ['cluster']);
+addEt(`<i style="background:${COL.rojo}"></i>Organizaciones barriales`, sobre(4, 30), ['cluster']);
+addEt(`<i style="background:${COL.verde}"></i>Hidroponía`, sobre(0, 10), ['nb_b']);
+addEt(`<i style="background:${COL.verde}"></i>Hidroponía y módulos`, sobre(2, 10), ['nb_b']);
+addEt('<i style="background:#d9c7ef"></i>Hongos con materiales vegetales', sobre(23, 10), ['nb_b']);
+addEt('<i style="background:#6b4f33"></i>Compostaje', [ZC[0], 10, ZC[1]], ['nb_b']);
+addEt(`<i style="background:${COL.azul}"></i>Registro de pedidos, entregas y excedentes`, [ZM[0], 330, ZM[1]], ['info']);
+addEt(`<i style="background:${COL.lila}"></i>Herramientas para decidir`, sobre(4, 40), ['nb_c']);
+addEt(`<i style="background:${COL.lila}"></i>Empaques para conservar alimentos`, sobre(5, 30), ['nb_n']);
+addEt('Línea de investigación universitaria', sobre(5, 8), ['nb_n']);
+// módulos demostrativos
+{ const B = D.bloques || []; if (B.length) { const b = B[Math.floor(B.length / 2)]; const p = W(b.reduce((t, q) => t + q[0], 0) / b.length, b.reduce((t, q) => t + q[1], 0) / b.length); addEt(`<i style="background:${COL.verde}"></i>Módulos demostrativos`, [p[0], 12, p[1]], ['form']); } }
+addEt(`<i style="background:${COL.ocre}"></i>Talleres y formación`, sobre(4, 20), ['form']);
+addEt(`<i style="background:${COL.ocre}"></i>Promotores barriales acompañan`, (() => { const t = TECHS[2] || { p: [400, 0], h: 10 }; return [t.p[0], t.h + 40, t.p[1]]; })(), ['viv']);
+addEt(`<i style="background:#8fc46a"></i>Huertas en las viviendas`, (() => { const t = TECHS[Math.floor(TECHS.length * 0.7)] || { p: [-400, 0], h: 10 }; return [t.p[0], t.h + 20, t.p[1]]; })(), ['viv']);
+addEt(`<i style="background:${COL.verde}"></i>Excedentes a los mercados`, (() => { const t = TECHS[5] || { p: [400, 0], h: 10 }; return [t.p[0], t.h + 60, t.p[1]]; })(), ['exc']);
+addEt(`<i style="background:${COL.ocre}"></i>Mercado de Bavaria`, [ZM[0], 60, ZM[1]], ['exc']);
+
+// ---- 3. red de relaciones bióticas
+const densas = D.arboles.filter(a => a[4]); const ZB = densas.length ? W(densas.reduce((t, a) => t + a[0], 0) / densas.length, densas.reduce((t, a) => t + a[1], 0) / densas.length) : [0, 0];
+const PQ = await fetch('data3d/parques.json').then(r => r.json()).catch(() => []);
+{ const cerca = PQ.map(q => { const x = q.pts.reduce((t, p) => t + p[0], 0) / q.pts.length, y = q.pts.reduce((t, p) => t + p[1], 0) / q.pts.length; const c = W(x, y); return { q, c, d: Math.hypot(c[0], c[1]), a: poligonoArea(q.pts) }; }).filter(o => o.d < 2700 && o.a > 1500);
+  if (cerca.length) { const g = mergeGeometries(cerca.map(o => { const s = new THREE.ShapeGeometry(forma(o.q.pts)); s.rotateX(-Math.PI / 2); s.translate(0, 2, 0); s.deleteAttribute('uv'); return s; })); const m = new THREE.Mesh(g, xmat('parques', new THREE.MeshBasicMaterial({ color: COL.verde }), 0.42)); m.renderOrder = 7; xg('parques').g.add(m); }
+  // nodos: los parches más grandes, el bosque de Bavaria y los humedales; cada uno se une con sus dos vecinos más cercanos
+  const nod = [{ c: ZB, n: 'Bosque de Bavaria' }, ...HUM.filter(h => !h.cora).map(h => ({ c: [h.v.x, h.v.z], n: h.n })), ...cerca.sort((a, b) => b.a - a.a).slice(0, MOVIL ? 14 : 22).map(o => ({ c: o.c }))];
+  const pares = new Set(); const cs = [];
+  nod.forEach((a, i) => nod.map((b, j) => [j, Math.hypot(b.c[0] - a.c[0], b.c[1] - a.c[1])]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 2).forEach(([j]) => { const k = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(k)) return; pares.add(k); cs.push(curva(a.c, nod[j].c, null, 4, 4)); }));
+  cs.forEach(c => tubo('bioLinks', c, MOVIL ? 5 : 3.5, COL.verde, 0.7)); pulsos('bioLinks', cs, ['#f2c230', COL.crema, '#d0517a'], 3, 0.07, 5);
+  nod.slice(0, 1 + HUM.filter(h => !h.cora).length).forEach(o => addEt(`<i style="background:${COL.verde}"></i>${o.n}`, [o.c[0], 60, o.c[1]], ['bio']));
+  addEt('<i style="background:#f2c230"></i>Polinizadores y aves entre parches', (() => { const c = cs[Math.floor(cs.length / 2)]; const p = c ? c.getPoint(0.5) : new THREE.Vector3(); return [p.x, p.y + 30, p.z]; })(), ['bio', 'parches']); }
+// plantas en flor alrededor de los espacios de producción (borde de las manzanas de huerta)
+{ const F = ['#f2c230', '#d0517a', '#f4f0da', '#d9534f', '#b48ad6']; const pts = [], cols = []; let s = 7; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (const b of (D.bloques || [])) for (let i = 0; i < b.length; i++) { const [ax, ay] = b[i], [bx, by] = b[(i + 1) % b.length]; const L = Math.hypot(bx - ax, by - ay); for (let u = 0; u < L; u += 2.2) { const t = u / L; const [X, Z] = W(ax + (bx - ax) * t + (rnd() - 0.5) * 1.6, ay + (by - ay) * t + (rnd() - 0.5) * 1.6); pts.push(X, 1.8, Z); const c = new THREE.Color(F[Math.floor(rnd() * F.length)]); cols.push(c.r, c.g, c.b); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  const p = new THREE.Points(g, xmat('flores', new THREE.PointsMaterial({ size: MOVIL ? 3 : 4, sizeAttenuation: false, vertexColors: true }), 1)); p.renderOrder = 9; xg('flores').g.add(p); }
+addEt('<i style="background:#d0517a"></i>Plantas en flor junto a las huertas', (() => { const b = (D.bloques || [])[0]; if (!b) return [0, 10, 0]; const p = W(...b[0]); return [p[0], 14, p[1]]; })(), ['parches']);
+addEt(`<i style="background:${COL.verde}"></i>Parche de árboles conectado`, [ZB[0], 40, ZB[1]], ['parches']);
+// control de ratas: almacenamiento cerrado en el compostaje y aves rapaces que patrullan
+{ const m = xmat('ratas', new THREE.MeshLambertMaterial({ color: '#5b6b62' }), 1), tapa = xmat('ratas', new THREE.MeshLambertMaterial({ color: COL.verde }), 1);
+  for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(5, 3.2, 3.4), m), t = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.5, 3.7), tapa); const [X, Z] = W(9492 + i * 7, 3054); b.position.set(X, 2.8, Z); t.position.set(X, 4.6, Z); b.renderOrder = t.renderOrder = 9; xg('ratas').g.add(b, t); } }
+const rapaces = []; { const ala = new THREE.BufferGeometry(); ala.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -3, 0, 0, 3, -9, 1, 0, 0, 0, -3, 0, 0, 3, 9, 1, 0, 0, 0, -3, 0, 0, 3, 0, 0.3, 7], 3)); ala.computeVertexNormals();
+  const m = xmat('rapaces', new THREE.MeshBasicMaterial({ color: COL.crema, side: THREE.DoubleSide }), 1);
+  for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(ala, m); b.renderOrder = 12; b.scale.setScalar(1.6); xg('rapaces').g.add(b); rapaces.push(b); } }
+addEt('<i style="background:#5b6b62"></i>Almacenamiento cerrado y retiro oportuno', [ZC[0], 14, ZC[1]], ['ratas']);
+addEt(`<i style="background:${COL.crema}"></i>Aves rapaces`, [ZC[0] + 60, 110, ZC[1]], ['ratas']);
+
+// ---- 4. gobernanza: el bosque y la federación de asambleas
+{ const pts = [], g = new THREE.BufferGeometry(); densas.forEach(([x, y, h]) => { const [X, Z] = W(x, y); pts.push(X, h + 2, Z); }); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const p = new THREE.Points(g, xmat('bosqueZona', new THREE.PointsMaterial({ color: COL.verde, size: MOVIL ? 3 : 4, sizeAttenuation: false }), 0.6)); p.renderOrder = 9; xg('bosqueZona').g.add(p); }
+addEt(`<i style="background:${COL.verde}"></i>Bosque de la antigua cervecería`, [ZB[0], 60, ZB[1]], ['gobB', 'colectivo']);
+addEt('¿Hasta dónde llegan los pasajes?', [ZB[0] + 140, 30, ZB[1] - 60], ['gobB']);
+addEt(`<i style="background:${COL.verde}"></i>Salvemos el Bosque de Bavaria`, [ZB[0] - 80, 110, ZB[1] + 40], ['colectivo']);
+const FED = { orgs: [], tok: null, yc: 240 };
+{ const k = 'fed', Y = FED.yc, R = MOVIL ? 240 : 300, cen = new THREE.Vector3(0, Y, 0);
+  const anillo = new THREE.Mesh(new THREE.TorusGeometry(80, 3.5, 8, 64), xmat(k, new THREE.MeshBasicMaterial({ color: COL.ocre }), 1)); anillo.rotation.x = Math.PI / 2; anillo.position.copy(cen);
+  const disco = new THREE.Mesh(new THREE.CircleGeometry(78, 48), xmat(k, new THREE.MeshBasicMaterial({ color: COL.ocre, side: THREE.DoubleSide }), 0.16)); disco.rotation.x = -Math.PI / 2; disco.position.copy(cen);
+  xg(k).g.add(anillo, disco);
+  const ORG = [['Salvemos el Bosque de Bavaria', COL.verde], ['Organizaciones barriales', COL.ocre], ['Comerciantes', COL.azul]];
+  ORG.forEach(([n, c], i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / 3 + 0.4, P = new THREE.Vector3(Math.cos(a) * R, Y + 40, Math.sin(a) * R);
+    const ar = new THREE.Mesh(new THREE.TorusGeometry(44, 2, 6, 48), xmat(k, new THREE.MeshBasicMaterial({ color: c }), 0.9)); ar.rotation.x = Math.PI / 2; ar.position.copy(P); xg(k).g.add(ar);
+    const per = []; for (let j = 0; j < 8; j++) { const b = j / 8 * Math.PI * 2; const s = new THREE.Mesh(new THREE.SphereGeometry(7, 14, 10), xmat(k, new THREE.MeshBasicMaterial({ color: c }), 1)); s.position.set(P.x + Math.cos(b) * 44, P.y + 6, P.z + Math.sin(b) * 44); s.renderOrder = 12; xg(k).g.add(s); per.push(s); }
+    const cur = new THREE.QuadraticBezierCurve3(P.clone(), P.clone().lerp(cen, 0.5).add(new THREE.Vector3(0, 70, 0)), cen.clone()); tubo(k, cur, 2.4, c, 0.8);
+    FED.orgs.push({ P, per, cur, c }); addEt(`<i style="background:${c}"></i>${n}`, [P.x, P.y + 70, P.z], ['fed', 'voz']); });
+  const DEC = [['Uso de los espacios', centroEdif(7)], ['Cuidado del bosque', ZB], ['Abastecimiento de alimentos', ZM]];
+  DEC.forEach(([n, a]) => { const cur = new THREE.QuadraticBezierCurve3(cen.clone(), new THREE.Vector3(a[0] * 0.5, Y * 0.75, a[1] * 0.5), new THREE.Vector3(a[0], 10, a[1])); linea(k, cur, COL.crema, 0.6); pulsos(k, [cur], COL.crema, 3, 0.18, 5); pin(k, a, COL.crema, 14, 9); addEt(n, [a[0], 50, a[1]], ['fed']); });
+  addEt(`<i style="background:${COL.ocre}"></i>Asamblea de la federación`, [0, Y + 40, 0], ['fed', 'voz']);
+  FED.tok = new THREE.Mesh(new THREE.SphereGeometry(11, 16, 12), xmat(k, new THREE.MeshBasicMaterial({ color: COL.crema }), 1)); FED.tok.renderOrder = 13; xg(k).g.add(FED.tok);
+  addEt('La vocería rota: cada persona lleva la voz en algún momento', [FED.orgs[1].P.x, FED.orgs[1].P.y - 50, FED.orgs[1].P.z], ['voz']); }
+
 /* ---------------- escenas ---------------- */
 // cam: s = tamaño visible (m), az = rumbo de la cámara (grados), el = elevación, t = objetivo [X, Z]
 const E = {
@@ -413,8 +560,33 @@ const E = {
   plan: { cam: { s: 1300, az: -38, el: 30 }, ctx: 1, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, techos: 1, flu: 1, giro: 1, et: 'plan', ley: 'prog' },
   sectores: { cam: { s: 3000, az: -20, el: 55 }, ctx: 'sector', edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, et: 'sectores', ley: 'sectores' },
   corredor: { cam: { s: 5200, az: -30, el: 48, t: [-900, 150] }, ctx: 0.6, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, corr: 1, et: 'corredor', ley: 'corredor' },
-  final: { cam: { s: 1400, az: -38, el: 28 }, ctx: 1, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, techos: 1, giro: 1, ley: 'prog' },
+  final: { cam: { s: 1400, az: -38, el: 28 }, ctx: 1, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, techos: 1, giro: 1, ley: 'prog', x: ['flores'] },
+  // ---- escenas del guion
+  abasto_hoy: { lim: 1, luz: 0.5, cam: { s: 10800, az: -12, el: 56, t: 'ken' }, ctx: 0, edif: 'ghost', x: ['abHoy', 'prod'], et: 'abHoy', ley: 'abHoy' },
+  abasto_red: { lim: 1, luz: 0.5, cam: { s: 10800, az: -12, el: 56, t: 'ken' }, ctx: 0, edif: 'ghost', x: ['abRed', 'nodos', 'prod'], et: 'abRed', ley: 'abRed' },
+  abasto_bav: { lim: 1, luz: 0.6, cam: { s: 5200, az: -28, el: 44, t: 'mid' }, ctx: 0, edif: 'prog', borde: 1, x: ['abRed', 'nodos'], et: 'abBav', ley: 'abRed' },
+  dtc: { luz: 0.55, cam: { s: !SIN_G ? 1350 : 2300, az: -40, el: 30, y: !SIN_G ? 280 : 540 }, ctx: 0, edif: 'prog', arb: 1, pas: 1, banc: 1, inv: 1, expl: 1, flu: 1, et: 'capas', ley: 'capas' },
+  cluster: { cam: { s: 900, az: -32, el: 34 }, ctx: 0.35, edif: 'prog', arb: 'g', pas: 1, banc: 1, inv: 1, et: 'cluster', ley: 'cluster', hl: { 5: COL.lila, 3: COL.ocre, 11: '#d98f5a', 4: COL.rojo } },
+  nb_b: { cam: { s: 820, az: -62, el: 38, t: 'inv' }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, flu: 1, et: 'nb_b', ley: 'nb_b', hl: { 23: '#d9c7ef', 0: COL.verde, 2: COL.verde } },
+  nb_i: { luz: 0.6, cam: { s: 5600, az: -20, el: 50, t: 'mid' }, ctx: 0, edif: 'prog', borde: 1, x: ['info', 'nodos'], et: 'info', ley: 'info', hl: { 3: COL.azul } },
+  nb_c: { luz: 0.75, cam: { s: 1900, az: -30, el: 44 }, ctx: 1, edif: 'prog', techos: 1, x: ['cogno'], et: 'nb_c', ley: 'nb_c', hl: { 4: COL.lila, 3: COL.ocre } },
+  nb_n: { cam: { s: 480, az: -20, el: 34, t: 'lab' }, ctx: 0.3, edif: 'prog', arb: 'g', banc: 'g', inv: 1, et: 'nb_n', ley: 'nb_n', hl: { 5: COL.lila } },
+  form: { cam: { s: 820, az: -40, el: 40 }, ctx: 0.3, edif: 'prog', arb: 'g', pas: 1, banc: 1, inv: 1, et: 'form', ley: 'form', hl: { 2: COL.verde, 4: COL.ocre } },
+  viv: { luz: 0.8, cam: { s: 2000, az: -35, el: 40 }, ctx: 1, edif: 'prog', banc: 1, inv: 1, techos: 1, x: ['viv'], et: 'viv', ley: 'viv', hl: { 2: COL.verde, 11: '#d98f5a' } },
+  exc: { luz: 0.6, cam: { s: 4000, az: -25, el: 48, t: 'midc' }, ctx: 0.6, edif: 'prog', techos: 1, x: ['exc', 'nodos'], et: 'exc', ley: 'exc', hl: { 3: COL.ocre } },
+  bio: { luz: 0.65, cam: { s: 4300, az: -25, el: 48, t: 'bio' }, ctx: 0, edif: 'prog', x: ['parques', 'bioLinks'], et: 'bio', ley: 'bio' },
+  parches: { luz: 0.8, cam: { s: 1700, az: 10, el: 40 }, ctx: 0.4, edif: 'prog', banc: 1, inv: 1, x: ['flores', 'bioLinks', 'parques'], et: 'parches', ley: 'parches' },
+  ratas: { cam: { s: 420, az: -50, el: 38, t: 'comp' }, ctx: 0.3, edif: 'prog', banc: 1, inv: 1, x: ['ratas', 'rapaces', 'flores'], et: 'ratas', ley: 'ratas' },
+  sx_merc: { lim: 1, cam: { s: 8200, az: -10, el: 62, t: 'ken' }, ctx: 0.18, edif: 'ghost', red: 'a1', borde: 1, ley: 'nain8m', x: ['nodos'], et: 'sxm' },
+  sx_rec: { lim: 1, cam: { s: 8200, az: -10, el: 62, t: 'ken' }, ctx: 0.18, edif: 'ghost', red: 'a2', borde: 1, ley: 'nachm', x: ['nodos'], et: 'sxm' },
+  sx_pas: { cam: { s: 1500, az: -24, el: 50 }, ctx: 0.25, edif: 'prog', red: 'gris', pas: 1, borde: 1, ley: 'pasajes', et: 'puertas' },
+  gob_bosque: { cam: { s: 1150, az: 20, el: 36 }, ctx: 0.3, edif: 'prog', pas: 1, borde: 1, x: ['bosqueZona'], et: 'gobB', ley: 'gobB' },
+  colectivo: { cam: { s: 950, az: 30, el: 32, t: 'bosq' }, ctx: 0.3, edif: 'ghost', pas: 1, x: ['bosqueZona'], et: 'colectivo', ley: 'gobB' },
+  federacion: { luz: 0.6, cam: { s: 1050, az: -35, el: 22, y: 170 }, ctx: 0.3, edif: 'prog', pas: 1, banc: 1, inv: 1, x: ['fed'], et: 'fed', ley: 'fed' },
+  voceria: { luz: 0.55, cam: { s: 820, az: -55, el: 20, y: 220 }, ctx: 0.3, edif: 'prog', pas: 1, banc: 1, inv: 1, x: ['fed'], et: 'voz', ley: 'voz', voz: 1 },
 };
+const TGT = { mid: [KEN_C[0] * 0.45, KEN_C[1] * 0.45], midc: [MERC[1].p[0] * 0.5, MERC[1].p[1] * 0.5], lab: centroEdif(5), comp: ZC, bosq: ZB,
+  bio: (() => { const h = HUM.filter(q => !q.cora); return [h.reduce((t, q) => t + q.v.x, 0) / (h.length + 1), h.reduce((t, q) => t + q.v.z, 0) / (h.length + 1)]; })() };
 const KT = 'ken';
 const invT = (() => { const a = centroEdif(2), b = centroEdif(0); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; })();
 
@@ -440,12 +612,34 @@ const LEY = {
   sectores: '<div class="t">Federación</div>' + COL_SECT.map((c, k) => `<div class="f"><i style="background:${c}"></i>Sector ${k + 1} · puertas ${ENT.map((_, i) => i).filter(i => sectorDeEnt[i] === k).map(i => 'P' + (i + 1)).join(', ')}</div>`).join(''),
   corredor: '<div class="t">Conexiones</div><div class="f"><i style="background:#5fb3d9"></i>Corredor hacia los humedales</div><div class="f"><i style="background:#e0664f"></i>Corabastos (residuos y trabajo)</div>',
 };
+const f_ = (c, n) => `<div class="f"><i style="background:${c}"></i>${n}</div>`;
+Object.assign(LEY, {
+  abHoy: '<div class="t">Hoy</div>' + f_(COL.crema, 'Productores de otros territorios') + f_(COL.rojo, 'Corabastos: un solo punto de llegada') + f_(COL.gris, 'Reparto a los barrios'),
+  abRed: '<div class="t">Red de abastecimiento</div>' + f_(COL.verde, `${MERC.length} mercados barriales (en parques)`) + f_('#9bd3b8', `${PLZ.length} plazas y puntos existentes`) + f_(COL.rojo, 'Corabastos, uno más de la red') + f_(COL.ocre, 'Bavaria Común'),
+  cluster: '<div class="t">Clúster de conocimiento</div>' + f_(COL.lila, 'Universidades') + f_(COL.ocre, 'Comerciantes') + f_('#d98f5a', 'Promotores barriales') + f_(COL.rojo, 'Organizaciones barriales'),
+  nb_b: '<div class="t">B · Biotecnología</div>' + f_(COL.verde, 'Producción hidropónica') + f_('#6b4f33', 'Compostaje') + f_('#d9c7ef', 'Cultivo experimental de hongos'),
+  info: '<div class="t">I · Información</div>' + f_(COL.azul, 'Pedidos') + f_(COL.crema, 'Entregas y excedentes') + f_(COL.verde, 'Mercados barriales'),
+  nb_c: '<div class="t">C · Ciencias cognitivas</div>' + f_(COL.lila, 'Herramientas para decidir') + f_('#8fc46a', 'Familias (huertas en vivienda)') + f_(COL.ocre, 'Comerciantes'),
+  nb_n: '<div class="t">N · Nanotecnología</div>' + f_(COL.lila, 'Investigación sobre empaques'),
+  form: '<div class="t">Formación en Bavaria</div>' + f_(COL.verde, 'Módulos demostrativos') + f_(COL.ocre, 'Talleres'),
+  viv: '<div class="t">Producción en las viviendas</div>' + f_(COL.ocre, 'Acompañamiento de promotores') + f_('#8fc46a', `${V.techos_n} cubiertas con huerta`),
+  exc: '<div class="t">Excedentes</div>' + f_(COL.verde, 'De las viviendas al mercado barrial más cercano'),
+  bio: '<div class="t">Red biótica</div>' + f_(COL.verde, 'Parches de árboles y parques') + f_('#5fb3d9', 'Humedales') + f_('#f2c230', 'Polinizadores y aves en movimiento'),
+  parches: '<div class="t">Parches conectados</div>' + f_('#d0517a', 'Plantas en flor junto a las huertas') + f_(COL.verde, 'Vínculos entre parches'),
+  ratas: '<div class="t">Control de ratas</div>' + f_('#5b6b62', 'Almacenamiento cerrado') + f_(COL.crema, 'Aves rapaces'),
+  nain8m: `<div class="t">Integración R800 + mercados</div><div class="rampa" style="background:${rampaCSS}"></div><div class="ext"><span>segregado</span><span>integrado</span></div>` + f_(COL.verde, 'Mercados barriales'),
+  nachm: `<div class="t">Elección + mercados</div><div class="rampa" style="background:${rampaCSS}"></div><div class="ext"><span>pocos recorridos</span><span>muchos</span></div>` + f_(COL.verde, 'Mercados barriales'),
+  gobB: '<div class="t">El bosque</div>' + f_(COL.verde, 'Copas del bosque denso') + f_('#f2efe6', 'Pasajes propuestos'),
+  fed: '<div class="t">Federación de asambleas</div>' + f_(COL.verde, 'Salvemos el Bosque de Bavaria') + f_(COL.ocre, 'Organizaciones barriales') + f_(COL.azul, 'Comerciantes') + f_(COL.crema, 'Decisiones comunes'),
+  voz: '<div class="t">Vocería rotativa</div>' + f_(COL.crema, 'Quien lleva los acuerdos cambia cada cierto tiempo'),
+});
 if (MOVIL) for (const k of ['prog', 'sectores']) LEY[k] = LEY[k].replace(/<div class="f">.*$/s, '<div class="f">Ver etiquetas en el modelo</div>');
 
 /* ---------------- estado animado ---------------- */
 const est = { lim: 0, ctx: 1, edif: 1, prog: 0, muro: 1, arb: 1, red: 0, pas: 0, banc: 0, inv: 0, techos: 0, flu: 0, expl: 0, corr: 0, borde: 0 };
 const obj = { ...est };
-let escena = 'portada', camObj = null, giroAz = 0;
+let escena = 'portada', camObj = null, giroAz = 0, HL = null;
+const GRIS_HL = new THREE.Color('#30363d');
 const camAct = { s: 2300, az: -38, el: 34, x: 0, z: 0, y: 0 };
 const setEscena = (k) => {
   const e = E[k]; if (!e) return; escena = k;
@@ -458,7 +652,9 @@ const setEscena = (k) => {
     G.luzObj = e.luz ?? (e.red ? 0.38 : e.ctx === 'sector' ? 0.75 : 1);
   }
   if (e.red) pintarRed(e.red); else pintarRed(e.pas ? 'gris' : modoRed);
-  const t = e.cam.t === 'inv' ? invT : e.cam.t === 'ken' ? KEN_C : (e.cam.t || [0, 0]); obj.lim = e.lim ? 1 : 0;
+  for (const k in XG) XG[k].o = (e.x || []).includes(k) ? 1 : 0;
+  HL = e.hl ? new Map(Object.entries(e.hl)) : null;
+  const t = e.cam.t === 'inv' ? invT : e.cam.t === 'ken' ? KEN_C : TGT[e.cam.t] || (Array.isArray(e.cam.t) ? e.cam.t : [0, 0]); obj.lim = e.lim ? 1 : 0;
   camObj = { s: e.cam.s * (MOVIL ? 1.15 : 1), az: e.cam.az, el: e.cam.el, x: t[0], z: t[1], y: e.cam.y || 0 };
   giroAz = 0;
   $('#leyenda').innerHTML = LEY[e.ley] || '';
@@ -472,7 +668,7 @@ const distCam = (s) => { const asp = innerWidth / innerHeight; const vh = asp >=
 const ajustarCam = () => {
   const w = innerWidth, h = innerHeight;
   // dónde cae el objetivo en pantalla: a la derecha en escritorio (hay texto a la izquierda), arriba en celular
-  const fx = explorar ? 0.5 : MOVIL ? 0.5 : (w > 1000 ? 0.62 : 0.55), fy = explorar ? 0.5 : MOVIL ? 0.36 : 0.5;
+  const fx = explorar ? 0.5 : MOVIL ? 0.5 : (w > 1000 ? 0.64 : 0.56), fy = explorar ? 0.5 : MOVIL ? 0.34 : 0.5;
   cam.aspect = w / h; cam.setViewOffset(w, h, w / 2 - fx * w, h / 2 - fy * h, w, h);
   const R = cam.position.distanceTo(controles.target); cam.near = Math.max(5, R * 0.08); cam.far = R * 4 + 4000; cam.updateProjectionMatrix();
 };
@@ -488,7 +684,7 @@ $('#b-giro').setAttribute('aria-pressed', String(giro));
 $('#b-giro').onclick = (ev) => { giro = !giro; ev.currentTarget.setAttribute('aria-pressed', String(giro)); };
 $('#b-explorar').onclick = (ev) => {
   explorar = !explorar; ev.currentTarget.setAttribute('aria-pressed', String(explorar)); document.body.classList.toggle('explorar', explorar);
-  controles.enabled = explorar; ev.currentTarget.textContent = explorar ? 'Volver al relato' : 'Explorar el 3D';
+  controles.enabled = explorar; ev.currentTarget.textContent = explorar ? 'Volver' : 'Explorar';
 };
 
 /* ---------------- bucle ---------------- */
@@ -502,7 +698,13 @@ function cuadro() {
   // opacidades
   opac(ctxMat, est.ctx * 0.95); ctxG.visible = est.ctx > 0.01 || est.techos > 0.01;
   opac(techosMat, est.techos);
-  edifMeshes.forEach(m => { m.material.color.set(m.userData.hoy).lerp(new THREE.Color(m.userData.prog), est.prog); opac(m.material, est.edif); });
+  edifMeshes.forEach(m => { const h = HL && HL.get(String(m.userData.i)); m.material.color.set(m.userData.hoy).lerp(HL ? (h ? new THREE.Color(h) : GRIS_HL) : new THREE.Color(m.userData.prog), est.prog); opac(m.material, est.edif * (HL && !h ? 0.18 : 1)); });
+  // capas del guion
+  for (const k in XG) { const X = XG[k]; X.v = lerp(X.v, X.o, f); const on = X.v > 0.01; X.g.visible = on; if (!on) continue; for (const { m, base } of X.mats) m.opacity = base * X.v;
+    for (const P of X.pul) { P.curvas.forEach((c, i) => { for (let j = 0; j < P.n; j++) { const u = (t * P.vel + j / P.n + P.fase[i]) % 1; c.getPoint(u, tmp); P.pos.set([tmp.x, tmp.y, tmp.z], (i * P.n + j) * 3); } }); P.g.attributes.position.needsUpdate = true; } }
+  if (XG.rapaces && XG.rapaces.g.visible) rapaces.forEach((b, i) => { const a = t * 0.35 + i * 2.1, r = 70 + i * 22; b.position.set(ZC[0] + Math.cos(a) * r, 70 + i * 14 + Math.sin(t * 1.3 + i) * 4, ZC[1] + Math.sin(a) * r); b.rotation.set(0, -a, Math.sin(t * 6 + i) * 0.25); });
+  if (XG.fed && XG.fed.g.visible) { const per = E[escena].voz ? 1.1 : 2.6; const ciclo = Math.floor(t / per); const o = FED.orgs[ciclo % 3]; FED.tok.position.copy(o.cur.getPoint((t % per) / per));
+    FED.orgs.forEach((q, i) => { const lit = Math.floor(t / (per * 3)) % q.per.length; q.per.forEach((s, j) => { const on = j === lit; s.scale.setScalar(on ? 1.9 : 1); s.material.color.set(on ? COL.crema : q.c); }); }); }
   reticula.children.forEach(m => opac(m.material, REAL() ? est.inv * est.edif : est.edif));
   if (REAL()) { opac(loteMat, 0); lote.visible = false; piso.position.y = -120; } else { lote.visible = true; piso.position.y = -0.3; }
   actualizarG(dt); if (explorar) ajustarCam();
@@ -523,239 +725,95 @@ function cuadro() {
   // etiquetas
   const w = innerWidth, h = innerHeight; const grupo = E[escena].et; const vis = [];
   for (const e of etq) {
-    const on = !explorar && grupo && e.grupos.has(grupo);
+    const on = grupo && e.grupos.has(grupo);
     if (!on) { if (e.d.style.opacity !== '0') e.d.style.opacity = 0; continue; }
     tmp.copy(e.pos); if (e.capa) tmp.y += capas[e.capa].position.y + (e.d.classList.contains('capa') ? 0 : 0);
     tmp.project(cam); let x = (tmp.x + 1) / 2 * w; const y = (1 - tmp.y) / 2 * h;
     if (e.d.classList.contains('capa')) x += MOVIL ? 90 : 230; e.sx = x; e.sy = y; e.vis = x > 0 && x < w && y > 0 && y < h; vis.push(e);
   }
   vis.sort((a, b) => a.sy - b.sy); const puestos = [];
-  for (const e of vis) { const ww = e.d.offsetWidth || 120; let y = e.sy; for (const p of puestos) if (Math.abs(p.x - e.sx) < (p.w + ww) / 2 + 4 && Math.abs(p.y - y) < 21) y = p.y + 21; puestos.push({ x: e.sx, y, w: ww }); e.d.style.left = e.sx + 'px'; e.d.style.top = y + 'px'; e.d.style.opacity = e.vis ? 1 : 0; }
+  for (const e of vis) { const ww = e.d.offsetWidth || 120; let y = e.sy; for (const p of puestos) if (Math.abs(p.x - e.sx) < (p.w + ww) / 2 + 4 && Math.abs(p.y - y) < 21) y = p.y + 21; puestos.push({ x: e.sx, y, w: ww }); const cx = Math.max(ww / 2 + 6, Math.min(w - ww / 2 - 6, e.sx)); e.d.style.left = (e.d.classList.contains('capa') ? e.sx : cx) + 'px'; e.d.style.top = y + 'px'; e.d.style.opacity = e.vis ? 1 : 0; }
   if (!window.__sin3d) renderer.render(scene, cam);
   requestAnimationFrame(cuadro);
 }
-const solo = new URLSearchParams(location.search).get('solo');
-if (solo) { document.querySelectorAll('.cap').forEach(e => { e.style.display = 'none'; }); if (solo !== 'laminas') document.querySelectorAll('.lamina').forEach(e => { if (!solo.split(',').includes(e.id)) e.style.display = 'none'; }); host.remove(); $('#hud').style.display = 'none'; $('#carga').style.display = 'none'; window.__sin3d = true; }
+
+/* =============================== DIAPOSITIVAS (siguen el guion) =============================== */
+// b: bloque · e: escena 3D · k: antetítulo · t: título · s: lo que se ve · g: texto del guion · c: cifras
+const SL = [
+  { b: 'Inicio', e: 'portada', k: 'Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo', t: 'Bavaria Común', s: 'Un Distrito de Tecnologías Convergentes en la antigua cervecería, entre las avenidas Boyacá y Américas.', g: 'Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo · 2026' },
+  { b: 'Abastecimiento', e: 'abasto_hoy', k: 'El problema con más conexiones', t: 'La centralización de servicios', s: 'Hoy los alimentos que llegan de otros territorios entran por un solo punto, Corabastos, y desde allí se reparten a los barrios.', g: 'Esta red nos ayudó a identificar la centralización de servicios como el problema con más conexiones. Por eso, la propuesta empieza por reorganizar el abastecimiento de alimentos en Kennedy.' },
+  { b: 'Abastecimiento', e: 'abasto_red', k: 'Red de abastecimiento', t: 'Cambia dónde se reciben y se distribuyen', s: `Los productores llegan a ${MERC.length} mercados barriales y a los puntos de abastecimiento existentes. Corabastos es uno de los mercados de la red.`, g: 'Los alimentos que solo pueden abastecerse desde fuera de la localidad seguirían llegando de otros territorios. Lo que cambia es dónde se reciben y se distribuyen: los productores llegarían a distintos mercados barriales y puntos de abastecimiento, con Corabastos como uno de los mercados de la red.' },
+  { b: 'Abastecimiento', e: 'abasto_bav', k: 'Un nodo de la red', t: 'La antigua cervecería', s: `Entre las avenidas Boyacá y Américas: ${V.area_ha} ha cerradas desde 2010, con las naves de la fábrica todavía en pie.`, g: 'Como parte de esta red, proponemos recuperar parte de la antigua cervecería, entre las avenidas Boyacá y Américas.', c: [[V.area_ha + ' ha', 'del predio'], [V.edif_n, 'edificios en pie']] },
+  { b: 'Bavaria Común', e: 'dtc', k: 'Bavaria Común', t: 'Distrito de Tecnologías Convergentes', s: 'El predio por capas: territorio real, suelo productivo, pasajes, naves recuperadas y flujos.', g: 'A esta intervención la llamamos Bavaria Común, un Distrito de Tecnologías Convergentes que funciona como clúster de conocimiento.' },
+  { b: 'Bavaria Común', e: 'cluster', k: 'Clúster de conocimiento', t: 'Espacios para experimentar, aprender y organizarse', s: 'Universidades, comerciantes, promotores y organizaciones barriales ocupan las naves recuperadas.', g: 'Allí, universidades, comerciantes, promotores y organizaciones barriales disponen de espacios para experimentar, aprender y organizar iniciativas propias. El enfoque NBIC, de Roco y Bainbridge, orienta el programa.' },
+  { b: 'NBIC', e: 'nb_b', k: 'B · Biotecnología', t: 'Hidroponía, compostaje y hongos', s: `Bajo la cubierta liviana de las naves: ${V.inv_m2} m² cultivables.`, g: 'La biotecnología se aplica a la producción hidropónica, el compostaje y el cultivo experimental de hongos con materiales vegetales adecuados.', c: [[V.inv_m2 + ' m²', 'bajo cubierta']] },
+  { b: 'NBIC', e: 'nb_i', k: 'I · Tecnologías de la información', t: 'Pedidos, entregas y excedentes', s: 'El mercado de Bavaria registra lo que se pide y lo que se entrega en cada mercado de la red.', g: 'Las tecnologías de la información ayudan a registrar pedidos, entregas y excedentes.' },
+  { b: 'NBIC', e: 'nb_c', k: 'C · Ciencias cognitivas', t: 'Información útil para decidir', s: 'Herramientas pensadas para que familias y comerciantes usen esa información.', g: 'Las ciencias cognitivas orientan el diseño de herramientas para que familias y comerciantes usen esa información al tomar decisiones.' },
+  { b: 'NBIC', e: 'nb_n', k: 'N · Nanotecnología', t: 'Empaques para conservar alimentos', s: 'Una línea de investigación universitaria en el laboratorio del distrito.', g: 'La nanotecnología se plantea como una línea de investigación universitaria sobre materiales de empaque para conservar alimentos.' },
+  { b: 'Vivienda', e: 'form', k: 'Formación', t: 'Se aprende en Bavaria', s: 'Las familias practican en módulos demostrativos.', g: 'La formación se realiza en Bavaria y la producción se lleva a las viviendas. Las familias practican en módulos demostrativos y reciben acompañamiento de promotores barriales durante los primeros ciclos.' },
+  { b: 'Vivienda', e: 'viv', k: 'Producción en las viviendas', t: 'Se cosecha en casa', s: `Promotores barriales acompañan las huertas de ${V.techos_n} cubiertas cercanas.`, g: 'El incentivo es cosechar hortalizas frescas, conocer los insumos utilizados y sustituir parte de las compras del hogar.', c: [[V.techos_n, 'cubiertas con huerta'], [V.techos_m2 + ' m²', 'en techos']] },
+  { b: 'Vivienda', e: 'exc', k: 'Excedentes', t: 'Lo que sobra va al mercado barrial', s: 'Cada vivienda vende sus excedentes en el mercado más cercano. Referente local: el Jardín Botánico de Bogotá.', g: 'Cuando hay excedentes, su venta en los mercados barriales ofrece una posibilidad de ingreso complementario. El Jardín Botánico de Bogotá es un referente local por su trabajo en formación y asistencia técnica para la producción urbana.' },
+  { b: 'Red biótica', e: 'bio', k: 'Red de relaciones bióticas', t: 'Qué vínculos fortalecer', s: 'El bosque de Bavaria, los parques y los humedales como una sola red.', g: 'La red de relaciones bióticas de Kennedy nos ayuda a definir qué vínculos queremos fortalecer.' },
+  { b: 'Red biótica', e: 'parches', k: 'Parches conectados', t: 'Que los parches dejen de ser islas', s: 'Plantas en flor junto a las huertas y parches de árboles unidos a la vegetación existente.', g: 'Alrededor de los espacios de producción incorporamos plantas en flor para atraer polinizadores y conectamos parches de árboles con la vegetación existente. Así, los parches dejan de funcionar como islas aisladas y ofrecen alimento y refugio en distintos puntos, lo que facilita que las aves y los polinizadores se desplacen entre ellos.' },
+  { b: 'Red biótica', e: 'ratas', k: 'Control de ratas', t: 'Almacenamiento cerrado y rapaces', s: 'Los residuos se guardan cerrados y se retiran a tiempo; las aves rapaces ayudan.', g: 'El control de ratas empieza con el almacenamiento cerrado y el retiro oportuno de residuos. Las aves rapaces pueden contribuir a ese control mediante la depredación.' },
+  { b: 'Sintaxis', e: 'sx_merc', k: 'Sintaxis espacial · integración', t: 'Tramos accesibles para los mercados', s: 'Integración angular a 800 m (unos diez minutos a pie): rojo, muy integrado. Los mercados barriales se ubican en tramos accesibles.', g: 'Con la sintaxis espacial, usamos la integración para identificar tramos accesibles donde ubicar mercados' },
+  { b: 'Sintaxis', e: 'sx_rec', k: 'Sintaxis espacial · elección', t: 'Por dónde pasan más recorridos', s: 'Elección angular: cuántos de los recorridos más directos atraviesan cada tramo.', g: 'y la elección para reconocer por dónde pasan más recorridos potenciales.' },
+  { b: 'Sintaxis', e: 'sx_pas', k: 'Pasajes', t: 'Las naves se conectan con las calles', s: `${V.pasajes_km} km de pasajes y ${V.entradas} puertas. Las intervenciones se concentran en áreas ya ocupadas.`, g: 'En Bavaria, los nuevos pasajes conectan las naves recuperadas con las calles del entorno. Concentramos las intervenciones en áreas ya ocupadas.', c: [[V.pasajes_km + ' km', 'de pasajes'], [V.entradas, 'puertas']] },
+  { b: 'Gobernanza', e: 'gob_bosque', k: 'Una decisión de la comunidad', t: 'Hasta dónde llegan los pasajes', s: 'Qué actividades se ubican cerca del bosque también se decide en común.', g: 'Definir hasta dónde llegan esos pasajes y qué actividades se ubican cerca del bosque también es una decisión de la comunidad.' },
+  { b: 'Gobernanza', e: 'colectivo', k: 'Salvemos el Bosque de Bavaria', t: 'Quienes ya defienden el bosque', s: 'Colectivo ciudadano que defiende la conservación del bosque frente a la tala.', g: 'Por eso participa Salvemos el Bosque de Bavaria, un colectivo ciudadano que defiende la conservación del bosque de la antigua cervecería frente a la tala de árboles.' },
+  { b: 'Gobernanza', e: 'federacion', k: 'Federación de asambleas', t: 'Cada organización lleva sus acuerdos', s: 'Se decide en común sobre el uso de los espacios, el cuidado del bosque y el abastecimiento de alimentos.', g: 'El colectivo, las organizaciones barriales y los comerciantes participan en una federación de asambleas. Cada organización discute sus propuestas y una persona lleva sus acuerdos a la asamblea de la federación, donde se toman las decisiones comunes sobre el uso de los espacios, el cuidado del bosque y el abastecimiento de alimentos.' },
+  { b: 'Gobernanza', e: 'voceria', k: 'Vocería rotativa', t: 'Todas las personas llevan la voz', s: 'Quien representa a cada organización cambia cada cierto tiempo.', g: 'La vocería rota cada cierto tiempo, de modo que todas las personas de cada asamblea puedan representar a su organización en algún momento.' },
+  { b: 'Cierre', e: 'final', k: 'Bavaria Común', t: 'Un nodo de la red de Kennedy', s: 'Abastecimiento cercano, formación, huertas en las viviendas, parches conectados y una federación de asambleas.', g: 'Usa «Explorar» para recorrer el modelo.' },
+];
+const BLOQ = [...new Set(SL.map(s => s.b))];
+let iSl = 0; const guionOn = () => document.body.classList.contains('con-guion');
+const pintarSl = (i, anim = true) => {
+  iSl = Math.max(0, Math.min(SL.length - 1, i)); const s = SL[iSl];
+  setEscena(s.e);
+  $('#kicker').textContent = s.k; $('#titulo').textContent = s.t; $('#sub').textContent = s.s; $('#guionTxt').textContent = s.g || '';
+  $('#guion').hidden = !s.g;
+  $('#cifras').innerHTML = (s.c || []).map(([b, l]) => `<div><b>${b}</b><span>${l}</span></div>`).join('');
+  if (anim) for (const id of ['#kicker', '#titulo', '#sub', '#guion', '#cifras']) { const e = $(id); e.classList.remove('rise'); void e.offsetWidth; e.classList.add('rise'); }
+  $('#count').textContent = `${iSl + 1} / ${SL.length}`; $('#pbar').style.width = (100 * (iSl + 1) / SL.length) + '%';
+  document.querySelectorAll('#bloques button').forEach(b => b.classList.toggle('on', b.dataset.b === s.b));
+  const on = document.querySelector('#bloques button.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  document.querySelectorAll('#prog span').forEach((p, k) => { p.className = (k < iSl ? 'done' : k === iSl ? 'on' : '') + (k && SL[k].b !== SL[k - 1].b ? ' gap' : ''); });
+  $('#prev').disabled = iSl === 0; $('#next').textContent = iSl === SL.length - 1 ? 'Inicio' : 'Siguiente';
+  history.replaceState(null, '', '#' + (iSl + 1));
+};
+$('#bloques').innerHTML = BLOQ.map(b => `<button type="button" data-b="${b}">${b}</button>`).join('');
+$('#bloques').onclick = (ev) => { const b = ev.target.closest('button'); if (b) pintarSl(SL.findIndex(s => s.b === b.dataset.b)); };
+$('#prog').innerHTML = SL.map((s, k) => `<span title="${s.t}"></span>`).join('');
+$('#prog').onclick = (ev) => { const k = [...$('#prog').children].indexOf(ev.target); if (k >= 0) pintarSl(k); };
+$('#prev').onclick = () => pintarSl(iSl - 1);
+$('#next').onclick = () => pintarSl(iSl === SL.length - 1 ? 0 : iSl + 1);
+const ponerGuion = (v) => { document.body.classList.toggle('con-guion', v); $('#gbtn').setAttribute('aria-pressed', String(v)); try { localStorage.setItem('bav-guion', v ? '1' : '0'); } catch (e) {} };
+$('#gbtn').onclick = () => ponerGuion(!guionOn());
+{ let g = '1'; try { g = localStorage.getItem('bav-guion') ?? '1'; } catch (e) {} ponerGuion(g === '1'); }
+addEventListener('keydown', (ev) => {
+  if (ev.target.closest && ev.target.closest('input,textarea,dialog')) return;
+  if (['ArrowRight', 'PageDown', ' '].includes(ev.key)) { ev.preventDefault(); $('#next').click(); }
+  else if (['ArrowLeft', 'PageUp'].includes(ev.key)) { ev.preventDefault(); pintarSl(iSl - 1); }
+  else if (ev.key === 'n' || ev.key === 'N') ponerGuion(!guionOn());
+  else if (ev.key === 'e' || ev.key === 'E') $('#b-explorar').click();
+});
+// deslizar en el celular (fuera del modo explorar)
+{ let x0 = null, y0 = 0; host.addEventListener('touchstart', (e) => { if (explorar) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  host.addEventListener('touchend', (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) pintarSl(iSl + (dx < 0 ? 1 : -1)); }); }
+
 const forzada = new URLSearchParams(location.search).get('escena'); // ?escena=clave: vista fija para capturas
-setEscena(forzada && E[forzada] ? forzada : 'portada'); Object.assign(camAct, camObj); for (const k in est) est[k] = obj[k]; ponerCam();
-if (forzada) { document.querySelector('main').style.display = 'none'; window.__fija = true; }
+const ini = Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1);
+if (forzada && E[forzada]) { setEscena(forzada); document.body.classList.add('fija'); } else pintarSl(ini, false);
+Object.assign(camAct, camObj); for (const k in est) est[k] = obj[k]; for (const k in XG) XG[k].v = XG[k].o; ponerCam();
 requestAnimationFrame(cuadro);
+setTimeout(() => $('#carga').classList.add('fuera'), 300);
 
-// relato: el paso más cercano al centro de la pantalla manda
-const pasos = [...document.querySelectorAll('[data-escena]')];
-const io = new IntersectionObserver((ents) => { for (const en of ents) if (en.isIntersecting) setEscena(en.target.dataset.escena); }, { rootMargin: '-45% 0px -45% 0px' });
-pasos.forEach(p => io.observe(p));
-if (forzada) $('#carga').remove(); else setTimeout(() => $('#carga').classList.add('fuera'), 300);
-
-/* =============================== LÁMINAS (SVG) =============================== */
-const NS = 'http://www.w3.org/2000/svg';
-const sv = (tag, at = {}, hijos = []) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); (Array.isArray(hijos) ? hijos : [hijos]).forEach(h => h != null && e.append(h)); return e; };
-const txt = (x, y, s, at = {}) => sv('text', { x, y, fill: '#c9d3da', 'font-size': 12, 'font-family': 'Space Grotesk, sans-serif', ...at }, s);
-const mono = (x, y, s, at = {}) => txt(x, y, s, { 'font-family': 'JetBrains Mono, monospace', 'font-size': 10.5, fill: '#8b9aa7', ...at });
-const lienzo = (id, w, h) => { const s = sv('svg', { viewBox: `0 0 ${w} ${h}`, role: 'img' }); const c = $(id); c.append(s); if (w >= 900) { s.classList.add('ancho'); c.classList.add('desliza'); } return s; };
-const datos = (id, L) => { $(id).innerHTML = L.map(([b, l, f, m]) => `<div class="dato"><b>${b}</b><div class="l">${l}${m ? ` <span class="sup${m === 'propuesta' ? ' p' : ''}">${m}</span>` : ''}</div><div class="f">${f}</div></div>`).join(''); };
-const wrap = (s, n) => { const w = s.split(' '); const L = []; let c = ''; for (const p of w) { if ((c + ' ' + p).trim().length > n) { L.push(c.trim()); c = p; } else c += ' ' + p; } if (c.trim()) L.push(c.trim()); return L; };
-const multi = (x, y, s, n, at = {}, lh = 14) => { const g = sv('g'); wrap(s, n).forEach((l, i) => g.append(txt(x, y + i * lh, l, at))); return g; };
-
-// ---- Lámina 1: Kennedy
-datos('#kennedy-datos', [
-  ['1.037.929', 'habitantes en Kennedy (2024), el 12,9 % de Bogotá', 'ASIS Kennedy 2024 · proyección DANE-CNPV 2018'],
-  ['26.933', 'habitantes por km², en 38,6 km²', 'ASIS Kennedy 2024'],
-  ['40.320', 'personas en la UPZ 113 Bavaria, en 2,8 km²', 'SDS · ACCVSyE Kennedy 2021'],
-  ['6,6 m²', 'de espacio público verde por habitante (puesto 14 de 20)', 'SDS · ACCVSyE Kennedy 2021'],
-  ['0,14', 'árboles por habitante: 141.421 árboles, el 38 % de lo que sugiere la OMS', 'ASIS Kennedy 2024 · cálculo propio'],
-  ['31,6 %', 'de los hogares se considera pobre', 'Encuesta Multipropósito 2021'],
-  ['2,9', 'personas por hogar; 362.387 hogares', 'SDS · ACCVSyE Kennedy 2021'],
-  ['203', 'juntas de acción comunal activas', 'IDPAC, infografía Kennedy 2023'],
-]);
-{ const s = lienzo('#g-epv', 520, 230); const L = [['UPZ Corabastos', 2.78], ['UPZ Kennedy Central', 3.08], ['UPZ Carvajal', 3.44], ['Kennedy (localidad)', 6.6]]; const X0 = 170, esc = 330 / 16;
-  L.forEach(([n, v], i) => { const y = 20 + i * 44; s.append(txt(0, y + 16, n), sv('rect', { x: X0, y, width: v * esc, height: 22, fill: i === 3 ? '#e3a64a' : '#5a6670', rx: 2 }), mono(X0 + v * esc + 8, y + 15, fmt(v, 2) + ' m²', { fill: '#e6ecf0' })); });
-  const xm = X0 + 15 * esc; s.append(sv('line', { x1: xm, x2: xm, y1: 8, y2: 196, stroke: '#8fc46a', 'stroke-dasharray': '4 4' }), mono(xm - 4, 214, 'meta EPE 15 m²', { 'text-anchor': 'end', fill: '#8fc46a' })); }
-{ const s = lienzo('#g-estrato', 520, 150); const L = [['1', 1.6, '#3a4550'], ['2', 53.9, '#e3a64a'], ['3', 42.1, '#b98a57'], ['4', 2.4, '#5a6670']]; let x = 0; const W0 = 520;
-  L.forEach(([n, v, c]) => { const w = v / 100 * W0; s.append(sv('rect', { x, y: 30, width: w - 1, height: 46, fill: c })); if (v > 10) s.append(txt(x + 8, 58, `Estrato ${n}`, { fill: '#111', 'font-weight': 600 }), mono(x + 8, 96, fmt(v, 1) + ' %', { fill: '#e6ecf0', 'font-size': 13 })); x += w; });
-  s.append(mono(0, 130, 'Estratos 1 y 4: 1,6 % y 2,4 %. El 96 % vive en estratos 2 y 3.')); }
-
-// ---- Lámina 2: línea de tiempo del colectivo
-{ const ev = [
-    ['2010', 'Cierra la fábrica; la producción se traslada a Tocancipá.'],
-    ['2017', 'Decreto 364: plan parcial con unas 12.300 viviendas. Empiezan las talas y las marchas «¡Bosque sí, cemento no!». Vecinos de Bavaria, Aloha, Marsella y San José de Bavaria presentan una acción popular.'],
-    ['2019', 'Un juez administrativo suspende la tala. El colectivo vecinal propone sembrar 50.000 árboles nativos y crear una reserva forestal.'],
-    ['2020', 'El Colectivo Salvemos el Bosque Bavaria radica la propuesta de un campus de la Universidad Distrital. Marcha y bloqueo de la Av. Boyacá (5 de octubre).'],
-    ['2021', 'El inventario oficial sube de 9.737 árboles (2018) a 22.870.'],
-    ['2023', 'Decreto 448: el bosque se reconoce como bosque urbano, se conservan más de 14.000 árboles y entran 21 propuestas ciudadanas. Intropica publica 80 especies de aves en el bosque y el humedal Madre de Agua.'],
-    ['2026', 'Distrito Bavaria Común: el colectivo como semilla de una federación de asambleas.'],
-  ];
-  const ancho = MOVIL ? 360 : 1100; const s = lienzo('#g-linea', ancho, MOVIL ? ev.length * 92 + 20 : 300);
-  if (!MOVIL) { const x0 = 40, x1 = ancho - 40; s.append(sv('line', { x1: x0, x2: x1, y1: 60, y2: 60, stroke: '#3a4550', 'stroke-width': 2 }));
-    ev.forEach(([a, d], i) => { const x = x0 + i * (x1 - x0) / (ev.length - 1); const ult = i === ev.length - 1; s.append(sv('circle', { cx: x, cy: 60, r: ult ? 8 : 6, fill: ult ? '#8fc46a' : '#e3a64a' }), txt(x, 40, a, { 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 600, fill: '#e6ecf0' }), multi(Math.max(0, Math.min(ancho - 150, x - 72)), 92, d, 26, { 'font-size': 11.5 }, 15)); }); }
-  else { s.append(sv('line', { x1: 20, x2: 20, y1: 10, y2: ev.length * 92, stroke: '#3a4550', 'stroke-width': 2 }));
-    ev.forEach(([a, d], i) => { const y = 20 + i * 92; s.append(sv('circle', { cx: 20, cy: y, r: 6, fill: i === ev.length - 1 ? '#8fc46a' : '#e3a64a' }), txt(38, y + 5, a, { 'font-size': 16, 'font-weight': 600, fill: '#e6ecf0' }), multi(38, y + 24, d, 46, { 'font-size': 11.5 }, 14)); }); } }
-
-// ---- Lámina 3: sintaxis
-{ const R = D.resumen; const s = lienzo('#g-sx', 520, 270);
-  const M = [['nain', 'Integración NAIN Rn'], ['nain8', 'Integración NAIN R800'], ['nach', 'Elección NACH Rn'], ['prof', 'Profundidad media (giros)'], ['sinergia', 'Sinergia (r² Rn-R800)']];
-  M.forEach(([k, n], i) => { const y = 14 + i * 50; const a = R.antes_600m[k], b = R.despues_600m[k]; const mx = Math.max(a, b) * 1.15; const esc = 250 / mx;
-    s.append(txt(0, y + 12, n, { 'font-size': 12 }), sv('rect', { x: 190, y, width: a * esc, height: 13, fill: '#5a6670' }), sv('rect', { x: 190, y: y + 16, width: b * esc, height: 13, fill: '#e3a64a' }), mono(196 + a * esc, y + 11, fmt(a, 3)), mono(196 + b * esc, y + 27, fmt(b, 3) + `  (${b >= a ? '+' : ''}${fmt(100 * (b - a) / a, 1)} %)`, { fill: '#e6ecf0' })); });
-  s.append(sv('rect', { x: 190, y: 258, width: 10, height: 10, fill: '#5a6670' }), mono(206, 267, 'antes'), sv('rect', { x: 260, y: 258, width: 10, height: 10, fill: '#e3a64a' }), mono(276, 267, 'después'));
-  const l = lienzo('#g-sx-lee', 520, 270);
-  [['Integración', 'Qué tan pocos giros separan un tramo de todos los demás. Alta: lugares centrales, a mano.'], ['Elección', 'Por cuántos recorridos más directos pasa un tramo. Alta: calles de paso.'], ['Radio n / 800 m', 'Toda la red o solo lo que se alcanza en unos diez minutos a pie.'], ['Lectura', `Los pasajes nuevos quedan por encima del ${SX.nuevoNain} % de las calles en integración y en el percentil ${SX.nuevoNach} en elección: el interior entra a la red como lugar central, no como vía de paso.`]].forEach(([a, b], i) => { l.append(txt(0, 18 + i * 64, a, { 'font-weight': 600, fill: '#e3a64a' }), multi(0, 38 + i * 64, b, 70, { 'font-size': 12 }, 15)); });
-  $('#sx-metodo').textContent = `Método: análisis angular de segmentos (como DepthmapX) reimplementado en tools/bavaria_pres_datos.py sobre la red de TODA Kennedy más 500 m de borde (OpenStreetMap): ${fmt(R.antes_todo.n)} tramos conectados dentro de la localidad (${fmt(R.antes_todo.km, 0)} km). Radio n: 1.500 fuentes muestreadas al azar, las mismas antes y después. Radio 800 m: todas las fuentes; incluye los tramos a menos de 800 m de recorrido (hasta 12 giros). Antes, el predio está cerrado. En toda Kennedy la integración media cambia ${fmt(100 * (R.despues_todo.nain - R.antes_todo.nain) / R.antes_todo.nain, 1)} %: el efecto es local.`;
-  $('#sx-cifras1').innerHTML = `<div><b>${SX.nuevoNain} %</b><span>de las calles queda por debajo de la mediana de los pasajes (NAIN Rn)</span></div><div><b>${SX.c300[0].p >= 0 ? '+' : ''}${fmt(SX.c300[0].p, 1)} %</b><span>integración media de las calles a 300 m del predio</span></div>`;
-  $('#sx-cifras2').innerHTML = `<div><b>P${SX.nuevoNach}</b><span>percentil de elección de la mediana de los pasajes</span></div><div><b>P${SX.nuevoNachMax}</b><span>percentil del pasaje con más paso</span></div>`;
-}
-
-// ---- Lámina 4: dieta y cultivos
-datos('#dieta-datos', [
-  ['45,2 kg', 'de arroz por persona al año: la base del plato', 'Fedearroz 2024 (La República)'],
-  ['13,9 %', 'de los hogares de Bogotá con inseguridad alimentaria moderada o grave', 'DANE, FIES 2024'],
-  ['33 %', 'de los hogares de Bogotá solo asegura una o dos comidas al día', 'Veeduría Distrital 2024, encuesta a 4.148 hogares'],
-  ['8 de 10', 'niños comen fruta entera solo una vez al día', 'ENSIN 2015 (ICBF)'],
-  ['13.000', 'huertas urbanas activas en Bogotá en 2025', 'Jardín Botánico de Bogotá'],
-]);
-const CULTIVOS = [
-  ['Acelga', 'hoja', '50 (cortes continuos)', 6, 'bancal · techo', 'Hierro y folatos; cocina diaria (sopas, tortas)', '#7fb85a', [[0, 12, 'c']]],
-  ['Lechuga', 'hoja', '60', 5, 'bancal · techo', 'Verdura fresca de bajo costo', '#9ccc65', [[0, 12, 'c']]],
-  ['Cilantro y cebolla larga', 'condimento', '30-40 / 90-120', 4, 'bancal · techo', 'Presentes en casi todas las preparaciones; se compran a diario', '#5f9a48', [[0, 12, 'c']]],
-  ['Tomate y pimentón', 'fruto', '90-120', 12, 'invernadero', 'Base de guisos y hogao; mayor rendimiento bajo cubierta', '#c86a4a', [[1, 4, 's'], [4, 8, 'c'], [7, 10, 's'], [10, 12, 'c']]],
-  ['Zanahoria y remolacha', 'raíz', '70-100', 5, 'bancal', 'Vitamina A; caldos y ensaladas', '#d27a5a', [[2, 4, 's'], [4, 6, 'c'], [8, 10, 's'], [10, 12, 'c']]],
-  ['Arveja y haba', 'leguminosa', '90-150', 2, 'bancal', 'Proteína vegetal; fija nitrógeno en el suelo', '#b5c95a', [[2, 3, 's'], [6, 8, 'c'], [8, 9, 's'], [0, 2, 'c']]],
-  ['Papa criolla', 'tubérculo', '120', 3, 'bancal profundo', 'Parte de la base de la dieta; variedad andina de ciclo corto', '#c4a35a', [[2, 3, 's'], [6, 7, 'c'], [8, 9, 's'], [0, 1, 'c']]],
-  ['Cubio, ibia y ruba', 'tubérculo andino', '180-240', 2, 'bancal', 'Recupera cultivos tradicionales de la Sabana', '#a07a4a', [[2, 3, 's'], [9, 11, 'c']]],
-  ['Aromáticas y caléndula', 'medicinal', 'perenne', 2, 'bordes de bancal', 'Infusiones; atraen polinizadores y alejan plagas', '#8c6bb0', [[0, 12, 'c']]],
-  ['Fresa y uchuva', 'fruta', 'perenne', 3, 'techo · bancal', 'Fruta fresca para niñas y niños', '#e58aa8', [[0, 12, 'c']]],
-  ['Orellanas', 'hongo', '30-45', 25, 'laboratorio de hongos', 'Proteína a partir de residuos orgánicos (sustrato)', '#d9c7ef', [[0, 12, 'c']]],
-];
-$('#t-cultivos').innerHTML = '<thead><tr><th>Cultivo</th><th>Tipo</th><th>Ciclo (días)</th><th>kg/m²/año</th><th>Dónde</th><th>Por qué</th></tr></thead><tbody>' + CULTIVOS.map(c => `<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c[6]};margin-right:8px"></span>${c[0]}</td><td>${c[1]}</td><td class="n">${c[2]}</td><td class="n">${c[3]} <span class="sup">est.</span></td><td>${c[4]}</td><td>${c[5]}</td></tr>`).join('') + '</tbody>';
-{ const s = lienzo('#g-calendario', 900, CULTIVOS.length * 26 + 50); const x0 = 190, mw = (900 - x0) / 12; const MES = ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-  [[2, 5], [8, 11]].forEach(([a, b]) => s.append(sv('rect', { x: x0 + a * mw, y: 0, width: (b - a) * mw, height: CULTIVOS.length * 26 + 22, fill: '#5fb3d9', opacity: 0.08 })));
-  MES.forEach((m, i) => s.append(mono(x0 + i * mw + mw / 2, 14, m, { 'text-anchor': 'middle' })));
-  CULTIVOS.forEach((c, i) => { const y = 24 + i * 26; s.append(txt(0, y + 13, c[0], { 'font-size': 12 })); c[7].forEach(([a, b, t]) => s.append(sv('rect', { x: x0 + a * mw + 1, y: y + 2, width: (b - a) * mw - 2, height: 14, rx: 2, fill: c[6], opacity: t === 's' ? 0.35 : 0.9 }))); });
-  const yl = CULTIVOS.length * 26 + 40; s.append(sv('rect', { x: x0, y: yl - 9, width: 14, height: 10, fill: '#8fc46a', opacity: 0.35 }), mono(x0 + 20, yl, 'siembra'), sv('rect', { x: x0 + 90, y: yl - 9, width: 14, height: 10, fill: '#8fc46a' }), mono(x0 + 110, yl, 'cosecha'), sv('rect', { x: x0 + 180, y: yl - 9, width: 14, height: 10, fill: '#5fb3d9', opacity: 0.3 }), mono(x0 + 200, yl, 'lluvias')); }
-
-// ---- Lámina 5: producción
-datos('#prod-datos', [
-  [fmt(C.area_cult), 'm² cultivados entre bancales, invernaderos y techos', 'Cálculo con la geometría del plan', 'propuesta'],
-  [fmt(C.prod) + ' t', 'de hortalizas y frutos al año', `Rendimientos: ${C.rend.banc} kg/m² en bancal, ${C.rend.inv} bajo cubierta, ${C.rend.techo} en techo`, 'est.'],
-  [fmt(C.personas), 'personas cubiertas con 200 g de hortalizas al día', `${fmt(100 * C.personas / C.pob, 0)} % de la UPZ Bavaria`, 'est.'],
-  [fmt(C.nucleos), 'núcleos de huerta de unos 1.000 m²', 'Uno por cada 1.000 m² cultivados', 'propuesta'],
-]);
-{ const s = lienzo('#g-prod', 900, 200); const L = [['Bancales del predio', S.bancales_m2, C.prod_banc, '#7fb85a'], ['Invernaderos en las naves', C.inv_m2, C.prod_inv, '#c86a4a'], ['Cubiertas del barrio', S.techos_m2, C.prod_techo, '#9ccc65']]; const esc = 560 / Math.max(...L.map(l => l[2]));
-  L.forEach(([n, a, p, c], i) => { const y = 14 + i * 58; s.append(txt(0, y + 16, n, { 'font-weight': 600 }), mono(0, y + 34, fmt(a) + ' m²'), sv('rect', { x: 230, y, width: p * esc, height: 30, fill: c, rx: 2 }), mono(238 + p * esc, y + 20, fmt(p) + ' t/año', { fill: '#e6ecf0', 'font-size': 12 })); });
-  $('#prod-cap').textContent = `Producción = área × rendimiento. Un rendimiento de 3 a 8 kg/m²/año a cielo abierto es una estimación; FAO reporta hasta 10-20 kg/m²/año en microhuertos intensivos. La cobertura se calcula con 73 kg de hortalizas por persona al año (200 g/día).`; }
-
-// ---- Lámina 6: residuos
-datos('#res-datos', [
-  [fmt(C.res, 1) + ' t', 'de residuos al día en la UPZ Bavaria', '40.320 personas × 0,8 kg/día (UAESP)'],
-  [fmt(C.org, 1) + ' t', 'son orgánicos (51 %)', 'UAESP 2018'],
-  [fmt(C.comp_in, 1) + ' t', 'al día llegan al compostaje, con 5 t de Corabastos', `${fmt(C.comp_in * 365)} t al año`, 'propuesta'],
-  [fmt(C.comp_out, 1) + ' t', 'de compost al día', `${fmt(C.comp_out * 365)} t/año; las huertas usan ${fmt(C.area_cult * 5 / 1000)} t (5 kg/m²)`, 'est.'],
-]);
-{ const s = lienzo('#g-sankey', 1000, 440); const k = 300 / C.res; // altura por tonelada
-  const nodos = { gen: [20, 30, C.res, 'Residuos de los hogares', '#8b9aa7'], org: [300, 30, C.org, 'Orgánico', '#b98a57'], resto: [300, 30 + C.org * k + 30, C.res - C.org, 'No orgánico', '#5a6670'],
-    sep: [560, 30, C.sep, 'Separado en la fuente', '#b98a57'], noSep: [560, 30 + C.sep * k + 26, C.org - C.sep, 'Mezclado', '#6b5a4a'], cora: [560, 30 + C.org * k + 60 - 10, C.cora, 'Corabastos', '#e0664f'],
-    comp: [800, 30, C.comp_in, 'Compostaje del distrito', '#8fc46a'], dj: [800, 30 + C.comp_in * k + 40, C.org - C.sep + (C.res - C.org) * 0.7, 'Relleno Doña Juana', '#3a4550'], rec: [800, 30 + C.comp_in * k + 40 + (C.org - C.sep + (C.res - C.org) * 0.7) * k + 20, (C.res - C.org) * 0.3, 'Reciclaje (recicladores de oficio)', '#5fb3d9'] };
-  const off = {}; for (const n in nodos) off[n] = [0, 0];
-  const flujo = (a, b, v, c) => { const A = nodos[a], B = nodos[b]; const y0 = A[1] + off[a][1] * k, y1 = B[1] + off[b][0] * k; off[a][1] += v; off[b][0] += v; const h = v * k, x0 = A[0] + 14, x1 = B[0], xm = (x0 + x1) / 2; s.append(sv('path', { d: `M${x0},${y0}C${xm},${y0} ${xm},${y1} ${x1},${y1}L${x1},${y1 + h}C${xm},${y1 + h} ${xm},${y0 + h} ${x0},${y0 + h}Z`, fill: c, opacity: 0.35 })); };
-  flujo('gen', 'org', C.org, '#b98a57'); flujo('gen', 'resto', C.res - C.org, '#5a6670'); flujo('org', 'sep', C.sep, '#b98a57'); flujo('org', 'noSep', C.org - C.sep, '#6b5a4a');
-  flujo('sep', 'comp', C.sep, '#8fc46a'); flujo('cora', 'comp', C.cora, '#e0664f'); flujo('noSep', 'dj', C.org - C.sep, '#6b5a4a'); flujo('resto', 'dj', (C.res - C.org) * 0.7, '#5a6670'); flujo('resto', 'rec', (C.res - C.org) * 0.3, '#5fb3d9');
-  for (const n in nodos) { const [x, y, v, l, c] = nodos[n]; s.append(sv('rect', { x, y, width: 14, height: Math.max(2, v * k), fill: c })); const tx = x === 800 ? x + 22 : x + 22; s.append(txt(tx, y + 12, l, { 'font-size': 12, 'font-weight': 600, fill: '#e6ecf0' }), mono(tx, y + 27, fmt(v, 1) + ' t/día')); }
-  s.append(mono(20, 432, 'El reparto del no orgánico (30 % reciclable) es un supuesto.', { 'font-size': 10 })); }
-{ const s = lienzo('#g-ruta', 1000, 170); const P = [['Hogares', `${fmt(C.hogares)} hogares separan en un balde`], ['Punto verde', `${fmt(Math.round(C.hogares / 150))} puntos, uno por cada 150 hogares`], ['Bicicarga', `${fmt(Math.ceil(C.sep * 1000 / 150))} viajes al día de 150 kg por los pasajes`], ['Patio de compostaje', 'Pilas con volteo, 8 a 10 semanas, en el antiguo parqueadero'], ['Huertas y bosque', 'Compost a bancales, techos, vivero y restauración']];
-  P.forEach(([a, b], i) => { const x = i * 200; s.append(sv('rect', { x: x + 4, y: 20, width: 176, height: 120, rx: 8, fill: '#111820', stroke: '#2a3540' }), mono(x + 18, 44, String(i + 1).padStart(2, '0'), { fill: '#e3a64a' }), txt(x + 18, 66, a, { 'font-weight': 600, fill: '#e6ecf0', 'font-size': 14 }), multi(x + 18, 88, b, 24, { 'font-size': 11.5 }, 14)); if (i < P.length - 1) s.append(sv('path', { d: `M${x + 182},80l14,0m-5,-5l5,5l-5,5`, stroke: '#e3a64a', fill: 'none', 'stroke-width': 1.5 })); });
-  if (MOVIL) s.setAttribute('viewBox', '0 0 1000 170'); }
-
-// ---- Lámina 7: Corabastos y trabajo
-datos('#cora-datos', [
-  ['42 ha', 'y más de 5.000 locales; en operación desde 1974', 'Alcaldía de Bogotá 2024'],
-  ['1,98 Mt', 'de alimentos en 2025, unas 5.400 t al día', 'La República 2026 · cálculo propio'],
-  ['20-25 mil', 'empleos directos; 260.000 con los indirectos', 'La República; Alcaldía 2024'],
-  ['80.000', 'visitantes al día; hasta 200.000 martes y sábados', 'Prensa'],
-  ['~100 t', 'de residuos al día, 65 % orgánicos', 'Context Ganadero 2016; SDA'],
-]);
-const TRAB = [ // área del distrito, puestos, cálculo
-  ['Huertas (bancales y techos)', Math.round((S.bancales_m2 + S.techos_m2) / 1000), '1 persona por 1.000 m²'],
-  ['Invernaderos y vivero', Math.round(C.inv_m2 / 700), '1 persona por 700 m² bajo cubierta'],
-  ['Recolección y compostaje', Math.round(Math.ceil(C.sep * 1000 / 150) / 3) + 20, '1 bicicarga por cada 3 viajes diarios + 20 en el patio'],
-  ['Mercado de proximidad', Math.round(poligonoArea(D.edif[3].p) / 60 * 1.5), '1 puesto por 60 m² con circulación, 1,5 personas por puesto'],
-  ['Cocina comunitaria', 30, 'Comedor de 600 raciones al día'],
-  ['Laboratorio de hongos', 15, ''],
-  ['Reparto en bicicarga a tiendas', 25, ''],
-  ['Cuidados', 25, 'Niñez y personas mayores'],
-  ['Bosque, especies y monitoreo', 15, ''],
-  ['Formación, energía y mantenimiento', 25, ''],
-];
-const totalTrab = TRAB.reduce((t, r) => t + r[1], 0);
-$('#t-trabajo').innerHTML = '<thead><tr><th>Área</th><th>Puestos</th><th>Cómo se calcula</th></tr></thead><tbody>' + TRAB.map(r => `<tr><td>${r[0]}</td><td class="n">${fmt(r[1])}</td><td class="mu">${r[2] || 'Dimensionado de la propuesta'}</td></tr>`).join('') + `<tr><td><b>Total</b></td><td class="n"><b>${fmt(totalTrab)}</b></td><td class="mu">Puestos de trabajo <span class="sup p">propuesta</span></td></tr></tbody>`;
-{ const s = lienzo('#g-trabajo', 1000, 420); const OR = [['Coteros y bodegueros', '#8b9aa7'], ['Vendedores y comerciantes', '#e3a64a'], ['Recicladores de oficio', '#5fb3d9'], ['Cocineras y ventas de comida', '#e58aa8'], ['Jóvenes y mujeres sin empleo formal', '#a98bd6']];
-  const DE = [['Huertas e invernaderos', TRAB[0][1] + TRAB[1][1]], ['Recolección y compostaje', TRAB[2][1]], ['Mercado y reparto', TRAB[3][1] + TRAB[6][1]], ['Cocina y hongos', TRAB[4][1] + TRAB[5][1]], ['Cuidados, bosque y formación', TRAB[7][1] + TRAB[8][1] + TRAB[9][1]]];
-  const FL = [[0, 0, 0.5], [0, 1, 0.5], [0, 2, 0.6], [1, 2, 0.4], [2, 1, 1], [3, 3, 1], [4, 0, 0.5], [4, 4, 1]]; // [origen, destino, fracción del destino]
-  const k = 300 / totalTrab; const yO = [], yD = []; let y = 30; const tO = OR.map((_, i) => FL.filter(f => f[0] === i).reduce((t, f) => t + DE[f[1]][1] * (f[2] === 1 ? 1 : f[2] * (f[1] === 0 ? 1 : 1)), 0));
-  // normalizar las fracciones por destino
-  const sumDest = DE.map((_, j) => FL.filter(f => f[1] === j).reduce((t, f) => t + f[2], 0));
-  const val = FL.map(f => DE[f[1]][1] * f[2] / sumDest[f[1]]);
-  const vO = OR.map((_, i) => FL.reduce((t, f, q) => t + (f[0] === i ? val[q] : 0), 0));
-  OR.forEach((_, i) => { yO[i] = y; y += vO[i] * k + 16; }); y = 30; DE.forEach((d, j) => { yD[j] = y; y += d[1] * k + 16; });
-  const oO = OR.map(() => 0), oD = DE.map(() => 0);
-  FL.forEach((f, q) => { const h = val[q] * k; const y0 = yO[f[0]] + oO[f[0]], y1 = yD[f[1]] + oD[f[1]]; oO[f[0]] += h; oD[f[1]] += h; const x0 = 300, x1 = 640; s.append(sv('path', { d: `M${x0},${y0}C470,${y0} 470,${y1} ${x1},${y1}L${x1},${y1 + h}C470,${y1 + h} 470,${y0 + h} ${x0},${y0 + h}Z`, fill: OR[f[0]][1], opacity: 0.32 })); });
-  OR.forEach(([n, c], i) => s.append(sv('rect', { x: 288, y: yO[i], width: 12, height: vO[i] * k, fill: c }), txt(278, yO[i] + vO[i] * k / 2 + 4, n, { 'text-anchor': 'end', 'font-size': 12 })));
-  DE.forEach(([n, v], j) => s.append(sv('rect', { x: 640, y: yD[j], width: 12, height: v * k, fill: '#8fc46a' }), txt(662, yD[j] + v * k / 2, n, { 'font-size': 12, 'font-weight': 600, fill: '#e6ecf0' }), mono(662, yD[j] + v * k / 2 + 15, fmt(v) + ' puestos')));
-  s.append(mono(300, 18, 'OFICIO ACTUAL (CORABASTOS Y BARRIO)'), mono(640, 18, 'TRABAJO EN EL DISTRITO')); }
-
-// ---- Lámina 8: federación
-const adultos = Math.round(C.pob * 0.78); const porSector = Math.round(C.pob / NSECT); const asist = Math.round(adultos * 0.05 / NSECT);
-const CONSEJO = [['Sectores (dupla paritaria por sector)', NSECT * 2, '#e3a64a'], ['Comisiones temáticas', 6, '#8fc46a'], ['Colectivo Salvemos el Bosque Bavaria', 1, '#4f8a3c'], ['Cooperativa de trabajo', 1, '#d98f5a'], ['Juventudes', 1, '#a98bd6']];
-const nCons = CONSEJO.reduce((t, c) => t + c[1], 0);
-datos('#fed-datos', [
-  [fmt(C.pob), 'personas en el territorio de la federación (UPZ 113 Bavaria)', 'SDS 2021'],
-  [String(NSECT), `asambleas de sector, de unas ${fmt(porSector)} personas cada una`, 'Una por cada dos puertas del predio', 'propuesta'],
-  [`${fmt(asist)}`, 'personas esperadas por asamblea de sector al mes (5 % de las personas adultas)', 'Quórum de 60 personas', 'propuesta'],
-  [fmt(C.nucleos), 'núcleos de huerta de 15 a 25 personas', `${fmt(C.nucleos * 20)} personas activas en las huertas`, 'propuesta'],
-  [String(nCons), 'vocerías en el consejo federal; todas rotan cada seis meses', `${fmt(nCons * 10)} personas habrán llevado la voz en cinco años`, 'propuesta'],
-]);
-{ const ancho = 1000, s = lienzo('#g-federacion', ancho, 560);
-  // asamblea general (envolvente)
-  s.append(sv('rect', { x: 10, y: 10, width: ancho - 20, height: 540, rx: 16, fill: 'none', stroke: '#3a4550', 'stroke-dasharray': '5 5' }), mono(28, 34, 'ASAMBLEA GENERAL · ABIERTA A TODAS LAS PERSONAS · 2 AL AÑO', { fill: '#8b9aa7' }));
-  // consejo federal: anillo de asientos
-  const cx = 500, cy = 140, R = 70; let k = 0;
-  s.append(sv('circle', { cx, cy, r: R + 22, fill: '#111820', stroke: '#2a3540' }), txt(cx, cy - 4, 'Consejo', { 'text-anchor': 'middle', 'font-weight': 600, fill: '#e6ecf0', 'font-size': 15 }), txt(cx, cy + 14, 'federal', { 'text-anchor': 'middle', 'font-weight': 600, fill: '#e6ecf0', 'font-size': 15 }), mono(cx, cy + 32, `${nCons} vocerías · mensual`, { 'text-anchor': 'middle' }));
-  CONSEJO.forEach(([n, m, c]) => { for (let i = 0; i < m; i++) { const a = -Math.PI / 2 + (k++ / nCons) * Math.PI * 2; s.append(sv('circle', { cx: cx + Math.cos(a) * (R + 8), cy: cy + Math.sin(a) * (R + 8), r: 6.5, fill: c, stroke: '#0b1015', 'stroke-width': 1.5 })); } });
-  CONSEJO.forEach(([n, m, c], i) => s.append(sv('circle', { cx: 700, cy: 70 + i * 22, r: 6, fill: c }), txt(714, 74 + i * 22, `${n} · ${m}`, { 'font-size': 12 })));
-  // comisiones
-  const COM = ['Huertas y semillas', 'Residuos y compost', 'Mercado y cocina', 'Bosque y especies', 'Cuidados', 'Trabajo y finanzas'];
-  COM.forEach((n, i) => { const x = 40, y = 70 + i * 30; s.append(sv('rect', { x, y, width: 190, height: 22, rx: 11, fill: '#18241a', stroke: '#4f8a3c' }), txt(x + 12, y + 15, n, { 'font-size': 11.5 })); s.append(sv('path', { d: `M232,${y + 11}C330,${y + 11} 360,${cy} ${cx - R - 26},${cy}`, stroke: '#4f8a3c', fill: 'none', opacity: 0.5 })); });
-  mono && s.append(mono(40, 60, 'COMISIONES ABIERTAS · MENSUAL', { fill: '#8fc46a' }));
-  // asambleas de sector
-  const ys = 330; for (let i = 0; i < NSECT; i++) { const x = 70 + i * (760 / (NSECT - 1)); s.append(sv('path', { d: `M${x},${ys - 26}C${x},${ys - 90} ${cx},${cy + 140} ${cx},${cy + R + 24}`, stroke: COL_SECT[i], fill: 'none', 'stroke-width': 1.6, opacity: 0.6 }), sv('circle', { cx: x, cy: ys, r: 26, fill: '#111820', stroke: COL_SECT[i], 'stroke-width': 2 }), txt(x, ys + 5, 'S' + (i + 1), { 'text-anchor': 'middle', 'font-weight': 600, fill: '#e6ecf0', 'font-size': 14 }));
-    const nn = Math.round(C.nucleos / NSECT); for (let j = 0; j < nn; j++) { const a = Math.PI * (0.15 + 0.7 * j / Math.max(1, nn - 1)); s.append(sv('circle', { cx: x + Math.cos(a) * 56 * (j % 2 ? 0.75 : 1), cy: ys + 38 + Math.sin(a) * 52 * (j % 2 ? 0.75 : 1), r: 3.5, fill: COL_SECT[i], opacity: 0.85 })); } }
-  s.append(mono(70, ys - 50, `ASAMBLEAS DE SECTOR · ${NSECT} · MENSUAL`, { fill: '#e3a64a' }), mono(70, 486, `NÚCLEOS DE HUERTA · ${C.nucleos} · MENSUAL · COORDINACIÓN ROTATIVA CADA 3 MESES`, { fill: '#8fc46a' }));
-  s.append(sv('path', { d: 'M965,470L965,190m-6,8l6,-8l6,8', stroke: '#e3a64a', fill: 'none', 'stroke-width': 1.5 }), mono(958, 300, 'mandato', { 'text-anchor': 'end', fill: '#e3a64a' }), sv('path', { d: 'M935,190L935,470m-6,-8l6,8l6,-8', stroke: '#8b9aa7', fill: 'none', 'stroke-width': 1.5 }), mono(928, 400, 'rinde cuentas', { 'text-anchor': 'end' }));
-  s.append(mono(28, 530, 'Quien lleva la vocería no decide sola ni solo: lleva el mandato de su asamblea, vuelve a rendir cuentas y puede ser revocada.', { 'font-size': 11 })); }
-$('#t-reuniones').innerHTML = '<thead><tr><th>Instancia</th><th>Cuántas</th><th>Frecuencia</th><th>Al año</th></tr></thead><tbody>' + [
-  ['Núcleos de huerta', C.nucleos, 'mensual', C.nucleos * 12], ['Asambleas de sector', NSECT, 'mensual', NSECT * 12], ['Comisiones', 6, 'mensual', 72], ['Consejo federal', 1, 'mensual', 12], ['Asamblea general', 1, 'semestral', 2],
-].map(r => `<tr><td>${r[0]}</td><td class="n">${fmt(r[1])}</td><td>${r[2]}</td><td class="n">${fmt(r[3])}</td></tr>`).join('') + `<tr><td><b>Total</b></td><td></td><td></td><td class="n"><b>${fmt(C.nucleos * 12 + NSECT * 12 + 72 + 14)}</b></td></tr></tbody>`;
-{ const s = lienzo('#g-rotacion', 520, 260); const sem = 10, cw = 520 / sem;
-  for (let i = 0; i < sem; i++) { for (let j = 0; j < nCons; j++) s.append(sv('rect', { x: i * cw + 6, y: 20 + j * 6.4, width: cw - 12, height: 5, fill: COL_SECT[i % COL_SECT.length], opacity: 0.85 })); s.append(mono(i * cw + cw / 2, 14, `S${i + 1}`, { 'text-anchor': 'middle' })); }
-  const yb = 20 + nCons * 6.4 + 22; s.append(mono(0, yb, `Semestres 1 a 10 · ${nCons} vocerías por semestre · ${fmt(nCons * sem)} personas en total`, { fill: '#e6ecf0' })); }
-
-// ---- Lámina 9: especies
-const TIPO = { dep: ['Depredación', '#C96349'], herb: ['Herbivoría y semillas', '#84A48B'], disp: ['Dispersión de semillas', '#E69888'], mut: ['Mutualismo', '#E7C878'], nido: ['Nidificación y refugio', '#F79E70'], pol: ['Visita floral y polinización', '#A386A9'], dosel: ['Anidamiento de dosel', '#D1A996'], bio: ['Descomposición', '#6B9080'] };
-const ELEM = ['Bosque conservado', 'Bancales y techos', 'Aromáticas y flores', 'Vivero de nativas', 'Compostaje', 'Pasajes arbolados', 'Humedales conectados'];
-const ESP = [['Mirla', 'Turdus fuscater'], ['Copetón', 'Zonotrichia capensis'], ['Torcaza', 'Zenaida auriculata'], ['Colibrí chillón', 'Colibri coruscans'], ['Jilguero', 'Spinus psaltria'], ['Sirirí', 'Tyrannus melancholicus'], ['Picaflores', 'Diglossa spp.'], ['Reinita cerúlea (VU)', 'Setophaga cerulea'], ['Avetorito bogotano (CR)', 'Ixobrychus exilis bogotensis'], ['Búho', 'Asio clamator'], ['Gavilán bailarín', 'Elanus leucurus'], ['Tingua azul', 'Porphyrio martinicus'], ['Monjita', 'Chrysomus icterocephalus'], ['Abejas', 'Apis mellifera y nativas'], ['Lombriz roja', 'Eisenia fetida'], ['Orellana', 'Pleurotus ostreatus']];
-const ENL = [[0, 0, 'nido'], [0, 2, 'nido'], [0, 5, 'dosel'], [0, 7, 'dosel'], [0, 9, 'nido'], [1, 1, 'herb'], [1, 2, 'herb'], [1, 4, 'herb'], [1, 0, 'dep'], [1, 10, 'dep'], [1, 13, 'pol'], [2, 3, 'pol'], [2, 6, 'pol'], [2, 13, 'pol'], [3, 3, 'mut'], [3, 6, 'pol'], [3, 7, 'dosel'], [4, 14, 'mut'], [4, 15, 'bio'], [4, 0, 'dep'], [5, 1, 'disp'], [5, 4, 'disp'], [5, 5, 'disp'], [6, 8, 'nido'], [6, 11, 'nido'], [6, 12, 'nido'], [6, 10, 'dep']];
-{ const s = lienzo('#g-especies', 1000, 560); const yE = (i) => 40 + i * (480 / (ELEM.length - 1)), yS = (j) => 24 + j * (510 / (ESP.length - 1));
-  ENL.forEach(([i, j, t]) => s.append(sv('path', { d: `M250,${yE(i)}C470,${yE(i)} 530,${yS(j)} 700,${yS(j)}`, stroke: TIPO[t][1], 'stroke-width': 2, fill: 'none', opacity: 0.8 })));
-  ELEM.forEach((n, i) => s.append(sv('rect', { x: 20, y: yE(i) - 14, width: 230, height: 28, rx: 14, fill: '#18241a', stroke: '#4f8a3c' }), txt(36, yE(i) + 4, n, { 'font-weight': 600, fill: '#e6ecf0', 'font-size': 12.5 })));
-  ESP.forEach(([n, c], j) => s.append(sv('circle', { cx: 706, cy: yS(j), r: 5, fill: '#e6ecf0' }), txt(720, yS(j) + 4, n, { 'font-size': 12, fill: '#e6ecf0' }), mono(905, yS(j) + 4, c, { 'font-size': 9 })));
-  const lg = $('#g-especies').parentElement.querySelector('figcaption'); lg.innerHTML += '<br>' + Object.values(TIPO).map(([n, c]) => `<span class="chip" style="border-color:${c};color:${c}">${n}</span>`).join(''); }
-datos('#esp-datos', [
-  ['80', 'especies de aves en el bosque y el humedal Madre de Agua, un tercio de la avifauna de la Sabana', 'Torres-Ariza y Gil-T, Intropica 2023'],
-  ['33', 'especies migratorias; 4 amenazadas, entre ellas la reinita cerúlea (VU) y el avetorito bogotano (CR)', 'Intropica 2023'],
-  [fmt(S.bosque_ha, 1) + ' ha', 'de bosque denso que la propuesta no ocupa', 'Copas detectadas en Esri World Imagery'],
-  ['11,7 ha', 'del humedal de Techo, a 0,8 km; El Burro a 1,3 km', 'Alcaldía de Bogotá 2026'],
-]);
 
 // ---- fuentes
 const FUENTES = [
+  ['Roco y Bainbridge (eds.) (2003), Converging Technologies for Improving Human Performance (NBIC), NSF', 'https://www.wtec.org/ConvergingTechnologies/Report/NBIC_report.pdf'],
+  ['IPES, plazas de mercado 2024 (datos abiertos Bogotá) y OpenStreetMap', 'https://datosabiertos.bogota.gov.co/'],
+  ['Parques: IDRD, inventario de parques de Bogotá', 'https://datosabiertos.bogota.gov.co/'],
   ['ASIS Kennedy 2024, Subred Sur Occidente / SDS', 'https://saludata.saludcapital.gov.co/osb/wp-content/uploads/2026/01/8.-ASIS_Kennedy_2024.pdf'],
   ['ACCVSyE Kennedy 2021, SDS', 'https://saludata.saludcapital.gov.co/osb/wp-content/uploads/2026/01/ACCVSYE_KENNEDY.pdf'],
   ['Decreto 364 de 2017 (plan parcial Bavaria Fábrica)', 'https://www.habitatbogota.gov.co/sites/default/files/marco-legal/Decreto364de2017.pdf'],
