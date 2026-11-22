@@ -28,7 +28,35 @@
       "arboles": 119886,
       "colegios": 74,
       "huertas": 56,
-      "limite_vertices": 90
+      "limite_vertices": 90,
+      "ruido_hoy": {
+        "celdas": 38892,
+        "banda": [
+          28.6,
+          37.4,
+          21.8,
+          12.2
+        ],
+        "media_db": 60.9,
+        "nota": "celdas de 16 m sobre vías; banda % de celdas <55, 55–65, 65–70, >70 dB; media de las celdas (mismo cálculo del simulador)"
+      },
+      "flujo": {
+        "q95_veh_por_celda": 0.13,
+        "nota": "intensidad = vehículos presentes en promedio en la celda de 16 m durante la grabación (hora pico), escalada al percentil 95"
+      },
+      "sintaxis": {
+        "segmentos": 37987,
+        "pasajes_nuevos": 20,
+        "integracion": {
+          "p2": 1.148,
+          "p98": 2.578
+        },
+        "eleccion": {
+          "p2": 0,
+          "p98": 1.44
+        },
+        "nota": "NAIN n (integración) y NACH (elección), hoy (a) vs con la propuesta (b); misma escala de color"
+      }
     },
     "nota": "máscaras blancas con alfa; el color lo pone TouchDesigner. Fuentes: data3d/buildings.json, parques.json, water_bodies.json, trees.json, colegios.json"
   },

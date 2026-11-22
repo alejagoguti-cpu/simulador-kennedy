@@ -111,6 +111,65 @@ for (let t = 0; t < NS; t++) {
   }
   filas.push(f); M = Math.max(M, f.length);
 }
+// ---------- FLUJO DE CARROS y RUIDO (mismo modelo que data3d/capas_escenario.js RM.refrescar / RM.flujo) ----------
+// Rejilla de 16 m sobre la red vial (clase por tipo de vía), conteo de TODOS los vehículos de todos los segundos de la grabación SUMO
+// (un camión = 4 carros para el ruido, mismo sorteo por id que el simulador), suavizado 3×3, mediana por clase.
+// Ruido de HOY [SUP del simulador]: L = referencia por clase (local 60, intermedia 68, principal 74 dB) + 10·log10(flujo / mediana de su clase), limitado a −8/+5 dB.
+// Bandas del simulador: < 55 amarillo claro, 55–65 amarillo, 65–70 naranja, > 70 rojo. (El ruido «con la propuesta» depende de los controles del simulador: pendiente.)
+{
+  const CEL = 16, CL = { major: 3, mid: 2, local: 1 }, E = NET.edges.map(([t, p]) => [CL[t], p.map(q => [q[0] - LC[0], LC[1] - q[1]])]);
+  let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (const [, P] of E) for (const [x, z] of P) { a = Math.min(a, x); c = Math.max(c, x); b = Math.min(b, z); d = Math.max(d, z); }
+  const x0 = a - CEL, z0 = b - CEL, nx = Math.ceil((c - a) / CEL) + 3, nz = Math.ceil((d - b) / CEL) + 3, via = new Uint8Array(nx * nz);
+  for (const [cl, P] of E) for (let k = 1; k < P.length; k++) { const A = P[k - 1], B = P[k], n = Math.max(1, Math.ceil(Math.hypot(B[0] - A[0], B[1] - A[1]) / (CEL * 0.7)));
+    for (let q = 0; q <= n; q++) { const x = A[0] + (B[0] - A[0]) * q / n, z = A[1] + (B[1] - A[1]) * q / n, i = Math.floor((x - x0) / CEL), j = Math.floor((z - z0) / CEL); if (i >= 0 && j >= 0 && i < nx && j < nz && cl > via[j * nx + i]) via[j * nx + i] = cl; } }
+  const cntR = new Float32Array(nx * nz), cntV = new Float32Array(nx * nz);
+  for (let t = 0; t < NS; t++) { const s = steps[t]; if (!s) continue; for (const [id, [x, z]] of s) { const i = Math.floor((x - x0) / CEL), j = Math.floor((z - z0) / CEL); if (i < 0 || j < 0 || i >= nx || j >= nz) continue;
+    cntR[j * nx + i] += (((id * 2654435761) >>> 0) / 4294967296 >= 0.92) ? 4 : 1; cntV[j * nx + i] += 1; } }
+  const caja = (A, r) => { const t = new Float32Array(A.length), o = new Float32Array(A.length), w = 1 / (2 * r + 1);
+    for (let j = 0; j < nz; j++) { let s = 0; const bb = j * nx; for (let i = 0; i <= Math.min(r, nx - 1); i++) s += A[bb + i]; for (let i = 0; i < nx; i++) { t[bb + i] = s * w; const ad = i + r + 1, su = i - r; if (ad < nx) s += A[bb + ad]; if (su >= 0) s -= A[bb + su]; } }
+    for (let i = 0; i < nx; i++) { let s = 0; for (let j = 0; j <= Math.min(r, nz - 1); j++) s += t[j * nx + i]; for (let j = 0; j < nz; j++) { o[j * nx + i] = s * w; const ad = j + r + 1, su = j - r; if (ad < nz) s += t[ad * nx + i]; if (su >= 0) s -= t[su * nx + i]; } }
+    return o; };
+  const smR = caja(cntR, 1), smV = caja(cntV, 1), LREF = [0, 60, 68, 74], por = [[], [], [], []];
+  for (let k = 0; k < via.length; k++) if (via[k] && smR[k] > 0) por[via[k]].push(smR[k]);
+  const med = por.map(A => { if (!A.length) return 1; A.sort((p, q) => p - q); return A[A.length >> 1]; });
+  const BANDA_C = [[255, 247, 179], [255, 214, 70], [245, 124, 0], [211, 47, 47]];
+  const pxR = new Uint8Array(PW * PH * 4), pxF = new Uint8Array(PW * PH * 4), est = { celdas: 0, banda: [0, 0, 0, 0], media_db: 0 };
+  const vs = []; for (let k = 0; k < via.length; k++) if (via[k] && smV[k] > 0) vs.push(smV[k] / NS); vs.sort((p, q) => p - q); const q95 = vs[Math.floor(vs.length * 0.95)] || 1;
+  const kpx = PW / R.ancho_m; // píxeles por metro
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const k = j * nx + i, cl = via[k]; if (!cl) continue;
+    const L = LREF[cl] + (smR[k] > 0 ? Math.max(-8, Math.min(5, 10 * Math.log10(smR[k] / med[cl]))) : -8), bnd = L < 55 ? 0 : L < 65 ? 1 : L < 70 ? 2 : 3;
+    est.celdas++; est.banda[bnd]++; est.media_db += L;
+    const xc = x0 + (i + 0.5) * CEL, zc = z0 + (j + 0.5) * CEL, [u, v] = aUV(xc, zc), cx = u * PW, cy = v * PH, hf = CEL / 2 * kpx;
+    const fv = Math.min(1, smV[k] / NS / q95), fcol = [Math.round(40 + 140 * fv), Math.round(110 + 135 * fv), 255];
+    for (let y = Math.floor(cy - hf); y <= Math.ceil(cy + hf); y++) for (let x = Math.floor(cx - hf); x <= Math.ceil(cx + hf); x++) { if (x < 0 || y < 0 || x >= PW || y >= PH) continue; const o = (y * PW + x) * 4;
+      pxR[o] = BANDA_C[bnd][0]; pxR[o + 1] = BANDA_C[bnd][1]; pxR[o + 2] = BANDA_C[bnd][2]; pxR[o + 3] = 255;
+      if (smV[k] > 0) { pxF[o] = fcol[0]; pxF[o + 1] = fcol[1]; pxF[o + 2] = fcol[2]; pxF[o + 3] = Math.round(60 + 195 * fv); } } }
+  est.media_db = +(est.media_db / est.celdas).toFixed(1); est.banda = est.banda.map(n => +(n / est.celdas * 100).toFixed(1));
+  await writeFile(join(OUT, 'capa_ruido_hoy.png'), png(pxR, PW, PH)); await writeFile(join(OUT, 'capa_flujo_carros.png'), png(pxF, PW, PH));
+  conteo.ruido_hoy = { ...est, nota: 'celdas de 16 m sobre vías; banda % de celdas <55, 55–65, 65–70, >70 dB; media de las celdas (mismo cálculo del simulador)' };
+  conteo.flujo = { q95_veh_por_celda: +q95.toFixed(3), nota: 'intensidad = vehículos presentes en promedio en la celda de 16 m durante la grabación (hora pico), escalada al percentil 95' };
+}
+
+// ---------- SINTAXIS ESPACIAL (precalculada: data3d/bavaria_sx.json, análisis angular reimplementado en tools/bavaria_pres_datos.py) ----------
+// a = antes (hoy), b = después (con los pasajes de Bavaria); [NAIN n (integración global), NAIN 800 m, NACH (elección)]. n = 1 pasaje nuevo.
+// Color: espectro clásico de sintaxis (azul bajo → rojo alto), MISMA escala para hoy y propuesta (percentiles 2–98 de «hoy»).
+{
+  const SX = await leer('bavaria_sx.json'), pal = [[30, 60, 200], [40, 170, 230], [60, 210, 120], [240, 220, 60], [245, 130, 30], [220, 40, 40]];
+  const col = (f) => { f = Math.max(0, Math.min(0.9999, f)) * (pal.length - 1); const a = Math.floor(f), t = f - a; return pal[a].map((c, i) => Math.round(c + (pal[a + 1][i] - c) * t)); };
+  const rango = (k) => { const v = SX.seg.filter(s => s.a).map(s => s.a[k]).sort((p, q) => p - q); return [v[Math.floor(v.length * 0.02)], v[Math.floor(v.length * 0.98)]]; };
+  const linea = (px, P, rgb, ancho) => { for (let k = 1; k < P.length; k++) { const A = aPxM(P[k - 1]), B = aPxM(P[k]), n = Math.max(1, Math.ceil(Math.hypot(B[0] - A[0], B[1] - A[1])));
+    for (let q = 0; q <= n; q++) { const cx = A[0] + (B[0] - A[0]) * q / n, cy = A[1] + (B[1] - A[1]) * q / n;
+      for (let y = Math.floor(cy - ancho); y <= Math.ceil(cy + ancho); y++) for (let x = Math.floor(cx - ancho); x <= Math.ceil(cx + ancho); x++) { if (x < 0 || y < 0 || x >= PW || y >= PH || (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 > ancho * ancho) continue;
+        const o = (y * PW + x) * 4; px[o] = rgb[0]; px[o + 1] = rgb[1]; px[o + 2] = rgb[2]; px[o + 3] = 255; } } } };
+  const sx = {};
+  for (const [k, nombre] of [[0, 'integracion'], [2, 'eleccion']]) { const [lo, hi] = rango(k); sx[nombre] = { p2: lo, p98: hi };
+    for (const [lado, cual] of [['a', 'hoy'], ['b', 'propuesta']]) { const px = new Uint8Array(PW * PH * 4);
+      const orden = SX.seg.filter(s => s[lado] && (cual === 'propuesta' || !s.n)).sort((s, t) => s[lado][k] - t[lado][k]); // los altos encima
+      for (const s of orden) linea(px, s.p, col((s[lado][k] - lo) / (hi - lo)), s.n ? 1.6 : 1.0);
+      await writeFile(join(OUT, `capa_sintaxis_${nombre}_${cual}.png`), png(px, PW, PH)); } }
+  conteo.sintaxis = { segmentos: SX.seg.length, pasajes_nuevos: SX.seg.filter(s => s.n).length, ...sx, nota: 'NAIN n (integración) y NACH (elección), hoy (a) vs con la propuesta (b); misma escala de color' };
+}
+
 // float32 -> float16
 const f32 = new Float32Array(1), u32 = new Uint32Array(f32.buffer);
 const h = (x) => { f32[0] = x; const b = u32[0], s = (b >>> 16) & 0x8000; let e = ((b >>> 23) & 0xff) - 127 + 15, m = b & 0x7fffff;
