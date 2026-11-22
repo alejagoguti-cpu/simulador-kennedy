@@ -1,8 +1,9 @@
-# Maqueta de proyección de Kennedy EN RELIEVE para impresión 3D (STL en mm), 1:20.000, 4 piezas.
+# Maqueta de proyección de Kennedy EN RELIEVE para impresión 3D (STL en mm). Por defecto 1:15.300 (Kennedy de 50 cm), alturas x3, 9 piezas.
+# Uso: python tools/maqueta_3d.py [escala] [exageración] [piezas por lado]
 # Encaja con la proyección de TouchDesigner y con la base de corte láser (instalacion/maqueta/1_base_MDF6mm.*: la silueta rayada marca dónde va).
 #   Terreno: placa con la forma de Kennedy de 3 mm (Bogotá es plana: el desnivel real de Kennedy, ~15 m, sería 0,75 mm aun exagerado, no se usa);
 #            humedales y río hundidos 1,8 mm (la placa queda de 1,2 mm ahí).
-#   Edificios: huellas reales extruidas con su altura × EXAGERACION (6). Fuentes:
+#   Edificios: huellas reales extruidas con su altura × EXAGERACION (3 por defecto). Fuentes:
 #     · norte y centro: data3d/buildings.json del simulador (huella y altura h);
 #     · sur (donde el simulador no tiene datos, y_modelo < CORTE_Y): Microsoft Global ML Building Footprints (2026-02-03, quadkey 032232112),
 #       sin altura publicada -> 9 m (3 pisos, la casa típica del sur de Kennedy) [SUPUESTO].
@@ -19,9 +20,12 @@ RAIZ = os.path.join(os.path.dirname(__file__), '..')
 D = os.path.join(RAIZ, 'instalacion', 'datos'); MQ = os.path.join(RAIZ, 'instalacion', 'maqueta')
 OUT = os.path.join(MQ, 'impresion_3d'); os.makedirs(OUT, exist_ok=True)
 CFG = json.load(open(os.path.join(RAIZ, 'instalacion', 'config.json'), encoding='utf-8'))
-ESCALA, ANCHO_TABLERO, EXAGERACION = 20000, 500.0, 6.0
+ESCALA = int(sys.argv[1]) if len(sys.argv) > 1 else 15300           # 1:15.300 -> Kennedy de 50 cm por el lado más largo
+EXAGERACION = float(sys.argv[2]) if len(sys.argv) > 2 else 3.0     # x3: lo justo para que las casas se impriman (~1,8 mm)
+NPZ = int(sys.argv[3]) if len(sys.argv) > 3 else 3                 # piezas por lado (3 x 3 = 9 piezas de ~17 cm)
+ANCHO_TABLERO = 530.0
 PLACA, AGUA_FONDO, CORTE_Y = 3.0, 1.2, 600.0
-H_MIN, H_MAX, H_SUR = 1.0, 22.0, 9.0      # mm mínimo / máximo de un edificio impreso; altura supuesta (m) en el sur
+H_MIN, H_MAX, H_SUR = 1.0, 20.0, 9.0      # mm mínimo / máximo de un edificio impreso; altura supuesta (m) en el sur
 AN_M, AL_M = CFG['rectangulo']['ancho_m'], CFG['rectangulo']['alto_m']
 LC = CFG['coordenadas']['LC']; CX, CZ = CFG['rectangulo']['centro_m']
 W, H = AN_M * 1000 / ESCALA, AL_M * 1000 / ESCALA; OX = (W - ANCHO_TABLERO) / 2; TH = H
@@ -74,10 +78,10 @@ for b, gs in sorted(bandas.items()):
     u = unary_union([g.buffer(0.12, join_style=2) for g in gs]).buffer(-0.12, join_style=2).intersection(SUELO.buffer(-0.15)).simplify(0.06)
     GEO[b] = [p for p in getattr(u, 'geoms', [u]) if p.geom_type == 'Polygon' and p.area >= 0.3]
 
-# ---------- piezas (2 x 2) ----------
-xm, ym = (kx0 + kx1) / 2, (ky0 + ky1) / 2
-PIEZAS = {'A_noroeste': box(kx0 - 1, ky0 - 1, xm, ym), 'B_noreste': box(xm, ky0 - 1, kx1 + 1, ym),
-          'C_suroeste': box(kx0 - 1, ym, xm, ky1 + 1), 'D_sureste': box(xm, ym, kx1 + 1, ky1 + 1)}
+# ---------- piezas (NPZ x NPZ) ----------
+xs = np.linspace(kx0 - 1, kx1 + 1, NPZ + 1); ys = np.linspace(ky0 - 1, ky1 + 1, NPZ + 1)
+FIL = 'ABCDEFGH'  # fila de norte a sur (A = norte), columna de oeste a este (1 = oeste): pieza A1 = esquina noroeste
+PIEZAS = {f'{FIL[r]}{c + 1}': box(xs[c], ys[r], xs[c + 1], ys[r + 1]) for r in range(NPZ) for c in range(NPZ)}
 def extruir(g, z0, z1, mallas):
     for p in getattr(g, 'geoms', [g]):
         if p.is_empty or p.geom_type != 'Polygon' or p.area < 0.05: continue
@@ -87,6 +91,8 @@ def extruir(g, z0, z1, mallas):
         for qq in getattr(q, 'geoms', [q]):
             if qq.geom_type != 'Polygon' or qq.is_empty: continue
             m = trimesh.creation.extrude_polygon(qq, z1 - z0, engine='earcut'); m.apply_translation((0, 0, z0)); mallas.append(m)
+for v in os.listdir(OUT):
+    if v.endswith(('.stl', '.3dm')): os.remove(os.path.join(OUT, v))
 resumen = {}
 for nombre, caja in PIEZAS.items():
     mallas = []
@@ -116,3 +122,15 @@ for b, polys in GEO.items():
     for p in polys: ax.fill(*p.exterior.xy, color=cm(0.25 + 0.75 * min(1, b / 12)), lw=0)
 ax.set_xlim(kx0 - 3, kx1 + 3); ax.set_ylim(ky1 + 3, ky0 - 3)
 fig.savefig(os.path.join(OUT, 'vista_previa_alturas.png'), facecolor=fig.get_facecolor(), bbox_inches='tight'); plt.close(fig)
+
+# archivo de Rhino con todas las piezas (una capa por pieza), en mm, para mirar o retocar
+import rhino3dm as r3
+F3 = r3.File3dm(); F3.Settings.ModelUnitSystem = r3.UnitSystem.Millimeters
+for nombre in PIEZAS:
+    tm = trimesh.load(os.path.join(OUT, f'kennedy_{nombre}.stl')); mh = r3.Mesh()
+    for v in tm.vertices: mh.Vertices.Add(float(v[0]), float(v[1]), float(v[2]))
+    for a3, b3, c3 in tm.faces: mh.Faces.AddFace(int(a3), int(b3), int(c3))
+    mh.Normals.ComputeNormals(); mh.Compact()
+    Ly = r3.Layer(); Ly.Name = 'Pieza ' + nombre; Ly.Color = (235, 235, 235, 255); li = F3.Layers.Add(Ly)
+    at = r3.ObjectAttributes(); at.LayerIndex = li; at.Name = Ly.Name; F3.Objects.AddMesh(mh, at)
+F3.Write(os.path.join(OUT, 'Kennedy_maqueta.3dm'), 8)
