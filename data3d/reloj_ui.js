@@ -8,6 +8,8 @@
    «+2 h»: salto sin dibujo (RELOJ.saltar): la lógica de todos los sistemas corre paso a paso sin dibujar la escena; mientras tanto una
    capa bloquea la interfaz (nada cambia la corrida a mitad del salto) y muestra el progreso, la fecha simulada y Cancelar (también Esc). */
 import { RELOJ as R0, VELOCIDADES, VEL_AÑOS } from './reloj.js?v=5';
+import { armarTope, terminado, TOPE_AÑOS } from './tope_anos.js?v=1'; // el modelo semanal se detiene solo en el año 50
+const txtAños = (R) => terminado(R) ? 'Fin: ' + TOPE_AÑOS + ' años' : R.textoAños();
 export const SALTO_PASOS = 2 * 3600; // +2 horas simuladas (pasos de 1 s)
 
 const CSS = `
@@ -90,8 +92,9 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
     playA.textContent = RELOJ.pausaSem ? '▶' : '❚❚';
     playA.setAttribute('aria-label', RELOJ.pausaSem ? 'Correr los años' : 'Pausar los años');
     velA.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausaSem && +b.dataset.v === RELOJ.velSem));
-    fechaA.textContent = RELOJ.textoAños();
+    fechaA.textContent = txtAños(RELOJ);
   };
+  armarTope(RELOJ);
   RELOJ.alCambiar(pintar); pintar();
 
   /* ---------- salto «+2 h» sin dibujo: capa que bloquea la interfaz, progreso y cancelar ---------- */
@@ -140,7 +143,7 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
   RELOJ.alDibujar((i) => {
     if (aviso) aviso.hasta -= i.dtReal;
     if ((tUi -= i.dtReal) > 0) return; tUi = 0.25;
-    fecha.textContent = RELOJ.textoDia(); fechaA.textContent = RELOJ.textoAños();
+    fecha.textContent = RELOJ.textoDia(); fechaA.textContent = txtAños(RELOJ);
     const st = RELOJ.stats, d = RELOJ.destino; let txt = '', alerta = false;
     if (aviso && aviso.hasta > 0 && !d) { msg.textContent = aviso.txt; msg.className = aviso.ok ? 'rt-ok' : 'rt-alerta'; info.classList.remove('vacio'); if (cancelar) { cancelar.remove(); cancelar = null; } return; }
     aviso = null;

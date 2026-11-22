@@ -1,11 +1,11 @@
 /* ============ MODO «EVALUAR» · sin cherry picking ============
    Corre en segundo plano (Web Worker: data3d/sim_vida_worker.js; si el navegador no deja, por bloques con setTimeout) 30 corridas con
-   semillas FIJAS 1..30 de A, B y C, 20 años cada una (el mismo periodo), con los parámetros congelados al pulsar y las MISMAS 3 reglas de game over.
+   semillas FIJAS 1..30 de A, B y C, 50 años cada una (el mismo periodo), con los parámetros congelados al pulsar y las MISMAS 3 reglas de game over.
    Muestra TODAS las corridas: % que cierra por cada regla, semana mediana de cierre, supervivencia, zona peor abastecida (corridas + mediana),
    tiempo de resolución de solicitudes (B y C), alimento por mercado en C, y la lista
    completa de semillas (cada una se puede ver en el mapa). */
 import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=4';
-const R_CORRIDAS = 30, AÑOS = 20; // el mismo periodo para A, B y C
+const R_CORRIDAS = 30, AÑOS = 50; // el mismo periodo para A, B y C
 const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOM = Object.fromEntries(Object.entries(ESCENARIOS).map(([k, v]) => [k, v.n]));
 const NREG = Object.fromEntries(REGLAS.map(R => [R.k, R.n.toLowerCase()]));
 const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });

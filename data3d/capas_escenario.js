@@ -113,7 +113,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
   const LREF = [0, 60, 68, 74], BANDA = [55, 65, 70], BANDA_N = ['Amarillo claro · tranquilo', 'Amarillo · moderado', 'Naranja · ruidoso', 'Rojo · muy ruidoso'], BANDA_C = ['#fff7b3', '#ffd646', '#f57c00', '#d32f2f'];
   RM.LREF = LREF; RM.BANDA = BANDA; RM.BANDA_C = BANDA_C; RM.aj = { vel: 50, hor: 0 }; RM.vista = 'auto'; RM.niv = null; RM.fl = null; RM.densPre = 1; RM.arbPre = null;
   let pArb = 0; const precargarArboles = () => { if (pArb || window.KEN_PARCHES || typeof T3.lw !== 'function') return; pArb = 1; // los árboles de los parches se calculan aparte para que el panel dé lo mismo en «hoy» y en «propuesta» (la capa 3D solo se crea con la propuesta)
-    Promise.all([import('./parches_arboles.js?v=8'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {
+    Promise.all([import('./parches_arboles.js?v=9'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {
       const kA = (t) => { const h = Math.sin(t.x * 12.9898 + t.z * 78.233) * 43758.5453; return h - Math.floor(h); }; // la misma clave de densidad de parches_arboles.js
       RM.arbPre = m.calcularParches(HB, PQ, T3.lw, matchMedia('(pointer:coarse)').matches).flatMap(p => p.arboles).map(t => ({ x: t.x, z: t.z, k: kA(t) })); RM.ver++; }).catch(e => { pArb = 0; console.warn('árboles del ruido:', e); }); };
   RM.vistaEf = () => RM.vista === 'auto' ? (pro() ? 'pro' : 'hoy') : RM.vista;

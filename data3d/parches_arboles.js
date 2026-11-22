@@ -116,6 +116,7 @@ export async function crearParches3D({ T3, P }) {
   const flores = nFl ? new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: '#3a3a3a', toneMapped: true }), nFl) : null;
   if (flores) { flores.count = 0; flores.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(flores); }
   // reparto cerca / lejos: se rehace al moverse la cámara unos metros (o al cambiar la densidad); el resto de los cuadros no cuesta nada
+  let EDAD = null; // fn(k) -> factor de altura 0..1 (null = todos adultos, como antes)
   let dens = 1; // última densidad pedida por el slider (la leen los indicadores en 3D: solo cuentan los árboles con k < dens)
   const ult = { x: 1e9, y: 1e9, z: 1e9, d: -1 };
   const repartir = (forzar) => {
@@ -123,7 +124,7 @@ export async function crearParches3D({ T3, P }) {
     if (!forzar && Math.abs(cp.x - ult.x) + Math.abs(cp.y - ult.y) + Math.abs(cp.z - ult.z) < (T3.orbit ? Math.max(8, cp.distanceTo(T3.orbit.target) * 0.02) : 8) && ult.d === dens) return;
     ult.x = cp.x; ult.y = cp.y; ult.z = cp.z; ult.d = dens; let nf = 0; const R2 = CERCA * CERCA;
     for (const S of ESP) { let nc = 0, nl = 0;
-      for (const t of S.lista) { if (t.k >= dens) continue; O.position.set(t.x, Y, t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h); O.updateMatrix();
+      for (const t of S.lista) { if (t.k >= dens) continue; const fe = EDAD ? EDAD(t.k) : 1; if (fe <= 0) continue; /* edad(fn): data3d/cambio_50.js escala cada árbol por su edad (0 = aún no sembrado) */ O.position.set(t.x, Y, t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h * fe); O.updateMatrix();
         const dx = t.x - cp.x, dy = Y + gy + t.h * 0.5 - cp.y, dz = t.z - cp.z;
         if (dx * dx + dy * dy + dz * dz < R2) { for (const im of S.cerca) im.setMatrixAt(nc, O.matrix); nc++;
           if (flores && t.fl) { C.set(S.E.flor); for (const f of t.fl) { O.position.set(f[0], f[1], f[2]); O.rotation.set(0, 0, 0); O.scale.setScalar(1); O.updateMatrix(); flores.setMatrixAt(nf, O.matrix); flores.setColorAt(nf, C); nf++; } } }
@@ -158,5 +159,5 @@ export async function crearParches3D({ T3, P }) {
   const cuadro = () => { requestAnimationFrame(cuadro); if (!grupo.visible) return; repartir(false); const y = T3.camera.position.y; UA.uA.value = Math.max(0, Math.min(1, (y - 220) / 300)); };
   requestAnimationFrame(cuadro);
   const n = todos.length, porEsp = Object.fromEntries(Object.keys(ESPECIES).map(k => [k, todos.filter(t => t.sp === k).length]));
-  return { grupo, ver(on) { grupo.visible = !!on; }, get dens() { return dens; }, densidad(d) { dens = d; for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } repartir(true); }, n, parches: P.length, porEsp };
+  return { grupo, ver(on) { grupo.visible = !!on; }, edad(fn) { EDAD = fn || null; repartir(true); }, get dens() { return dens; }, densidad(d) { dens = d; for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } repartir(true); }, n, parches: P.length, porEsp };
 }

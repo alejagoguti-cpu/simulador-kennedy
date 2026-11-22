@@ -34,7 +34,7 @@ export async function crearParqueCorabastos({ T3, lw, cj }) {
   const mAgua = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.08, metalness: 0, envMap: T3.env || null, envMapIntensity: 0.6, clearcoat: 1, clearcoatRoughness: 0.05, normalMap: nrm, normalScale: new THREE.Vector2(0.35, 0.35) });
   RELOJ.alDibujar((info) => { if (!grupo.visible) return; const s = info.tAnim; nrm.offset.set(s * 0.012, s * 0.007); }); // tiempo de animación del reloj universal
   const mJunco = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
-  let PM = null; try { PM = await import('./parches_arboles.js?v=8'); } catch (e) { console.warn('borde de Corabastos (especies):', e); }
+  let PM = null; try { PM = await import('./parches_arboles.js?v=9'); } catch (e) { console.warn('borde de Corabastos (especies):', e); }
   const NJ = 900, NM = 420, PARQUES = [], ARB = [];
   for (const { n } of Q) {
     const poly = rect(n, 10), cen = poly.reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4], [0, 0]);
