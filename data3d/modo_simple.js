@@ -13,7 +13,7 @@
    El resto de los paneles se esconde (clase html.ms-simple, estilos en data3d/modo_simple.css); «Ver todo» vuelve al modo completo.
    Este módulo solo LEE el modelo (no cambia reglas ni supuestos). El tope de 50 años vive en data3d/tope_anos.js. */
 import { RELOJ as R0 } from './reloj.js?v=5';
-import { ESCENARIOS, REGLAS, MERCADOS, BODEGAS, MOTIVO, diagnostico, crear, paso } from './sim_vida.js?v=6';
+import { ESCENARIOS, REGLAS, MERCADOS, BODEGAS, MOTIVO, diagnostico, crear, paso } from './sim_vida.js?v=7';
 import { ZONAS } from './sim_red_datos.js?v=2';
 import { PAR, SIMST } from './sim_modelos.js?v=6';
 import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=2';

@@ -20,7 +20,7 @@
    Datos fijos (red vial, zonas, mercados, parches): data3d/sim_red_datos.js (tools/sim_red_datos_build.mjs). */
 import { ZONAS, FUENTES, COSTO, LARGO, CIERRES, MERCADOS as MERC_D, PARCHES, BODEGAS, AREA_NAVES } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
-import { PLAN_BAV } from './plan_bavaria_datos.js?v=1'; // escenario D: Plan Parcial Fábrica Bavaria (tools/plan_bavaria_build.mjs) // tráfico cerca de cada parche y entre parches (tools/exposicion_trafico_build.mjs)
+import { PLAN_BAV } from './plan_bavaria_datos.js?v=2'; // escenario D: Plan Parcial Fábrica Bavaria (tools/plan_bavaria_build.mjs) // tráfico cerca de cada parche y entre parches (tools/exposicion_trafico_build.mjs)
 export const AÑO = 52, POB_K = 1034000;
 export const ARRANQUE = 0; // las reglas cuentan desde la semana 1: los tres escenarios se evalúan el mismo periodo, montaje incluido
 export const MERCADOS = MERC_D;

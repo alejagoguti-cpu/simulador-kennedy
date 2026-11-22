@@ -1,7 +1,7 @@
-/* Generado por tools/plan_bavaria_build.mjs: Plan Parcial Fábrica Bavaria para el modelo semanal (escenario D). */
+/* Generado por tools/plan_bavaria_real.py: Plan Parcial Bavaria Fábrica (Decreto 448 de 2023) para el modelo semanal (escenario D). */
 export const PLAN_BAV = {
-  VIV_ETAPA: [1254,1305,1426,1341,1599,1702,1134,1754,1599,1186],            // viviendas que se terminan en el año 1..10 (14.300 en total: El Espectador; Distrito «más de 14.000»)
-  ARB_ETAPA: [87,106,118,54,75,107,65,72,112,44],            // árboles del predio (data3d/bavaria_arboles.json) que caen dentro de manzanas, por año
+  VIV_ETAPA: [1506, 1020, 2779, 4075, 1950, 272, 337, 549, 949, 565],            // viviendas que se terminan en el año 1..10 (14.000 en total: Alcaldía de Bogotá, modificación 2023)
+  ARB_ETAPA: [99, 36, 185, 182, 238, 251, 91, 131, 170, 239],            // árboles del predio (data3d/bavaria_arboles.json) que caen en manzanas, vías, alamedas y equipamientos, por año
   ARB_TOT: 3250,                             // árboles detectados en el predio
   PERS_HOG: 2.76,                                    // personas por hogar en Kennedy (Observatorio de Hábitat Bogotá 2023, Sisbén IV)
   AUTOS_HOG: 0.31,                                   // autos por hogar en Bogotá (Encuesta de Movilidad 2023)

@@ -1,22 +1,31 @@
-/* ============ PLAN PARCIAL FÁBRICA BAVARIA en 3D, construido por etapas (escenario «Plan parcial») ============
-   Datos: data3d/plan_bavaria.json (tools/plan_bavaria_build.mjs): 37 manzanas cerradas con patio (ladrillo / blanco) y torres sobre la
-   Av. Boyacá, 14.300 viviendas, parque central y bosque denso conservados (Decreto 364 de 2017, modificación 2023; imágenes de Metrovivienda 2017).
-   Cada manzana se construye en su año (etapa 1–10): aparece la obra (gris), sube piso a piso durante el año y al terminar toma su material.
-   Geometría ESQUEMÁTICA: la forma exacta de cada edificio no está publicada; la retícula, las alturas (6–10 pisos y torres de 20) y el
-   reparto siguen las imágenes del plan. Se ve solo cuando el escenario activo es el del plan parcial (window.KEN_PLANBAV.ver). */
+/* ============ PLAN PARCIAL BAVARIA FÁBRICA en 3D, como está aprobado, construido por años (escenario D) ============
+   Datos: data3d/plan_bavaria.json (tools/plan_bavaria_real.py), calcado del plano oficial de la modificación aprobada por el
+   Decreto Distrital 448 de 2023 (SDP, plano 1/2 «Propuesta general», 1:2500, y plano 2/2 «Etapas de desarrollo»):
+   - 22 manzanas (MZ-01 a MZ-22: comercio, múltiple, vivienda VIS, VIP y tipo 4, dotacional), 2 equipamientos (EQ-01, EQ-02)
+   - parques CP-01 a CP-10 (CP-01, el parque central de 5,6 ha) y el bosque que se conserva (CAPRP-01 a 05, «zona de arbolado denso y continuo»)
+   - vías (calzada y andén) y alamedas: el espacio que queda entre manzanas, parques y bosque, como en el plano
+   Cada cosa se construye en su año (1–10): las vías y el andén aparecen al empezar el año, los edificios suben piso a piso durante el año
+   (obra gris) y al terminar toman su material; los árboles nuevos de andenes y alamedas se siembran cuando termina la manzana.
+   Supuestos (el decreto no los fija): alturas por tipo (VIS/VIP 12 pisos, tipo 4 10, múltiple 8, comercio y equipamiento 4) y el orden
+   por años dentro de cada etapa. Se ve solo cuando el escenario activo es el del plan parcial (window.KEN_PLANBAV.ver). */
 import { RELOJ } from './reloj.js?v=5';
 
 export async function iniciarPlanBavaria({ T3 }) {
-  const THREE = T3.THREE, P = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/plan_bavaria.json?v=1');
-  const { BW, BD, ANILLO } = P.dims, ang = P.angulo, PISO = 3.0;
-  const box = new THREE.BoxGeometry(1, 1, 1); box.translate(0, 0.5, 0);
+  const THREE = T3.THREE, P = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/plan_bavaria.json?v=2');
+  const PISO = 3.0, ETAPAS = 10;
+  const W = (p) => T3.lw(p[0], p[1]); // modelo (x este, y norte) -> mundo (x, z)
+  const y0 = () => (T3.sueloY != null ? T3.sueloY : 0.3);
+  const forma = (q) => { const s = new THREE.Shape(q.o.map(p => { const w = W(p); return new THREE.Vector2(w[0], -w[1]); }));
+    for (const h of q.h || []) s.holes.push(new THREE.Path(h.map(p => { const w = W(p); return new THREE.Vector2(w[0], -w[1]); }))); return s; };
+
   const mats = {
     ladrillo: new THREE.MeshStandardMaterial({ color: 0xb4643f, roughness: 0.85 }),
     blanco: new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.7 }),
+    vidrio: new THREE.MeshStandardMaterial({ color: 0xc9d2d8, roughness: 0.5 }),
     obra: new THREE.MeshStandardMaterial({ color: 0x9a9da0, roughness: 0.9 })
   };
   /* fachada dibujada en la tarjeta gráfica (sin texturas): ventanas por piso (3 m) y por módulo (3,3 m), placa de entrepiso, primer piso
-     de locales con vidrio corrido y cubierta gris. De lejos se promedia (sin moiré). Ladrillo con variación de tono por edificio.
+     de locales con vidrio corrido y cubierta gris. De lejos se promedia (sin moiré). Ladrillo con variación de tono por tramo.
      En obra: losas a la vista y vanos abiertos (oscuros), sin vidrio. */
   const uY0 = { value: 0.3 };
   const fachada = (m, tipo) => {
@@ -24,24 +33,19 @@ export async function iniciarPlanBavaria({ T3 }) {
       sh.uniforms.uY0 = uY0;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN; varying float vIH;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
-          #ifdef USE_INSTANCING
-            mat4 mIW = modelMatrix * instanceMatrix;
-          #else
-            mat4 mIW = modelMatrix;
-          #endif
-          vWP = (mIW * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(mIW) * objectNormal); vIH = fract(sin(dot(floor(mIW[3].xz / 4.0), vec2(12.9898, 78.233))) * 43758.5453); // tono por edificio (fijo: depende de su sitio)`);
+          vWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal); vIH = fract(sin(dot(floor(vWP.xz / 22.0), vec2(12.9898, 78.233))) * 43758.5453); // tono por tramo de edificio`);
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN; varying float vIH; uniform float uY0;')
         .replace('#include <map_fragment>', `#include <map_fragment>
           float gWin = 0.0;
           { vec3 n = normalize(vWN); float yy = vWP.y - uY0;
             ${tipo === 'ladrillo' ? 'diffuseColor.rgb *= 0.86 + 0.24 * vIH;' : 'diffuseColor.rgb *= 0.95 + 0.07 * vIH;'}
-            if (n.y > 0.5) { diffuseColor.rgb = vec3(0.47, 0.47, 0.45) * (0.9 + 0.1 * vIH); }
+            if (n.y > 0.5) { diffuseColor.rgb = vec3(0.34, 0.34, 0.33) * (0.9 + 0.1 * vIH); }
             else if (n.y > -0.5) {
               vec2 tg = normalize(vec2(-n.z, n.x)); float hh = dot(vWP.xz, tg);
               float bay = hh / 3.3, fl = yy / 3.0; vec2 w = fwidth(vec2(bay, fl)); float fx = fract(bay), fy = fract(fl);
               float lod = 1.0 - smoothstep(0.25, 0.7, max(w.x, w.y));
               bool pb = yy < 3.6;
-              float x0 = pb ? 0.06 : 0.2, x1 = pb ? 0.94 : 0.8, y0 = pb ? 0.04 : 0.3, y1 = pb ? 0.88 : 0.84;
+              float x0 = pb ? 0.06 : ${tipo === 'vidrio' ? '0.08' : '0.2'}, x1 = pb ? 0.94 : ${tipo === 'vidrio' ? '0.92' : '0.8'}, y0 = pb ? 0.04 : ${tipo === 'vidrio' ? '0.12' : '0.3'}, y1 = pb ? 0.88 : ${tipo === 'vidrio' ? '0.9' : '0.84'};
               float fyy = pb ? yy / 3.6 : fy;
               float win = smoothstep(x0 - w.x, x0 + w.x, fx) * (1.0 - smoothstep(x1 - w.x, x1 + w.x, fx)) * smoothstep(y0 - w.y, y0 + w.y, fyy) * (1.0 - smoothstep(y1 - w.y, y1 + w.y, fyy));
               float losa = pb ? 0.0 : 1.0 - smoothstep(0.0, 0.07 + w.y, fy);
@@ -54,62 +58,104 @@ export async function iniciarPlanBavaria({ T3 }) {
           }`)
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.12, gWin);');
     };
-    m.customProgramCacheKey = () => 'fachadaPlanBav_' + tipo;
+    m.customProgramCacheKey = () => 'fachadaPlanBav2_' + tipo;
   };
   if (T3.env) Object.values(mats).forEach(m => { m.envMap = T3.env; m.envMapIntensity = 0.8; });
-  fachada(mats.ladrillo, 'ladrillo'); fachada(mats.blanco, 'blanco'); fachada(mats.obra, 'obra');
-  // piezas: cada manzana = 4 barras del anillo (o 1 torre de 30 x 30 m)
-  const piezas = [], bloques = [];
-  for (const m of P.manzanas) {
-    const [x, z] = T3.lw(m.c[0], m.c[1]), a = -ang; // el modelo tiene y al norte; el mundo z al sur: el ángulo cambia de signo
-    bloques.push({ x, z, a, etapa: m.etapa, torre: m.torre });
-    const alto = m.pisos * PISO;
-    const partes = m.torre ? [[0, 0, 30, 30]] : [[0, -(BD - ANILLO) / 2, BW, ANILLO], [0, (BD - ANILLO) / 2, BW, ANILLO], [-(BW - ANILLO) / 2, 0, ANILLO, BD - 2 * ANILLO], [(BW - ANILLO) / 2, 0, ANILLO, BD - 2 * ANILLO]];
-    for (const [du, dv, w, d] of partes) {
-      const px = x + du * Math.cos(a) - dv * Math.sin(a), pz = z + du * Math.sin(a) + dv * Math.cos(a);
-      piezas.push({ x: px, z: pz, w, d, a, alto, etapa: m.etapa, mat: m.material });
-    }
+  for (const k in mats) fachada(mats[k], k);
+
+  /* ---------- edificios: un volumen por manzana (anillo con patio o macizo), extruido a su altura ---------- */
+  const raiz = new THREE.Group(); raiz.visible = false; T3.scene.add(raiz);
+  const EDIF = P.edificios.map(e => {
+    const alto = e.pisos * PISO, g = new THREE.ExtrudeGeometry(e.p.map(forma), { depth: alto, bevelEnabled: false, curveSegments: 1 });
+    g.rotateX(-Math.PI / 2); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mats.obra); m.castShadow = true; m.receiveShadow = true; m.visible = false; raiz.add(m);
+    return { e, m, alto };
+  });
+
+  /* ---------- suelo del plan: calzada, andén, alameda, lote (antejardín) y patio, parques; cada capa aparece en su año ---------- */
+  const suelo = (color, rough, dy, ro) => new THREE.MeshStandardMaterial({ color, roughness: rough, polygonOffset: true, polygonOffsetFactor: -1 - ro, polygonOffsetUnits: -2 - ro, emissive: new THREE.Color(color).multiplyScalar(0.12) });
+  const mS = { calzada: suelo(0x4b4e52, 0.95, 0, 1), anden: suelo(0xb3aea4, 0.9, 0, 2), alameda: suelo(0xc6b99c, 0.9, 0, 2), lote: suelo(0xa9a397, 0.9, 0, 3), patio: suelo(0x6a8a45, 0.95, 0, 4), parque: suelo(0x76964e, 0.95, 0, 3) };
+  const capas = []; // { mesh, anio, dy }
+  const capa = (polys, mat, anio, dy, ro) => {
+    if (!polys || !polys.length) return;
+    const g = new THREE.ShapeGeometry(polys.map(forma)); g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, mat); m.receiveShadow = false; m.renderOrder = ro; m.visible = false; raiz.add(m); capas.push({ m, anio, dy }); // sin sombra recibida: el suelo de la foto de Google (recortado) la proyectaría encima
+  };
+  for (const c of P.calzadas) capa(c.p, mS.calzada, c.anio, 0.22, 1);
+  for (const c of P.andenes) capa(c.p, mS.anden, c.anio, 0.30, 2);
+  for (const c of P.alamedas) capa(c.p, mS.alameda, c.anio, 0.30, 2);
+  for (const z of P.zonas) {
+    if (z.tipo === 'cp') capa(z.p, mS.parque, z.anio, 0.26, 3);
+    else if (z.tipo !== 'bosque' && z.tipo !== 'verde') capa(z.p, mS.lote, z.anio, 0.34, 3);
   }
-  const mk = (mat) => { const im = new THREE.InstancedMesh(box, mat, piezas.length); im.count = 0; im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; T3.scene.add(im); return im; };
-  const IM = { ladrillo: mk(mats.ladrillo), blanco: mk(mats.blanco), obra: mk(mats.obra) };
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), V = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
-  /* suelo de cada manzana al empezar su obra: andén y calle del plan (gris claro, 14 m de calle repartidos a cada lado) y patio verde */
-  const CALLE = 14, gS = new THREE.BoxGeometry(1, 1, 1); gS.translate(0, 0.5, 0);
-  const mkS = (color, ro) => { const im = new THREE.InstancedMesh(gS, new THREE.MeshStandardMaterial({ color, roughness: 0.95, emissive: new THREE.Color(color).multiplyScalar(0.18) }), bloques.length); im.count = 0; im.receiveShadow = false; im.frustumCulled = false; im.renderOrder = ro; /* sin sombra recibida: el suelo de la foto de Google (recortado) la proyectaría encima */ T3.scene.add(im); return im; };
-  const SUELO = mkS(0x8f8c86, 1), PATIO = mkS(0x5f7a3c, 2);
-  let maskOk = false;
-  let visible = false, ultimo = '';
-  const y0 = () => (T3.sueloY != null ? T3.sueloY : 0.3);
+  for (const { e } of EDIF) if (e.patio && e.patio.length) capa(e.patio, mS.patio, e.anio, 0.40, 4);
+  // línea de eje blanca discontinua: se omite (las calzadas del plan salen del espacio entre manzanas, sin eje dibujado)
+
+  /* ---------- árboles nuevos (andenes y alamedas): urapanes jóvenes que se siembran al terminar la manzana y crecen ---------- */
+  const NA = P.arboles_nuevos.length;
+  const gTr = new THREE.CylinderGeometry(0.16, 0.22, 1, 5); gTr.translate(0, 0.5, 0);
+  const gCo = new THREE.IcosahedronGeometry(1, 1);
+  const imTr = new THREE.InstancedMesh(gTr, new THREE.MeshStandardMaterial({ color: 0x5b4636, roughness: 0.9 }), NA);
+  const imCo = new THREE.InstancedMesh(gCo, new THREE.MeshStandardMaterial({ color: 0x4f7a35, roughness: 0.85, flatShading: true }), NA);
+  for (const im of [imTr, imCo]) { im.count = 0; im.castShadow = true; im.frustumCulled = false; raiz.add(im); }
+  const AW = P.arboles_nuevos.map(([x, y, a], i) => { const w = W([x, y]); const s = Math.sin(i * 91.7) * 43758.5; return { x: w[0], z: w[1], a, r: s - Math.floor(s) }; });
+
+  /* ---------- máscara de la malla de Google: en lo que el plan construye o pavimenta se recorta lo que la foto 3D levanta ----------
+     (árboles y bodegas). Lienzo de 2 m por píxel sobre el plan: el canal rojo guarda el año (x 20); 0 = no se toca (bosque CAPRP). */
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+  for (const p of P.borde) { const w = W(p); x0 = Math.min(x0, w[0]); x1 = Math.max(x1, w[0]); z0 = Math.min(z0, w[1]); z1 = Math.max(z1, w[1]); }
+  x0 -= 10; z0 -= 10; x1 += 10; z1 += 10;
+  const CW = Math.ceil((x1 - x0) / 2), CH = Math.ceil((z1 - z0) / 2), cv = document.createElement('canvas'); cv.width = CW; cv.height = CH;
+  const cx = cv.getContext('2d', { willReadFrequently: true }); cx.fillStyle = '#000'; cx.fillRect(0, 0, CW, CH);
+  const pintarPoly = (q, a) => { cx.fillStyle = `rgb(${a * 20},0,0)`; cx.beginPath();
+    for (const r of [q.o, ...(q.h || [])]) r.forEach((p, i) => { const w = W(p), u = (w[0] - x0) / 2, v = (w[1] - z0) / 2; i ? cx.lineTo(u, v) : cx.moveTo(u, v); });
+    cx.fill('evenodd'); };
+  // primero lo de años tardíos y encima lo temprano (en un borde compartido manda el año menor)
+  const todo = [];
+  for (const z of P.zonas) if (z.tipo !== 'bosque') for (const q of z.p) todo.push([q, z.anio]);
+  for (const c of [...P.calzadas, ...P.andenes, ...P.alamedas]) for (const q of c.p) todo.push([q, c.anio]);
+  todo.sort((a, b) => b[1] - a[1]).forEach(([q, a]) => pintarPoly(q, a));
+  const px = cx.getImageData(0, 0, CW, CH).data;
+  const anioEn = (x, z) => { const u = Math.floor((x - x0) / 2), v = Math.floor((z - z0) / 2); if (u < 0 || v < 0 || u >= CW || v >= CH) return 0; return Math.round(px[(v * CW + u) * 4] / 20); };
+  const tex = new THREE.CanvasTexture(cv); tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.flipY = false;
+
+  let visible = false, ultimo = '', maskOk = false;
   const pintar = () => {
     const años = RELOJ.sem / 52; // años transcurridos del modelo
     const clave = visible + '|' + Math.round(años * 52); if (clave === ultimo) return; ultimo = clave;
-    const n = { ladrillo: 0, blanco: 0, obra: 0 };
-    if (visible) for (const p of piezas) {
-      const prog = Math.max(0, Math.min(1, años - (p.etapa - 1))); // 0 antes de su año, sube durante su año, 1 al terminar
-      if (prog <= 0) continue;
-      const k = prog < 1 ? 'obra' : p.mat, alto = Math.max(PISO, Math.ceil(prog * p.alto / PISO) * PISO);
-      Q.setFromAxisAngle(Y, -p.a); V.set(p.x, y0(), p.z); S.set(p.w, alto, p.d); M.compose(V, Q, S); IM[k].setMatrixAt(n[k]++, M);
+    raiz.visible = visible; uY0.value = y0();
+    if (visible) {
+      for (const { e, m, alto } of EDIF) {
+        const prog = Math.max(0, Math.min(1, años - (e.anio - 1))); // 0 antes de su año, sube durante su año, 1 al terminar
+        m.visible = prog > 0; if (!m.visible) continue;
+        const h = Math.max(PISO, Math.ceil(prog * alto / PISO) * PISO);
+        m.scale.y = h / alto; m.position.y = y0(); m.material = prog < 1 ? mats.obra : mats[e.mat];
+      }
+      for (const c of capas) { c.m.visible = años > c.anio - 1; c.m.position.y = y0() + c.dy; }
+      const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), V = new THREE.Vector3(); let n = 0;
+      for (const t of AW) {
+        const g = años - t.a; if (g <= 0) continue; // se siembra al terminar su año
+        const k = Math.min(1, 0.45 + 0.55 * Math.min(1, g / 4)), alt = (5.5 + 2.5 * t.r) * k, cop = (1.9 + 0.8 * t.r) * k;
+        V.set(t.x, y0(), t.z); S.set(1, alt * 0.55, 1); M.compose(V, Q, S); imTr.setMatrixAt(n, M);
+        V.set(t.x, y0() + alt * 0.62, t.z); S.set(cop, cop * 1.15, cop); M.compose(V, Q, S); imCo.setMatrixAt(n, M); n++;
+      }
+      imTr.count = imCo.count = n; imTr.instanceMatrix.needsUpdate = imCo.instanceMatrix.needsUpdate = true;
     }
-    for (const k in IM) { IM[k].count = n[k]; IM[k].instanceMatrix.needsUpdate = true; IM[k].visible = visible; }
-    uY0.value = y0(); let ns = 0, np = 0;
-    if (visible) for (const b of bloques) { if (años <= b.etapa - 1) continue; Q.setFromAxisAngle(Y, -b.a);
-      V.set(b.x, y0() + 0.3, b.z); S.set(BW + CALLE, 0.8, BD + CALLE); M.compose(V, Q, S); SUELO.setMatrixAt(ns++, M);
-      V.set(b.x, y0() + 0.4, b.z); S.set(b.torre ? BW - 40 : BW - 2 * ANILLO, 0.8, b.torre ? BD - 40 : BD - 2 * ANILLO); M.compose(V, Q, S); PATIO.setMatrixAt(np++, M); }
-    SUELO.count = ns; PATIO.count = np; SUELO.instanceMatrix.needsUpdate = PATIO.instanceMatrix.needsUpdate = true; SUELO.visible = PATIO.visible = visible;
-    const mu = T3.maskU; // malla de Google: en las manzanas ya empezadas se recorta lo que levanta (árboles y bodegas de la foto 3D)
-    if (mu && mu.uPlanB) {
-      if (!maskOk) { maskOk = true; bloques.forEach((b, i) => { if (i < 40) mu.uPlanB.value[i].set(b.x, b.z, b.etapa, 0); }); const a0 = bloques.length ? bloques[0].a : 0; mu.uPlanCS.value.set(Math.cos(a0), Math.sin(a0)); mu.uPlanR.value.set(BW / 2 + CALLE / 2, BD / 2 + CALLE / 2); }
+    const mu = T3.maskU; // malla de Google: en lo ya empezado se recorta lo que levanta (árboles y bodegas de la foto 3D)
+    if (mu && mu.uPlanTex) {
+      if (!maskOk) { maskOk = true; mu.uPlanTex.value = tex; mu.uPlanBox.value.set(x0, z0, 1 / (CW * 2), 1 / (CH * 2)); }
       mu.uPlanOn.value = visible ? años + 1 : 0;
     }
   };
   RELOJ.alDibujar(pintar);
 
-  /* ---------- demolición y tala por etapa (solo escenario D) ----------
-     Al empezar el año de una manzana (años > etapa - 1) se bajan los árboles del predio que caen dentro de ella (data3d/real3d.js: T3.trees.plan),
-     las bodegas y edificios viejos que ocupa (data3d/bavaria.js: userData.demol) y las pilastras y columnas de las naves en esqueleto.
+  /* ---------- demolición y tala por año (solo escenario D) ----------
+     Al empezar el año de una zona del plan se bajan los árboles del predio que caen en lo que se construye o pavimenta (data3d/real3d.js:
+     T3.trees.plan), las bodegas y edificios viejos (data3d/bavaria.js: userData.demol) y las pilastras y columnas de las naves en esqueleto.
+     Los árboles del bosque conservado (CAPRP) y de los parques (CP) se quedan.
      Al escoger D (o al cambiar de escenario) el estado se pone de una vez; solo las etapas que se cruzan con el reloj corriendo se animan:
      los árboles caen y se encogen uno tras otro, los edificios bajan hasta el suelo con una nube de polvo. La animación va con RELOJ.tAnim. */
-  const ETAPAS = 10, DUR_ARB = 1.8, DUR_EDIF = 2.6, RETRASO_EDIF = 0.5, VIDA_POLVO = 3.4;
+  const DUR_ARB = 1.8, DUR_EDIF = 2.6, RETRASO_EDIF = 0.5, VIDA_POLVO = 3.4;
   const arbPorEtapa = []; // etapa -> índices (de data3d/bavaria_arboles.json) de los árboles que se talan
   (P.arboles_quitados || []).forEach((k, i) => { if (k > 0) (arbPorEtapa[k] = arbPorEtapa[k] || []).push(i); });
   const fase = new Array(ETAPAS + 1).fill(0), t0 = new Array(ETAPAS + 1).fill(0), polvoHecho = new Array(ETAPAS + 1).fill(false), okA = new Array(ETAPAS + 1).fill(false), okE = new Array(ETAPAS + 1).fill(false); // okA/okE: árboles y edificios ya puestos (pueden cargarse después del escenario); fase: 0 en pie · 1 cayendo · 2 demolido
@@ -144,14 +190,12 @@ export async function iniciarPlanBavaria({ T3 }) {
     for (const q of dm.edificios) if (q.etapa === e) { q.g.scale.y = Math.max(1e-3, f); q.g.visible = f > 0.004; }
     dm.ponerEsq(e, f); return true;
   };
-  /* árboles de cualquier capa (no solo los del predio) que caen en una manzana del plan o en su calle: se quitan cuando esa etapa ya
-     está demolida (fase 2) y vuelven al salir del escenario. Se calcula una sola vez, cuando los árboles ya cargaron. */
+  /* árboles de cualquier capa (no solo los del predio) que caen en lo que el plan construye o pavimenta: se quitan cuando ese año ya
+     está demolido (fase 2) y vuelven al salir del escenario. Se calcula una sola vez, cuando los árboles ya cargaron. */
   let enCalle = null;
   const aplicarCalles = () => {
     const pos = T3.trees && T3.trees.pos; if (!pos || !pos.OC) return false;
-    if (!enCalle) { enCalle = []; const hx = BW / 2 + CALLE / 2, hz = BD / 2 + CALLE / 2;
-      for (let k = 0; k < pos.X.length; k++) for (const b of bloques) { const dx = pos.X[k] - b.x, dz = pos.Z[k] - b.z, c = Math.cos(b.a), s = Math.sin(b.a);
-        if (Math.abs(dx * c + dz * s) < hx && Math.abs(-dx * s + dz * c) < hz) { enCalle.push([k, b.etapa]); break; } } }
+    if (!enCalle) { enCalle = []; for (let k = 0; k < pos.X.length; k++) { const a = anioEn(pos.X[k], pos.Z[k]); if (a) enCalle.push([k, a]); } }
     for (const [k, e] of enCalle) if (fase[e] !== 1) pos.OC[k] = visible && fase[e] === 2 ? 0 : 1;
     return true;
   };
@@ -184,11 +228,15 @@ export async function iniciarPlanBavaria({ T3 }) {
   const api = {
     ver(on) { visible = !!on; ultimo = ''; pintar(); sincro = false; demoler(); sincro = true; if (!visible) { polvo.visible = false; pAct = 0; pT.fill(-1e9); } }, // al escoger D (o salir) el estado se pone de golpe, sin animación
     get visible() { return visible; },
-    // resumen del avance para paneles y para el modelo: viviendas terminadas, árboles quitados, personas (viviendas × personas por hogar)
+    // resumen del avance para paneles y para el modelo: viviendas terminadas, árboles quitados y sembrados, personas (viviendas × personas por hogar)
     avance(años) { let viv = 0, man = 0; for (const m of P.manzanas) if (años >= m.etapa) { viv += m.viviendas; man++; }
       let arb = 0; for (let e = 0; e < P.arboles_quitados_por_etapa.length; e++) if (años >= e + 1) arb += P.arboles_quitados_por_etapa[e];
-      return { viviendas: viv, manzanas: man, totalManzanas: P.manzanas.length, arboles: arb, totalViviendas: P.total_viviendas }; },
+      const sembrados = P.arboles_nuevos.filter(a => años > a[2]).length;
+      return { viviendas: viv, manzanas: man, totalManzanas: P.manzanas.length, arboles: arb, sembrados, totalViviendas: P.total_viviendas }; },
     datos: P,
+    anioEn,
+    centro: [(x0 + x1) / 2, (z0 + z1) / 2], // centro del plan en el marco mundo (x, z)
+    mirar(dx = -380, dy = 320, dz = 420, ox = 0, oz = 0) { const cx0 = (x0 + x1) / 2 + ox, cz0 = (z0 + z1) / 2 + oz; T3.camera.position.set(cx0 + dx, dy, cz0 + dz); if (T3.orbit) { T3.orbit.target.set(cx0, 0, cz0); T3.orbit.update(); } }, // vista del plan (pruebas y enlaces)
     // etapas ya demolidas / talas aplicadas (pruebas): { arboles: [por etapa], edificios: [por etapa] }
     demolicion() { const dm = T3.bavaria && T3.bavaria.userData && T3.bavaria.userData.demol; const edif = {}, arb = {}; if (dm) for (const q of dm.edificios) (edif[q.etapa] = edif[q.etapa] || []).push(q.ie); for (const e in arbPorEtapa) arb[e] = arbPorEtapa[e].length; return { edificiosPorEtapa: edif, etapasEsqueleto: dm ? dm.etapasEsq : [], arbolesPorEtapa: arb, fase: fase.slice() }; }
   };

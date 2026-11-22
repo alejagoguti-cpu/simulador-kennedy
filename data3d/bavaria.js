@@ -111,8 +111,9 @@ export function construirBavaria({ THREE, T3, lw, D, liviano, plan }) { // plan:
   const silosC = [];
   // ---- Plan parcial (escenario D): cada manzana del plan es un rectángulo del predio; lo que cae dentro se demuele en su etapa ----
   // (solo se arma la estructura: la animación y el momento los maneja data3d/plan_bavaria.js; fuera de D todo queda como siempre)
-  const RECT = plan ? plan.manzanas.map(m => { const q = lw(m.c[0], m.c[1]); return { x: q[0], z: q[1], c: Math.cos(-plan.angulo), s: Math.sin(-plan.angulo), hw: (m.torre ? 30 : plan.dims.BW) / 2, hd: (m.torre ? 30 : plan.dims.BD) / 2, e: m.etapa }; }) : [];
-  const etapaEn = (x, z, mg = 0) => { let r0 = 0; for (const r of RECT) { const dx = x - r.x, dz = z - r.z; if (Math.abs(dx * r.c + dz * r.s) <= r.hw + mg && Math.abs(-dx * r.s + dz * r.c) <= r.hd + mg && (!r0 || r.e < r0)) r0 = r.e; } return r0; };
+  // zonas del plan aprobado (data3d/plan_bavaria.json «demoler»: manzanas, parques, bosque, vías y alamedas con su año, en el marco mundo)
+  const RECT = plan && plan.demoler ? plan.demoler.flatMap(z => z.p.map(o => { const W = o.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of W) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); } return { W, x0, x1, z0, z1, e: z.anio }; })) : [];
+  const etapaEn = (x, z, mg = 0) => { let r0 = 0; for (const r of RECT) { if (x < r.x0 - mg || x > r.x1 + mg || z < r.z0 - mg || z > r.z1 + mg || (r0 && r.e >= r0)) continue; if (dentro(r.W, x, z)) r0 = r.e; } return r0; };
   // edificio cerrado: se demuele entero en la primera etapa cuyo rectángulo lo cubre con >= 40 m² (o >= 15 % de su huella); los esqueletos se quitan pieza por pieza
   const etapaEd = D.edif.map((e) => {
     if (!RECT.length || e.s === 'esqueleto') return 0;

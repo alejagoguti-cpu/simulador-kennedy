@@ -24,7 +24,7 @@
    Animaciones solo cosméticas (RELOJ.tAnim); la lógica solo mira RELOJ.sem. Sin azar. */
 import { RELOJ } from './reloj.js?v=5';
 import { SIMST } from './sim_modelos.js?v=6';
-import { crecimiento } from './sim_vida.js?v=6';
+import { crecimiento } from './sim_vida.js?v=7';
 import { añoActual } from './tope_anos.js?v=2';
 
 const TAU = 6, ADULTO = 20; // [SUP] años: tiempo característico de crecimiento y edad en que el árbol llega al ~95 % de su altura
