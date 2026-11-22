@@ -36,3 +36,11 @@ Red: `/project1/KENNEDY_REACCIONA` (atajo `parent.Kr`).
 
 ## Regenerar los datos
 `node tools/exportar_instalacion.mjs` (lee `instalacion/config.json`; si cambia el encuadre, vuelve a exportar).
+
+## Efectos visuales (página «Espectaculo») — NO son datos
+- **Resplandor (bloom)**: brillo alrededor de lo que ya está dibujado (vehículos, ruido, sintaxis, agua). No cambia ningún valor.
+- **Pulso de agua y parques**: el brillo de esas capas oscila lentamente («respira»). Recurso visual.
+- **Barrido de luz**: una franja que recorre Kennedy de oeste a este cada N segundos. Recurso visual.
+- **Revelar capas desde Bavaria**: al cambiar de capa temática, la nueva aparece en un círculo que crece desde el predio de Bavaria. Recurso visual.
+- **Estela de los vehículos**: rastro de sus posiciones grabadas anteriores (solo sobre su trayectoria SUMO).
+Estos efectos usan un reloj visual aparte (`c11_CONTROLES/null_tvisual`), no el reloj de la simulación.
