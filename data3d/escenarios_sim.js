@@ -517,6 +517,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=8').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
     if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); VIDA.planD = e === 'D'; if (window.KEN_PLANBAV) window.KEN_PLANBAV.ver(e === 'D');
+      if (window.KEN_PICOS) window.KEN_PICOS.poner(e === 'B' || e === 'C' ? 'red' : 'comida'); // capas que explican cada escenario: picos de la red (B, C) o de comida por zona (A, D)
       if (e === 'D') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* D: Kennedy como hoy + el plan parcial que se construye */
       else if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* A: se prende el flujo de carros (los mismos controles del panel izquierdo) */
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
