@@ -272,6 +272,9 @@ export function paso(s, PAR) {
   racionar(RQ, GC, UNO, s.Kc, CO);
   let zMin = Infinity, zArg = -1, rec = 0, coraT = 0, nBajo = 0, b90 = 0;
   for (let z = 0; z < NZ; z++) { CO[z] *= fe(z, JC); coraT += CO[z]; const got = LOCZ[z] + MK[z] + BV[z] + CO[z], r = got / NEED[z]; rec += got; if (r < zMin) { zMin = r; zArg = z; } if (r < 0.8) nBajo++; if (r < 0.9) b90++; }
+  // por zona (para los picos del mapa, data3d/picos_zonas.js): fracción de lo que necesita que recibe, y cuánto de eso viene de huertas y de la red (mercados o Bavaria)
+  const zRec = new Float32Array(NZ), zLoc = new Float32Array(NZ), zRed = new Float32Array(NZ);
+  for (let z = 0; z < NZ; z++) { zRec[z] = (LOCZ[z] + MK[z] + BV[z] + CO[z]) / NEED[z]; zLoc[z] = LOCZ[z] / NEED[z]; zRed[z] = (MK[z] + BV[z]) / NEED[z]; }
   s.Kc += ((1 + SUP.HOLGURA) * R - s.Kc) / tau; // el mayorista se acomoda a lo que le piden
   const dep = rec > 0 ? coraT / rec : 1;
   const DC = corabastos(s, e, dep, t); // Corabastos libera espacio y desmonta bodegas junto a La Vaca (B y C)
@@ -334,7 +337,7 @@ export function paso(s, PAR) {
     espera: resol.m, resol, pc: 3000 * (1 - P1.reac * Math.min(1, pers / P1.zona) * 0.25), carga, retiro, prog: prop,
     gen, relleno: colR, desv: trat, rech, compost: comp, vuelve: comp, hongos, pct2: trat / gen * 100, pila, km: colR / 8000 * 28 * 2 + colC / 1500 * dist * 2, ocup: capComp ? Math.min(1.5, s.pcp / Math.max(1, Sp)) : 0,
     aves: s.B, riq: Math.round(42 * (0.45 + 0.35 * conect + 0.3 * s.W)), hum: s.W * 100, trampa: s.muertes, conect,
-    need: needT, recib: rec / needT, zMin, zArg, nBajo, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
+    need: needT, recib: rec / needT, zMin, zArg, nBajo, zRec, zLoc, zRed, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
     trafico: { años: ET.G.años, car: ET.G.car, moto: ET.G.moto, V: ET.V, D: ET.D, mq: ET.mqMedio, xq: ET.xqMedio, ocAve, ocTer, ocAve0: s.oc0.ave, ocTer0: s.oc0.ter },
     espOc, espOc0: s.espOc0,
     cora: { lib: DC.lib, desm: DC.ap.length, rest: DC.rest, m2: DC.m2, borde: Math.round(DC.ha * 1e4), mad: DC.mad, total: BODEGAS.length }, perdido,

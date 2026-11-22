@@ -19,8 +19,8 @@ import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con un solo evento al azar, el cierre de una vía (semilla = SIMST.semilla), y reglas de game over fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
-import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=4';
-import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=1'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
+import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=5';
+import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=2'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
@@ -514,7 +514,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; pintarPanel(); return; }
     if (b.dataset.sd) { ponerSemilla(VIDA.seed + +b.dataset.sd); return; }
     if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
-    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=6').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
+    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=7').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
     if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* A: se prende el flujo de carros (los mismos controles del panel izquierdo) */
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
@@ -572,7 +572,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   RELOJ.alDibujar(cuadro);
   aplicar();
   // MODO SIMPLE (por defecto, data3d/modo_simple.js): tarjeta de escenario + «Año X de 50» y panel «¿Qué está pasando?»; el resto de los paneles se esconde hasta «Ver todo»
-  import('./modo_simple.js?v=3').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
+  import('./modo_simple.js?v=4').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
     .catch(er => { console.warn('modo simple:', er); document.documentElement.classList.remove('ms-simple'); });
   setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple')) import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
   import('./mejora_tour.js?v=10').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
