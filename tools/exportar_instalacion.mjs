@@ -65,6 +65,8 @@ const capa = async (nombre, dibujar) => { const px = new Uint8Array(PW * PH * 4)
 const leer = async (f) => JSON.parse(await readFile(join(RAIZ, 'data3d', f), 'utf8'));
 const conteo = {};
 await capa('capa_edificios', async (px) => { const B = await leer('buildings.json'); conteo.edificios = B.length; for (const e of B) relleno(px, e.pts, [255, 255, 255, 255]); });
+await capa('capa_alturas', async (px) => { const B = await leer('buildings.json'); // R = altura del edificio (data3d/buildings.json h) / 60 m, alfa = huella
+  for (const e of B) { const r = Math.round(Math.min(1, (e.h || 6) / 60) * 255); relleno(px, e.pts, [r, r, r, 255]); } });
 await capa('capa_parques', async (px) => { const P = await leer('parques.json'); conteo.parques = P.length; for (const e of P) relleno(px, e.pts, [255, 255, 255, 255]); });
 await capa('capa_agua', async (px) => { const W = await leer('water_bodies.json'); conteo.agua = W.length; for (const e of W) if (e.pts && e.pts.length > 2) relleno(px, e.pts, [255, 255, 255, 255]); });
 await capa('capa_arboles', async (px) => { const T = await leer('trees.json'); conteo.arboles = T.t.length; for (const t of T.t) punto(px, t, 1.2, [255, 255, 255, 255]); });
