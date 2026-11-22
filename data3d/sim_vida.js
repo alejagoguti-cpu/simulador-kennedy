@@ -19,7 +19,8 @@
    cumple 4 semanas seguidas; se registra el motivo y la semana. Todo supuesto que no viene del documento ni de los datos está marcado [SUP].
    Datos fijos (red vial, zonas, mercados, parches): data3d/sim_red_datos.js (tools/sim_red_datos_build.mjs). */
 import { ZONAS, FUENTES, COSTO, LARGO, CIERRES, MERCADOS as MERC_D, PARCHES, BODEGAS, AREA_NAVES } from './sim_red_datos.js?v=2';
-import { EXPO } from './exposicion_trafico.js?v=1'; // tráfico cerca de cada parche y entre parches (tools/exposicion_trafico_build.mjs)
+import { EXPO } from './exposicion_trafico.js?v=1';
+import { PLAN_BAV } from './plan_bavaria_datos.js?v=1'; // escenario D: Plan Parcial Fábrica Bavaria (tools/plan_bavaria_build.mjs) // tráfico cerca de cada parche y entre parches (tools/exposicion_trafico_build.mjs)
 export const AÑO = 52, POB_K = 1034000;
 export const ARRANQUE = 0; // las reglas cuentan desde la semana 1: los tres escenarios se evalúan el mismo periodo, montaje incluido
 export const MERCADOS = MERC_D;
@@ -37,6 +38,7 @@ const cl = (v, a, b) => Math.max(a, Math.min(b, v));
 export const ESCENARIOS = {
   A: { n: 'Hoy · continuidad', corto: 'Hoy', txt: 'Todo llega por Corabastos y los orgánicos van al relleno. Es el punto de comparación.' },
   B: { n: 'Bavaria central', corto: 'Bavaria', txt: 'Bavaria Común concentra acopio, reparto, compost, producción y decisiones.' },
+  D: { n: 'Plan parcial Bavaria', corto: 'Plan parcial', txt: 'Kennedy como hoy + el Plan Parcial Fábrica Bavaria (14.300 viviendas) construido por etapas: más gente, más carros, menos árboles.' },
   C: { n: 'Red de mercados', corto: 'Red', txt: 'Mercados de barrio como nodos, módulos en cubiertas, colegios y parques; Bavaria forma; asambleas con vocería rotativa.' }
 };
 
@@ -85,7 +87,7 @@ export const DESMONTE = { EMA: 26, CADA: 13, OBRA: 26, MADURA: 156, Q_BORDE: 0.8
 export { BODEGAS, AREA_NAVES };
 const BORDE_TOT = BODEGAS.reduce((a, b) => a + b.borde, 0), CUM = []; { let c = 0; for (const b of BODEGAS) { c += b.area; CUM.push(c); } }
 function corabastos(s, e, dep, t) {
-  const D = s.cora; if (e === 'A') return D;
+  const D = s.cora; if (e === 'A' || e === 'D') return D;
   D.lib += ((1 - dep) - D.lib) / DESMONTE.EMA;
   const k = D.ap.length; if (k < BODEGAS.length && D.lib * AREA_NAVES >= CUM[k] && t - D.ult >= DESMONTE.CADA) { D.ap.push(t); D.ult = t; }
   let m2 = 0, ha = 0, mad = 0, rest = 0; for (let i = 0; i < D.ap.length; i++) { m2 += BODEGAS[i].area; const w = t - D.ap[i] - DESMONTE.OBRA; if (w >= 0) { rest++; const mz = Math.min(1, w / DESMONTE.MADURA); ha += BODEGAS[i].borde / 1e4; mad += mz * BODEGAS[i].borde; } }
@@ -150,16 +152,16 @@ const ES_TERR = ESPECIES.map(e => TERRESTRE.has(e[0])), ES_AVE = ESPECIES.map(e 
 const RP = PARCHES.map(p => Math.sqrt(Math.max(0.05, p.ha) * 1e4 / Math.PI)); // radio del círculo con el área del parche (m)
 const fZona = (p, D) => { const d = EXPO.parches[p] ? EXPO.parches[p][0] : Infinity, r = RP[p]; return cl((D - (d - r)) / (2 * r), 0, 1); }; // fracción del parche dentro de la zona de efecto
 const EFT = new Map(); // efecto del tráfico por año (determinista; se calcula una vez por año de crecimiento)
-function efectoTrafico(t) {
-  const G = crecimiento(t), k = TRAFICO.on ? G.años : 0; let E = EFT.get(k); if (E) return E;
-  const V = TRAFICO.on ? G.V : 1, D0 = TRAFICO.ZONA_HOY, D = D0 * Math.pow(V, TRAFICO.B_DIST), mq = new Float32Array(NP), xq = new Float32Array(NP * NP);
+function efectoTrafico(t, extraV = 0) { // extraV: carros nuevos del plan parcial (escenario D) como fracción del parque de Kennedy
+  const G = crecimiento(t), k = (TRAFICO.on ? G.años : 0) + '|' + extraV.toFixed(3); let E = EFT.get(k); if (E) return E;
+  const V = (TRAFICO.on ? G.V : 1) * (1 + extraV), D0 = TRAFICO.ZONA_HOY, D = D0 * Math.pow(V, TRAFICO.B_DIST), mq = new Float32Array(NP), xq = new Float32Array(NP * NP);
   let sq = 0; for (let p = 0; p < NP; p++) { mq[p] = (1 - TRAFICO.RED_ZONA * fZona(p, D)) / (1 - TRAFICO.RED_ZONA * fZona(p, D0)); sq += mq[p]; }
   let sx = 0, nx = 0; for (let i = 0; i < NP * NP; i++) { const c = EXPO.cruce[i] || 0; xq[i] = Math.exp(-TRAFICO.C_ATROP * c * (V - 1)); if (c > 0) { sx += xq[i]; nx++; } }
   E = { G, V, D, mq, xq, mqMedio: sq / NP, xqMedio: nx ? sx / nx : 1, pares: nx }; EFT.set(k, E); return E; }
 function calidad(e, s, P3, out) { // calidad de cada parche esta semana (0 = no existe)
   for (let p = 0; p < NP; p++) { const P = PARCHES[p];
     out[p] = P.dyn ? (s.cora.ha > 0 ? DESMONTE.Q_BORDE * s.cora.mad : 0)
-      : P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55 * (p === IV ? 1 + DESMONTE.MEJORA_VACA * (s.cora.ha * 1e4 / BORDE_TOT) * s.cora.mad : 1)) : P.t === 'bosque' ? 0.6 : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
+      : P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55 * (p === IV ? 1 + DESMONTE.MEJORA_VACA * (s.cora.ha * 1e4 / BORDE_TOT) * s.cora.mad : 1)) : P.t === 'bosque' ? 0.6 * (P.id === 'bosqueBav' && s.planArb ? 1 - s.planArb / PLAN_BAV.ARB_TOT : 1) : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
       : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : (e === 'C' && s.supF >= P.cuota ? 0.4 : 0); } }
 function apto(i, p, q) { const g = ESPECIES[i][2]; return (GRUPOS[g].hab[TIPO[p]] || 0) * q[p]; }
 
@@ -174,11 +176,11 @@ export const REGLAS = [
 ];
 export const MOTIVO = { habitat: 'se perdió 30 % o más de las especies en los parches', abasto: 'una zona recibió menos del 80 % de los alimentos', residuos: 'los orgánicos pendientes superaron el almacenamiento' };
 
-const BASE = { A: { N: 300, q: 0.0025 }, B: { N: 2506, q: 0.0073 }, C: { N: 5400, q: 0.0073 } };
+const BASE = { A: { N: 300, q: 0.0025 }, D: { N: 300, q: 0.0025 }, B: { N: 2506, q: 0.0073 }, C: { N: 5400, q: 0.0073 } };
 const A0 = 120, W0 = 0.55; // mismas condiciones iniciales para A, B y C
 
 export function crear(e, seed) {
-  const s = { e, seed, t: -1, mundo: prng(mezcla(seed, 1)), loc: prng(mezcla(seed, 11 + 'ABC'.indexOf(e))), hab: prng(mezcla(seed, 7)),
+  const s = { e, seed, t: -1, mundo: prng(mezcla(seed, 1)), loc: prng(mezcla(seed, 11 + (e === 'D' ? 0 : 'ABC'.indexOf(e)))), hab: prng(mezcla(seed, 7)),
     A: A0, prom: 0, pipe: [], pob: POB_K, Nef: BASE[e].N, supF: 0, adopc: 0.15, buf: new Float64Array(64), W: W0, B: 900, muertes: 0,
     cierre: null, Kc: (1 + SUP.HOLGURA) * POB_K * SUP.KG_PERS * 7, Kr: (1 + SUP.HOLGURA) * POB_K * SUP.KG_ORG * 7, Kcs: 0, pr: 0, pcs: 0, pcp: 0,
     colaB: 0, colaC: [], colaF: 0, bajo90: 0, log: [], o: {}, racha: Object.fromEntries(REGLAS.map(R => [R.k, 0])), colapso: null,
@@ -197,6 +199,8 @@ function racionar(r, g, u, C, out) { let tot = 0; for (let z = 0; z < NZ; z++) t
   let lo = 0, hi = 1; const f = (k) => { let x = 0; for (let z = 0; z < NZ; z++) x += r[z] * Math.min(1, k * g[z]) * u[z]; return x; };
   while (f(hi) < C) hi *= 2; for (let it = 0; it < 40; it++) { const m = (lo + hi) / 2; if (f(m) < C) lo = m; else hi = m; }
   for (let z = 0; z < NZ; z++) out[z] = r[z] * Math.min(1, lo * g[z]); }
+// zonas que reciben a la gente del plan parcial: las de centro a menos de 700 m del predio, en partes iguales
+const ZPLAN = (() => { const ids = ZONAS.map((z, i) => [i, Math.hypot(z[0] - PLAN_BAV.CENTRO[0], z[1] - PLAN_BAV.CENTRO[1])]).filter(a => a[1] < 700).map(a => a[0]); const w = new Float64Array(NZ); ids.forEach(i => { w[i] = 1 / ids.length; }); return w; })();
 const UNO = new Float64Array(NZ).fill(1), UB = Float64Array.from(EFB, e => 1 / e);
 const PUR = new Float64Array(NZ), NEED = new Float64Array(NZ), LOCZ = new Float64Array(NZ), MK = new Float64Array(NZ), BV = new Float64Array(NZ), RQ = new Float64Array(NZ), CO = new Float64Array(NZ), TMP = new Float64Array(NZ), DES = new Float64Array(NZ);
 // cuantil de una mezcla de uniformes [lo, hi] con peso w
@@ -206,7 +210,7 @@ function mezclaU(seg) { let W = 0, m = 0; for (const [lo, hi, w] of seg) { W += 
 
 /* ---------- UNA SEMANA: estado -> estado ---------- */
 export function paso(s, PAR) {
-  const { P1, P2, P3 } = PAR, e = s.e, t = ++s.t, prop = e !== 'A', b = BASE[e], o = s.o, M = s.mundo, L = s.loc;
+  const { P1, P2, P3 } = PAR, e = s.e, t = ++s.t, prop = e === 'B' || e === 'C', b = BASE[e], o = s.o, M = s.mundo, L = s.loc;
   // 1 · el mundo: 3 sorteos por semana en los tres escenarios (los mismos cierres para A, B y C)
   { const u = M(), v = M(), w = M();
     if (s.cierre && t > s.cierre.fin) { if (s.rec.pend && !s.rec.pend.cerrado) s.rec.pend.cerrado = t; s.cierre = null; }
@@ -239,9 +243,12 @@ export function paso(s, PAR) {
   const prod = (s.A * 50 + sup) * P1.rend / AÑO * cal, auto = prod * P1.auto, merma = prod * P1.merma, exc = prod - auto - merma;
   const pers = prod * AÑO * 0.9 / (0.4 * 365);
 
+  /* ---- ESCENARIO D · Plan Parcial Fábrica Bavaria: viviendas que se terminan por etapa (avance lineal dentro de su año) ---- */
+  let planViv = 0, planArb = 0; if (e === 'D') { const años = t / AÑO; for (let k = 0; k < PLAN_BAV.VIV_ETAPA.length; k++) { const f = cl(años - k, 0, 1); planViv += PLAN_BAV.VIV_ETAPA[k] * f; planArb += PLAN_BAV.ARB_ETAPA[k] * f; } }
+  s.planArb = planArb; const planPers = planViv * PLAN_BAV.PERS_HOG, planAutos = planViv * PLAN_BAV.AUTOS_HOG;
   /* ---- ABASTECIMIENTO por zona ---- */
   const r0 = rampa(t);
-  let needT = 0; for (let z = 0; z < NZ; z++) { NEED[z] = POBZ[z] * popF * SUP.KG_PERS * 7; needT += NEED[z]; LOCZ[z] = 0; MK[z] = 0; BV[z] = 0; }
+  let needT = 0; for (let z = 0; z < NZ; z++) { NEED[z] = (POBZ[z] * popF + (ZPLAN[z] ? planPers * ZPLAN[z] : 0)) * SUP.KG_PERS * 7; needT += NEED[z]; LOCZ[z] = 0; MK[z] = 0; BV[z] = 0; }
   /* producción de las huertas: el autoconsumo (P1.auto) se queda en la zona; el excedente entra a la red hasta la capacidad de acopio de
      excedentes (P1.acopio, kg/semana): A sin acopio vende la mitad en la cuadra y pierde la otra mitad; B lo lleva a Bavaria; C lo vende en los mercados */
   const acop = !prop ? 0 : Math.min(Math.max(0, exc), P1.acopio), perdido = !prop ? Math.max(0, exc) * 0.5 : Math.max(0, exc - acop);
@@ -280,7 +287,7 @@ export function paso(s, PAR) {
   const DC = corabastos(s, e, dep, t); // Corabastos libera espacio y desmonta bodegas junto a La Vaca (B y C)
 
   /* ---- RESIDUOS orgánicos: pendientes de tratamiento vs. capacidad de almacenamiento ---- */
-  const gen = POB_K * popF * SUP.KG_ORG * 7, cob = prop ? SUP.COB * r0 : 0;
+  const gen = (POB_K * popF + planPers) * SUP.KG_ORG * 7, cob = prop ? SUP.COB * r0 : 0;
   const sep = prop ? gen * cob * P2.frac * s.adopc : 0, casa = !prop ? gen * 0.02 * s.adopc : 0; // A: 2 % se composta en casa (no queda pendiente)
   const capComp = prop ? NM * P2.cap * r0 : 0; // B: una planta en Bavaria · C: una estación por nodo abierto (la misma suma)
   let fr = 0, fc = 0; for (let z = 0; z < NZ; z++) { fr += SHARE[z] * fe(z, JD); fc += SHARE[z] * (e === 'B' ? fe(z, JB) : e === 'C' ? fe(z, 3 + NODO_Z[z]) : 1); } // ruta media al relleno y al compost
@@ -304,7 +311,7 @@ export function paso(s, PAR) {
   calidad(e, s, P3, s.q);
   const trampa = 1 + 3 * P3.luz * (P3.anti ? 0.3 : 1); // [SUP] luz y vidrio de los módulos: más extinción de aves de árbol en ellos
   const H_ = s.hab, q = s.q, occ = s.occ, raizB = Math.sqrt(Math.max(0.05, s.cora.ha)); let esp = 0; // el borde restaurado pesa según su área de esta semana
-  const ET = efectoTrafico(t), MQ = ET.mq, XQ = ET.xq; // tráfico que crece: ruido para las aves (MQ por parche) y atropellos al cruzar para la fauna terrestre (XQ por par)
+  const ET = efectoTrafico(t, e === 'D' ? planAutos / PLAN_BAV.AUTOS_KEN : 0), MQ = ET.mq, XQ = ET.xq; // tráfico que crece: ruido para las aves (MQ por parche) y atropellos al cruzar para la fauna terrestre (XQ por par)
   let ocAve = 0, ocTer = 0;
   for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP), ave = ES_AVE[i], ter = ES_TERR[i]; let hay = 0;
     for (let pp = 0; pp < NP; pp++) { const u = H_(), h = apto(i, pp, q) * (ave ? MQ[pp] : 1); if (h <= 0) { nuevo[pp] = 0; continue; }
@@ -337,7 +344,7 @@ export function paso(s, PAR) {
     espera: resol.m, resol, pc: 3000 * (1 - P1.reac * Math.min(1, pers / P1.zona) * 0.25), carga, retiro, prog: prop,
     gen, relleno: colR, desv: trat, rech, compost: comp, vuelve: comp, hongos, pct2: trat / gen * 100, pila, km: colR / 8000 * 28 * 2 + colC / 1500 * dist * 2, ocup: capComp ? Math.min(1.5, s.pcp / Math.max(1, Sp)) : 0,
     aves: s.B, riq: Math.round(42 * (0.45 + 0.35 * conect + 0.3 * s.W)), hum: s.W * 100, trampa: s.muertes, conect,
-    need: needT, recib: rec / needT, zMin, zArg, nBajo, zRec, zLoc, zRed, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
+    plan: e === 'D' ? { viviendas: planViv, personas: planPers, autos: planAutos, arboles: planArb } : null, need: needT, recib: rec / needT, zMin, zArg, nBajo, zRec, zLoc, zRed, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
     trafico: { años: ET.G.años, car: ET.G.car, moto: ET.G.moto, V: ET.V, D: ET.D, mq: ET.mqMedio, xq: ET.xqMedio, ocAve, ocTer, ocAve0: s.oc0.ave, ocTer0: s.oc0.ter },
     espOc, espOc0: s.espOc0,
     cora: { lib: DC.lib, desm: DC.ap.length, rest: DC.rest, m2: DC.m2, borde: Math.round(DC.ha * 1e4), mad: DC.mad, total: BODEGAS.length }, perdido,

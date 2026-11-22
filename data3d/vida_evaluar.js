@@ -4,7 +4,7 @@
    Muestra TODAS las corridas: % que cierra por cada regla, semana mediana de cierre, supervivencia, zona peor abastecida (corridas + mediana),
    tiempo de resolución de solicitudes (B y C), alimento por mercado en C, y la lista
    completa de semillas (cada una se puede ver en el mapa). */
-import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=5';
+import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=6';
 const R_CORRIDAS = 30, AÑOS = 10; // el mismo periodo para A, B y C
 const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOM = Object.fromEntries(Object.entries(ESCENARIOS).map(([k, v]) => [k, v.n]));
 const NREG = Object.fromEntries(REGLAS.map(R => [R.k, R.n.toLowerCase()]));
@@ -83,7 +83,7 @@ export function abrirEvaluar({ PAR, esc, verCorrida }) {
   const recibir = (d) => { if (d.id !== id) return; if (d.tipo === 'progreso') progreso(d.hecho, d.total);
     if (d.tipo === 'escenario') { RES[d.e] = { corridas: d.corridas, resumen: d.resumen }; pintar(); }
     if (d.tipo === 'fin') { RES.listo = true; el.querySelector('[data-prog]').textContent = `Listo: ${escs.length * R_CORRIDAS} corridas de ${AÑOS} años con los parámetros de este momento.`; pintar(); } };
-  let w = null; try { w = new Worker(new URL('./sim_vida_worker.js?v=5', import.meta.url), { type: 'module' }); } catch (e) { w = null; }
+  let w = null; try { w = new Worker(new URL('./sim_vida_worker.js?v=6', import.meta.url), { type: 'module' }); } catch (e) { w = null; }
   if (w) { w.onmessage = (ev) => { recibir(ev.data); if (ev.data.tipo === 'fin') w.terminate(); };
     w.onerror = () => { w.terminate(); porBloques(id, escs, congelado, recibir); }; w.postMessage({ id, escs, R: R_CORRIDAS, años: AÑOS, PAR: congelado }); }
   else porBloques(id, escs, congelado, recibir);

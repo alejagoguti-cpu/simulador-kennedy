@@ -61,3 +61,19 @@ const out = { fuente: 'Plan Parcial Fábrica Bavaria (Decreto 364 de 2017, modif
   arboles_quitados: quita, arboles_quitados_por_etapa: porEtapa, total_viviendas: manzanas.reduce((s, m) => s + m.viviendas, 0) };
 writeFileSync(new URL('../data3d/plan_bavaria.json', import.meta.url), JSON.stringify(out));
 console.log('manzanas', N, 'torres', manzanas.filter(m => m.torre).length, 'viviendas', out.total_viviendas, 'árboles quitados', porEtapa.reduce((a, b) => a + b, 0), 'de', TA.length, 'por etapa', porEtapa.join(','));
+
+// datos para el modelo semanal (data3d/sim_vida.js, escenario D): viviendas y árboles quitados por etapa + constantes con fuente
+const vivEtapa = Array.from({ length: ETAPAS }, (_, e) => manzanas.filter(m => m.etapa === e + 1).reduce((s, m) => s + m.viviendas, 0));
+const LCm = [5341.33, 3161.9], BAVm = [9319, 2942.6];
+writeFileSync(new URL('../data3d/plan_bavaria_datos.js', import.meta.url), `/* Generado por tools/plan_bavaria_build.mjs: Plan Parcial Fábrica Bavaria para el modelo semanal (escenario D). */
+export const PLAN_BAV = {
+  VIV_ETAPA: ${JSON.stringify(vivEtapa)},            // viviendas que se terminan en el año 1..10 (14.300 en total: El Espectador; Distrito «más de 14.000»)
+  ARB_ETAPA: ${JSON.stringify(porEtapa)},            // árboles del predio (data3d/bavaria_arboles.json) que caen dentro de manzanas, por año
+  ARB_TOT: ${TA.length},                             // árboles detectados en el predio
+  PERS_HOG: 2.76,                                    // personas por hogar en Kennedy (Observatorio de Hábitat Bogotá 2023, Sisbén IV)
+  AUTOS_HOG: 0.31,                                   // autos por hogar en Bogotá (Encuesta de Movilidad 2023)
+  AUTOS_KEN: 113604,                                 // autos en Kennedy (Encuesta de Movilidad 2023, vía Portafolio)
+  CENTRO: [${(BAVm[0] - LCm[0]).toFixed(1)}, ${(LCm[1] - BAVm[1]).toFixed(1)}] // centro del predio en el marco «mundo» (x este, z sur)
+};
+`);
+console.log('viv por etapa', vivEtapa.join(','));
