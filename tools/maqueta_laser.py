@@ -85,6 +85,29 @@ svg('2_kennedy_MDF3mm.svg', [('grabar_suave_parques', d_poly(PARQ), 'fill="#9999
                              ('cortar_contorno_y_agua', d_poly(KEN) + ' ' + d_poly(AGUA), CORTE)],
     f'Pieza de Kennedy 1:{ESCALA} - MDF 3 mm')
 
+# DXF para AutoCAD (mm, y hacia arriba): una capa por operación del taller; los grabados llevan contorno + sombreado sólido
+import ezdxf
+def dxf(nombre, capas):
+    doc = ezdxf.new('R2018', setup=True); doc.header['$INSUNITS'] = 4; doc.header['$MEASUREMENT'] = 1; msp = doc.modelspace()
+    yy = lambda c: [(x, TH - y) for x, y in c]
+    for capa, color, g, tipo in capas:
+        if capa not in doc.layers: doc.layers.add(capa, color=color)
+        if tipo == 'lineas':
+            for a, b in g: msp.add_line(a, b, dxfattribs={'layer': capa})
+            continue
+        for p in getattr(g, 'geoms', [g]):
+            if p.is_empty or p.geom_type != 'Polygon': continue
+            msp.add_lwpolyline(yy(p.exterior.coords), close=True, dxfattribs={'layer': capa})
+            for i in p.interiors: msp.add_lwpolyline(yy(i.coords), close=True, dxfattribs={'layer': capa})
+            if tipo == 'relleno':
+                h = msp.add_hatch(color=color, dxfattribs={'layer': capa}); h.paths.add_polyline_path(yy(p.exterior.coords), is_closed=True, flags=1)
+                for i in p.interiors: h.paths.add_polyline_path(yy(i.coords), is_closed=True, flags=16)
+    doc.saveas(os.path.join(OUT, nombre))
+lin_cruces = [((x - 5, TH - y), (x + 5, TH - y)) for x, y in CR] + [((x, TH - y + 5), (x, TH - y - 5)) for x, y in CR]
+dxf('1_base_MDF6mm.dxf', [('CORTAR', 1, box(0, 0, TW, TH), 'contorno'), ('RAYAR', 5, lin_cruces, 'lineas'), ('RAYAR', 5, KEN, 'contorno')])
+dxf('2_kennedy_MDF3mm.dxf', [('GRABAR_SUAVE_PARQUES', 8, PARQ, 'relleno'), ('GRABAR_CALLES', 7, CALLES, 'relleno'),
+                            ('CORTAR', 1, KEN, 'contorno'), ('CORTAR', 1, AGUA, 'contorno')])
+
 # vista previa (como queda pintada de blanco, con luz rasante)
 fig, ax = plt.subplots(figsize=(TW / 40, TH / 40), dpi=200); ax.set_xlim(-6, TW + 6); ax.set_ylim(TH + 6, -6); ax.set_aspect('equal'); ax.axis('off')
 fig.patch.set_facecolor('#1e1e1e'); ax.add_patch(plt.Rectangle((0, 0), TW, TH, color='#e4e1dc'))
