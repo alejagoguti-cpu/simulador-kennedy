@@ -20,14 +20,12 @@
     "nota": "Toda la localidad de Kennedy (limite OSM data3d/kennedy.json: modelo x 3445-10931, y -1778-5869 = 7,5 x 7,6 km) con 100 m de margen, en 16:9 norte arriba: 13.960 x 7.852,5 m centrado en modelo (7188, 2046). Fuera del limite no se proyecta (mascara)."
   },
   "maqueta": {
-    "escala": 8000,
-    "ancho_cm": 174.5,
-    "alto_cm": 98.2,
-    "maqueta_kennedy_cm": [
-      93.6,
-      95.6
-    ],
-    "nota": "Encuadre 13.960 x 7.852,5 m / 8.000 = 174,5 x 98,2 cm; la localidad ocupa ~94 x 96 cm en el centro. Cortar la maqueta con el contorno de Kennedy (red_vial.svg y limite)."
+    "escala": 20000,
+    "ancho_cm": 50.0,
+    "alto_cm": 39.26,
+    "maqueta_kennedy_cm": [37.4, 38.2],
+    "tablero_uv_en_encuadre": [0.1418, 0, 0.8582, 1],
+    "nota": "Tablero de 50 x 39,3 cm = franja central del encuadre (alto completo). Archivos de corte y armado en instalacion/maqueta (LEEME_MAQUETA.md)."
   },
   "proyector": {
     "ancho_px": 1920,
