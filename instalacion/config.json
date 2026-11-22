@@ -24,9 +24,9 @@
     "ancho_cm": 53.0,
     "alto_cm": 51.32,
     "maqueta_kennedy_cm": [48.9, 50.0],
-    "exageracion_alturas": 3,
+    "exageracion_alturas": 2.55,
     "tablero_uv_en_encuadre": [0.2096, 0, 0.7904, 1],
-    "nota": "Kennedy impresa en 3D (9 piezas, instalacion/maqueta/impresion_3d) de 48,9 x 50 cm a 1:15.300, alturas x3. Base opcional de corte laser 53 x 51,3 cm."
+    "nota": "Kennedy impresa en 3D (9 piezas, instalacion/maqueta/impresion_3d) de 48,9 x 50 cm a 1:15.300, alturas x2,55 (torres de 20 pisos = 1 cm). Base opcional de corte laser 53 x 51,3 cm."
   },
   "proyector": {
     "ancho_px": 1920,

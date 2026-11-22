@@ -14,18 +14,19 @@ import numpy as np
 from shapely.geometry import Polygon, box, shape
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
-import trimesh
+import trimesh, shapely
 
 RAIZ = os.path.join(os.path.dirname(__file__), '..')
 D = os.path.join(RAIZ, 'instalacion', 'datos'); MQ = os.path.join(RAIZ, 'instalacion', 'maqueta')
 OUT = os.path.join(MQ, 'impresion_3d'); os.makedirs(OUT, exist_ok=True)
 CFG = json.load(open(os.path.join(RAIZ, 'instalacion', 'config.json'), encoding='utf-8'))
 ESCALA = int(sys.argv[1]) if len(sys.argv) > 1 else 15300           # 1:15.300 -> Kennedy de 50 cm por el lado más largo
-EXAGERACION = float(sys.argv[2]) if len(sys.argv) > 2 else 3.0     # x3: lo justo para que las casas se impriman (~1,8 mm)
+EXAGERACION = float(sys.argv[2]) if len(sys.argv) > 2 else 2.55    # x2,55: torre de 20 pisos (60 m) = 1 cm; casa de 3 pisos = 1,5 mm
 NPZ = int(sys.argv[3]) if len(sys.argv) > 3 else 3                 # piezas por lado (3 x 3 = 9 piezas de ~17 cm)
 ANCHO_TABLERO = 530.0
 PLACA, AGUA_FONDO, CORTE_Y = 3.0, 1.2, 600.0
-H_MIN, H_MAX, H_SUR = 1.0, 20.0, 9.0      # mm mínimo / máximo de un edificio impreso; altura supuesta (m) en el sur
+H_MIN, H_SUR = 1.0, 9.0
+H_MAX = float(sys.argv[4]) if len(sys.argv) > 4 else 10.0   # mm: tope de altura de los edificios (torres de 1 cm)      # mm mínimo / máximo de un edificio impreso; altura supuesta (m) en el sur
 AN_M, AL_M = CFG['rectangulo']['ancho_m'], CFG['rectangulo']['alto_m']
 LC = CFG['coordenadas']['LC']; CX, CZ = CFG['rectangulo']['centro_m']
 W, H = AN_M * 1000 / ESCALA, AL_M * 1000 / ESCALA; OX = (W - ANCHO_TABLERO) / 2; TH = H
@@ -73,15 +74,19 @@ bandas = {}
 for g, hm, _ in ed:
     hmm = min(H_MAX, max(H_MIN, hm * mm_por_m)); b = round(hmm / 0.6) * 0.6
     bandas.setdefault(b, []).append(g)
-GEO = {}
-for b, gs in sorted(bandas.items()):
-    u = unary_union([g.buffer(0.12, join_style=2) for g in gs]).buffer(-0.12, join_style=2).intersection(SUELO.buffer(-0.15)).simplify(0.06)
+GEO = {}; SUELO_IN = SUELO.buffer(-0.15); import gc
+for b, gs in sorted(bandas.items()):  # por celdas de 40 mm (menos memoria): unión + cierre de 0,12 mm dentro de cada celda, luego todo junto
+    celdas = {}
+    for g in gs: c = g.centroid; celdas.setdefault((int(c.x // 40), int(c.y // 40)), []).append(g)
+    partes = [unary_union([g.buffer(0.12, join_style=2) for g in L]).buffer(-0.12, join_style=2) for L in celdas.values()]
+    u = unary_union(partes).intersection(SUELO_IN).simplify(0.06); del partes, celdas; gc.collect()
     GEO[b] = [p for p in getattr(u, 'geoms', [u]) if p.geom_type == 'Polygon' and p.area >= 0.3]
 
 # ---------- piezas (NPZ x NPZ) ----------
 xs = np.linspace(kx0 - 1, kx1 + 1, NPZ + 1); ys = np.linspace(ky0 - 1, ky1 + 1, NPZ + 1)
 FIL = 'ABCDEFGH'  # fila de norte a sur (A = norte), columna de oeste a este (1 = oeste): pieza A1 = esquina noroeste
 PIEZAS = {f'{FIL[r]}{c + 1}': box(xs[c], ys[r], xs[c + 1], ys[r + 1]) for r in range(NPZ) for c in range(NPZ)}
+DESC = [0]
 def extruir(g, z0, z1, mallas):
     for p in getattr(g, 'geoms', [g]):
         if p.is_empty or p.geom_type != 'Polygon' or p.area < 0.05: continue
@@ -90,25 +95,46 @@ def extruir(g, z0, z1, mallas):
         if not q.is_valid: q = q.buffer(0)
         for qq in getattr(q, 'geoms', [q]):
             if qq.geom_type != 'Polygon' or qq.is_empty: continue
-            m = trimesh.creation.extrude_polygon(qq, z1 - z0, engine='earcut'); m.apply_translation((0, 0, z0)); mallas.append(m)
+            m = trimesh.creation.extrude_polygon(qq, z1 - z0, engine='earcut'); m.apply_translation((0, 0, z0))
+            if not m.is_watertight: trimesh.repair.fill_holes(m)
+            if not m.is_watertight:  # segundo intento: forma limpia (huecos que se tocan, aristas casi nulas)
+                lim = qq.buffer(-0.03, join_style=2).buffer(0.03, join_style=2).simplify(0.02)
+                for q2 in getattr(lim, 'geoms', [lim]):
+                    if q2.geom_type != 'Polygon' or q2.area < 0.05: continue
+                    m2 = trimesh.creation.extrude_polygon(shapely.geometry.polygon.orient(q2), z1 - z0, engine='earcut'); m2.apply_translation((0, 0, z0))
+                    if not m2.is_watertight: trimesh.repair.fill_holes(m2)
+                    if m2.is_watertight: mallas.append(m2); continue
+                    rr = q2.minimum_rotated_rectangle  # casi rectangular: su rectángulo (siempre cierra)
+                    if rr.geom_type == 'Polygon' and rr.area > 0.05 and rr.area > 1.25 * q2.area:  # forma compleja: en cuadritos de 2 mm (cada trozo cierra; el programa de impresión los une)
+                        bx0, by0, bx1, by1 = q2.bounds
+                        for gx in np.arange(bx0, bx1, 2.0):
+                            for gy in np.arange(by0, by1, 2.0):
+                                cel = q2.intersection(box(gx, gy, gx + 2.0, gy + 2.0))
+                                for q4 in getattr(cel, 'geoms', [cel]):
+                                    if q4.geom_type != 'Polygon' or q4.area < 0.02: continue
+                                    m4 = trimesh.creation.extrude_polygon(shapely.geometry.polygon.orient(q4), z1 - z0, engine='earcut'); m4.apply_translation((0, 0, z0))
+                                    if m4.is_watertight: mallas.append(m4)
+                        DESC[0] += 1; continue
+                    if rr.geom_type == 'Polygon' and rr.area > 0.05:
+                        m3 = trimesh.creation.extrude_polygon(shapely.geometry.polygon.orient(rr), z1 - z0, engine='earcut'); m3.apply_translation((0, 0, z0))
+                        if m3.is_watertight: mallas.append(m3); DESC[0] += 1; continue
+                    DESC[0] += 1000  # (no debería pasar)
+                continue
+            if m.is_watertight: mallas.append(m)  # cada volumen se revisa SOLO (al unir, los que se tocan comparten vértices y parecerían abiertos)
+            else: DESC[0] += 1
 for v in os.listdir(OUT):
     if v.endswith(('.stl', '.3dm')): os.remove(os.path.join(OUT, v))
 resumen = {}
 for nombre, caja in PIEZAS.items():
-    mallas = []
+    mallas = []; DESC[0] = 0
     extruir(KEN.intersection(caja), 0, AGUA_FONDO, mallas)
     extruir(SUELO.intersection(caja), AGUA_FONDO - 0.01, PLACA, mallas)
     nb = 0
     for b, polys in GEO.items():
         sel = [p.intersection(caja) for p in polys if p.intersects(caja)]
         nb += len(sel); extruir(unary_union(sel) if sel else Polygon(), PLACA - 0.05, PLACA + b, mallas)
-    M = trimesh.util.concatenate(mallas); M.merge_vertices()
-    cu = M.split(only_watertight=False); ok = []
-    for c in cu:
-        if not c.is_watertight: trimesh.repair.fill_holes(c)
-        if c.is_watertight: ok.append(c)
-    M = trimesh.util.concatenate(ok); M.export(os.path.join(OUT, f'kennedy_{nombre}.stl'))
-    bx = M.bounds; resumen[nombre] = {'mm': [round(bx[1][0] - bx[0][0], 1), round(bx[1][1] - bx[0][1], 1), round(bx[1][2], 1)], 'triangulos': len(M.faces), 'volumenes_edificio': nb, 'cuerpos_descartados': len(cu) - len(ok)}
+    M = trimesh.util.concatenate(mallas); M.export(os.path.join(OUT, f'kennedy_{nombre}.stl'))
+    bx = M.bounds; resumen[nombre] = {'mm': [round(bx[1][0] - bx[0][0], 1), round(bx[1][1] - bx[0][1], 1), round(bx[1][2], 1)], 'triangulos': len(M.faces), 'volumenes_edificio': nb, 'aproximados_con_rectangulo': DESC[0] % 1000, 'descartados': DESC[0] // 1000}
 print(json.dumps({'edificios_simulador': n_sim, 'edificios_microsoft_sur': n_ms, 'usados': len(ed), 'bandas_mm': sorted(GEO), 'piezas': resumen}, ensure_ascii=False, indent=1))
 
 # vista previa: planta coloreada por altura (para revisar cobertura antes de imprimir)
