@@ -52,15 +52,15 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
     texSurcos = new THREE.CanvasTexture(cv); texSurcos.wrapS = texSurcos.wrapT = THREE.RepeatWrapping; texSurcos.colorSpace = THREE.SRGBColorSpace; return texSurcos;
   }
   let HIDRO = null, HIDRO_P = null; // huertas hidropónicas de E8 (se arman la primera vez que se prende E8)
-  const hidroponia = (on) => {
+  const hidroponia = (on, pre = false) => { // pre: armarlas escondidas (precarga en ratos libres, data3d/escenario.js)
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = !on; // las terrazas son hidropónicas (no camas de tierra)
-    if (HIDRO) { HIDRO.ver(on); return; } if (!on) return;
+    if (HIDRO) { HIDRO.ver(on); return HIDRO; } if (!on && !pre) return;
     /* determinismo: la lista de cubiertas incluye los techos altos y de las torres, que llegan a medida que cargan los edificios; se espera a que
        estén todos (T3.edifCompletos) para que la lista, y con ella la simulación de polinizadores, no dependa del tiempo de carga (tope 120 s) */
     const listos = () => new Promise(r => { const t0 = Date.now(); const mira = () => (T3.edifCompletos || Date.now() - t0 > 120000) ? r() : setTimeout(mira, 500); mira(); });
     if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=24'), listos()]).then(([m]) => { const e = D.estrategias.find(x => x.id === 'E8'), c = e && e.capas.find(x => /cubiertas/i.test(x.n)); if (!c) return null;
       const techos = (c.techos || []).map(t => ({ W: W2(t.slice(0, -1)), h: t[t.length - 1] / 10 })).filter(t => !dentro || dentro(t.W[0][0], t.W[0][1]));
-      return m.iniciarHidroponia({ THREE, T3, techos: (() => { const L = techos.concat(T3.torresTechos || [], T3.techosAltos || []), vistos = new Set(); return L.filter(t => { let x = 0, z = 0; for (const q of t.W) { x += q[0]; z += q[1]; } const k = Math.round(x / t.W.length / 4) + ',' + Math.round(z / t.W.length / 4); if (vistos.has(k)) return false; vistos.add(k); return true; }); })(), movil }); }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er));
+      return m.iniciarHidroponia({ THREE, T3, techos: (() => { const L = techos.concat(T3.torresTechos || [], T3.techosAltos || []), vistos = new Set(); return L.filter(t => { let x = 0, z = 0; for (const q of t.W) { x += q[0]; z += q[1]; } const k = Math.round(x / t.W.length / 4) + ',' + Math.round(z / t.W.length / 4); if (vistos.has(k)) return false; vistos.add(k); return true; }); })(), movil }); }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (on2 && T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er)); return HIDRO_P;
   };
   // E8 Red distribuida de producción alimentaria: sin manchas de color; una red de líneas que une todas las huertas (lotes, cubiertas,
   // viviendas) con sus vecinas, y la cámara se aleja para verla entera. Se apaga con el mismo botón.
@@ -211,7 +211,7 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
       return { c: [(x0 + x1) / 2, (z0 + z1) / 2], s: Math.max(x1 - x0, z1 - z0) }; },
     marcar: (id, on) => { PREN[id] = on; conexiones(); }, // E1 y E3 tienen su propio plan: solo cuentan para las conexiones
     // sitios de huerta en el suelo (lotes baldíos) para las colmenas y lombrices de la red biótica
-    hidroponia: (on = true) => hidroponia(on), // huertas hidropónicas en techos y balcones con sus polinizadores (solo con la propuesta: data3d/escenario.js)
+    hidroponia: (on = true, pre = false) => hidroponia(on, pre), // huertas hidropónicas en techos y balcones con sus polinizadores (solo con la propuesta: data3d/escenario.js)
     sitios: () => { const e = D.estrategias.find(x => x.id === 'E8'); const c = e && e.capas.find(x => /baldío/i.test(x.n)); return c ? c.lotes.map(l => ({ id: 'E8', n: 'Huerta en lote baldío', poly: W2(l) })) : []; }
   };
 }

@@ -123,9 +123,9 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* ---------- Bavaria Común: al escogerla se abre el distrito (data3d/bavaria_distrito.js) ---------- */
   let DIST = null, pDist = null;
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
-  function distritoBavaria() {
+  function distritoBavaria(pre = false) {
     const pro = T3.escenario === 'proyecto', on = pro && solo === 'bav';
-    if (pro && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=24'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
+    if ((pro || pre) && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=24'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
     if (DIST) { DIST.ver(on); if (DIST.verHuertas) DIST.verHuertas(pro && solo !== 'col'); } // las huertas de enseñanza de Bavaria se ven SIEMPRE con la propuesta, aunque se mire otra estrategia
   }
@@ -148,22 +148,44 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* ---------- Av. Ciudad de Cali: con la propuesta baja su tráfico (data3d/alivio_cali.js); el conteo corre también en «hoy» ---------- */
   let CALI = null, HBAR = null, pHBar = null;
   /* huertas de barrio (lotes baldíos y parques vecinales): bancales reales, solo con la propuesta (data3d/huertas_barrio.js) */
-  const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
+  const huertasBarrio = (on, pre = false) => { if (HBAR) { HBAR.ver(on); return; } if ((!on && !pre) || pHBar) return pHBar;
     pHBar = Promise.all([import('./huertas_barrio.js?v=10'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
       .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
   /* parches de árboles nativos en parques y junto a las huertas de parque (data3d/parches_arboles.js): solo con la propuesta */
   let PARCH = null, pParch = null;
-  const parchesArboles = (on) => { if (PARCH) { PARCH.ver(on); return; } if (!on || pParch) return;
+  const parchesArboles = (on, pre = false) => { if (PARCH) { PARCH.ver(on); return; } if ((!on && !pre) || pParch) return pParch;
     pParch = Promise.all([import('./parches_arboles.js?v=9'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
       .then(p => { PARCH = p; window.KEN_PARCHES = p; PARCH.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parches de árboles:', e)); };
   /* parque humedal de Corabastos: donde se desmontan las bodegas junto al humedal La Vaca (data3d/corabastos_parque.js): solo con la propuesta */
   /* mercados campesinos de barrio en los parques (data3d/mercados_barrio.js): solo con la propuesta */
   let MERC = null, pMerc = null;
-  const mercadosBarrio = (on) => { if (MERC) { MERC.ver(on); return; } if (!on || pMerc) return;
+  const mercadosBarrio = (on, pre = false) => { if (MERC) { MERC.ver(on); return; } if ((!on && !pre) || pMerc) return pMerc;
     pMerc = import('./mercados_red.js?v=7').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
-  const parqueCorabastos = (on) => { if (PCORA) { PCORA.ver(on); return; } if (!on || pPCora) return;
+  const parqueCorabastos = (on, pre = false) => { if (PCORA) { PCORA.ver(on); return; } if ((!on && !pre) || pPCora) return pPCora;
     pPCora = import('./corabastos_parque.js?v=9').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
+  /* RENDIMIENTO: lo pesado de la propuesta (huertas de barrio, parches de árboles, mercados, parque de Corabastos, distrito Bavaria y huertas
+     hidropónicas) se armaba la primera vez que se tocaba B o C y congelaba la página 1–3 s justo al hacer click. Ahora se arma escondido,
+     uno por uno, en los ratos libres después de la carga (mientras se lee la ayuda); al escoger el escenario solo se prende. */
+  {
+    const libre = (ms) => new Promise(r => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 900 }) : r()), ms));
+    const pasos = [
+      () => { huertasBarrio(false, true); return pHBar; },
+      () => { parchesArboles(false, true); return pParch; },
+      () => { mercadosBarrio(false, true); return pMerc; },
+      () => { parqueCorabastos(false, true); return pPCora; },
+      () => { distritoBavaria(true); return pDist; },
+      () => (T3.EST && T3.EST.hidroponia ? T3.EST.hidroponia(T3.escenario !== 'hoy', true) : null)
+    ];
+    /* también se compilan sus sombreadores (antes se compilaban al prenderlos: otro tirón): se prende todo un instante solo para el compilador */
+    const compilar = (objs) => { const r = T3.renderer; if (!r || !r.compileAsync || !objs.length) return; const ocultos = [];
+      for (const o of objs) o.traverse(x => { if (!x.visible) { ocultos.push(x); x.visible = true; } });
+      try { r.compileAsync(T3.scene, T3.camera).catch(() => {}); } catch (e) {} for (const x of ocultos) x.visible = false; };
+    (async () => {
+      await libre(2500);
+      for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
+    })();
+  }
   import('./escenarios_sim.js?v=48').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   import('./cambio_50.js?v=5').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=6').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)

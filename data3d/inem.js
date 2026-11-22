@@ -8,5 +8,10 @@ export async function iniciarInem({ THREE, T3, OX, OZ, Y0 = 0.3 }) {
   g.traverse(o => { if (!o.isMesh) return; o.castShadow = false; o.receiveShadow = true; /* rendimiento: ~900 materiales; sin sombra propia y con descarte fuera de cámara */
     const m = o.material; m.side = THREE.DoubleSide; if (m.map) { m.map.anisotropy = 8; m.emissiveMap = m.map; m.emissive = new THREE.Color(1, 1, 1); m.emissiveIntensity = 0.55; m.color.setScalar(0.72); } m.roughness = 1; m.metalness = 0; o.geometry.computeVertexNormals(); m.needsUpdate = true; /* la foto de la fachada ya trae su luz: luz propia alta para que las caras en sombra no queden negras */ });
   T3.scene.add(g); T3.inem = g;
+  /* RENDIMIENTO: son ~900 piezas con fachada propia (900 dibujos por cuadro). De lejos el sector se ve diminuto: más allá de 1,2 km de la cámara
+     (700 m con tarjeta gráfica integrada) las piezas no se dibujan. Se apaga un grupo interno: la visibilidad de g la siguen manejando los escenarios. */
+  const dentro = new THREE.Group(); dentro.name = 'inem-piezas'; while (g.children.length) dentro.add(g.children[0]); g.add(dentro);
+  const caja = new THREE.Box3().setFromObject(g), esf = caja.getBoundingSphere(new THREE.Sphere()), LIM = esf.radius + (T3.gpuDebil ? 700 : 1200);
+  setInterval(() => { const c = T3.camera; if (!c) return; const v = c.position.distanceTo(esf.center) < LIM; if (dentro.visible !== v) dentro.visible = v; }, 400);
   return g;
 }

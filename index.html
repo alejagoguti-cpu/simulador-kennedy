@@ -832,7 +832,7 @@ function flight(ms) {
     updateAves();
     updatePeatones(dt);
     if (KEN && !T3.anim) { const tg = T3.orbit.target, cx = Math.max(-2600, Math.min(6000, tg.x)), cz = Math.max(-4800, Math.min(3700, tg.z)), ddx = cx - tg.x, ddz = cz - tg.z; if (ddx || ddz) { tg.x += ddx; tg.z += ddz; T3.camera.position.x += ddx; T3.camera.position.z += ddz; } } /* no salir de Kennedy al desplazarse */
-    if (T3.trees && T3.trees.visible !== false) { if (KEN) { if (!T3.trees._cfg) { T3.trees.umbral = 120; T3.trees.minMs = 250; T3.trees.quieto = true; /* rendimiento: re-subir ~90 mil árboles solo al desplazarse 120 m */ T3.trees._cfg = 1; } const fw = new T3.THREE.Vector3(); cam.getWorldDirection(fw); fw.y = 0; fw.normalize(); T3.trees.update({ position: T3.orbit.target, cam: cam.position, dir: fw, dist: cam.position.distanceTo(T3.orbit.target) }); } else T3.trees.update(cam); } /* Kennedy: alrededor del punto que se mira: girar no recalcula los árboles */
+    if (T3.trees && T3.trees.visible !== false) { if (KEN) { T3.trees.minMs = T3.anim ? 900 : 250; /* en los vuelos de cámara los árboles cercanos se recalculan menos seguido (cada recálculo recorre ~90 mil) */ if (!T3.trees._cfg) { T3.trees.umbral = 120; T3.trees.quieto = true; /* rendimiento: re-subir ~90 mil árboles solo al desplazarse 120 m */ T3.trees._cfg = 1; } const fw = new T3.THREE.Vector3(); cam.getWorldDirection(fw); fw.y = 0; fw.normalize(); T3.trees.update({ position: T3.orbit.target, cam: cam.position, dir: fw, dist: cam.position.distanceTo(T3.orbit.target) }); } else T3.trees.update(cam); } /* Kennedy: alrededor del punto que se mira: girar no recalcula los árboles */
     if (T3.arbolesSplat && T3.arbolesSplat.visible) T3.arbolesSplat.update(cam); // con Foto real los árboles son los de la foto: no se recalculan
     if (T3.huertas) T3.huertas.actualizar(cam); // plantas 3D de las terrazas cercanas
     if (T3.torres) T3.torres.actualizar(cam); // huertas de los balcones cercanos
@@ -871,7 +871,14 @@ function flight(ms) {
       if (ahora >= A.t0 && !MEDIO) { A.n++; /* (la lámina 17, ?medio=1, mueve la cámara siempre: ahí no se baja la resolución, se vería borrosa) */
         if (ahora - A.t0 >= 1000) { const fps = A.n * 1000 / (ahora - A.t0); A.n = 0; A.t0 = ahora; A.fps = Math.round(fps * 10) / 10;
           if (mov && fps < 25 && A.esc > 0.7) ponerRes(Math.max(0.7, A.esc * 0.85)); else if (mov && fps > 45 && A.esc < 1) ponerRes(Math.min(1, A.esc * 1.2));
-          if (!mov && T3.ao && !T3.aoLento && !/[?&]ao=1\b/.test(location.search)) { A.lentos = fps < 12 ? A.lentos + 1 : 0; if (A.lentos >= 4) T3.aoLento = true; } } }
+          if (!mov && T3.ao && !T3.aoLento && !/[?&]ao=1\b/.test(location.search)) { A.lentos = fps < 12 ? A.lentos + 1 : 0; if (A.lentos >= 4) T3.aoLento = true; }
+          /* EQUIPO LENTO (también con la cámara quieta): si sigue por debajo de 20 cuadros/s 4 s seguidos se baja un escalón de calidad
+             (1: sin oclusión ambiental y sombras de 2048 px · 2: 80 % de resolución y menos carros · 3: 65 % de resolución); ?calidad=alta lo evita */
+          if (!mov && !T3.anim && !/[?&]calidad=alta\b/.test(location.search)) { A.lentos2 = fps < 20 ? (A.lentos2 || 0) + 1 : 0;
+            if (A.lentos2 >= 4 && (T3.nivelBajo || 0) < 3) { A.lentos2 = 0; const nv = T3.nivelBajo = (T3.nivelBajo || 0) + 1;
+              if (nv === 1) { T3.aoLento = true; const sh = T3.sun && T3.sun.shadow; if (sh && sh.mapSize.x > 2048) { sh.mapSize.set(2048, 2048); if (sh.map) { sh.map.dispose(); sh.map = null; } R.shadowMap.needsUpdate = true; } }
+              else { A.base = A.base * (nv === 2 ? 0.8 : 0.8125); ponerRes(A.esc); }
+              console.info('[rendimiento] calidad bajada al nivel', nv, '(' + Math.round(fps) + ' cuadros/s)'); } } } }
       if (!mov && A.esc < 1 && ahora - (T3._movT || 0) > 1200) ponerRes(1);
     }
     if (T3.seguidor) T3.seguidor.update(dt); // seguir un agente (data3d/seguir.js): la cámara lo acompaña
@@ -1282,6 +1289,11 @@ async function initTodoReal() {
     REFL = null; // agua analítica, sin espejo físico (evita manchas negras)
     const renderer = new THREE.WebGLRenderer({ antialias: !MOVIL || QUEST, powerPreference: 'high-performance' });
     renderer.setPixelRatio(MOVIL ? 1 : Math.min(devicePixelRatio, 1.25));
+    /* TARJETA GRÁFICA DÉBIL (integrada Intel/AMD de portátil, o sin aceleración): arranca en calidad liviana —sin oclusión ambiental, sombras de
+       2048 px y resolución 1:1— en vez de trabarse primero y bajar después. ?calidad=alta la ignora; ?calidad=baja la fuerza. */
+    const GPU_DEBIL = (() => { const q = location.search; if (/[?&]calidad=alta\b/.test(q)) return false; if (/[?&]calidad=baja\b/.test(q)) return true;
+      try { const gl = renderer.getContext(), e = gl.getExtension('WEBGL_debug_renderer_info'), s = e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : ''; return /Intel|UHD|Iris|Radeon\(TM\) Graphics|Vega \d|Mali|Adreno|PowerVR|SwiftShader|llvmpipe|Microsoft Basic/i.test(s) && !/NVIDIA|GeForce|RTX|GTX|Radeon RX|Arc A/i.test(s); } catch (e) { return false; } })();
+    if (GPU_DEBIL && !MOVIL) renderer.setPixelRatio(1);
     renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = !LIVIANO; // gafas y celulares: sin sombras (cuestan demasiado)
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1342,7 +1354,7 @@ async function initTodoReal() {
     const sun = new THREE.DirectionalLight(DIA.solColor, DIA.sol);
     sun.position.set(4000, 5000, 2000);
     sun.castShadow = !LIVIANO;
-    sun.shadow.mapSize.set(KEN && !MEDIO ? 4096 : 2048, KEN && !MEDIO ? 4096 : 2048); // sombras nítidas alrededor del pájaro (el sol sigue a la cámara)
+    sun.shadow.mapSize.set(KEN && !MEDIO && !GPU_DEBIL ? 4096 : 2048, KEN && !MEDIO && !GPU_DEBIL ? 4096 : 2048); // sombras nítidas alrededor del pájaro (el sol sigue a la cámara)
     const SR = MEDIO ? 320 : 600; sun.shadow.camera.left = -SR; sun.shadow.camera.right = SR;
     sun.shadow.camera.top = SR; sun.shadow.camera.bottom = -SR;
     sun.shadow.camera.near = 100; sun.shadow.camera.far = 7000;
@@ -1353,6 +1365,8 @@ async function initTodoReal() {
     try { suelo = (await import('./data3d/materiales.js')).crearMaterialesSuelo(renderer); } catch (e) { console.warn('materiales:', e); }
     T3 = { THREE, renderer, scene, camera, orbit, hemi, sun, skyU, liviano: LIVIANO, movil: MOVIL, night: false, anim: null, last: 0, counts: {},
       waterU: { value: 0 }, sunOff: new THREE.Vector3(0.42, 0.62, 0.35).normalize().multiplyScalar(2600), suelo, reloj: vistaT3(RELOJ) /* vista del reloj universal (minuto del día, día, play, vel) para cielo, biótica, tablero, orígenes */ };
+    window.KEN_T3 = T3; // depuración y pruebas de rendimiento
+    if (GPU_DEBIL) { T3.gpuDebil = true; T3.aoLento = true; T3.nivelBajo = 1; console.info('[rendimiento] tarjeta gráfica integrada: calidad liviana desde el inicio (?calidad=alta para la completa)'); }
     { let ok; T3.pArboles = new Promise(r => ok = r); T3.arbolesOk = ok; }
     T3.esperaArboles = () => Promise.race([T3.pArboles, new Promise(r => setTimeout(r, KEN ? 1500 : 15000))]); // Kennedy: los edificios y el tráfico no esperan a los árboles
     { // suelo base neutro desde el primer cuadro (debajo de todo; la foto de Google lo cubre cuando llega)
@@ -1386,7 +1400,7 @@ async function initTodoReal() {
     if (REALISTA && !LIVIANO && new URLSearchParams(location.search).get('ao') !== '0') crearPostproceso(T3).catch(e => console.warn('postproceso:', e)); // luz tipo render (oclusión ambiental)
     if (KEN) { T3.kenFill = 0.62; setTimeout(function capaSombra() { if (!T3.scene || !T3.THREE) return setTimeout(capaSombra, 500); const TH = T3.THREE, m = new TH.Mesh(new TH.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), new TH.ShadowMaterial({ opacity: 0.42, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.position.set(1700, 0.42, -200); m.receiveShadow = true; m.renderOrder = 1; m.name = 'capa-sombras'; T3.scene.add(m); }, 500); } /* sombras de edificios y árboles sobre la foto del suelo */
     if (KEN) import('./data3d/ui_sobrio.js?v=19').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
-    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=79'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
+    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=80'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
     // el tráfico empieza a bajar YA (antes esperaba a edificios, vías y árboles): son pocos KB por trozo
     const pTraf = QUEST ? Promise.resolve(null) : buildTraffic(THREE).then(() => { marcarPaso('trafico'); return null; }, e => e); // Kennedy: también, con la simulación SUMO (miles de carros)
     if (QUEST) marcarPaso('trafico');
@@ -1474,7 +1488,7 @@ async function initTodoReal() {
           : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
           : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
           : !(window.KEN_CARRO_REAL || MOVIL) ? 'Cargando carros…' /* en celular no hay carro real */
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 15000) ? 'Afinando la foto 3D…' : '';
+          : (tResto = tResto || performance.now(), performance.now() - tilesT < 1500 && performance.now() - tResto < 5000) ? 'Afinando la foto 3D…' /* rendimiento: antes esperaba hasta 15 s (27 s en portátiles lentos); la foto termina de afinarse con el simulador abierto */ : '';
         if (!falta || performance.now() - t0 > 150000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
@@ -2493,6 +2507,7 @@ async function cargarTrozoTrafico(I, k, steps) {
     }
     steps[t0 + s] = { t: t0 + s, ids, xs, ys };
     prev = cur;
+    if (s % 6 === 5) await new Promise(r => setTimeout(r, 0)); /* rendimiento: decodificar el trozo por partes (antes ~200 ms de un tirón: tirón visible cada vez que bajaba uno) */
   }
 }
 async function buildTraffic(THREE) {
@@ -2618,7 +2633,7 @@ function updateTraffic(dt) {
   if (!A0) { if (TRAF.pedirTrozo) TRAF.pedirTrozo(Math.floor(k0 / TRAF.chunk)); return; } // ese trozo aún no ha bajado: se pide ya y los carros esperan un instante
   /* MÁS VEHÍCULOS: la grabación SUMO (máx. ~2.600 a la vez en toda la localidad) se superpone desfasada en el tiempo: mismos recorridos
      reales, hasta 3 veces más vehículos en hora pico (1 en la madrugada, 2 al mediodía, 3 en los picos) */
-  const NCOP = KEN && T3.vehSUMO ? Math.max(1, Math.min(3, Math.round(1 + 2.2 * Math.max(0, pDem - 0.25) / 0.72))) : 1, MAXV = TRAF.maxi * (KEN && T3.vehSUMO ? 3 : 1); TRAF.copias = NCOP;
+  const NCOP = KEN && T3.vehSUMO ? Math.max(1, Math.min((T3.nivelBajo || 0) >= 2 ? 1 : 3, Math.round(1 + 2.2 * Math.max(0, pDem - 0.25) / 0.72))) : 1, /* equipo lento (nivel 2+): solo la grabación real, sin copias desfasadas */ MAXV = TRAF.maxi * (KEN && T3.vehSUMO ? 3 : 1); TRAF.copias = NCOP;
   const d = TRAF.dummy;
   const WO = [[1.45, 0.95], [1.45, -0.95], [-1.45, 0.95], [-1.45, -0.95]];
   let n = 0;
@@ -3694,12 +3709,12 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   const listoK = () => T3 && T3.ready && T3.net ? Promise.resolve() : new Promise(r => setTimeout(() => r(listoK()), 400));
   // Biblioteca El Tintal (modelo propio) y canchas reales de OpenStreetMap: no dependen de la simulación, se cargan en paralelo
   listoK().then(() => import('./data3d/tintal.js?v=17')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
-  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=3')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
+  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=4')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
   listoK().then(() => import('./data3d/conjuntos.js?v=5')).then(m => m.iniciarConjuntos({ THREE: T3.THREE, T3, lw, Y0: 0.3, movil: MOVIL })).catch(e => console.warn('conjuntos:', e));
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=54'), import('./data3d/estrategias.js?v=31'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=54'), import('./data3d/estrategias.js?v=32'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3710,7 +3725,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=101').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=104').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
