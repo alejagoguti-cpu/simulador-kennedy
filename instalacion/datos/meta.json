@@ -1,23 +1,37 @@
 {
   "NS": 1500,
-  "M": 110,
+  "M": 2581,
   "dur": 1499,
-  "tramos": 1615,
+  "tramos": 29881,
   "encuadre": {
     "centro_m": [
-      4024.7,
-      279.7
+      1846.7,
+      1115.9
     ],
-    "ancho_m": 1600,
-    "alto_m": 900,
-    "rotacion_grados": -63.5,
-    "nota": "Predio de Bavaria (data3d/bavaria.json 'sitio'): 71,2 ha, caja 1.035 m E-O × 1.164 m N-S, centroide mundo (3977,6; 219,3). Alineado norte-arriba NO cabe en 900 m. Encuadre rotado −63,5° (= angulo de bavaria_pres.json − 90°, auditoría §219) con el centro desplazado a mundo (4024,7; 279,7) = modelo (9366, 2882): el predio ocupa u ±648 m, v ±408 m (margen 152 m a los lados, 42 m arriba/abajo; verificado contra el polígono). Convención: u = dx·cosθ + dz·sinθ, v = −dx·sinθ + dz·cosθ en el mundo (x este, z sur); el norte ya no queda arriba (la cuadrícula de prueba marca el norte con una flecha). Para norte arriba: rotacion_grados 0 y centro [4008, 190] (el predio se sale ≈130 m al norte y al sur)."
+    "ancho_m": 13960,
+    "alto_m": 7852.5,
+    "rotacion_grados": 0,
+    "nota": "Toda la localidad de Kennedy (limite OSM data3d/kennedy.json: modelo x 3445-10931, y -1778-5869 = 7,5 x 7,6 km) con 100 m de margen, en 16:9 norte arriba: 13.960 x 7.852,5 m centrado en modelo (7188, 2046). Fuera del limite no se proyecta (mascara)."
   },
   "maqueta_mm": [
-    1280,
-    720
+    1745,
+    981.5625
   ],
-  "escala": 1250,
+  "escala": 8000,
+  "capas_png": {
+    "ancho": 2560,
+    "alto": 1440,
+    "conteo": {
+      "edificios": 243538,
+      "parques": 996,
+      "agua": 47,
+      "arboles": 119886,
+      "colegios": 74,
+      "huertas": 56,
+      "limite_vertices": 90
+    },
+    "nota": "máscaras blancas con alfa; el color lo pone TouchDesigner. Fuentes: data3d/buildings.json, parques.json, water_bodies.json, trees.json, colegios.json"
+  },
   "reloj": {
     "T0_RELOJ": 23400,
     "T0_GRAB": 1000,

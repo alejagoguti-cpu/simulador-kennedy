@@ -1,23 +1,33 @@
 {
   "version": 1,
-  "nombre": "KENNEDY REACCIONA · Laboratorio de sistemas urbanos vivos · nivel 1",
+  "nombre": "KENNEDY REACCIONA · Laboratorio de sistemas urbanos vivos · toda Kennedy",
   "coordenadas": {
     "sistema": "mundo local del simulador (metros): x = este, z = sur. Vista cenital con el norte arriba cuando rotacion_grados = 0.",
     "desde_sumo_y_net": "x_mundo = x - LC[0] ; z_mundo = LC[1] - y   (index.html: const LC, función lw)",
-    "LC": [5341.33, 3161.9]
+    "LC": [
+      5341.33,
+      3161.9
+    ]
   },
   "rectangulo": {
-    "centro_m": [4024.7, 279.7],
-    "ancho_m": 1600,
-    "alto_m": 900,
-    "rotacion_grados": -63.5,
-    "nota": "Predio de Bavaria (data3d/bavaria.json 'sitio'): 71,2 ha, caja 1.035 m E-O × 1.164 m N-S, centroide mundo (3977,6; 219,3). Alineado norte-arriba NO cabe en 900 m. Encuadre rotado −63,5° (= angulo de bavaria_pres.json − 90°, auditoría §219) con el centro desplazado a mundo (4024,7; 279,7) = modelo (9366, 2882): el predio ocupa u ±648 m, v ±408 m (margen 152 m a los lados, 42 m arriba/abajo; verificado contra el polígono). Convención: u = dx·cosθ + dz·sinθ, v = −dx·sinθ + dz·cosθ en el mundo (x este, z sur); el norte ya no queda arriba (la cuadrícula de prueba marca el norte con una flecha). Para norte arriba: rotacion_grados 0 y centro [4008, 190] (el predio se sale ≈130 m al norte y al sur)."
+    "centro_m": [
+      1846.7,
+      1115.9
+    ],
+    "ancho_m": 13960,
+    "alto_m": 7852.5,
+    "rotacion_grados": 0,
+    "nota": "Toda la localidad de Kennedy (limite OSM data3d/kennedy.json: modelo x 3445-10931, y -1778-5869 = 7,5 x 7,6 km) con 100 m de margen, en 16:9 norte arriba: 13.960 x 7.852,5 m centrado en modelo (7188, 2046). Fuera del limite no se proyecta (mascara)."
   },
   "maqueta": {
-    "escala": 1250,
-    "ancho_cm": 128,
-    "alto_cm": 72,
-    "nota": "1.600 m / 1.250 = 128 cm ; 900 m / 1.250 = 72 cm. La maqueta física y la proyección deben cortarse con ESTE rectángulo."
+    "escala": 8000,
+    "ancho_cm": 174.5,
+    "alto_cm": 98.2,
+    "maqueta_kennedy_cm": [
+      93.6,
+      95.6
+    ],
+    "nota": "Encuadre 13.960 x 7.852,5 m / 8.000 = 174,5 x 98,2 cm; la localidad ocupa ~94 x 96 cm en el centro. Cortar la maqueta con el contorno de Kennedy (red_vial.svg y limite)."
   },
   "proyector": {
     "ancho_px": 1920,
