@@ -1025,7 +1025,7 @@ async function crearMallaGoogle(T) {
   // la foto ya trae su luz y sus sombras: se muestra tal cual (emisiva), sin que el sol de la escena la aplaste ni la queme
   // máscara de huellas del modelo: donde hay un edificio propio se recorta lo que Google levanta (su versión "derretida") y queda solo su foto del suelo
   T.maskU = { uGrade: { value: REALISTA && !GOOGLE ? new THREE.Vector4(1.2, 0.9, 1.22, 1) : new THREE.Vector4(1, 1, 1, 0) }, uTint: { value: REALISTA && !GOOGLE ? new THREE.Vector3(1.04, 1.0, 0.93) : new THREE.Vector3(1, 1, 1) }, // saturación, contraste, brillo, quitar bruma · tinte
-    uMask: { value: null }, uOn: { value: 0 }, uLC: { value: new THREE.Vector2(LC.x, LC.y) }, uDim: { value: new THREE.Vector2(1 / MASK.XM, 1 / MASK.YM) }, uCut: { value: 2.5 }, uEmpuje: { value: KEN ? 18 : 0 }, uMonte: { value: KEN ? 1 : 0 }, uVis: { value: 0 }, uGradZ: { value: -1 }, // uGradZ: radio de la gradación (si < 0 usa el de la zona); el recorte siempre se limita a la zona // Kennedy: la foto de Google va siempre DETRÁS de lo propio (ver project_vertex)
+    uMask: { value: null }, uOn: { value: 0 }, uLC: { value: new THREE.Vector2(LC.x, LC.y) }, uDim: { value: new THREE.Vector2(1 / MASK.XM, 1 / MASK.YM) }, uCut: { value: 2.5 }, uEmpuje: { value: KEN ? 18 : 0 }, uMonte: { value: KEN ? 1 : 0 }, uVis: { value: 0 }, uGradZ: { value: -1 }, uPlanOn: { value: 0 }, uPlanCS: { value: new THREE.Vector2(1, 0) }, uPlanR: { value: new THREE.Vector2(53, 44) }, uPlanB: { value: Array.from({ length: 40 }, () => new THREE.Vector4(0, 0, 99, 0)) }, /* escenario D: manzanas del plan parcial de Bavaria ya empezadas (x, z, etapa): ahí se quita lo que Google levanta (árboles, bodegas) */ // uGradZ: radio de la gradación (si < 0 usa el de la zona); el recorte siempre se limita a la zona // Kennedy: la foto de Google va siempre DETRÁS de lo propio (ver project_vertex)
     uZona: { value: new THREE.Vector3(ZONA.x - LC.x, LC.y - ZONA.y, ZON ? (KEN ? Math.max(ZONA.r, 2400) : ZONA.r) : 1e9) } }; // Kennedy: el recorte llega también a Corabastos y Bavaria (en celular el radio de carga es menor) // fuera de la zona: malla de Google tal cual
   const recorte = (m) => {
     m.onBeforeCompile = (sh) => {
@@ -1038,7 +1038,7 @@ async function crearMallaGoogle(T) {
         // la cámara (la imagen no cambia: mismo punto en pantalla), así los edificios, carros, árboles y animales propios quedan siempre encima
         .replace('#include <project_vertex>', '#include <project_vertex>\nif (uEmpuje > 0.0) { float dl = max(length(mvPosition.xyz), 1.0); vec4 pE = projectionMatrix * vec4(mvPosition.xyz * (1.0 + uEmpuje / dl), 1.0); gl_Position.z = min(pE.z / pE.w, 0.99999) * gl_Position.w; }');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vWPm; uniform sampler2D uMask; uniform float uOn, uCut; uniform vec2 uLC, uDim; uniform vec4 uGrade; uniform vec3 uTint, uZona; uniform float uMonte, uEmpuje, uVis, uGradZ;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vWPm; uniform sampler2D uMask; uniform float uOn, uCut; uniform vec2 uLC, uDim; uniform vec4 uGrade; uniform vec3 uTint, uZona; uniform float uMonte, uEmpuje, uVis, uGradZ; uniform float uPlanOn; uniform vec2 uPlanCS, uPlanR; uniform vec4 uPlanB[40];')
         // gradación tipo render de maqueta (Umbra): quita la bruma gris de la foto aérea, sube saturación y contraste y la calienta un poco
         .replace('#include <opaque_fragment>', `{
           vec3 c = max(outgoingLight - uGrade.w * vec3(0.030, 0.036, 0.048), 0.0) / (1.0 - uGrade.w * 0.04);
@@ -1067,13 +1067,14 @@ async function crearMallaGoogle(T) {
         }
         #include <opaque_fragment>`)
         .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+          if (uPlanOn > 0.0 && vWPm.y > 0.9) { for (int i = 0; i < 40; i++) { vec4 pb = uPlanB[i]; if (pb.z < uPlanOn) { vec2 d = vWPm.xz - pb.xy; if (abs(d.x * uPlanCS.x + d.y * uPlanCS.y) < uPlanR.x && abs(-d.x * uPlanCS.y + d.y * uPlanCS.x) < uPlanR.y) discard; } } } // plan parcial (escenario D): manzana y su calle limpias de árboles y bodegas de la malla de Google
           if (uOn > 0.5 && vWPm.y > 0.9 && distance(vWPm.xz, uZona.xy) < uZona.z) { // recorte de edificios de Google solo donde están los propios
             vec2 mu = vec2((vWPm.x + uLC.x) * uDim.x, 1.0 - (uLC.y - vWPm.z) * uDim.y);
             float mk = texture2D(uMask, mu).r; // 1 libre · 0,39 edificio genérico (corte en uCut) · 0 modelo detallado: Corabastos, Bavaria (corte a 0,9 m)
             if (mu.x > 0.0 && mu.x < 1.0 && mu.y > 0.0 && mu.y < 1.0 && mk < 0.5 && (vWPm.y > uCut || mk < 0.2 || (mk < 0.3 && vWPm.y > 2.5))) discard; // 0,24: torre propia
           }`);
     };
-    m.customProgramCacheKey = () => 'recorteHuellasG';
+    m.customProgramCacheKey = () => 'recorteHuellasG2';
     m.needsUpdate = true;
   };
   T.tilesCargadas = 0;
@@ -3709,7 +3710,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=99').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=100').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })

@@ -25,6 +25,7 @@
 import { RELOJ } from './reloj.js?v=5';
 import { SIMST } from './sim_modelos.js?v=6';
 import { crecimiento } from './sim_vida.js?v=6';
+import { añoActual } from './tope_anos.js?v=2';
 
 const TAU = 6, ADULTO = 20; // [SUP] años: tiempo característico de crecimiento y edad en que el árbol llega al ~95 % de su altura
 const AÑO = 52, W0_HUM = 55, AVES0 = 900, ACT0 = 120; // valores iniciales del modelo (sim_vida.js: W0 = 0,55 · s.B = 900 · A0 = 120)
@@ -34,7 +35,7 @@ const NOM = { A: 'A · Kennedy hoy', B: 'B · Bavaria central', C: 'C · red de 
 
 export async function iniciarCambio50({ T3 }) {
   const THREE = T3.THREE;
-  const año = () => Math.floor(RELOJ.sem / AÑO) + 1; // mismo conteo que la barra del modo simple: semana 1300 = año 26
+  const año = () => añoActual(RELOJ); // mismo conteo que la barra del modo simple: semana 1300 = año 26
   const escAct = () => (window.KEN_ESIM && window.KEN_ESIM.esc) || (T3.escenario === 'proyecto' ? (SIMST.esc || 'C') : 'A');
   const VIDA = () => { const E = window.KEN_ESIM; return E && E.vida && E.vida.S ? E.vida : null; };
 

@@ -13,12 +13,56 @@ export async function iniciarPlanBavaria({ T3 }) {
   const mats = {
     ladrillo: new THREE.MeshStandardMaterial({ color: 0xb4643f, roughness: 0.85 }),
     blanco: new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.7 }),
-    obra: new THREE.MeshStandardMaterial({ color: 0x8f949a, roughness: 0.9, transparent: true, opacity: 0.85 })
+    obra: new THREE.MeshStandardMaterial({ color: 0x9a9da0, roughness: 0.9 })
   };
+  /* fachada dibujada en la tarjeta gráfica (sin texturas): ventanas por piso (3 m) y por módulo (3,3 m), placa de entrepiso, primer piso
+     de locales con vidrio corrido y cubierta gris. De lejos se promedia (sin moiré). Ladrillo con variación de tono por edificio.
+     En obra: losas a la vista y vanos abiertos (oscuros), sin vidrio. */
+  const uY0 = { value: 0.3 };
+  const fachada = (m, tipo) => {
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uY0 = uY0;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN; varying float vIH;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            mat4 mIW = modelMatrix * instanceMatrix;
+          #else
+            mat4 mIW = modelMatrix;
+          #endif
+          vWP = (mIW * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(mIW) * objectNormal); vIH = fract(sin(dot(floor(mIW[3].xz / 4.0), vec2(12.9898, 78.233))) * 43758.5453); // tono por edificio (fijo: depende de su sitio)`);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN; varying float vIH; uniform float uY0;')
+        .replace('#include <map_fragment>', `#include <map_fragment>
+          float gWin = 0.0;
+          { vec3 n = normalize(vWN); float yy = vWP.y - uY0;
+            ${tipo === 'ladrillo' ? 'diffuseColor.rgb *= 0.86 + 0.24 * vIH;' : 'diffuseColor.rgb *= 0.95 + 0.07 * vIH;'}
+            if (n.y > 0.5) { diffuseColor.rgb = vec3(0.47, 0.47, 0.45) * (0.9 + 0.1 * vIH); }
+            else if (n.y > -0.5) {
+              vec2 tg = normalize(vec2(-n.z, n.x)); float hh = dot(vWP.xz, tg);
+              float bay = hh / 3.3, fl = yy / 3.0; vec2 w = fwidth(vec2(bay, fl)); float fx = fract(bay), fy = fract(fl);
+              float lod = 1.0 - smoothstep(0.25, 0.7, max(w.x, w.y));
+              bool pb = yy < 3.6;
+              float x0 = pb ? 0.06 : 0.2, x1 = pb ? 0.94 : 0.8, y0 = pb ? 0.04 : 0.3, y1 = pb ? 0.88 : 0.84;
+              float fyy = pb ? yy / 3.6 : fy;
+              float win = smoothstep(x0 - w.x, x0 + w.x, fx) * (1.0 - smoothstep(x1 - w.x, x1 + w.x, fx)) * smoothstep(y0 - w.y, y0 + w.y, fyy) * (1.0 - smoothstep(y1 - w.y, y1 + w.y, fyy));
+              float losa = pb ? 0.0 : 1.0 - smoothstep(0.0, 0.07 + w.y, fy);
+              win = mix((x1 - x0) * (y1 - y0), win, lod); losa = mix(0.07, losa, lod);
+              float hv = fract(sin(dot(floor(vec2(bay, fl)), vec2(17.1, 113.7))) * 43758.5);
+              ${tipo === 'obra'
+                ? 'vec3 vano = vec3(0.05, 0.05, 0.055); diffuseColor.rgb = mix(diffuseColor.rgb * (1.0 - 0.35 * losa), vano, win * 0.9);'
+                : 'vec3 vid = mix(vec3(0.10, 0.13, 0.16), vec3(0.38, 0.47, 0.56), 0.25 + 0.45 * hv) ; diffuseColor.rgb = mix(diffuseColor.rgb * (1.0 - 0.18 * losa), vid, win); gWin = win;'}
+            }
+          }`)
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.12, gWin);');
+    };
+    m.customProgramCacheKey = () => 'fachadaPlanBav_' + tipo;
+  };
+  if (T3.env) Object.values(mats).forEach(m => { m.envMap = T3.env; m.envMapIntensity = 0.8; });
+  fachada(mats.ladrillo, 'ladrillo'); fachada(mats.blanco, 'blanco'); fachada(mats.obra, 'obra');
   // piezas: cada manzana = 4 barras del anillo (o 1 torre de 30 x 30 m)
-  const piezas = [];
+  const piezas = [], bloques = [];
   for (const m of P.manzanas) {
     const [x, z] = T3.lw(m.c[0], m.c[1]), a = -ang; // el modelo tiene y al norte; el mundo z al sur: el ángulo cambia de signo
+    bloques.push({ x, z, a, etapa: m.etapa, torre: m.torre });
     const alto = m.pisos * PISO;
     const partes = m.torre ? [[0, 0, 30, 30]] : [[0, -(BD - ANILLO) / 2, BW, ANILLO], [0, (BD - ANILLO) / 2, BW, ANILLO], [-(BW - ANILLO) / 2, 0, ANILLO, BD - 2 * ANILLO], [(BW - ANILLO) / 2, 0, ANILLO, BD - 2 * ANILLO]];
     for (const [du, dv, w, d] of partes) {
@@ -29,6 +73,11 @@ export async function iniciarPlanBavaria({ T3 }) {
   const mk = (mat) => { const im = new THREE.InstancedMesh(box, mat, piezas.length); im.count = 0; im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; T3.scene.add(im); return im; };
   const IM = { ladrillo: mk(mats.ladrillo), blanco: mk(mats.blanco), obra: mk(mats.obra) };
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), V = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
+  /* suelo de cada manzana al empezar su obra: andén y calle del plan (gris claro, 14 m de calle repartidos a cada lado) y patio verde */
+  const CALLE = 14, gS = new THREE.BoxGeometry(1, 1, 1); gS.translate(0, 0.5, 0);
+  const mkS = (color, ro) => { const im = new THREE.InstancedMesh(gS, new THREE.MeshStandardMaterial({ color, roughness: 0.95, emissive: new THREE.Color(color).multiplyScalar(0.18) }), bloques.length); im.count = 0; im.receiveShadow = false; im.frustumCulled = false; im.renderOrder = ro; /* sin sombra recibida: el suelo de la foto de Google (recortado) la proyectaría encima */ T3.scene.add(im); return im; };
+  const SUELO = mkS(0x8f8c86, 1), PATIO = mkS(0x5f7a3c, 2);
+  let maskOk = false;
   let visible = false, ultimo = '';
   const y0 = () => (T3.sueloY != null ? T3.sueloY : 0.3);
   const pintar = () => {
@@ -42,6 +91,16 @@ export async function iniciarPlanBavaria({ T3 }) {
       Q.setFromAxisAngle(Y, -p.a); V.set(p.x, y0(), p.z); S.set(p.w, alto, p.d); M.compose(V, Q, S); IM[k].setMatrixAt(n[k]++, M);
     }
     for (const k in IM) { IM[k].count = n[k]; IM[k].instanceMatrix.needsUpdate = true; IM[k].visible = visible; }
+    uY0.value = y0(); let ns = 0, np = 0;
+    if (visible) for (const b of bloques) { if (años <= b.etapa - 1) continue; Q.setFromAxisAngle(Y, -b.a);
+      V.set(b.x, y0() + 0.3, b.z); S.set(BW + CALLE, 0.8, BD + CALLE); M.compose(V, Q, S); SUELO.setMatrixAt(ns++, M);
+      V.set(b.x, y0() + 0.4, b.z); S.set(b.torre ? BW - 40 : BW - 2 * ANILLO, 0.8, b.torre ? BD - 40 : BD - 2 * ANILLO); M.compose(V, Q, S); PATIO.setMatrixAt(np++, M); }
+    SUELO.count = ns; PATIO.count = np; SUELO.instanceMatrix.needsUpdate = PATIO.instanceMatrix.needsUpdate = true; SUELO.visible = PATIO.visible = visible;
+    const mu = T3.maskU; // malla de Google: en las manzanas ya empezadas se recorta lo que levanta (árboles y bodegas de la foto 3D)
+    if (mu && mu.uPlanB) {
+      if (!maskOk) { maskOk = true; bloques.forEach((b, i) => { if (i < 40) mu.uPlanB.value[i].set(b.x, b.z, b.etapa, 0); }); const a0 = bloques.length ? bloques[0].a : 0; mu.uPlanCS.value.set(Math.cos(a0), Math.sin(a0)); mu.uPlanR.value.set(BW / 2 + CALLE / 2, BD / 2 + CALLE / 2); }
+      mu.uPlanOn.value = visible ? años + 1 : 0;
+    }
   };
   RELOJ.alDibujar(pintar);
 
@@ -85,6 +144,17 @@ export async function iniciarPlanBavaria({ T3 }) {
     for (const q of dm.edificios) if (q.etapa === e) { q.g.scale.y = Math.max(1e-3, f); q.g.visible = f > 0.004; }
     dm.ponerEsq(e, f); return true;
   };
+  /* árboles de cualquier capa (no solo los del predio) que caen en una manzana del plan o en su calle: se quitan cuando esa etapa ya
+     está demolida (fase 2) y vuelven al salir del escenario. Se calcula una sola vez, cuando los árboles ya cargaron. */
+  let enCalle = null;
+  const aplicarCalles = () => {
+    const pos = T3.trees && T3.trees.pos; if (!pos || !pos.OC) return false;
+    if (!enCalle) { enCalle = []; const hx = BW / 2 + CALLE / 2, hz = BD / 2 + CALLE / 2;
+      for (let k = 0; k < pos.X.length; k++) for (const b of bloques) { const dx = pos.X[k] - b.x, dz = pos.Z[k] - b.z, c = Math.cos(b.a), s = Math.sin(b.a);
+        if (Math.abs(dx * c + dz * s) < hx && Math.abs(-dx * s + dz * c) < hz) { enCalle.push([k, b.etapa]); break; } } }
+    for (const [k, e] of enCalle) if (fase[e] !== 1) pos.OC[k] = visible && fase[e] === 2 ? 0 : 1;
+    return true;
+  };
   const emitirPolvo = (e) => {
     const dm = T3.bavaria && T3.bavaria.userData && T3.bavaria.userData.demol; if (!dm) return;
     for (const q of dm.edificios) if (q.etapa === e) soltar(q.cx, q.cz, Math.min(q.h, 18), Math.max(10, Math.min(60, Math.round(q.r * 1.2))), e + q.ie, q.r * 0.8);
@@ -107,6 +177,7 @@ export async function iniciarPlanBavaria({ T3 }) {
       }
     }
     if (pAct) { mP.uniforms.uEsc.value = T3.renderer.domElement.height / (2 * Math.tan(T3.camera.fov * Math.PI / 360)); moverPolvo(Math.min(0.1, RELOJ.dtAnim || 0)); }
+    if (fin || (!enCalle && visible)) { const nuevo = !enCalle; if (aplicarCalles()) { sucio = true; if (nuevo) fin = true; } }
     if (sucio && (fin || ms - ultRep >= 6)) { sucio = false; ultRep = ms; const tr = T3.trees && T3.trees.plan; if (tr) tr.repintar(); if (fin && T3.arbolesSplat && T3.arbolesSplat.invalidar) T3.arbolesSplat.invalidar(); }
   };
   RELOJ.alDibujar(demoler);

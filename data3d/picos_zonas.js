@@ -16,7 +16,7 @@ const IND = {
   huertas: { t: 'Comida que sale de las huertas', max: 0.2, val: (o, z) => o.zLoc ? o.zLoc[z] : null, ley: 'altura = % de lo que necesita la zona que sale de las huertas (0–20 %)' },
   red: { t: 'Comida que llega por la red', max: 0.6, val: (o, z) => o.zRed ? o.zRed[z] : null, ley: 'altura = % que llega por mercados de barrio (C) o Bavaria (B) (0–60 %)' }
 };
-const ALTO = 560, RADIO = 13; // m: altura de un pico a escala llena; radio de la base
+const ALTO = 200, RADIO = 7; // m: altura de un pico a escala llena; radio de la base
 
 export function iniciarPicosZonas({ T3 }) {
   const THREE = T3.THREE, NZ = ZONAS.length;
@@ -68,7 +68,7 @@ background:var(--ui-glass,rgba(14,16,20,.6));border:1px solid var(--ui-glass-bd,
       h[z] += (meta[z] - h[z]) * Math.min(1, dt * 4); pulso[z] = Math.max(0, pulso[z] - dt * 0.8);
       const [x, zz] = ZONAS[z], alto = Math.max(1, h[z] * ALTO), r = RADIO * (1 + pulso[z] * 1.5);
       P.set(x, y0(), zz); S.set(r, alto, r); M.compose(P, Q, S); mesh.setMatrixAt(z, M);
-      colorDe(v == null ? 1 : v, e); mesh.setColorAt(z, C.multiplyScalar(0.75 + pulso[z] * 0.8));
+      colorDe(v == null ? 1 : v, e); mesh.setColorAt(z, C.multiplyScalar(0.5 + pulso[z] * 0.8));
       S.set(r * 2.6, 1, r * 2.6); M.compose(P, Q, S); base.setMatrixAt(z, M); base.setColorAt(z, C);
     }
     mesh.instanceMatrix.needsUpdate = true; base.instanceMatrix.needsUpdate = true;

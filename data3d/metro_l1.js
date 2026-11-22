@@ -125,7 +125,7 @@ export async function iniciarMetro({ T3 }) {
   const mAnden = new THREE.MeshStandardMaterial({ color: 0x9d9f9f, roughness: 0.85 });
   const mVidrio = new THREE.MeshStandardMaterial({ color: 0xa9c7d6, roughness: 0.1, metalness: 0, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false });
   const mFach = new THREE.MeshStandardMaterial({ color: 0x8fb4c8, roughness: 0.12, metalness: 0, transparent: true, opacity: 0.55, emissive: 0x24384a, side: THREE.DoubleSide, depthWrite: false });
-  const mLuz = new THREE.MeshBasicMaterial({ color: 0xfff4d6, toneMapped: false });
+  const mLuz = new THREE.MeshBasicMaterial({ color: 0xfff4d6, toneMapped: false }); if (T3.env) [mConc, mEdif, mAcero, mAnden, mRojo, mAmar].forEach(m => { m.envMap = T3.env; m.envMapIntensity = 0.9; }); mConc.emissive = new THREE.Color(0x2c2b28); mEdif.emissive = new THREE.Color(0x2c2b28); // concreto claro también en la cara a la sombra (luz de cielo)
 
   /* ---------- viaducto y estaciones ---------- */
   const bC = nuevo(), bA = nuevo(), bAc = nuevo(), bV = nuevo(), bF = nuevo(), bR = nuevo(), bY = nuevo(), bAn = nuevo(), bE = nuevo(), bLz = nuevo(), bOs = nuevo();
