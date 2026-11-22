@@ -829,7 +829,7 @@ function flight(ms) {
     updateAves();
     updatePeatones(dt);
     if (KEN && !T3.anim) { const tg = T3.orbit.target, cx = Math.max(-2600, Math.min(6000, tg.x)), cz = Math.max(-4800, Math.min(3700, tg.z)), ddx = cx - tg.x, ddz = cz - tg.z; if (ddx || ddz) { tg.x += ddx; tg.z += ddz; T3.camera.position.x += ddx; T3.camera.position.z += ddz; } } /* no salir de Kennedy al desplazarse */
-    if (T3.trees && T3.trees.visible !== false) { if (KEN) { if (!T3.trees._cfg) { T3.trees.umbral = 120; T3.trees.minMs = 250; T3.trees.quieto = true; /* rendimiento: re-subir ~90 mil árboles solo al desplazarse 120 m */ T3.trees._cfg = 1; } const fw = new T3.THREE.Vector3(); cam.getWorldDirection(fw); fw.y = 0; fw.normalize(); T3.trees.update({ position: T3.orbit.target, cam: cam.position, dir: fw }); } else T3.trees.update(cam); } /* Kennedy: alrededor del punto que se mira: girar no recalcula los árboles */
+    if (T3.trees && T3.trees.visible !== false) { if (KEN) { if (!T3.trees._cfg) { T3.trees.umbral = 120; T3.trees.minMs = 250; T3.trees.quieto = true; /* rendimiento: re-subir ~90 mil árboles solo al desplazarse 120 m */ T3.trees._cfg = 1; } const fw = new T3.THREE.Vector3(); cam.getWorldDirection(fw); fw.y = 0; fw.normalize(); T3.trees.update({ position: T3.orbit.target, cam: cam.position, dir: fw, dist: cam.position.distanceTo(T3.orbit.target) }); } else T3.trees.update(cam); } /* Kennedy: alrededor del punto que se mira: girar no recalcula los árboles */
     if (T3.arbolesSplat && T3.arbolesSplat.visible) T3.arbolesSplat.update(cam); // con Foto real los árboles son los de la foto: no se recalculan
     if (T3.huertas) T3.huertas.actualizar(cam); // plantas 3D de las terrazas cercanas
     if (T3.torres) T3.torres.actualizar(cam); // huertas de los balcones cercanos
@@ -858,7 +858,18 @@ function flight(ms) {
     { /* GIRO FLUIDO: mientras la cámara se mueve no se calcula la oclusión ambiental (el paso más caro de la imagen); al soltar (0,3 s) vuelve */
       const e = cam.matrixWorld.elements, fm = e[12] + e[13] * 3.1 + e[14] * 7.3 + e[8] * 101 + e[9] * 203 + e[10] * 307, ahora = performance.now();
       if (Math.abs(fm - (T3._movF || 0)) > 0.01) T3._movT = ahora; T3._movF = fm;
-      if (T3.ao) { const mov = KEN && ahora - (T3._movT || 0) < 300; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
+      if (T3.ao) { const mov = (KEN && ahora - (T3._movT || 0) < 300) || T3.aoLento; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
+    }
+    { /* RESOLUCIÓN ADAPTABLE: si al mover la cámara la imagen baja de ~25 cuadros/s, se dibuja con menos píxeles (hasta 70 %) y, con la cámara
+         quieta, vuelve la resolución completa. Equipo lento (quieta y < 12 cuadros/s varios segundos): sin oclusión ambiental (?ao=1 la mantiene) */
+      const R = T3.renderer, ahora = performance.now(), A = T3._res || (T3._res = { base: R.getPixelRatio(), esc: 1, n: 0, t0: ahora + 15000, lentos: 0 });
+      const ponerRes = (e) => { A.esc = e; R.setPixelRatio(A.base * e); if (T3.composer) T3.composer.setPixelRatio(A.base * e); };
+      const mov = ahora - (T3._movT || 0) < 400 || !!T3.anim;
+      if (ahora >= A.t0 && !MEDIO) { A.n++; /* (la lámina 17, ?medio=1, mueve la cámara siempre: ahí no se baja la resolución, se vería borrosa) */
+        if (ahora - A.t0 >= 1000) { const fps = A.n * 1000 / (ahora - A.t0); A.n = 0; A.t0 = ahora; A.fps = Math.round(fps * 10) / 10;
+          if (mov && fps < 25 && A.esc > 0.7) ponerRes(Math.max(0.7, A.esc * 0.85)); else if (mov && fps > 45 && A.esc < 1) ponerRes(Math.min(1, A.esc * 1.2));
+          if (!mov && T3.ao && !T3.aoLento && !/[?&]ao=1\b/.test(location.search)) { A.lentos = fps < 12 ? A.lentos + 1 : 0; if (A.lentos >= 4) T3.aoLento = true; } } }
+      if (!mov && A.esc < 1 && ahora - (T3._movT || 0) > 1200) ponerRes(1);
     }
     if (T3.seguidor) T3.seguidor.update(dt); // seguir un agente (data3d/seguir.js): la cámara lo acompaña
     { /* materiales transparentes de doble cara: un solo pase (evita el doble dibujo y las búsquedas de programa por cuadro); se revisa cada 2 s y al cambiar de escenario */
@@ -1371,7 +1382,7 @@ async function initTodoReal() {
     if (REALISTA && !LIVIANO && new URLSearchParams(location.search).get('ao') !== '0') crearPostproceso(T3).catch(e => console.warn('postproceso:', e)); // luz tipo render (oclusión ambiental)
     if (KEN) { T3.kenFill = 0.62; setTimeout(function capaSombra() { if (!T3.scene || !T3.THREE) return setTimeout(capaSombra, 500); const TH = T3.THREE, m = new TH.Mesh(new TH.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), new TH.ShadowMaterial({ opacity: 0.42, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.position.set(1700, 0.42, -200); m.receiveShadow = true; m.renderOrder = 1; m.name = 'capa-sombras'; T3.scene.add(m); }, 500); } /* sombras de edificios y árboles sobre la foto del suelo */
     if (KEN) import('./data3d/ui_sobrio.js?v=19').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
-    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=77'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
+    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=78'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
     // el tráfico empieza a bajar YA (antes esperaba a edificios, vías y árboles): son pocos KB por trozo
     const pTraf = QUEST ? Promise.resolve(null) : buildTraffic(THREE).then(() => { marcarPaso('trafico'); return null; }, e => e); // Kennedy: también, con la simulación SUMO (miles de carros)
     if (QUEST) marcarPaso('trafico');
@@ -3684,7 +3695,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=54'), import('./data3d/estrategias.js?v=30'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=54'), import('./data3d/estrategias.js?v=31'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3695,7 +3706,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=82').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=83').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3743,7 +3754,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         b4.insertAdjacentElement('afterend', b5);
         /* indicadores en 3D (picos de las láminas: anasoficasca-code.github.io/picos); empieza apagado */
         const b6 = document.createElement('button'); b6.id = 'in-btn'; b6.textContent = 'Indicadores'; b6.title = 'Indicadores del diagnóstico como picos 3D sobre Kennedy'; b6.style.cssText = 'width:100%;margin-top:6px';
-        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=5'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
+        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=6'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
         b5.insertAdjacentElement('afterend', b6);
       }
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
@@ -3754,7 +3765,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=11');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=40'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(() => Promise.all([import('./data3d/biotica.js?v=41'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
     .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=30').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=10')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));

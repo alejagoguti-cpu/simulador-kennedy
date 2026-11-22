@@ -272,7 +272,18 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const texCompost = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#3a2a1c'; g.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { const v = Math.random(); g.fillStyle = v < 0.5 ? 'rgba(20,14,8,.6)' : v < 0.85 ? 'rgba(92,68,44,.55)' : 'rgba(176,150,96,.6)'; g.save(); g.translate(Math.random() * w, Math.random() * h); g.rotate(Math.random() * 3); g.fillRect(0, 0, 2 + Math.random() * 6, 1 + Math.random() * 1.5); g.restore(); } }, 4, 2);
   const texConc = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#a8a397'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { const v = 140 + Math.random() * 60; g.fillStyle = `rgba(${v},${v - 4},${v - 12},.35)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } g.strokeStyle = 'rgba(60,58,52,.5)'; g.lineWidth = 2; g.strokeRect(0, 0, w, h); }, 8, 5);
   const o3 = new THREE.Object3D();
-  const instancias = (geo, mat, L, f, sh = !MOV, dest = gHu) => { const im = new THREE.InstancedMesh(geo, mat, Math.max(1, L.length)); im.count = L.length; L.forEach((x, k) => { f(x, o3); o3.updateMatrix(); im.setMatrixAt(k, o3.matrix); o3.scale.set(1, 1, 1); o3.rotation.set(0, 0, 0); }); im.castShadow = sh; im.receiveShadow = true; dest.add(im); return im; };
+  const instancias = (geo, mat, L, f, sh = !MOV, dest = gHu) => { const im = new THREE.InstancedMesh(geo, mat, Math.max(1, L.length)); im.count = L.length; L.forEach((x, k) => { f(x, o3); o3.updateMatrix(); im.setMatrixAt(k, o3.matrix); o3.scale.set(1, 1, 1); o3.rotation.set(0, 0, 0); }); im.castShadow = sh; im.receiveShadow = true; dest.add(im); LODB.push(im); return im; };
+  /* FLUIDEZ: cada malla de detalle (matas escaneadas, lechugas, frutos, tutores…) se deja de dibujar cuando su objeto se vería de menos de
+     1,5 píxeles (desde la vista general son miles de triángulos invisibles); de cerca no cambia nada */
+  const LODB = [];
+  { const S = new THREE.Sphere(), M4 = new THREE.Matrix4(); let t0 = 0;
+    const lod = (ts) => { requestAnimationFrame(lod); if (ts - t0 < 120) return; t0 = ts; if (!gHu.visible && !grupo.visible) return;
+      const cam = T3.camera, f = innerHeight / 2 / Math.tan(cam.fov * Math.PI / 360);
+      for (const im of LODB) { if (!im.count) continue;
+        if (!im.userData.lodR) { im.computeBoundingSphere(); if (!im.geometry.boundingSphere) im.geometry.computeBoundingSphere(); let sm = 0; for (let i = 0; i < im.count; i++) { im.getMatrixAt(i, M4); sm = Math.max(sm, M4.getMaxScaleOnAxis()); } im.userData.lodR = im.geometry.boundingSphere.radius * (sm || 1);
+          const g = im.geometry, tri = (g.index ? g.index.count : g.attributes.position.count) / 3; im.userData.lodPx = tri > 2000 ? 4 : 1.5; } /* las matas escaneadas (miles de triángulos cada una) se quitan desde 4 px */
+        S.copy(im.boundingSphere).applyMatrix4(im.matrixWorld); const v = 2 * im.userData.lodR * f / Math.max(1, cam.position.distanceTo(S.center) - S.radius) >= im.userData.lodPx; if (im.visible !== v) im.visible = v; } };
+    requestAnimationFrame(lod); }
   const enCel = (c, u, v, y, o, giro = 0) => { const q = loc(c.c || c, u, v); o.position.set(q[0], y, q[1]); o.rotation.set(0, -ANG + giro, 0); };
   const Y0 = 0.22, BU = [-2.5, 0, 2.5]; // piso y posición de los 3 bancales de cada celda
   {

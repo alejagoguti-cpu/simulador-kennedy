@@ -48,7 +48,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   let KMERC = null; // los 8 mercados de barrio que reciben la carga de Corabastos (marco del modelo); se pasan al mundo cuando T3.lw existe
   const mercadosMundo = () => { if (MERCADOS.length || !KMERC) return; const f = typeof T3.lw === 'function' ? T3.lw : lw; MERCADOS = KMERC.map(m => f(m.p[0], m.p[1])); };
   fetch('data3d/carga.json?v=1').then(r => r.json()).then(K => { KMERC = K.mercados || []; mercadosMundo(); }).catch(() => {});
-  const leerParches = () => import('./parches_arboles.js?v=7').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
+  const leerParches = () => import('./parches_arboles.js?v=8').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
   const cerca = (L, x, z, r0, r1) => { let w = 0; for (const c of L) { const dx = c[0] - x, dz = c[1] - z; if (Math.abs(dx) > r1 || Math.abs(dz) > r1) continue; const v = caida(Math.hypot(dx, dz), r0, r1); if (v > w) w = v; } return w; };
   const reduccion = () => { const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
 

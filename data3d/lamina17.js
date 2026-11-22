@@ -522,7 +522,10 @@ addEventListener('resize', () => { lineMats.forEach(m => m.resolution.set(innerW
 /* ---------------- bucle ---------------- */
 const reloj = new THREE.Clock(); const tmp = new THREE.Vector3();
 function cuadro() {
-  const dt = Math.min(0.05, reloj.getDelta()), t = reloj.elapsedTime, f = 1 - Math.pow(0.004, dt);
+  const dt = Math.min(0.12, reloj.getDelta()), t = reloj.elapsedTime, f = 1 - Math.pow(0.004, dt); // (antes 0,05: con pocos cuadros/s la cámara iba más lenta y a saltos)
+  { /* FLUIDEZ: en la lámina los años del modelo no se ven (el año del tablero es propio): con la propuesta corren rápido hasta el año 10 (todas
+       las huertas abiertas, como en el simulador) y ahí se pausan; así no se gasta el procesador en semanas que nadie mira */
+    try { const RL = W.KEN_RELOJ; if (RL && W.KEN_ESC && W.KEN_ESC.e === 'proyecto' && !RL.pausaSem) { if (RL.sem >= 520) RL.pausarAños(true); else if (RL.velSem !== 52) RL.ponerVelAños(52); } } catch (e) { } }
   for (const k of ['s', 'el', 'x', 'z', 'y', 'az']) camAct[k] = lerp(camAct[k], camObj[k], f * 0.8);
   if (E[escena].giro && !QUIETO) giroAz += dt * 1.6; else giroAz = lerp(giroAz, QUIETO ? 0 : Math.sin(t * 0.11) * 6, f * 0.25);
   ponerCam();

@@ -151,27 +151,30 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   // caseta del ascensor y la escalera: volumen de 4,4 x 3,4 m y 3,2 m de alto, con su puerta metálica de salida a la cubierta y alero
   const gCaseta = new THREE.BoxGeometry(4.4, 3.2, 3.4).translate(0, 1.6, 0), gPuerta = mergeGeometries([new THREE.BoxGeometry(1.0, 2.1, 0.08).translate(0, 1.05, 1.72), new THREE.BoxGeometry(4.8, 0.14, 3.9).translate(0, 3.27, 0)]);
   const matCaseta = new THREE.MeshStandardMaterial({ color: 0xd9d3c7, roughness: 0.9 }), matPuerta = new THREE.MeshStandardMaterial({ color: 0x5b6168, roughness: 0.5, metalness: 0.5 });
-  const capa = (k, partes) => partes.map(([g, m, sombra]) => { const im = new THREE.InstancedMesh(g, m, CAP[k]); im.count = 0; im.castShadow = !!sombra && !movil; im.frustumCulled = false; grupo.add(im); return im; });
-  const IM = {
-    rack: capa('rack', [[gRack, matPVC, true], [gRackMetal, matMetal], [gRackPl, matPlanta]]),
-    torre: capa('torre', [[gTorre, matPVC, true], [gTorrePl, matMata]]),
+  const capa = (k, partes) => partes.map(([g, m, sombra, det]) => { const im = new THREE.InstancedMesh(g, m, CAP[k]); im.count = 0; im.castShadow = !!sombra && !movil; im.frustumCulled = false; im.userData.det = !!det; grupo.add(im); return im; });
+  const IM = { // det: plantas (detalle chico): solo hasta CERCA_PL m de la cámara (más lejos se ven de menos de un píxel; la cubierta verde ya da el color)
+    rack: capa('rack', [[gRack, matPVC, true], [gRackMetal, matMetal], [gRackPl, matPlanta, false, true]]),
+    torre: capa('torre', [[gTorre, matPVC, true], [gTorrePl, matMata, false, true]]),
     tunel: capa('tunel', [[gTunel, matTunel], [gTunelArcos, matMetal]]),
     tanque: capa('tanque', [[gTanque, matTanque, true]]),
-    jard: capa('jard', [[gJard, matJard], [gJardPl, matMata]]),
+    jard: capa('jard', [[gJard, matJard], [gJardPl, matMata, false, true]]),
     caseta: capa('caseta', [[gCaseta, matCaseta, true], [gPuerta, matPuerta, true]])
   };
   const o3 = new THREE.Object3D(), foco = new THREE.Vector3();
-  let ultimo = null, sucioFrac = false, tFrac = 0;
+  let ultimo = null, sucioFrac = false, tFrac = 0, dUlt = 0; const CERCA_PL = movil ? 300 : 450;
   function recalcular() { // solo dibujo: qué instalaciones cercanas a la cámara se instancian (no toca la simulación)
     const c = T3.orbit ? T3.orbit.target : foco.set(0, 0, 0), R = (movil ? 420 : 750) + Math.min(900, T3.camera.position.distanceTo(c) * 0.5);
-    if (ultimo && ultimo.distanceTo(c) < R * 0.12) return; ultimo = (ultimo || new THREE.Vector3()).copy(c);
-    const r2 = R * R;
+    const cp = T3.camera.position, dCam = cp.distanceTo(c);
+    const soloZoom = !!ultimo && ultimo.distanceTo(c) < R * 0.12; /* acercarse o alejarse solo cambia qué plantas se dibujan: centro y radio (los lee el enjambre) quedan como antes */
+    if (soloZoom && Math.abs(dCam - dUlt) < Math.max(25, dUlt * 0.15)) return; if (!soloZoom) ultimo = (ultimo || new THREE.Vector3()).copy(c); dUlt = dCam;
+    const r2 = R * R, rp2 = CERCA_PL * CERCA_PL;
     for (const k of Object.keys(IM)) {
-      let n = 0; const lista = INST[k].filter(p => ORD.get(p[5]) <= frac && (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2 < r2).sort((a, b) => ((a[0] - c.x) ** 2 + (a[2] - c.z) ** 2) - ((b[0] - c.x) ** 2 + (b[2] - c.z) ** 2));
-      for (const p of lista) { if (n >= CAP[k]) break; o3.position.set(p[0], p[1], p[2]); o3.rotation.set(0, p[3], 0); o3.updateMatrix(); for (const im of IM[k]) im.setMatrixAt(n, o3.matrix); n++; }
-      for (const im of IM[k]) { im.count = n; im.instanceMatrix.needsUpdate = true; }
+      let n = 0, np = 0; const lista = INST[k].filter(p => ORD.get(p[5]) <= frac && (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2 < r2).sort((a, b) => ((a[0] - c.x) ** 2 + (a[2] - c.z) ** 2) - ((b[0] - c.x) ** 2 + (b[2] - c.z) ** 2));
+      for (const p of lista) { if (n >= CAP[k]) break; o3.position.set(p[0], p[1], p[2]); o3.rotation.set(0, p[3], 0); o3.updateMatrix(); const pl = (p[0] - cp.x) ** 2 + (p[1] - cp.y) ** 2 + (p[2] - cp.z) ** 2 < rp2;
+        for (const im of IM[k]) { if (!im.userData.det) im.setMatrixAt(n, o3.matrix); else if (pl) im.setMatrixAt(np, o3.matrix); } n++; if (pl) np++; }
+      for (const im of IM[k]) { im.count = im.userData.det ? np : n; im.instanceMatrix.needsUpdate = true; }
     }
-    centro.copy(c); radio = Math.min(R, movil ? 260 : 420);
+    if (!soloZoom) { centro.copy(c); radio = Math.min(R, movil ? 260 : 420); }
   }
   const centro = new THREE.Vector3(); let radio = 400;
 

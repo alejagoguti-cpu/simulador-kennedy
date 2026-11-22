@@ -46,10 +46,13 @@ const resultado = {}; const linea = (k, ok, txt) => { resultado[k] = { ok, txt }
 /* ---------- c) inventario de relojes propios (estático) ---------- */
 // archivo -> [usos revisados (máximo), categoría, nota]. Categorías permitidas: interfaz, cámara, carga, cosmético, medición, juego, otra página, sin uso.
 const USOS = {
-  'index.html': [38, 'interfaz/cámara/carga', 'bucle maestro flight (único rAF de la maqueta), dt de la cámara WASD, revisión de GPU, sombras/AO al mover la cámara, espera de carga de teselas y módulos, tour (setInterval de vuelos de cámara), portada (Math.random de la silueta), pasto (Math.random al construir), tecla R (POI al azar)'],
+  'index.html': [39, 'interfaz/cámara/carga', 'bucle maestro flight (único rAF de la maqueta), dt de la cámara WASD, revisión de GPU, sombras/AO al mover la cámara, resolución adaptable (fps), espera de carga de teselas y módulos, tour (setInterval de vuelos de cámara), portada (Math.random de la silueta), pasto (Math.random al construir), tecla R (POI al azar)'],
   'reloj.js': [6, 'medición', 'ahoraMs (presupuesto por cuadro y medición), cederCuadro del salto (rAF para pintar la barra)'],
   'alivio_cali.js': [1, 'interfaz', 'refresco del texto de la etiqueta cada 0,7 s'],
-  'bavaria_distrito.js': [63, 'cosmético/cámara', 'texturas procedurales, plantas cercanas, vuelo de cámara'],
+  'bavaria_distrito.js': [65, 'cosmético/cámara', 'texturas procedurales, plantas cercanas, vuelo de cámara, ocultar detalle lejano (rAF de dibujo)'],
+  'lamina17.js': [8, 'otra página', 'lámina 17: bucle de la página que mueve la cámara del simulador (iframe) y sus capas'],
+  'lamina17_avance.js': [8, 'otra página', 'lámina 17 (avance): bucle de la página y sus capas'],
+  'lamina17_rapida.js': [3, 'otra página', 'lámina 17 rápida: sin simulador'],
   'bavaria_plan.js': [8, 'cosmético', 'figuras ilustrativas del plan (azar al construir), pulso del resaltado'],
   'bavaria_pres.js': [2, 'otra página', 'presentación de Bavaria (bavaria.html): su propio bucle, no la maqueta'],
   'biotica.js': [6, 'interfaz', 'repintado de chips (1,5 s), bola de la red de una especie (canvas del panel), «ver en el territorio» elige un individuo al azar'],

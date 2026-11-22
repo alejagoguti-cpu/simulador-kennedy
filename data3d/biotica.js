@@ -165,7 +165,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   // con la propuesta: PARCHES DE ÁRBOLES NATIVOS en parques y alrededor de las huertas de parque (data3d/parches_arboles.js):
   // caucho sabanero, aliso, sauco, chicalá, arrayán y arbustos de flor; cada parche es un hábitat nuevo con su fauna, solo en «proyecto»
   let PAT = [], FAUNA_PARCHE = {}, ESP_PARCHE = {};
-  try { const [PM, HBj] = await Promise.all([import('./parches_arboles.js?v=4'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3')]);
+  try { const [PM, HBj] = await Promise.all([import('./parches_arboles.js?v=8'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3')]);
     PAT = PM.calcularParches(HBj, PQ, lw, movil); FAUNA_PARCHE = PM.FAUNA_PARCHE; ESP_PARCHE = PM.ESPECIES; } catch (e) { console.warn('parches de árboles:', e); }
   const PCH = PAT.map(p => ({ n: p.n, tipo: 'parche', pro: true, poly: p.poly, borde: p.poly.concat([p.poly[0]]), x0: p.x0, x1: p.x1, z0: p.z0, z1: p.z1, cx: p.c[0], cz: p.c[1], ag: {}, k: 1, cnt: FAUNA_PARCHE }));
   for (const h of HUE) h.pro = true; for (const h of EXTRA) if (h.tipo === 'huerta') h.pro = true;

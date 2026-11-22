@@ -447,9 +447,13 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
   api.update = (cam, force) => {
     const now = performance.now(), dx = cam.position.x - ult.x, dz = cam.position.z - ult.z, U = api.umbral || 6;
     const vy = cam.dir ? Math.atan2(cam.dir.x, cam.dir.z) : 0, giro = cam.dir ? Math.abs(Math.atan2(Math.sin(vy - (ult.vy || 0)), Math.cos(vy - (ult.vy || 0)))) : 0;
-    if (!force && ((dx * dx + dz * dz < U * U && giro < 0.3 && (api.quieto || now - ult.t < 1500)) || now - ult.t < (api.minMs || 0))) return; /* también al girar más de 17° */
-    const movio = dx * dx + dz * dz >= U * U;
-    ult.x = cam.position.x; ult.z = cam.position.z; ult.t = now; ult.vy = vy;
+    /* FLUIDEZ: con la cámara lejos del punto que se mira (vista general, láminas) los árboles cercanos a ese punto se ven a cientos de metros:
+       la distancia de cada árbol suma lo que la cámara está más allá de 350 m (de cerca no cambia nada) y acercarse o alejarse recalcula */
+    const dist = cam.dist || 0, extra = Math.max(0, dist - 350), zoom = Math.abs(extra - (ult.extra || 0)) > Math.max(30, 0.15 * (ult.extra || 0));
+    if (!force && !zoom && ((dx * dx + dz * dz < U * U && giro < 0.3 && (api.quieto || now - ult.t < 1500)) || now - ult.t < (api.minMs || 0))) return; /* también al girar más de 17° */
+    const movio = dx * dx + dz * dz >= U * U || zoom;
+    ult.x = cam.position.x; ult.z = cam.position.z; ult.t = now; ult.vy = vy; ult.extra = extra;
+    const E0 = R0 > extra ? (R0 - extra) ** 2 : -1, E1 = R1 > extra ? (R1 - extra) ** 2 : -1; /* radios efectivos (al cuadrado) */
     const CV = cam.cam, DV = cam.dir; /* árboles 3D solo hacia donde mira la cámara (±100°); detrás quedan las siluetas */
     const enVista = (i) => { if (!CV || !DV) return true; const ex = X[i] - CV.x, ez = Z[i] - CV.z, L = Math.hypot(ex, ez); return L < 60 || (ex * DV.x + ez * DV.z) / L > -0.17; };
     cand.length = 0;
@@ -460,8 +464,8 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
     for (const [i, d2] of cand) {
       const s = SP[i], sc = esc(i), tv = 0.82 + hash(i * 19) * 0.34;
       if (!enVista(i)) continue;
-      if (d2 < R0 * R0 && n0[s] < CAP0S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n0[s]++; pintar(lod[s].L0, especies[s].niveles.L0, k, i, tv); asignado[i] = 1; }
-      else if (d2 < R1 * R1 && n1[s] < CAP1S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n1[s]++; pintar(lod[s].L1, especies[s].niveles.L1, k, i, tv); asignado[i] = 1; }
+      if (d2 < E0 && n0[s] < CAP0S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n0[s]++; pintar(lod[s].L0, especies[s].niveles.L0, k, i, tv); asignado[i] = 1; }
+      else if (d2 < E1 && n1[s] < CAP1S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n1[s]++; pintar(lod[s].L1, especies[s].niveles.L1, k, i, tv); asignado[i] = 1; }
       else if (USAR_BAJOS && tot2 < CAP2) { // arbol 3D de bajos poligonos con el mismo alto y ancho de copa que tendria el modelo real
         const e = especies[s], w = e.ancho * sc, h = e.alto * sc, ti = TINTE_BAJO[s], hv = 0.96 + hash(i) * 0.08;
         d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); d.scale.set(w, h, w); d.updateMatrix(); col.setRGB(tv * ti[0] * 0.86, tv * hv * ti[1] * 1.0, tv * 0.94 * ti[2] * 0.86);
