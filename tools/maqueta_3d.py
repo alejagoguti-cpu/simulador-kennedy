@@ -127,7 +127,7 @@ fig.savefig(os.path.join(OUT, 'vista_previa_alturas.png'), facecolor=fig.get_fac
 import rhino3dm as r3
 F3 = r3.File3dm(); F3.Settings.ModelUnitSystem = r3.UnitSystem.Millimeters
 for nombre in PIEZAS:
-    tm = trimesh.load(os.path.join(OUT, f'kennedy_{nombre}.stl')); mh = r3.Mesh()
+    tm = trimesh.load(os.path.join(OUT, f'kennedy_{nombre}.stl')); tm.unmerge_vertices(); mh = r3.Mesh()  # vértices propios por cara: sombreado plano en Rhino
     for v in tm.vertices: mh.Vertices.Add(float(v[0]), float(v[1]), float(v[2]))
     for a3, b3, c3 in tm.faces: mh.Faces.AddFace(int(a3), int(b3), int(c3))
     mh.Normals.ComputeNormals(); mh.Compact()
