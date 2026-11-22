@@ -56,6 +56,10 @@
           "p98": 1.44
         },
         "nota": "NAIN n (integración) y NACH (elección), hoy (a) vs con la propuesta (b); misma escala de color"
+      },
+      "edificios3d": {
+        "n": 224111,
+        "nota": "cajas orientadas aproximadas a la huella (arista más larga); altura h de data3d/buildings.json"
       }
     },
     "nota": "máscaras blancas con alfa; el color lo pone TouchDesigner. Fuentes: data3d/buildings.json, parques.json, water_bodies.json, trees.json, colegios.json"

@@ -170,6 +170,25 @@ for (let t = 0; t < NS; t++) {
   conteo.sintaxis = { segmentos: SX.seg.length, pasajes_nuevos: SX.seg.filter(s => s.n).length, ...sx, nota: 'NAIN n (integración) y NACH (elección), hoy (a) vs con la propuesta (b); misma escala de color' };
 }
 
+// ---------- EDIFICIOS 3D (data3d/buildings.json: huella + altura h en m) como cajas orientadas para instancing ----------
+// por edificio: u, v (centro en el encuadre), ancho y fondo (m, a lo largo de su arista más larga), ángulo (rad, en el plano u-v), altura (m)
+{
+  const B = await leer('buildings.json'), out = [];
+  for (const e of B) { const P = e.pts.map(p => [p[0] - LC[0], LC[1] - p[1]]); if (P.length < 3) continue; // mundo: x este, z sur
+    let cx = 0, cz = 0; for (const [x, z] of P) { cx += x; cz += z; } cx /= P.length; cz /= P.length;
+    const [u, v] = aUV(cx, cz); if (u < 0 || u > 1 || v < 0 || v > 1) continue;
+    let L = 0, ang = 0; for (let k = 1; k < P.length; k++) { const dx = P[k][0] - P[k - 1][0], dz = P[k][1] - P[k - 1][1], l = Math.hypot(dx, dz); if (l > L) { L = l; ang = Math.atan2(dz, dx); } }
+    const ca = Math.cos(ang), sa = Math.sin(ang); let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9;
+    for (const [x, z] of P) { const dx = x - cx, dz = z - cz, a = dx * ca + dz * sa, b = -dx * sa + dz * ca; a0 = Math.min(a0, a); a1 = Math.max(a1, a); b0 = Math.min(b0, b); b1 = Math.max(b1, b); }
+    const am = (a0 + a1) / 2, bm = (b0 + b1) / 2, [uu, vv] = aUV(cx + am * ca - bm * sa, cz + am * sa + bm * ca);
+    out.push(uu, vv, a1 - a0, b1 - b0, -(ang + rot), e.h || 6); }
+  const n = out.length / 6, f = Float32Array.from(out);
+  let cab = `{'descr': '<f4', 'fortran_order': False, 'shape': (${n}, 6), }`; const pad = 64 - ((10 + cab.length + 1) % 64); cab += ' '.repeat(pad) + '\n';
+  const hdr = Buffer.alloc(10); hdr.write('\x93NUMPY', 0, 'latin1'); hdr[6] = 1; hdr[7] = 0; hdr.writeUInt16LE(cab.length, 8);
+  await writeFile(join(OUT, 'edificios3d.npy'), Buffer.concat([hdr, Buffer.from(cab, 'latin1'), Buffer.from(f.buffer)]));
+  conteo.edificios3d = { n, nota: 'cajas orientadas aproximadas a la huella (arista más larga); altura h de data3d/buildings.json' };
+}
+
 // float32 -> float16
 const f32 = new Float32Array(1), u32 = new Uint32Array(f32.buffer);
 const h = (x) => { f32[0] = x; const b = u32[0], s = (b >>> 16) & 0x8000; let e = ((b >>> 23) & 0xff) - 127 + 15, m = b & 0x7fffff;
