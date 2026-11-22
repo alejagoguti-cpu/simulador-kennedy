@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "nombre": "KENNEDY REACCIONA · Laboratorio de sistemas urbanos vivos · nivel 1",
+  "coordenadas": {
+    "sistema": "mundo local del simulador (metros): x = este, z = sur. Vista cenital con el norte arriba cuando rotacion_grados = 0.",
+    "desde_sumo_y_net": "x_mundo = x - LC[0] ; z_mundo = LC[1] - y   (index.html: const LC, función lw)",
+    "LC": [5341.33, 3161.9]
+  },
+  "rectangulo": {
+    "centro_m": [4024.7, 279.7],
+    "ancho_m": 1600,
+    "alto_m": 900,
+    "rotacion_grados": -63.5,
+    "nota": "Predio de Bavaria (data3d/bavaria.json 'sitio'): 71,2 ha, caja 1.035 m E-O × 1.164 m N-S, centroide mundo (3977,6; 219,3). Alineado norte-arriba NO cabe en 900 m. Encuadre rotado −63,5° (= angulo de bavaria_pres.json − 90°, auditoría §219) con el centro desplazado a mundo (4024,7; 279,7) = modelo (9366, 2882): el predio ocupa u ±648 m, v ±408 m (margen 152 m a los lados, 42 m arriba/abajo; verificado contra el polígono). Convención: u = dx·cosθ + dz·sinθ, v = −dx·sinθ + dz·cosθ en el mundo (x este, z sur); el norte ya no queda arriba (la cuadrícula de prueba marca el norte con una flecha). Para norte arriba: rotacion_grados 0 y centro [4008, 190] (el predio se sale ≈130 m al norte y al sur)."
+  },
+  "maqueta": {
+    "escala": 1250,
+    "ancho_cm": 128,
+    "alto_cm": 72,
+    "nota": "1.600 m / 1.250 = 128 cm ; 900 m / 1.250 = 72 cm. La maqueta física y la proyección deben cortarse con ESTE rectángulo."
+  },
+  "proyector": {
+    "ancho_px": 1920,
+    "alto_px": 1080
+  },
+  "rele": {
+    "puerto": 8787
+  },
+  "reloj": {
+    "hora_inicio": "17:30",
+    "velocidad_inicio": 1
+  },
+  "estilo": {
+    "punto_px": 3.2,
+    "estela_s": 4,
+    "brillo": 1,
+    "red_intensidad": 0.22
+  }
+}

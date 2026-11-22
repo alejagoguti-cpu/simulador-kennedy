@@ -1,0 +1,35 @@
+# KENNEDY REACCIONA · proyecto TouchDesigner (nivel 1)
+
+Archivo: `instalacion/td/KennedyReacciona.toe` (TouchDesigner 2025.33230). Construido y verificado con TDMCP.
+Red: `/project1/KENNEDY_REACCIONA` (atajo `parent.Kr`).
+
+## Qué funciona (verificado en TouchDesigner)
+
+| Componente | Contenido | Estado |
+|---|---|---|
+| c01_DATOS | `datos` (módulo Python): carga `instalacion/datos/` (vehiculos.npy, red_vial.csv, meta.json) | funciona |
+| c02_GEOMETRIA | `script_red` → `null_red` (1.615 tramos de la red vial del simulador), `geo_red`, `cam_ortho` (cámara ortográfica cenital, 16 × 9 unidades = 1.600 × 900 m) | funciona |
+| c03_MOVILIDAD | `script_vehiculos` → `null_vehiculos` (tx, ty, color por velocidad, vel), `geo_vehiculos` (instancing de puntos), `mat_vehiculo` (aditivo) | funciona |
+| c09_VISUALIZACION | `render_red`, `render_veh`, estela por feedback, `fondo_negro`, `comp_final` → `null_vis`. `web_proyeccion` = respaldo web (apagado: el Web Render bloquea TouchDesigner en este equipo) | funciona |
+| c10_PROJECTION_MAPPING | `select_vis`, `glsl_cuadricula` (cuadrícula 100/500 m, borde y cruz), `switch_modo`, `cornerpin_maqueta` (4 esquinas), `null_salida`, `ventana_proyector` | funciona (la ventana no se ha probado con un proyector real) |
+| c11_CONTROLES | reloj: `tasa` → `speed_reloj` → `null_reloj` (segundos de simulación); `pulsos` (reiniciar, abrir/cerrar proyector) | funciona |
+| c04–c08, c12 | vacíos: ruido, ecología, sintaxis, intervenciones, escenarios, indicadores (niveles 2 y 3) | pendiente |
+
+## Controles (parámetros de KENNEDY_REACCIONA)
+- Página **Controles**: Modo del proyector (Presentación / Cuadrícula / Calibración), Pausa, Velocidad (×), Hora de inicio, Reiniciar, capas Movilidad y Red vial, Demanda por hora, Estela, Tamaño del punto, Intensidad de la red.
+- Página **Calibracion**: las 4 esquinas (fracción 0–1, origen abajo a la izquierda), Pantalla del proyector, Abrir/Cerrar salida.
+
+## Origen de cada cosa que se ve (no se inventa nada)
+- **Vehículos**: REPRODUCCIÓN de la grabación SUMO del simulador (`data3d/traf`, 1.500 s, en bucle). No se re-simula. Se omite el arranque (0–300 s, cuando la red se llena) y se reproduce el régimen estable (85–100 vehículos en el encuadre).
+- **Color**: velocidad grabada (<1, 1–5, 5–10, >10 m/s).
+- **Cantidad por hora**: perfil horario de demanda del simulador (ESTIMADO, perfil típico de Bogotá; la grabación es de hora pico = 100 %).
+- **Estela**: rastro visual de las posiciones anteriores de cada vehículo (solo sobre su trayectoria grabada); recurso visual, no un dato.
+- **Red vial**: `data3d/net.json` del simulador.
+
+## Limitaciones conocidas
+- Licencia No Comercial: resolución máxima 1280 × 1280 → la salida es 1280 × 720 y la ventana la escala al proyector.
+- La grabación SUMO cubre pocos vehículos alrededor de Bavaria (máx. 108 a la vez).
+- La consola web (`instalacion/consola.html`) aún no controla TouchDesigner (pendiente: leer el relé desde TD).
+
+## Regenerar los datos
+`node tools/exportar_instalacion.mjs` (lee `instalacion/config.json`; si cambia el encuadre, vuelve a exportar).

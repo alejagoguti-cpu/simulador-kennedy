@@ -1,0 +1,53 @@
+{
+  "NS": 1500,
+  "M": 110,
+  "dur": 1499,
+  "tramos": 1615,
+  "encuadre": {
+    "centro_m": [
+      4024.7,
+      279.7
+    ],
+    "ancho_m": 1600,
+    "alto_m": 900,
+    "rotacion_grados": -63.5,
+    "nota": "Predio de Bavaria (data3d/bavaria.json 'sitio'): 71,2 ha, caja 1.035 m E-O × 1.164 m N-S, centroide mundo (3977,6; 219,3). Alineado norte-arriba NO cabe en 900 m. Encuadre rotado −63,5° (= angulo de bavaria_pres.json − 90°, auditoría §219) con el centro desplazado a mundo (4024,7; 279,7) = modelo (9366, 2882): el predio ocupa u ±648 m, v ±408 m (margen 152 m a los lados, 42 m arriba/abajo; verificado contra el polígono). Convención: u = dx·cosθ + dz·sinθ, v = −dx·sinθ + dz·cosθ en el mundo (x este, z sur); el norte ya no queda arriba (la cuadrícula de prueba marca el norte con una flecha). Para norte arriba: rotacion_grados 0 y centro [4008, 190] (el predio se sale ≈130 m al norte y al sur)."
+  },
+  "maqueta_mm": [
+    1280,
+    720
+  ],
+  "escala": 1250,
+  "reloj": {
+    "T0_RELOJ": 23400,
+    "T0_GRAB": 1000,
+    "nota": "segundo de la grabación = (1000 + (hora_del_día − 06:30)) mod (dur+1), igual que el simulador"
+  },
+  "demanda_h": [
+    0.06,
+    0.04,
+    0.03,
+    0.03,
+    0.08,
+    0.32,
+    0.78,
+    0.95,
+    0.82,
+    0.62,
+    0.58,
+    0.62,
+    0.72,
+    0.7,
+    0.62,
+    0.66,
+    0.82,
+    1,
+    0.97,
+    0.78,
+    0.52,
+    0.36,
+    0.22,
+    0.12
+  ],
+  "origen": "data3d/traf (grabación SUMO, reproducida), data3d/net.json (red vial), instalacion/config.json (encuadre)"
+}
