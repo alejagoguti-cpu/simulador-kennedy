@@ -268,7 +268,7 @@ ${slider(P2, 'frac', 'Proporción de residuos que va a compostaje', 0.05, 0.9, 0
 <li>El azar sale de una semilla: la misma semilla da siempre la misma historia, y A, B y C viven los mismos cierres.</li>
 <li>Las 3 reglas de game over se fijaron antes de correr, son iguales para A, B y C y cuentan desde la semana 1.</li>
 <li>B y C tienen la misma capacidad total de acopio, compost y almacenamiento y el mismo calendario: cambia solo cómo se organizan.</li>
-<li>Una corrida sola no prueba nada: «Evaluar» corre 30 semillas fijas por 50 años y muestra todas.</li>
+<li>Una corrida sola no prueba nada: «Evaluar» corre 30 semillas fijas por 10 años y muestra todas.</li>
 <li>Si mueves un control, rige desde la semana en que lo mueves: la corrida sigue desde donde va, sin volver a empezar ni saltar.</li></ol></div>
 <div class="mapa" data-mapa aria-live="polite"></div><div class="aviso" data-aviso hidden></div><div class="cuerpo">
 <div class="chk interruptor"><label><input type="checkbox" data-cierres ${P1.cierres !== false ? 'checked' : ''}>Cierre de vía al azar (los mismos para A, B y C)</label></div>
@@ -514,7 +514,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; pintarPanel(); return; }
     if (b.dataset.sd) { ponerSemilla(VIDA.seed + +b.dataset.sd); return; }
     if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
-    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=5').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
+    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=6').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
     if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* A: se prende el flujo de carros (los mismos controles del panel izquierdo) */
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
@@ -572,7 +572,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   RELOJ.alDibujar(cuadro);
   aplicar();
   // MODO SIMPLE (por defecto, data3d/modo_simple.js): tarjeta de escenario + «Año X de 50» y panel «¿Qué está pasando?»; el resto de los paneles se esconde hasta «Ver todo»
-  import('./modo_simple.js?v=2').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
+  import('./modo_simple.js?v=3').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
     .catch(er => { console.warn('modo simple:', er); document.documentElement.classList.remove('ms-simple'); });
   setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple')) import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
   import('./mejora_tour.js?v=10').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar

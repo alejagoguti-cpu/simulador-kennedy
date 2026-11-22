@@ -251,7 +251,7 @@
    RELOJ.cuadro(): corre los pasos fijos de 1 s simulado que tocan (tráfico, agentes, fauna, aves, semanas) y después los dibujos registrados.
    El control de tiempo (pausa, velocidad, fecha y hora) está en data3d/reloj_ui.js. */
 import { RELOJ, vistaT3 } from './data3d/reloj.js?v=5';
-import { crearControlTiempo } from './data3d/reloj_ui.js?v=7';
+import { crearControlTiempo } from './data3d/reloj_ui.js?v=8';
 crearControlTiempo(); // control de tiempo único (pausa, velocidad, fecha y hora) dentro de #trafficHud
 // caché de JSON compartida: cada archivo se descarga y se lee UNA vez aunque lo pidan varios módulos (giro_sim.json, trees.json, estrategias.json…)
 window.cargarJSON = window.cargarJSON || ((c) => (u) => c[u] || (c[u] = fetch(u).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })))({});
@@ -3709,7 +3709,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=86').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=87').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })

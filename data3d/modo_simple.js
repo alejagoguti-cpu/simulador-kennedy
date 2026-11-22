@@ -16,7 +16,7 @@ import { RELOJ as R0 } from './reloj.js?v=5';
 import { ESCENARIOS, REGLAS, MERCADOS, BODEGAS, MOTIVO, diagnostico, crear, paso } from './sim_vida.js?v=4';
 import { ZONAS } from './sim_red_datos.js?v=2';
 import { PAR, SIMST } from './sim_modelos.js?v=6';
-import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=1';
+import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=2';
 
 const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' };
 const LARGO = { A: 'Hoy', B: 'Bavaria central', C: 'Red de mercados' };
@@ -60,7 +60,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
         <div class="ms-año" role="timer" aria-live="off"><span class="ms-n" data-n>Año 1</span><span class="ms-de">de ${TOPE_AÑOS}</span></div>
         <div class="ms-vel" role="group" aria-label="Velocidad de los años">${VELS.map(([n, v, t]) => `<button type="button" data-v="${v}" title="${t}">${n}</button>`).join('')}</div></div>
       <div class="ms-pista" data-pista><span class="ms-banda" data-banda hidden></span><span class="ms-rel" data-rel></span><i class="ms-pto" data-pto></i><span data-hitos></span></div>
-      <div class="ms-eje" aria-hidden="true">${[0, 10, 20, 30, 40, 50].map(a => `<span style="left:${a * 2}%">${a === 0 ? 'año 0' : a === 50 ? 'año 50' : a}</span>`).join('')}</div>
+      <div class="ms-eje" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map(i => i * TOPE_AÑOS / 5).map(a => `<span style="left:${a / TOPE_AÑOS * 100}%">${a === 0 ? 'año 0' : a === TOPE_AÑOS ? 'año ' + a : a}</span>`).join('')}</div>
       <p class="ms-ley" data-ley></p>
       <div class="ms-fin" data-fin hidden role="status"><h3>Fin: ${TOPE_AÑOS} años</h3><p data-fin-txt></p><button type="button" data-reiniciar>Volver a empezar</button></div>
     </section>
@@ -208,7 +208,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
     const max = (I.max || mx || 1) * 1.04, py = (v) => mt + (H - mt - mb) * (1 - v / max), yNow = Math.min(TOPE_AÑOS, RELOJ.sem / 52);
     let s = `<line x1="${ml}" y1="${py(0)}" x2="${W - mr}" y2="${py(0)}" class="base"/><line x1="${ml}" y1="${py(max / 1.04)}" x2="${W - mr}" y2="${py(max / 1.04)}" class="malla"/>`;
     s += `<text x="${ml}" y="${mt - 4}" class="eje">${I.f(max / 1.04)}</text>`;
-    [0, 25, 50].forEach(a => { s += `<text x="${px(a)}" y="${H - 6}" class="eje" text-anchor="${a === 0 ? 'start' : a === 50 ? 'end' : 'middle'}">${a === 0 ? 'año 0' : a === 50 ? 'año 50' : a}</text>`; });
+    [0, TOPE_AÑOS / 2, TOPE_AÑOS].forEach(a => { s += `<text x="${px(a)}" y="${H - 6}" class="eje" text-anchor="${a === 0 ? 'start' : a === TOPE_AÑOS ? 'end' : 'middle'}">${a === 0 ? 'año 0' : a === TOPE_AÑOS ? 'año ' + a : a}</text>`; });
     s += `<line x1="${px(yNow)}" y1="${mt}" x2="${px(yNow)}" y2="${py(0)}" class="ahora"/>`;
     const fin = []; for (const k of ['A', 'B', 'C']) { const pts = ser[k].map((v, y) => v != null && isFinite(v) ? `${px(y).toFixed(1)},${py(v).toFixed(1)}` : null).filter(Boolean); if (!pts.length) continue;
       s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${COL[k]}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`; fin.push({ k, y: py(ser[k][TOPE_AÑOS]), v: ser[k][TOPE_AÑOS] }); }
@@ -217,7 +217,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
     fin.forEach(f => { s += `<text x="${W - mr + 6}" y="${(f.y + 4).toFixed(1)}" class="fin" fill="${COL[f.k]}">${I.f(f.v)}</text>`; });
     const vals = fin.filter(f => f.v != null), ord = vals.slice().sort((a, b) => (b.v - a.v) * I.mejor), rel = ord.length > 1 ? Math.abs(ord[0].v - ord[ord.length - 1].v) / Math.max(Math.abs(ord[0].v), Math.abs(ord[ord.length - 1].v), 1e-9) : 0;
     const gana = ord.length < 2 || rel < 0.03 ? '<span class="gana">casi igual</span>' : `<span class="gana">${ord.filter(f => Math.abs(f.v - ord[0].v) / Math.max(Math.abs(ord[0].v), 1e-9) < 0.03).map(f => `<b style="background:${COL[f.k]}">${f.k}</b>`).join('')} ${I.mejor > 0 ? 'más' : 'menos'}</span>`;
-    return `<figure class="ms-g"><figcaption><span>${I.t}</span>${gana}</figcaption><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${I.t} en 50 años: ${fin.map(f => f.k + ' termina en ' + I.f(f.v)).join(', ')}">${s}</svg></figure>`;
+    return `<figure class="ms-g"><figcaption><span>${I.t}</span>${gana}</figcaption><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${I.t} en ${TOPE_AÑOS} años: ${fin.map(f => f.k + ' termina en ' + I.f(f.v)).join(', ')}">${s}</svg></figure>`;
   };
   const dibujar = () => { cq('[data-cuerpo]').innerHTML = IND.map(grafico).join('');
     cq('[data-pie]').innerHTML = ['A', 'B', 'C'].map(k => { const c = RES.S[k].colapso; return `<span class="${c ? 'mal' : ''}"><b style="background:${COL[k]}">${k}</b>${c ? `<i class="go">${IC.go}</i>game over año ${añoDeSem(c.t)}` : 'sin game over'}</span>`; }).join(''); };
@@ -241,7 +241,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
     const ok = () => { const L = document.getElementById('loader'); return !L || L.classList.contains('hidden') || getComputedStyle(L).display === 'none'; };
     const t = setInterval(() => { if (!ok()) return; clearInterval(t); if (lsGet() || !esSimple()) return;
       intro = document.createElement('section'); intro.id = 'ms-intro'; intro.className = 'ms-glass'; intro.setAttribute('role', 'dialog'); intro.setAttribute('aria-labelledby', 'ms-intro-t');
-      intro.innerHTML = `<h2 id="ms-intro-t">Así se usa</h2><ol><li><b>Elige</b> cómo se organiza Kennedy: A, B o C.</li><li>Dale <b>play</b> y mira 50 años.</li><li><b>Compara</b> los resultados.</li></ol><div><button type="button" data-ok>Entendido</button><button type="button" data-omitir>Omitir</button></div>`;
+      intro.innerHTML = `<h2 id="ms-intro-t">Así se usa</h2><ol><li><b>Elige</b> cómo se organiza Kennedy: A, B o C.</li><li>Dale <b>play</b> y mira ${TOPE_AÑOS} años.</li><li><b>Compara</b> los resultados.</li></ol><div><button type="button" data-ok>Entendido</button><button type="button" data-omitir>Omitir</button></div>`;
       intro.querySelector('[data-ok]').onclick = cerrarIntro; intro.querySelector('[data-omitir]').onclick = cerrarIntro; document.body.appendChild(intro); intro.querySelector('[data-ok]').focus(); }, 500);
   };
   pintar(true); mostrarIntro();
