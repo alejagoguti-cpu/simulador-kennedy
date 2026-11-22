@@ -32,7 +32,7 @@ export function iniciarPicosZonas({ T3 }) {
   let cual = 'red', on = true, tPrev = null;
   try { const g = localStorage.getItem('kr-picos2'); if (g && (g in IND || g === 'apagado')) { cual = g === 'apagado' ? 'red' : g; on = g !== 'apagado'; } } catch (e) { }
 
-  const escAct = () => (T3.escenario === 'proyecto' ? (SIMST.esc || 'C') : 'A');
+  const escAct = () => (window.KEN_ESIM && window.KEN_ESIM.esc) || (T3.escenario === 'proyecto' ? (SIMST.esc || 'C') : 'A');
   const estado = () => { const E = window.KEN_ESIM; const V = E && E.vida; return V && V.S && V.S[escAct()] ? V.S[escAct()].o : null; };
   const colorDe = (v, e) => {
     if (cual === 'comida') return v < 0.8 ? C.setRGB(1.0, 0.22, 0.18) : v < 0.95 ? C.setRGB(1.0, 0.66, 0.18) : C.setRGB(0.3, 0.9, 1.0);

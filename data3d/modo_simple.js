@@ -18,9 +18,9 @@ import { ZONAS } from './sim_red_datos.js?v=2';
 import { PAR, SIMST } from './sim_modelos.js?v=6';
 import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=2';
 
-const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' };
-const LARGO = { A: 'Hoy', B: 'Bavaria central', C: 'Red de mercados' };
-const FRASE = { A: 'Kennedy sigue como hoy: toda la comida pasa por Corabastos.', B: 'Bavaria Común concentra el reparto, el compost y las decisiones.', C: 'Una red de mercados de barrio reparte la comida y el compost.' };
+const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b', D: '#c9706a' };
+const LARGO = { A: 'Hoy', B: 'Bavaria central', C: 'Red de mercados', D: 'Plan parcial' };
+const FRASE = { A: 'Kennedy sigue como hoy: toda la comida pasa por Corabastos.', B: 'Bavaria Común concentra el reparto, el compost y las decisiones.', C: 'Una red de mercados de barrio reparte la comida y el compost.', D: 'Se construye el Plan Parcial Fábrica Bavaria: 14.300 viviendas en 10 años.' };
 const LUZ = { habitat: 'Hábitat', abasto: 'Abastecimiento', residuos: 'Residuos' };
 const VELS = [['Lento', 4, 'Un año cada 13 segundos'], ['Normal', 13, 'Un año cada 4 segundos'], ['Rápido', 26, 'Un año cada 2 segundos'], ['Muy rápido', 52, 'Un año por segundo']];
 const MERC = MERCADOS.slice().sort((a, b) => a.desde - b.desde);
@@ -54,7 +54,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
   if (!document.getElementById('ms-css')) { const l = document.createElement('link'); l.id = 'ms-css'; l.rel = 'stylesheet'; l.href = 'data3d/modo_simple.css?v=8'; document.head.appendChild(l); }
   const root = document.createElement('div'); root.id = 'ms';
   root.innerHTML = `<section id="ms-main" aria-label="Escenario y años">
-      <div class="ms-top"><div class="ms-esc" role="group" aria-label="Escenario">${['A', 'B', 'C'].map(k => `<button type="button" data-e="${k}" aria-pressed="false" style="--c:${COL[k]}" title="${FRASE[k]}"><b>${k}</b><span class="ms-nl">${LARGO[k]}</span><span class="ms-nc">${ESCENARIOS[k].corto}</span></button>`).join('')}</div>
+      <div class="ms-top"><div class="ms-esc" role="group" aria-label="Escenario">${['A', 'B', 'C', 'D'].map(k => `<button type="button" data-e="${k}" aria-pressed="false" style="--c:${COL[k]}" title="${FRASE[k]}"><b>${k}</b><span class="ms-nl">${LARGO[k]}</span><span class="ms-nc">${ESCENARIOS[k].corto}</span></button>`).join('')}</div>
         <button type="button" class="ms-todo" id="ms-todo" title="Mostrar todos los paneles y controles">Ver todo</button></div>
       <div class="ms-tl"><button type="button" class="ms-play" data-play aria-label="Correr los años">▶</button>
         <div class="ms-año" role="timer" aria-live="off"><span class="ms-n" data-n>Año 1</span><span class="ms-de">de ${TOPE_AÑOS}</span></div>
@@ -133,13 +133,14 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
   const leyenda = (e) => { const L = []; if (e === 'A') L.push('Sin obras nuevas: el tráfico crece cada año.'); if (e === 'C') L.push(`<i class="ms-k mer">${IC.mer}</i>mercado que abre`); if (e !== 'A') L.push(`<i class="ms-k bod">${IC.bod}</i>bodega que se desmonta`); L.push(`<i class="ms-k go">${IC.go}</i>game over`); return L.join(''); };
   const frases = (e, sv, o, a) => {
     const dep = o.dep, menos = Math.round(90 * (1 - dep)), L = [];
+    if (e === 'D' && o.plan) L.push(`<b>Año ${a}:</b> el Plan Parcial Fábrica Bavaria lleva <b>${fmt(o.plan.viviendas)} de 14.300 viviendas</b>: ${fmt(o.plan.personas)} personas más y ${fmt(o.plan.autos)} carros más; ${fmt(o.plan.arboles)} árboles talados en el predio.`);
     if (e === 'A') L.push(`<b>Año ${a}:</b> toda la comida sigue llegando por Corabastos.`);
     else if (e === 'B') L.push(`<b>Año ${a}:</b> Bavaria reparte ${fmt(o.bavKg / 1000)} t de comida por semana; ${fmt(o.act)} hogares con huerta.`);
-    else L.push(`<b>Año ${a}:</b> ${fmt(o.nodos)} de ${MERC.length} mercados abiertos y ${fmt(o.act)} hogares con huerta.`);
-    if (e === 'A') L.push(o.trafico && o.trafico.V > 1.0005 ? `El tráfico en Kennedy es <b>${fmt((o.trafico.V - 1) * 100)} % mayor</b> que hoy.` : 'El tráfico en Kennedy es como el de hoy.');
-    else L.push(`${menos >= 1 ? `Corabastos recibe <b>${menos} % menos camiones</b>` : 'Corabastos sigue recibiendo todos sus camiones'}; ${sv.cora.ap.length} de ${BODEGAS.length} bodegas desmontadas.`);
+    else if (e === 'C') L.push(`<b>Año ${a}:</b> ${fmt(o.nodos)} de ${MERC.length} mercados abiertos y ${fmt(o.act)} hogares con huerta.`);
+    if (e === 'A' || e === 'D') L.push(o.trafico && o.trafico.V > 1.0005 ? `El tráfico en Kennedy es <b>${fmt((o.trafico.V - 1) * 100)} % mayor</b> que hoy.` : 'El tráfico en Kennedy es como el de hoy.');
+    else if (e !== 'D') L.push(`${menos >= 1 ? `Corabastos recibe <b>${menos} % menos camiones</b>` : 'Corabastos sigue recibiendo todos sus camiones'}; ${sv.cora.ap.length} de ${BODEGAS.length} bodegas desmontadas.`);
     L.push(`<b>${fmt(o.esp)} de ${fmt(o.esp0)}</b> especies presentes en los parches.`);
-    L.push(e === 'A' ? `Los orgánicos van al relleno: ${fmt(o.relleno / 1000, 1)} t por semana.` : `${fmt(o.pct2)} % de los orgánicos se composta; el resto va al relleno.`);
+    L.push(e === 'A' || e === 'D' ? `Los orgánicos van al relleno: ${fmt(o.relleno / 1000, 1)} t por semana.` : `${fmt(o.pct2)} % de los orgánicos se composta; el resto va al relleno.`);
     if (o.cierre && o.cierre.on) L.splice(1, 0, `Vía <b>${o.cierre.via}</b> cerrada (semana ${o.cierre.sem} de ${o.cierre.dur}).`);
     return L.slice(0, 5);
   };
@@ -160,9 +161,9 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
     if (forzar || f2 !== firma) { firma = f2; q.hitos.innerHTML = hitos(); q.ley.innerHTML = leyenda(e);
       q.banda.hidden = e !== 'B'; if (e === 'B') { q.banda.style.left = pct(MERC[0].desde); q.banda.style.width = (MERC[MERC.length - 1].desde / TOPE_SEM * 100 - MERC[0].desde / TOPE_SEM * 100).toFixed(2) + '%'; } }
     q.fin.hidden = !fin;
-    if (fin) { const D = ['A', 'B', 'C'].map(k => { const s = L.S[k]; return `<b style="color:${COL[k]}">${k}</b> ${s.colapso ? 'game over en el año ' + añoDeSem(s.colapso.t) : 'sigue'}`; }); q.finTxt.innerHTML = D.join(' · ') + '.'; }
+    if (fin) { const D = ['A', 'B', 'C', 'D'].filter(k => L.S[k]).map(k => { const s = L.S[k]; return `<b style="color:${COL[k]}">${k}</b> ${s.colapso ? 'game over en el año ' + añoDeSem(s.colapso.t) : 'sigue'}`; }); q.finTxt.innerHTML = D.join(' · ') + '.'; }
     // lo grande: un número y su etiqueta
-    q.kv.textContent = fmt(o.act); q.kl.textContent = 'hogares con huerta';
+    if (e === 'D' && o.plan) { q.kv.textContent = fmt(o.plan.viviendas); q.kl.textContent = 'viviendas nuevas · ' + fmt(o.plan.personas) + ' personas'; } else { q.kv.textContent = fmt(o.act); q.kl.textContent = 'hogares con huerta'; }
     const dg = diagnostico(sv);
     q.luces.innerHTML = ['abasto', 'residuos', 'habitat'].map(k => { const r = dg.reglas.find(z => z.R.k === k), est = !r ? 'ok' : r.estado === 'cerrada' ? 'cerro' : (r.estado === 'riesgo' || r.estado === 'cumple') ? 'riesgo' : 'ok';
       return `<li data-s="${est}" title="${est === 'ok' ? 'bien' : est === 'riesgo' ? 'en riesgo' : 'game over'}"><span>${LUZ[k]}</span><em>${est === 'ok' ? 'bien' : est === 'riesgo' ? 'en riesgo' : 'game over'}</em></li>`; }).join('');
@@ -185,7 +186,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
   const cmp = document.createElement('div'); cmp.id = 'ms-cmp'; cmp.hidden = true; cmp.setAttribute('role', 'dialog'); cmp.setAttribute('aria-modal', 'true'); cmp.setAttribute('aria-labelledby', 'ms-cmp-t');
   cmp.innerHTML = `<div class="ms-glass ms-cmp-caja"><header><h2 id="ms-cmp-t">Comparar A · B · C</h2><button type="button" class="ms-i" data-info aria-expanded="false" aria-label="Cómo se calcula" title="Cómo se calcula">ℹ</button><button type="button" class="ms-x" data-x aria-label="Cerrar">✕</button></header>
     <p class="ms-info" data-cinfo hidden></p>
-    <div class="ms-clave" aria-hidden="true">${['A', 'B', 'C'].map(k => `<span><i style="background:${COL[k]}"></i>${k} ${LARGO[k]}</span>`).join('')}<span><i class="go"></i>game over</span><span><i class="ya"></i>ahora</span></div>
+    <div class="ms-clave" aria-hidden="true">${['A', 'B', 'C', 'D'].map(k => `<span><i style="background:${COL[k]}"></i>${k} ${LARGO[k]}</span>`).join('')}<span><i class="go"></i>game over</span><span><i class="ya"></i>ahora</span></div>
     <p class="ms-calc" data-calc hidden></p><div class="ms-grid" data-cuerpo></div><div class="ms-pie" data-pie></div></div>`;
   document.body.appendChild(cmp);
   const cq = (s) => cmp.querySelector(s);
@@ -194,25 +195,25 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
   const calcular = () => {
     if (RES && RES.clave === claveRes()) return Promise.resolve(RES);
     return new Promise((fin) => {
-      const seed = SIMST.semilla || 1, S = { A: crear('A', seed), B: crear('B', seed), C: crear('C', seed) }, sn = { A: [], B: [], C: [] }; let w = 0; const clave = claveRes();
+      const seed = SIMST.semilla || 1, S = { A: crear('A', seed), B: crear('B', seed), C: crear('C', seed), D: crear('D', seed) }, sn = { A: [], B: [], C: [], D: [] }; let w = 0; const clave = claveRes();
       const tira = () => { const hasta = w === 0 ? 1 : Math.min(TOPE_SEM, (Math.floor(w / 52) + 1) * 52);
-        for (; w < hasta; w++) for (const k of 'ABC') paso(S[k], PAR);
-        for (const k of 'ABC') sn[k].push(snap(S[k].o));
+        for (; w < hasta; w++) for (const k of 'ABCD') paso(S[k], PAR);
+        for (const k of 'ABCD') sn[k].push(snap(S[k].o));
         cq('[data-calc]').textContent = `Calculando los ${TOPE_AÑOS} años… ${Math.round(w / TOPE_SEM * 100)} %`;
         if (w < TOPE_SEM) setTimeout(tira, 0); else { RES = { clave, seed, sn, S }; fin(RES); } };
       tira(); });
   };
   const grafico = (I) => {
     const W = 330, H = 138, ml = 4, mr = 58, mt = 14, mb = 22, px = (y) => ml + (W - ml - mr) * y / TOPE_AÑOS;
-    const ser = {}; let mx = 0; for (const k of 'ABC') { ser[k] = RES.sn[k].map(s => s[I.k]); ser[k].forEach(v => { if (v != null && isFinite(v)) mx = Math.max(mx, v); }); }
+    const ser = {}; let mx = 0; for (const k of 'ABCD') { ser[k] = RES.sn[k].map(s => s[I.k]); ser[k].forEach(v => { if (v != null && isFinite(v)) mx = Math.max(mx, v); }); }
     const max = (I.max || mx || 1) * 1.04, py = (v) => mt + (H - mt - mb) * (1 - v / max), yNow = Math.min(TOPE_AÑOS, RELOJ.sem / 52);
     let s = `<line x1="${ml}" y1="${py(0)}" x2="${W - mr}" y2="${py(0)}" class="base"/><line x1="${ml}" y1="${py(max / 1.04)}" x2="${W - mr}" y2="${py(max / 1.04)}" class="malla"/>`;
     s += `<text x="${ml}" y="${mt - 4}" class="eje">${I.f(max / 1.04)}</text>`;
     [0, TOPE_AÑOS / 2, TOPE_AÑOS].forEach(a => { s += `<text x="${px(a)}" y="${H - 6}" class="eje" text-anchor="${a === 0 ? 'start' : a === TOPE_AÑOS ? 'end' : 'middle'}">${a === 0 ? 'año 0' : a === TOPE_AÑOS ? 'año ' + a : a}</text>`; });
     s += `<line x1="${px(yNow)}" y1="${mt}" x2="${px(yNow)}" y2="${py(0)}" class="ahora"/>`;
-    const fin = []; for (const k of ['A', 'B', 'C']) { const pts = ser[k].map((v, y) => v != null && isFinite(v) ? `${px(y).toFixed(1)},${py(v).toFixed(1)}` : null).filter(Boolean); if (!pts.length) continue;
+    const fin = []; for (const k of ['A', 'B', 'C', 'D']) { const pts = ser[k].map((v, y) => v != null && isFinite(v) ? `${px(y).toFixed(1)},${py(v).toFixed(1)}` : null).filter(Boolean); if (!pts.length) continue;
       s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${COL[k]}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`; fin.push({ k, y: py(ser[k][TOPE_AÑOS]), v: ser[k][TOPE_AÑOS] }); }
-    for (const k of 'ABC') { const c = RES.S[k].colapso, v = c && ser[k][Math.min(TOPE_AÑOS, Math.floor(c.t / 52))]; if (c && v != null && isFinite(v)) s += `<circle cx="${px(c.t / 52).toFixed(1)}" cy="${py(v).toFixed(1)}" r="4.6" class="go"/>`; }
+    for (const k of 'ABCD') { const c = RES.S[k].colapso, v = c && ser[k][Math.min(TOPE_AÑOS, Math.floor(c.t / 52))]; if (c && v != null && isFinite(v)) s += `<circle cx="${px(c.t / 52).toFixed(1)}" cy="${py(v).toFixed(1)}" r="4.6" class="go"/>`; }
     fin.sort((a, b) => a.y - b.y); for (let i = 1; i < fin.length; i++) if (fin[i].y - fin[i - 1].y < 12) fin[i].y = fin[i - 1].y + 12;
     fin.forEach(f => { s += `<text x="${W - mr + 6}" y="${(f.y + 4).toFixed(1)}" class="fin" fill="${COL[f.k]}">${I.f(f.v)}</text>`; });
     const vals = fin.filter(f => f.v != null), ord = vals.slice().sort((a, b) => (b.v - a.v) * I.mejor), rel = ord.length > 1 ? Math.abs(ord[0].v - ord[ord.length - 1].v) / Math.max(Math.abs(ord[0].v), Math.abs(ord[ord.length - 1].v), 1e-9) : 0;
@@ -220,7 +221,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
     return `<figure class="ms-g"><figcaption><span>${I.t}</span>${gana}</figcaption><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${I.t} en ${TOPE_AÑOS} años: ${fin.map(f => f.k + ' termina en ' + I.f(f.v)).join(', ')}">${s}</svg></figure>`;
   };
   const dibujar = () => { cq('[data-cuerpo]').innerHTML = IND.map(grafico).join('');
-    cq('[data-pie]').innerHTML = ['A', 'B', 'C'].map(k => { const c = RES.S[k].colapso; return `<span class="${c ? 'mal' : ''}"><b style="background:${COL[k]}">${k}</b>${c ? `<i class="go">${IC.go}</i>game over año ${añoDeSem(c.t)}` : 'sin game over'}</span>`; }).join(''); };
+    cq('[data-pie]').innerHTML = ['A', 'B', 'C', 'D'].map(k => { const c = RES.S[k].colapso; return `<span class="${c ? 'mal' : ''}"><b style="background:${COL[k]}">${k}</b>${c ? `<i class="go">${IC.go}</i>game over año ${añoDeSem(c.t)}` : 'sin game over'}</span>`; }).join(''); };
   const abrirCmp = async () => {
     foco = document.activeElement; cmp.hidden = false; cq('[data-x]').focus();
     cq('[data-cinfo]').innerHTML = `Se corre el mismo modelo semanal tres veces (A, B y C), con los ajustes de ahora y el mismo azar (semilla ${SIMST.semilla || 1}), hasta el año ${TOPE_AÑOS}. Cada curva es un indicador del modelo año por año; el punto rojo marca el game over (una regla incumplida 4 semanas seguidas: ${REGLAS.map(R => R.n.toLowerCase()).join(', ')}); la línea punteada es el año en que va la simulación. A la derecha, el valor al año ${TOPE_AÑOS}. La letra dice cuál sale mejor al final (si la diferencia es menor al 3 %, «casi igual»).`;

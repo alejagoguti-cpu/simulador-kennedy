@@ -32,8 +32,8 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   const R = correrTodo(); // solo para la referencia fija REF (modelo de 10 años del documento, valores por defecto)
   /* ---------- estado vivo: A, B y C con la misma semilla (viven los mismos eventos) ---------- */
   const VIDA = { seed: SIMST.semilla || 1, S: null, maxT: SEM - 1, avisado: {} };
-  const reiniciarVida = () => { VIDA.S = { A: crearVida('A', VIDA.seed), B: crearVida('B', VIDA.seed), C: crearVida('C', VIDA.seed) }; VIDA.avisado = {}; };
-  const avanzarA = (w) => { w = Math.max(0, Math.floor(w)); if (!VIDA.S || VIDA.S.A.t > w) reiniciarVida(); const S = VIDA.S; while (S.A.t < w) { pasoVida(S.A, PAR); pasoVida(S.B, PAR); pasoVida(S.C, PAR); } if (w > VIDA.maxT) VIDA.maxT = w; };
+  const reiniciarVida = () => { VIDA.S = { A: crearVida('A', VIDA.seed), B: crearVida('B', VIDA.seed), C: crearVida('C', VIDA.seed), D: crearVida('D', VIDA.seed) }; VIDA.avisado = {}; };
+  const avanzarA = (w) => { w = Math.max(0, Math.floor(w)); if (!VIDA.S || VIDA.S.A.t > w) reiniciarVida(); const S = VIDA.S; while (S.A.t < w) { pasoVida(S.A, PAR); pasoVida(S.B, PAR); pasoVida(S.C, PAR); if (S.D) pasoVida(S.D, PAR); } if (w > VIDA.maxT) VIDA.maxT = w; };
   // vista compatible con el formato viejo (R.S1[e].act[t] …) para los módulos que lo leen (capas_escenario.js, mejora_tour.js): cualquier semana da el valor vivo
   const vista = (k, key) => new Proxy([], { get: (o, p) => p === 'length' ? SEM : (typeof p === 'string' && /^\d+$/.test(p)) ? VIDA.S[k].o[key] : Reflect.get(o, p) });
   const K1 = ['act', 'dep', 'pers', 'pct', 'prom', 'prod', 'auto', 'merma', 'exc', 'm2p', 'cal', 'espera', 'pc', 'carga', 'retiro', 'reg'], K2 = { relleno: 'relleno', compost: 'compost', hongos: 'hongos', vuelve: 'vuelve', pct: 'pct2', km: 'km', pila: 'pila', desv: 'desv', ocup: 'ocup' }, K3 = ['aves', 'riq', 'hum', 'trampa'];
@@ -50,7 +50,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
   const Y = T3.sueloY != null ? T3.sueloY : 0.35;
-  const esc = () => (T3.escenario === 'proyecto' ? SIMST.esc : 'A');
+  const esc = () => (T3.escenario === 'proyecto' ? SIMST.esc : VIDA.planD ? 'D' : 'A'); // D = Kennedy como hoy + Plan Parcial Fábrica Bavaria
   const CRECE = instalarCrecimiento({ T3, esA: () => esc() === 'A' }); // vehículos de más en A según la proyección del parque (data3d/trafico_crece.js)
 
   /* ---------------- lugares ---------------- */
@@ -246,7 +246,7 @@ body.tb-abierto #esim{display:none}
   el.innerHTML = `<div class="cab"><b>Escenarios A · B · C</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
 <p class="exp">Tres escenarios con las mismas condiciones de partida, el mismo periodo y los mismos cierres de vía al azar. Tres reglas de game over fijas antes de correr: si una se cumple 4 semanas seguidas, se registra el motivo y la semana.</p>
 <p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta abierta (se cierran si la red se cae)</p>
-<div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Bavaria central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Red de mercados</button></div>
+<div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Bavaria central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Red de mercados</button><button type="button" data-e="D" style="--c:#c9706a"><b>D</b>Plan parcial</button></div>
 <p class="exp que" data-que></p>
 <details class="ctl" open><summary>Controles del modelo · mueve y mira cómo cambian A, B y C</summary>
 ${slider(P1, 'rend', 'Rendimiento de los cultivos (kg/m²·año)', 1, 12, 1, fmt, 'más comida de huertas y módulos: las zonas compran menos')}
@@ -516,7 +516,9 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
     if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=8').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
-    if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* A: se prende el flujo de carros (los mismos controles del panel izquierdo) */
+    if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); VIDA.planD = e === 'D'; if (window.KEN_PLANBAV) window.KEN_PLANBAV.ver(e === 'D');
+      if (e === 'D') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* D: Kennedy como hoy + el plan parcial que se construye */
+      else if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); setTimeout(prenderFlujo, 120); } /* A: se prende el flujo de carros (los mismos controles del panel izquierdo) */
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
       RELOJ.entrada('escenario-vida', e); aplicar(); } // A, B y C ya corren juntos: escoger uno solo cambia lo que se mira (sin volver a la semana 0)
   });
@@ -572,11 +574,11 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   RELOJ.alDibujar(cuadro);
   aplicar();
   // MODO SIMPLE (por defecto, data3d/modo_simple.js): tarjeta de escenario + «Año X de 50» y panel «¿Qué está pasando?»; el resto de los paneles se esconde hasta «Ver todo»
-  import('./modo_simple.js?v=5').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
+  import('./modo_simple.js?v=7').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
     .catch(er => { console.warn('modo simple:', er); document.documentElement.classList.remove('ms-simple'); });
   setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple')) import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
   import('./mejora_tour.js?v=10').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
   import('./capas_escenario.js?v=12').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
-  return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
+  return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, get esc() { return esc(); }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }

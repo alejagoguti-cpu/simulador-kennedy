@@ -35,7 +35,7 @@ const NOM = { A: 'A · Kennedy hoy', B: 'B · Bavaria central', C: 'C · red de 
 export async function iniciarCambio50({ T3 }) {
   const THREE = T3.THREE;
   const año = () => Math.floor(RELOJ.sem / AÑO) + 1; // mismo conteo que la barra del modo simple: semana 1300 = año 26
-  const escAct = () => (T3.escenario === 'proyecto' ? (SIMST.esc || 'C') : 'A');
+  const escAct = () => (window.KEN_ESIM && window.KEN_ESIM.esc) || (T3.escenario === 'proyecto' ? (SIMST.esc || 'C') : 'A');
   const VIDA = () => { const E = window.KEN_ESIM; return E && E.vida && E.vida.S ? E.vida : null; };
 
   /* ---------------- historia de la fracción sembrada (por escenario, del modelo) ---------------- */
