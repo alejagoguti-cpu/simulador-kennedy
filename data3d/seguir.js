@@ -140,8 +140,23 @@ body.sg-on #sg{display:block}
     for (const o of vehiculos()) probar('veh', o, 0.8);
     for (const a of personas()) probar('per', a, 0.9);
     for (const a of fauna()) probar('fau', a, 0.4);
-    if (best) seguir(bk, best);
+    if (best) preguntar(bk, best, e.clientX, e.clientY); // antes se iba directo: ahora pregunta (la cámara no se mueve sin permiso)
   });
+  /* tarjetica de vidrio junto al clic: «¿Seguir este carro?» Seguir / No. Se va sola a los 5 s o al mover la cámara. */
+  let preg = null, tPreg = 0;
+  function preguntar(k, o, x, y) {
+    if (!preg) {
+      preg = document.createElement('div'); preg.id = 'sg-preg';
+      preg.style.cssText = 'position:fixed;z-index:60;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 11px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#f2f3f5;font:500 12px system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35)';
+      document.body.appendChild(preg); cv.addEventListener('pointerdown', () => { if (preg) preg.style.display = 'none'; });
+    }
+    const quien = (AD[k].clase(o) || (k === 'veh' ? 'vehículo' : k === 'per' ? 'persona' : 'animal')).toLowerCase();
+    preg.innerHTML = `<span>¿Seguir a este ${quien}?</span><button type="button" data-s style="border:0;border-radius:8px;padding:4px 10px;font:600 12px system-ui,sans-serif;background:rgba(255,176,70,.92);color:#1b1206;cursor:pointer">Seguir</button><button type="button" data-n style="border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:4px 9px;font:600 12px system-ui,sans-serif;background:rgba(255,255,255,.08);color:inherit;cursor:pointer">No</button>`;
+    preg.style.left = Math.min(innerWidth - 240, x + 12) + 'px'; preg.style.top = Math.max(8, y - 44) + 'px'; preg.style.display = 'flex';
+    preg.querySelector('[data-s]').onclick = () => { preg.style.display = 'none'; seguir(k, o); };
+    preg.querySelector('[data-n]').onclick = () => { preg.style.display = 'none'; };
+    clearTimeout(tPreg); tPreg = setTimeout(() => { if (preg) preg.style.display = 'none'; }, 5000);
+  }
 
   /* ---------- cada cuadro (lo llama el bucle de index.html antes de dibujar) ---------- */
   let tUI = 0;

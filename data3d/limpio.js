@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=16';
+import { iniciarSimUI } from './sim_ui.js?v=17';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -27,6 +27,8 @@ const VELS = [52 / 12, 52 / 6, 52 / 3];   // semanas del modelo por segundo real
 const VEL_DIA = [40, 80, 160];            // el día corre al mismo ritmo relativo (en pausa vuelve a tiempo real: 1×). Tope real: cada segundo
                                           // simulado del día cuesta ~4 ms (boids 2, carros 1, agentes 0,7, aves 0,4): con 10 ms por cuadro a 60 fps
                                           // caben ~150 s simulados por segundo; más que eso el reloj recorta (no hay pasos más grandes).
+const VEL_TXT = ['1 año = 12 s', '1 año = 6 s', '1 año = 3 s']; // la simulación no va en tiempo real: el botón dice cuánto dura un año
+const AÑO0 = 2026, MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 20 }];
 
 // las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
@@ -71,7 +73,8 @@ export function iniciarLimpio({ T3 }) {
     #lp-anos button:hover { background: rgba(255,255,255,.16); }
     #lp-anos button.play { min-width: 44px; background: rgba(255,170,70,.9); color: #1c1205; border-color: transparent; }
     #lp-anos .tit { flex: none; max-width: 230px; font: 600 13px/1.2 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #lp-anos .ano { flex: none; font: 600 20px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .03em; min-width: 62px; text-align: right; }
+    #lp-anos .vel { min-width: 92px !important; font-size: 11.5px !important; }
+#lp-anos .ano { flex: none; font: 600 20px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .03em; min-width: 62px; text-align: right; }
     #lp-anos .pista { position: relative; flex: 1; height: 26px; }
     #lp-anos .pista i { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 3px; background: rgba(255,255,255,.16); }
     #lp-anos .pista b { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #ffb347, #ffd86b); width: 0; }
@@ -130,13 +133,13 @@ export function iniciarLimpio({ T3 }) {
     <span class="tit">Escoge una simulación</span>
     <div class="pista"><i></i><b></b>${FASES.map(f => `<u title="${f.n} · años ${f.a0}–${f.a1}" style="left:${(f.a0 - 1) / AÑOS * 100}%;width:${(f.a1 - f.a0 + 1) / AÑOS * 100}%">${f.n.replace(' plazo', '')}</u>`).join('')}${[1, 5, 10, 15, 20].map(a => `<s style="left:${(a - 0.5) / AÑOS * 100}%">${a}</s>`).join('')}</div>
     <span class="ano">Año 1<small>Corto plazo</small></span>
-    <button type="button" class="vel" title="Velocidad">1×</button>`;
+    <button type="button" class="vel" title="Velocidad: cuánto dura un año de la simulación (no es tiempo real)">${VEL_TXT[0]}</button>`;
   document.body.appendChild(bar);
   const $b = (s) => bar.querySelector(s);
   let vel = 0;
   $b('.play').onclick = () => alternar();
   $b('.rei').onclick = () => { if (!ESC.activo) return; reiniciar(); };
-  $b('.vel').onclick = () => { vel = (vel + 1) % VELS.length; $b('.vel').textContent = ['1×', '2×', '4×'][vel]; if (!RELOJ.pausaSem) { RELOJ.ponerVelAños(VELS[vel]); RELOJ.ponerVel(VEL_DIA[vel]); } };
+  $b('.vel').onclick = () => { vel = (vel + 1) % VELS.length; $b('.vel').textContent = VEL_TXT[vel]; if (!RELOJ.pausaSem) { RELOJ.ponerVelAños(VELS[vel]); RELOJ.ponerVel(VEL_DIA[vel]); } };
   addEventListener('keydown', (e) => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement && document.activeElement.tagName)) { e.preventDefault(); alternar(); } });
   function alternar() {
     if (!ESC.activo) return;
@@ -148,7 +151,7 @@ export function iniciarLimpio({ T3 }) {
     const s = Math.min(FIN_SEM, RELOJ.semanas || RELOJ.sem), corre = !RELOJ.pausaSem;
     if (RELOJ.pausaSem && RELOJ.vel > 1 && !RELOJ.saltando) { RELOJ.ponerVel(1); RELOJ.presupuestoMs = 6; } // la pausa al llegar al final (o por un aviso) también vuelve el día a tiempo real
     $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
-    const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${fa.n}</small>`;
+    const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
     const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
   });
@@ -174,8 +177,19 @@ export function iniciarLimpio({ T3 }) {
     setTimeout(() => { reiniciar(); if (UI) UI.preparar(id); }, 60);
     // rutas y vehículos de reparto de «Viajes de abastecimiento» (panel escondido): apagados, tiñen el mapa de naranja y pesan
     for (const ms of [400, 1500, 3500]) setTimeout(() => { const vm = document.getElementById('vm-panel'); if (vm) vm.querySelectorAll('button').forEach(b => { if (/^Apagar$/.test(b.textContent.trim()) && !b.classList.contains('on')) b.click(); }); }, ms);
-    volar(S.cam);
+    // la cámara NO se mueve al escoger una simulación: el panel escondido A·B·C·D pide su «vista general» 250 ms después del clic; se cancela
+    setTimeout(() => { if (T3.anim) T3.anim = null; }, 300); setTimeout(() => { if (T3.anim) T3.anim = null; }, 600);
   }
+  /* VISTA INICIAL FIJA: la cámara aparece ya en la vista de pájaro final (la misma de la «vista general»: Bavaria, El Burro, la Av. Ciudad de
+     Cali y Corabastos en un cuadro), sin el vuelo de llegada de index.html (T3.llegada) ni zoom. */
+  const MOVIL = matchMedia('(max-width: 760px)').matches || /Mobi|Android/i.test(navigator.userAgent);
+  const VISTA = { c: [MOVIL ? 2162 : 2412, 0, 420], d: [270, 2250, 1012] };
+  function ponerVista() { if (!T3.camera || !T3.orbit) return; T3.anim = null; T3.llegada = null; T3.orbit.target.set(VISTA.c[0], VISTA.c[1], VISTA.c[2]); T3.camera.position.set(VISTA.c[0] + VISTA.d[0], VISTA.d[1], VISTA.c[2] + VISTA.d[2]); T3.orbit.update(); }
+  ponerVista();
+  { let k = 0; const fija = setInterval(() => { const L = document.getElementById('loader'); if (L && !L.classList.contains('hidden')) { ponerVista(); return; } if (++k < 12) ponerVista(); else clearInterval(fija); }, 250); } // mientras carga y el primer segundo y medio después de abrir
+  /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
+  for (const m of ['./basura.js?v=1', './cierre_gradual.js?v=1', './predio_trafico.js?v=1', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12']) import(m).catch(() => {});
+
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');
     if ((L && !L.classList.contains('hidden')) || !document.querySelector('#esim .seg button[data-e="A"]') || !document.getElementById('lp-sims')) return void setTimeout(autoUno, 400);

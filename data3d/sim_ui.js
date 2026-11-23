@@ -62,6 +62,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-picos { display: grid; gap: 4px; } .su-picos button { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px 6px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: inherit; font: 500 12px system-ui, sans-serif; cursor: pointer; overflow: hidden; }
   .su-picos button.on { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.55); } .su-picos i { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; } .su-picos b { font: 600 11px 'JetBrains Mono', ui-monospace, monospace; min-width: 30px; }
   .su-que { margin: 9px 0 2px; font: 400 12px/1.4 system-ui, sans-serif; opacity: .9; } .su-que b { font-weight: 600; } .su-que span { opacity: .6; font-size: 11px; }
+  #ojo-t { right: auto !important; left: 50% !important; transform: translateX(-50%); top: auto !important; bottom: 92px !important; z-index: 46 !important; } /* la tarjeta del Ojo de Dios abajo al centro: arriba a la derecha la tapaba el panel */
+  .su-lug { display: flex; flex-wrap: wrap; gap: 5px; } .su-lug button { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; border-radius: 8px; font: 500 11.5px system-ui, sans-serif; padding: 5px 9px; cursor: pointer; } .su-lug button:hover { background: rgba(255,207,122,.18); border-color: rgba(255,207,122,.5); }
   #su-previa { margin: 4px 0 8px; padding: 7px 9px; border-radius: 8px; background: rgba(255,207,122,.12); border: 1px solid rgba(255,207,122,.3); font: 500 11.5px/1.35 system-ui, sans-serif; color: #ffe3ad; }
   #su-cambio { margin: 7px 0 0; font: 500 11.5px system-ui, sans-serif; opacity: .9; } #su-cambio b { font: 600 14px 'Barlow Condensed', system-ui, sans-serif; } #su-cambio.bien b { color: #8ee6a8; } #su-cambio.mal b { color: #ff8a80; }
   .su-alto { display: flex; align-items: center; gap: 10px; margin-top: 8px; font: 500 11px system-ui, sans-serif; opacity: .85; } .su-alto input { flex: 1; accent-color: #ffcf7a; }
@@ -127,7 +129,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (M && !R.base) setTimeout(calcularBase, 300); // «Hoy» completo para comparar en el informe
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -144,7 +146,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       for (let k = 0; k < 120 && H.length < hasta; k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
       if (H.length < hasta) return void setTimeout(lote, 0);
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
-      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); } }
+      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); } }
     };
     lote();
   }
@@ -169,6 +171,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.predio || PRE) ponerPredio(I.predio);
       if (I.basura || BAS) ponerBasura(I);
       if (I.cierre || CIE) ponerCierre(I.cierre);
+      if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
       if (I.sem % 13 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada trimestre: los picos se recalculan con lo que ya pasó // cada medio año: los picos se recalculan con lo que ya pasó
     }
@@ -183,6 +186,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
     der.innerHTML = `<h4>${d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4><p class="pre">${d ? d.pregunta || d.desc || '' : ''}</p>
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
+      <h4>Mira en el territorio</h4><div class="su-lug">${lugares().map((l, i) => `<button type="button" data-l="${i}">${l.n}</button>`).join('')}</div>
       <h4>Indicadores · picos sobre Kennedy</h4><div id="su-picos"></div>
       <h4>Resultados en vivo</h4><div id="su-inds"></div>
       <h4>Resaltar</h4><div class="su-seg" data-g="foco"><button data-v="especies">Especies</button><button data-v="ruido">Ruido</button><button data-v="trafico">Tráfico</button><button data-v="" class="on">Normal</button></div>
@@ -193,6 +197,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       inp.oninput = pinta;
       inp.onchange = () => { R.valores[inp.dataset.k] = +inp.value; recalcularAqui(); }; // la simulación se recalcula hasta el año en que va (sin volver al año 1) y los picos cambian
     });
+    der.querySelectorAll('.su-lug button').forEach(b => b.onclick = () => irLugar(lugares()[+b.dataset.l], b));
     der.querySelectorAll('.su-seg[data-g] button').forEach(b => b.onclick = () => {
       const g = b.parentNode.dataset.g; b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
       if (g === 'picos') { R.picos = b.dataset.v || null; const I = R.hist[R.hist.length - 1]; if (R.picos && I) ponerPicos(I); else if (window.KEN_PICOS_IND) window.KEN_PICOS_IND.ver(false); }
@@ -235,7 +240,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     IC: ['Dónde se acumula calor: asfalto y techos sin sombra.', false], PA: ['Presión sobre el aire por tráfico y falta de árboles.', false],
     OC: ['Juntas, colectivos y organizaciones que cuidan el barrio.', true], CO: ['Colegios, bibliotecas y lugares donde se aprende.', true],
     CCL: ['Dónde se concentra el comercio y la logística (Corabastos).', null], PM: ['Presión de carros y camiones sobre las vías.', false], CV: ['Choque entre vivienda y bodegas o carga.', false] };
-  let pInd = null; R.ind = 'SE'; R.alto = 0.2; // picos bajos, pegados al piso y transparentes: se lee la ciudad debajo y dónde está cada cosa
+  let pInd = null; R.ind = null; // los picos empiezan apagados: se prenden escogiendo un indicador R.alto = 0.2; // picos bajos, pegados al piso y transparentes: se lee la ciudad debajo y dónde está cada cosa
   const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=12').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
   async function pintarPicos() {
     const box = document.getElementById('su-picos'); if (!box) return;
@@ -323,7 +328,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     corria = !RELOJ.pausaSem; RELOJ.pausarAños(true);
     const capa = ev.capa || (ev.tipo === 'ruido' ? 'ruido' : ev.tipo === 'trafico' ? 'trafico' : 'especies');
     if (capa === 'ruido') { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); if (window.KEN_PREDIO && R.sim === 4) window.KEN_PREDIO.ruido(true); }
-    if (window.KEN_FOCO) window.KEN_FOCO.on(R.sim === 4 && capa !== 'especies' ? [capa, 'predio'] : capa);
+    if (window.KEN_FOCO) window.KEN_FOCO.on([capa, 'predio', 'cierre', 'basura', 'degradacion', 'caminos']); // lo que explica el aviso queda en color
     const bv = c.querySelector('.ver'); if (bv) { bv.textContent = 'Seguir'; bv.onclick = () => seguir(); }
     if (window.KEN_OJO && ev.x != null) {
       await window.KEN_OJO.ir({ x: ev.x, z: ev.z, titulo: ev.titulo, texto: ev.texto, color: ev.signo > 0 ? '#8ee6a8' : '#ff8a80' });
@@ -356,6 +361,44 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!C || !(C.fase > 0)) { if (CIE) CIE.quitar(); return; }
     if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=1').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
     CIE.poner({ via: C.via, fase: C.fase, ruidoExtraDb: C.ruidoExtraDb, traficoDesvio: C.traficoDesvio });
+  }
+
+  /* ---------- HUMEDALES QUE SE ENCOGEN Y ÁRBOLES QUE SE PIERDEN (data3d/degradacion.js) y CAMINOS DEL INSTITUTO (data3d/caminos_instituto.js) ---------- */
+  let DEG = null, pDeg = null, CAM = null, pCam = null;
+  const ultimo = () => R.hist[R.hist.length - 1];
+  function ponerDegrada(I) {
+    if (!I || !I.humedales) { if (DEG) DEG.ver(false); return; }
+    if (!DEG) { if (!pDeg) pDeg = import('./degradacion.js?v=1').then(m => { DEG = m.crearDegradacion({ T3, RELOJ }); const L = ultimo(); if (L) ponerDegrada(L); }).catch(() => null); return; }
+    DEG.ver(true); DEG.poner({ humedales: I.humedales, humedalFuncional: I.humedalFuncional, arbolesPerdidos: I.arbolesPerdidos || 0,
+      basuraHumedal: ((I.basura && I.basura.puntos) || []).filter(p => p.fuente === 'humedal').map(p => ({ x: p.x, z: p.z, acumulada: p.acumulada })) });
+  }
+  function ponerCaminos(I) { // con el instituto (B) o la red (C) o los techos con Bavaria Común (12): se abren en los primeros dos años
+    const b = (R.def && R.def.base) || 'A', con = I && (b === 'B' || b === 'C' || R.sim === 12);
+    if (!con) { if (CAM) CAM.ver(false); return; }
+    if (!CAM) { if (!pCam) pCam = import('./caminos_instituto.js?v=1').then(m => { CAM = m.crearCaminos({ T3, RELOJ }); setTimeout(() => { const g = T3.scene.getObjectByName('caminos'); if (g) g.traverse(o => { if (o.isMesh || o.isPoints || o.isLine) o.renderOrder = 30 + (o.renderOrder || 0); }); }, 1500); /* encima de los picos transparentes */ const L = ultimo(); if (L) ponerCaminos(L); }).catch(() => null); return; }
+    CAM.ver(true); CAM.poner({ fase: Math.max(0.05, Math.min(1, (I.sem || 0) / 104)) });
+  }
+
+  /* ---------- MIRA EN EL TERRITORIO: botones que vuelan (Ojo de Dios) a lo que importa en cada simulación y lo dejan en color ---------- */
+  const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
+  function lugares() {
+    const b = (R.def && R.def.base) || 'A', L = [], I = ultimo() || {};
+    const [cx, cz] = T3.lw ? T3.lw(6330, 2170) : [989, 992];
+    L.push({ n: 'Basura en Corabastos', x: cx, z: cz, capa: ['basura'], t: 'Basura alrededor de Corabastos', tx: I.basura ? `${Math.round(I.basura.total_t_dia)} t/día en Kennedy; ${Math.round((I.sinRecoger || 0) * 100)} % no se recoge.` : '' });
+    L.push({ n: 'Humedal El Burro', x: 2095, z: -109, capa: ['degradacion', 'basura', 'especies'], t: 'Humedal El Burro', tx: I.humedalFuncional != null ? `Los humedales funcionan al ${Math.round(I.humedalFuncional)} % de hoy.` : '' });
+    if (window.KEN_METRO && window.KEN_METRO.punto) { const q = window.KEN_METRO.punto(window.KEN_METRO.largo * 0.5); L.push({ n: 'Metro Línea 1', x: q.x != null ? q.x : q[0], z: q.z != null ? q.z : q[1], capa: ['metro', 'trafico'], t: 'Metro Línea 1', tx: I.metro && I.metro.fase === 'opera' ? 'El metro ya opera: menos carros junto al corredor.' : 'En obra: empieza a operar hacia el año 3.' }); }
+    if (R.sim === 4) L.push({ n: 'Predio plan parcial', x: 4058, z: 214, capa: ['predio', 'ruido', 'trafico'], t: 'Plan parcial Bavaria', tx: I.predio ? `${fmt(I.predio.habitantes)} habitantes nuevos; ${fmt(I.predio.vehiculosDia)} vehículos/día; ruido ${(I.predio.ruidoDb - I.predio.ruidoDb0).toFixed(1)} dB más.` : '' });
+    if (b === 'B' || b === 'C' || R.sim === 12) L.push({ n: 'Bavaria Común', x: 3950, z: 180, capa: ['caminos', 'especies'], t: 'Bavaria Común · instituto', tx: 'Pasajes nuevos que abren el predio al barrio.' });
+    if (R.sim === 8 || R.sim === 9) L.push({ n: 'Vía cerrada', donde: 'cierre', capa: ['cierre', 'trafico', 'ruido'], t: 'Cierre de la Av. de las Américas', tx: 'El tráfico se desvía por las calles vecinas (en rojo).' });
+    return L;
+  }
+  async function irLugar(l, boton) {
+    if (!l) return; let x = l.x, z = l.z; if (l.donde) { const c = centroDe(l.donde); if (!c) return; [x, z] = c; }
+    const corria = !RELOJ.pausaSem; RELOJ.pausarAños(true);
+    if (window.KEN_FOCO) window.KEN_FOCO.on(l.capa);
+    if (l.capa.includes('ruido')) { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); }
+    if (window.KEN_OJO) { await window.KEN_OJO.ir({ x, z, titulo: l.t, texto: l.tx, color: '#ffcf7a' });
+      const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (window.KEN_FOCO) window.KEN_FOCO.off(); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } }, { once: true }); }
   }
 
   /* ---------- GAME OVER ---------- */
