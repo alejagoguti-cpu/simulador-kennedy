@@ -1,7 +1,7 @@
 # Maqueta RECTANGULAR (16:9, como el proyector) con zoom sobre Corabastos y Bavaria, para impresión 3D (STL en mm).
-# Uso: python tools/maqueta_zoom.py [largo_mm=500] [exageración=1.6] [piezas_x=3] [piezas_y=2] [tope_mm=10]
+# Uso: python tools/maqueta_zoom.py [largo_mm=500] [exageración=2] [piezas_x=3] [piezas_y=2] [tope_mm=10] [ancho_real_m=6000]
 # Encuadre (marco MODELO del simulador): Corabastos (data3d/corabastos.json, x 5.895–6.796, y 1.826–2.522) y Bavaria (data3d/bavaria.json,
-# x 8.831–9.866, y 2.389–3.553) con ~350 m de margen, en 16:9 norte arriba: 4.800 x 2.700 m centrado en (7.880,5 ; 2.689,5).
+# x 8.831–9.866, y 2.389–3.553) con margen, en 16:9 norte arriba: 6.000 x 3.375 m centrado en (7.400 ; 2.500) -> 1:12.000 a 50 cm.
 # Terreno: placa rectangular de 3 mm; humedales y canales hundidos 1,8 mm (capa_agua.png de la instalación).
 # Edificios: data3d/buildings.json (huella y altura reales; incluye las naves de Corabastos y las bodegas de Bavaria), altura × exageración,
 # con tope (torres de 20 pisos = 1 cm). Casas pegadas de la misma altura se funden; formas que no cierran -> rectángulo o cuadritos de 2 mm.
@@ -16,9 +16,9 @@ import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 RAIZ = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(RAIZ, 'instalacion', 'datos')
 OUT = os.path.join(RAIZ, 'instalacion', 'maqueta', 'zoom_bavaria_corabastos'); os.makedirs(OUT, exist_ok=True)
 CFG = json.load(open(os.path.join(RAIZ, 'instalacion', 'config.json'), encoding='utf-8'))
-a = sys.argv[1:] + [None] * 5
-LARGO = float(a[0] or 500); EXAG = float(a[1] or 1.6); NX = int(a[2] or 3); NY = int(a[3] or 2); H_MAX = float(a[4] or 10)
-CXm, CYm, ANm, ALm = 7880.5, 2689.5, 4800.0, 2700.0     # encuadre en metros, marco MODELO
+a = sys.argv[1:] + [None] * 6
+LARGO = float(a[0] or 500); EXAG = float(a[1] or 2.0); NX = int(a[2] or 3); NY = int(a[3] or 2); H_MAX = float(a[4] or 10)
+ANm = float(a[5] or 6000); ALm = ANm * 9 / 16; CXm, CYm = 7400.0, 2500.0   # encuadre en metros (16:9), marco MODELO; corrido al oeste para quedar 97,6 % dentro de Kennedy (Bavaria con >500 m de margen)
 ESC = ANm * 1000 / LARGO                                 # 1:9.600 con 50 cm
 TW, TH = LARGO, ALm * 1000 / ESC
 PLACA, AGUA_FONDO, H_MIN, BANDA = 3.0, 1.2, 1.0, 0.5
@@ -58,7 +58,7 @@ for b, gs in sorted(bandas.items()):
     GEO[b] = [p for p in getattr(u, 'geoms', [u]) if p.geom_type == 'Polygon' and p.area >= 0.25]
 
 # extrusión robusta (y del tablero -> y de impresión hacia arriba: norte = +y)
-CNT = {'aprox': 0}
+CNT = {'aprox': 0}; CLIP = [box(0, 0, 1e9, 1e9)]
 def ext(q, z0, z1):
     m = trimesh.creation.extrude_polygon(shapely.geometry.polygon.orient(q), z1 - z0, engine='earcut'); m.apply_translation((0, 0, z0))
     if not m.is_watertight: trimesh.repair.fill_holes(m)
@@ -77,7 +77,8 @@ def extruir(g, z0, z1, mallas):
                 if q2.geom_type != 'Polygon' or q2.area < 0.05: continue
                 m2 = ext(q2, z0, z1)
                 if m2 is not None: mallas.append(m2); continue
-                rr = q2.minimum_rotated_rectangle
+                rr = q2.minimum_rotated_rectangle.intersection(CLIP[0])  # sin salirse de la pieza (las piezas deben encajar exacto)
+                if rr.geom_type != 'Polygon': rr = q2
                 if rr.area <= 1.25 * q2.area:
                     m3 = ext(rr, z0, z1)
                     if m3 is not None: mallas.append(m3); continue
@@ -96,7 +97,7 @@ xs = np.linspace(0, TW, NX + 1); ys = np.linspace(0, TH, NY + 1); FIL = 'ABCDEFG
 PIEZAS = {f'{FIL[r]}{c + 1}': box(xs[c], ys[r], xs[c + 1], ys[r + 1]) for r in range(NY) for c in range(NX)}
 res = {}
 for nombre, caja in PIEZAS.items():
-    mallas = []; CNT['aprox'] = 0
+    mallas = []; CNT['aprox'] = 0; bx0, by0, bx1, by1 = caja.bounds; CLIP[0] = box(bx0, TH - by1, bx1, TH - by0)  # la pieza en coordenadas de impresión
     extruir(caja, 0, AGUA_FONDO, mallas)
     extruir(SUELO.intersection(caja), AGUA_FONDO - 0.01, PLACA, mallas)
     for b, polys in GEO.items():

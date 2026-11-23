@@ -1,8 +1,8 @@
 # Maqueta rectangular · Corabastos – Bavaria · impresión 3D
 
-Rectángulo de **50 × 28,1 cm** (16:9, la proporción del proyector), norte arriba, a escala **1:9.600**.
-- **Área:** 4,8 × 2,7 km.
-- **Corabastos:** abajo a la izquierda, con sus naves.
+Rectángulo de **50 × 28,1 cm** (16:9, la proporción del proyector), norte arriba, a escala **1:12.000**.
+- **Área:** 6 × 3,4 km. El 97,6 % queda dentro de Kennedy; solo un borde mínimo de la esquina este cae fuera y se proyecta oscuro.
+- **Corabastos:** centro-izquierda, con sus naves.
 - **Bavaria:** arriba a la derecha, con sus bodegas.
 - **Entre los dos:** los barrios y las avenidas que los conectan.
 
@@ -12,12 +12,12 @@ Rectángulo de **50 × 28,1 cm** (16:9, la proporción del proyector), norte arr
 | | Oeste | Centro | Este |
 |---|---|---|---|
 | **Norte** | `zoom_A1.stl` | `zoom_A2.stl` | `zoom_A3.stl` (Bavaria) |
-| **Sur** | `zoom_B1.stl` (Corabastos) | `zoom_B2.stl` | `zoom_B3.stl` |
+| **Sur** | `zoom_B1.stl` | `zoom_B2.stl` | `zoom_B3.stl` |
 
 `Bavaria_Corabastos_maqueta.3dm` trae la maqueta completa para verla en Rhino (una capa por pieza).
 
 ## Alturas
-- **Edificios:** altura real × 1,6, para que una torre de 20 pisos mida **1 cm**. Nada pasa de 1 cm.
+- **Edificios:** altura real × 2, para que una torre de 20 pisos mida **1 cm**. Nada pasa de 1 cm.
 - **Casas:** una de 3 pisos queda de ~1,5 mm.
 - **Placa del terreno:** 3 mm. Los humedales y canales están hundidos 1,8 mm.
 - **Lo más alto de la maqueta:** 13 mm.
@@ -41,9 +41,9 @@ La instalación ya está cambiada a este mismo encuadre:
 Los edificios proyectados caen exactamente sobre los impresos. El encuadre anterior, de toda Kennedy, quedó guardado en `rectangulo_kennedy_completa` y en `../anterior_kennedy_completa`.
 
 ## Datos
-- **Fuente:** huellas y alturas reales de `data3d/buildings.json` del simulador. Son 93.947 edificios en el encuadre e incluyen las naves de Corabastos y las bodegas de Bavaria.
+- **Fuente:** huellas y alturas reales de `data3d/buildings.json` del simulador. Son 170.596 edificios en el encuadre e incluyen las naves de Corabastos y las bodegas de Bavaria.
 - **Simplificación para imprimir:** las casas pegadas de la misma altura se funden. Las formas muy complejas se imprimen con su rectángulo o en cuadritos de 2 mm, para que la pieza cierre; no se pierde ningún edificio.
 
 ## Regenerar
-- Maqueta: `python tools/maqueta_zoom.py 500 1.6 3 2 10` (largo en mm, exageración, piezas en x, piezas en y, tope en mm).
+- Maqueta: `python tools/maqueta_zoom.py 500 2 3 2 10 6000` (largo en mm, exageración, piezas en x, piezas en y, tope en mm, ancho real en m).
 - Capas de la instalación: `node tools/exportar_instalacion.mjs`.
