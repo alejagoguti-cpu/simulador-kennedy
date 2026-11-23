@@ -127,8 +127,15 @@ export function crearRed(D, V, PARCHES) {
       const cambio = floraEstado(s), H_ = s.hab, occ = s.occ, O = s.red.ocM, FA = s.red.flA, MOT = s.red.mot; s.red.XQ = XQ;
       O.fill(0); for (let i = 0; i < NFA; i++) for (let p = 0; p < NP; p++) if (occ[i * NP + p]) O[i * W3 + (p >> 5)] |= 1 << (p & 31);
       const fR = 1 + RED_SUP.F_RATA * Math.min(1, pend / Math.max(1, alm)); let ocAve = 0, ocTer = 0;
+      /* s.red.xAve (opcional, Float32Array por parche; solo data3d/simulaciones12.js): factor EXTRA sobre la calidad para las aves: zona de efecto de las vías
+         nuevas del plan parcial y de los desvíos de un cierre (la misma regla de MQ: Reijnen y Foppen, 25 % menos aves dentro) y basura junto a Corabastos. Sin él (null) la
+         dinámica es exactamente la de siempre. */
+      const XA = s.red.xAve || null, mqA = XA ? (p) => MQ[p] * XA[p] : (p) => MQ[p];
+      /* s.red.xH (opcional, por parche, todas las especies): factor de hábitat extra (simulaciones12.js: humedal que pierde área por basura, √(área/área inicial),
+         la misma dependencia de la extinción con √área de sim_vida.js). s.red.fRata (opcional, escalar): multiplica el hábitat de la rata (basura acumulada). */
+      const XH = s.red.xH || null, fRx = s.red.fRata || 1;
       for (let i = 0; i < NFA; i++) { const F = FAUNA[i], g = F.grupo, G = GR[g], K = KERN[g], base = i * NP, nuevo = new Uint8Array(NP), ave = AVE[i], ter = TER[i], hm = HABM[i], rata = F.id === 'rata';
-        const hab = (p) => hm[p] * q[p] * (ave ? MQ[p] : 1) * (rata ? fR : 1);
+        const hab = (p) => hm[p] * q[p] * (XH ? XH[p] : 1) * (ave ? mqA(p) : 1) * (rata ? fR * fRx : 1);
         for (let pp = 0; pp < NP; pp++) { const u = H_(), h = hab(pp); if (h <= 0) { nuevo[pp] = 0; if (occ[base + pp]) MOT[base + pp] = pp === IBQ && s.planArb > 0 ? 3 : 6; continue; }
           let R = 1; if (NREC[i]) { let n = FA[base + pp]; for (const j of RA[i]) if (anyAnd(O, j * W3, ALC[g], pp * W3)) n++; R = n / NREC[i]; }
           const DG = s.red.diag; DG.n++; DG.sR += R; if (R === 0) DG.r0++;
@@ -136,7 +143,7 @@ export function crearRed(D, V, PARCHES) {
             if (R === 0) ext = Math.min(1, ext * RED_SUP.EXT_SIN_REC); nuevo[pp] = u < ext ? 0 : 1;
             if (!nuevo[pp]) { // por qué se fue (sin azar): el factor que más subió la probabilidad de extinción frente a las condiciones de hoy
               let m = 5; if (R === 0) m = 1; else if (pp === IBQ && s.planArb > 0) m = 3; else if (TIPO[pp] === 'humedal' && W0 / s.W >= ATRIB) m = 4;
-              else if ((ave && 1 / MQ[pp] >= ATRIB) || (ter && XQ && 1 / cruceMedio(XQ, K, pp, NP) >= ATRIB)) m = 2;
+              else if ((ave && 1 / mqA(pp) >= ATRIB) || (ter && XQ && 1 / cruceMedio(XQ, K, pp, NP) >= ATRIB)) m = 2;
               MOT[base + pp] = m; } }
           else { let S = 0; for (let qq = 0; qq < NP; qq++) if (occ[base + qq]) S += K[pp * NP + qq] * hab(qq) * (ter ? XQ[pp * NP + qq] : 1) * (qq === IB ? raizB : 1);
             const col = (1 - Math.exp(-G.c * h * S) + RESCATE * h) * R; nuevo[pp] = u < col ? 1 : 0; }
