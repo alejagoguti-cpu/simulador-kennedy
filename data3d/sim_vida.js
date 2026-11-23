@@ -87,8 +87,8 @@ export const DESMONTE = { EMA: 26, CADA: 13, OBRA: 26, MADURA: 156, Q_BORDE: 0.8
 export { BODEGAS, AREA_NAVES };
 const BORDE_TOT = BODEGAS.reduce((a, b) => a + b.borde, 0), CUM = []; { let c = 0; for (const b of BODEGAS) { c += b.area; CUM.push(c); } }
 function corabastos(s, e, dep, t) {
-  const D = s.cora; if (e === 'A' || e === 'D') return D;
-  D.lib += ((1 - dep) - D.lib) / DESMONTE.EMA;
+  const D = s.cora, MD = s.mod && s.mod.desmonte; if ((e === 'A' || e === 'D') && !MD) return D;
+  D.lib += ((MD ? MD.lib : 1 - dep) - D.lib) / DESMONTE.EMA; // MD (solo tools/escenarios_instalacion.mjs, e6): la carga liberada tiende a MD.lib [SUP] en vez de a 1 − dependencia
   const k = D.ap.length; if (k < BODEGAS.length && D.lib * AREA_NAVES >= CUM[k] && t - D.ult >= DESMONTE.CADA) { D.ap.push(t); D.ult = t; }
   let m2 = 0, ha = 0, mad = 0, rest = 0; for (let i = 0; i < D.ap.length; i++) { m2 += BODEGAS[i].area; const w = t - D.ap[i] - DESMONTE.OBRA; if (w >= 0) { rest++; const mz = Math.min(1, w / DESMONTE.MADURA); ha += BODEGAS[i].borde / 1e4; mad += mz * BODEGAS[i].borde; } }
   D.m2 = m2; D.ha = ha; D.rest = rest; D.mad = ha > 0 ? mad / (ha * 1e4) : 0; return D; }
@@ -152,17 +152,19 @@ const ES_TERR = ESPECIES.map(e => TERRESTRE.has(e[0])), ES_AVE = ESPECIES.map(e 
 const RP = PARCHES.map(p => Math.sqrt(Math.max(0.05, p.ha) * 1e4 / Math.PI)); // radio del círculo con el área del parche (m)
 const fZona = (p, D) => { const d = EXPO.parches[p] ? EXPO.parches[p][0] : Infinity, r = RP[p]; return cl((D - (d - r)) / (2 * r), 0, 1); }; // fracción del parche dentro de la zona de efecto
 const EFT = new Map(); // efecto del tráfico por año (determinista; se calcula una vez por año de crecimiento)
-function efectoTrafico(t, extraV = 0) { // extraV: carros nuevos del plan parcial (escenario D) como fracción del parque de Kennedy
-  const G = crecimiento(t), k = (TRAFICO.on ? G.años : 0) + '|' + extraV.toFixed(3); let E = EFT.get(k); if (E) return E;
+function efectoTrafico(t, extraV = 0, fV = null) { // extraV: carros nuevos del plan parcial (escenario D) como fracción del parque de Kennedy
+  // fV (solo tools/escenarios_instalacion.mjs, e7 metro): { k: clave, f: Float32Array por parche } factor sobre V en cada parche (1 = sin cambio); null en A, B, C y D
+  const G = crecimiento(t), k = (TRAFICO.on ? G.años : 0) + '|' + extraV.toFixed(3) + (fV ? '|' + fV.k : ''); let E = EFT.get(k); if (E) return E;
   const V = (TRAFICO.on ? G.V : 1) * (1 + extraV), D0 = TRAFICO.ZONA_HOY, D = D0 * Math.pow(V, TRAFICO.B_DIST), mq = new Float32Array(NP), xq = new Float32Array(NP * NP);
-  let sq = 0; for (let p = 0; p < NP; p++) { mq[p] = (1 - TRAFICO.RED_ZONA * fZona(p, D)) / (1 - TRAFICO.RED_ZONA * fZona(p, D0)); sq += mq[p]; }
-  let sx = 0, nx = 0; for (let i = 0; i < NP * NP; i++) { const c = EXPO.cruce[i] || 0; xq[i] = Math.exp(-TRAFICO.C_ATROP * c * (V - 1)); if (c > 0) { sx += xq[i]; nx++; } }
+  let sq = 0; for (let p = 0; p < NP; p++) { const Dp = fV ? D0 * Math.pow(V * fV.f[p], TRAFICO.B_DIST) : D; mq[p] = (1 - TRAFICO.RED_ZONA * fZona(p, Dp)) / (1 - TRAFICO.RED_ZONA * fZona(p, D0)); sq += mq[p]; }
+  let sx = 0, nx = 0; for (let i = 0; i < NP * NP; i++) { const c = EXPO.cruce[i] || 0, Vi = fV ? V * Math.sqrt(fV.f[(i / NP) | 0] * fV.f[i % NP]) : V; // [SUP] e7: el cruce entre dos parches usa la media geométrica de sus factores
+    xq[i] = Math.exp(-TRAFICO.C_ATROP * c * (Vi - 1)); if (c > 0) { sx += xq[i]; nx++; } }
   E = { G, V, D, mq, xq, mqMedio: sq / NP, xqMedio: nx ? sx / nx : 1, pares: nx }; EFT.set(k, E); return E; }
 function calidad(e, s, P3, out) { // calidad de cada parche esta semana (0 = no existe)
   for (let p = 0; p < NP; p++) { const P = PARCHES[p];
     out[p] = P.dyn ? (s.cora.ha > 0 ? DESMONTE.Q_BORDE * s.cora.mad : 0)
       : P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55 * (p === IV ? 1 + DESMONTE.MEJORA_VACA * (s.cora.ha * 1e4 / BORDE_TOT) * s.cora.mad : 1)) : P.t === 'bosque' ? 0.6 * (P.id === 'bosqueBav' && s.planArb ? 1 - s.planArb / PLAN_BAV.ARB_TOT : 1) : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
-      : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : (e === 'C' && s.supF >= P.cuota ? 0.4 : 0); } }
+      : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : ((e === 'C' || (e === 'B' && s.mod && s.mod.huertasC)) && s.supF >= P.cuota ? 0.4 : 0); } } // huertasC: e11 (módulos de C también en B)
 function apto(i, p, q) { const g = ESPECIES[i][2]; return (GRUPOS[g].hab[TIPO[p]] || 0) * q[p]; }
 
 /* ---------- REGLAS DE GAME OVER (fijas, iguales para A, B y C; 4 semanas seguidas) ---------- */
@@ -179,8 +181,11 @@ export const MOTIVO = { habitat: 'se perdió 30 % o más de las especies en los 
 const BASE = { A: { N: 300, q: 0.0025 }, D: { N: 300, q: 0.0025 }, B: { N: 2506, q: 0.0073 }, C: { N: 5400, q: 0.0073 } };
 const A0 = 120, W0 = 0.55; // mismas condiciones iniciales para A, B y C
 
-export function crear(e, seed) {
-  const s = { e, seed, t: -1, mundo: prng(mezcla(seed, 1)), loc: prng(mezcla(seed, 11 + (e === 'D' ? 0 : 'ABC'.indexOf(e)))), hab: prng(mezcla(seed, 7)),
+/* mod (opcional): modificadores de los escenarios de la instalación (tools/escenarios_instalacion.mjs). Sin mod (la web) A, B, C y D son
+   exactamente los de siempre. Claves: sinCora (semana desde la que Corabastos no abastece), desmonte {lib}, metro {k, f, desde},
+   cierre {via, t0, dur} (cierre forzado), plazasNodo (B: plazoletas como nodos de C), huertasC (B: módulos y superficie de C). */
+export function crear(e, seed, mod) {
+  const s = { e, seed, t: -1, mod: mod || null, mundo: prng(mezcla(seed, 1)), loc: prng(mezcla(seed, 11 + (e === 'D' ? 0 : 'ABC'.indexOf(e)))), hab: prng(mezcla(seed, 7)),
     A: A0, prom: 0, pipe: [], pob: POB_K, Nef: BASE[e].N, supF: 0, adopc: 0.15, buf: new Float64Array(64), W: W0, B: 900, muertes: 0,
     cierre: null, Kc: (1 + SUP.HOLGURA) * POB_K * SUP.KG_PERS * 7, Kr: (1 + SUP.HOLGURA) * POB_K * SUP.KG_ORG * 7, Kcs: 0, pr: 0, pcs: 0, pcp: 0,
     colaB: 0, colaC: [], colaF: 0, bajo90: 0, log: [], o: {}, racha: Object.fromEntries(REGLAS.map(R => [R.k, 0])), colapso: null,
@@ -216,6 +221,9 @@ export function paso(s, PAR) {
     if (s.cierre && t > s.cierre.fin) { if (s.rec.pend && !s.rec.pend.cerrado) s.rec.pend.cerrado = t; s.cierre = null; }
     if (!s.cierre && u < haz(CIERRE.pAño) && FCI.length) { const k = Math.min(FCI.length - 1, Math.floor(v * FCI.length)), d = Math.round(CIERRE.dur[0] + w * (CIERRE.dur[1] - CIERRE.dur[0]));
       s.cierre = { k, t0: t, fin: t + d - 1, dur: d, on: P1.cierres !== false }; anotar(s, 'cierre', { via: VIAS[k].n, dur: d }); if (s.cierre.on && !s.rec.pend) s.rec.pend = { t0: t, k: 'cierre' }; } }
+  const MF = s.mod; // modificadores de la instalación (null en la web)
+  if (MF && MF.cierre && t === MF.cierre.t0) { const k = CIERRES.findIndex(c => c.id === MF.cierre.via), d = MF.cierre.dur; // cierre FORZADO (e8, e9): los 3 sorteos de arriba se hacen igual
+    s.cierre = { k, t0: t, fin: t + d - 1, dur: d, on: true, forzado: true }; anotar(s, 'cierre', { via: VIAS[k].n, dur: d, forzado: true }); if (!s.rec.pend) s.rec.pend = { t0: t, k: 'cierre' }; } // [SUP] si había un cierre al azar en curso, el forzado lo reemplaza
   const CI = s.cierre && s.cierre.on ? s.cierre : null, Fk = CI ? FCI[CI.k] : null, semCi = CI ? t - CI.t0 : 0;
   if (P1.crece) s.pob *= Math.pow(1.015, 1 / AÑO);
   const popF = s.pob / POB_K;
@@ -239,7 +247,7 @@ export function paso(s, PAR) {
   const retiro = s.A * 0.0018 * (1 + 3 * Math.max(0, carga - 1)) * alivio * fEsp * ruido(L, 0.3);
   s.A = cl(s.A + adop - retiro, 0, Nef);
   if (prop) s.supF = s.prom >= 1 ? Math.min(1, s.supF + 1 / 156) : Math.max(0, s.supF - 1 / 104); // [SUP] superficies en 3 años; sin promotores se abandonan en 2
-  const sup = prop ? P1.sup * s.supF * (e === 'B' ? 0.6 : 1) : 0;
+  const sup = prop ? P1.sup * s.supF * (e === 'B' && !(MF && MF.huertasC) ? 0.6 : 1) : 0; // e11 [SUP]: con los módulos de C, B usa la superficie completa de C
   const prod = (s.A * 50 + sup) * P1.rend / AÑO * cal, auto = prod * P1.auto, merma = prod * P1.merma, exc = prod - auto - merma;
   const pers = prod * AÑO * 0.9 / (0.4 * 365);
 
@@ -252,31 +260,36 @@ export function paso(s, PAR) {
   /* producción de las huertas: el autoconsumo (P1.auto) se queda en la zona; el excedente entra a la red hasta la capacidad de acopio de
      excedentes (P1.acopio, kg/semana): A sin acopio vende la mitad en la cuadra y pierde la otra mitad; B lo lleva a Bavaria; C lo vende en los mercados */
   const acop = !prop ? 0 : Math.min(Math.max(0, exc), P1.acopio), perdido = !prop ? Math.max(0, exc) * 0.5 : Math.max(0, exc - acop);
-  const alimLocal = auto + (!prop ? Math.max(0, exc) * 0.5 : e === 'C' ? acop : 0); let bavKg = 0; const merc = e === 'C' ? new Float32Array(NM) : null;
+  const plazas = e === 'B' && MF && MF.plazasNodo; // e10: en B las plazoletas de mercado en parques son nodos como en C (además de Bavaria)
+  const alimLocal = auto + (!prop ? Math.max(0, exc) * 0.5 : e === 'C' ? acop : 0); let bavKg = 0; const merc = e === 'C' || plazas ? new Float32Array(NM) : null;
   const fCap = (P1.capAcopio != null ? P1.capAcopio : CAP_RED_TDIA) / CAP_RED_TDIA; // «Capacidad de acopio de la red» (B: Bavaria; C: los mercados), relativa a la de mercados_red.js
   for (let z = 0; z < NZ; z++) LOCZ[z] = Math.min(NEED[z], alimLocal * SHARE[z]);
   for (let z = 0; z < NZ; z++) PUR[z] = fPrecio * Math.max(0, NEED[z] - LOCZ[z]); // lo que los hogares de la zona compran
-  if (e === 'C') { /* mercados nodo, por rondas: cada mercado ofrece lo que le queda a sus zonas que aún tienen falta (en proporción a la falta
+  if (e === 'C' || plazas) { /* mercados nodo, por rondas: cada mercado ofrece lo que le queda a sus zonas que aún tienen falta (en proporción a la falta
        y la cercanía); llega oferta × factor de ruta; lo que no hace falta o no llega por una ruta cortada queda en el mercado para la ronda
        siguiente, y otro mercado cercano puede suplir a la zona (4 rondas) */
     for (let z = 0; z < NZ; z++) DES[z] = Math.min(PUR[z], Math.max(0, NEED[z] * SUP.TOPE_MERC - LOCZ[z]));
-    const resto = new Float64Array(NM); for (let k = 0; k < NM; k++) resto[k] = t >= MERC_D[k].desde ? MERC_D[k].cap * 7 * fCap : 0;
+    const resto = new Float64Array(NM); for (let k = 0; k < NM; k++) resto[k] = t >= MERC_D[k].desde && (!plazas || MERC_D[k].tipo === 'plazoleta') ? MERC_D[k].cap * 7 * fCap : 0; // e10 [SUP]: capacidad de la plazoleta (mercados_red.js) que se SUMA a la de Bavaria
     for (let ronda = 0; ronda < 4; ronda++) for (let k = 0; k < NM; k++) { const S = resto[k]; if (S <= 1) continue; let wt = 0;
       for (const [z, w] of CATCH[k]) wt += Math.max(0, DES[z] - MK[z]) * w; if (!wt) continue;
       for (const [z, w] of CATCH[k]) { const falta = Math.max(0, DES[z] - MK[z]); if (!falta) continue; const ff = fe(z, 3 + k);
         const x = Math.min(S * falta * w / wt, falta / Math.max(0.05, ff)), lleg = Math.min(falta, x * ff); MK[z] += lleg; merc[k] += lleg; resto[k] -= x; } }
   }
   if (e === 'B') { // un solo nodo: misma capacidad total que la red de C y mismo calendario; reparto con costo por distancia
-    const KB = CAPT * 7 * r0 * fCap + acop; let dem = 0; for (let z = 0; z < NZ; z++) dem += PUR[z] * UB[z];
-    const sB = dem > 0 ? Math.min(SUP.TOPE_MERC, KB / dem) : 0;
-    for (let z = 0; z < NZ; z++) TMP[z] = PUR[z] * sB;
+    const KB = CAPT * 7 * r0 * fCap + acop; let dem = 0;
+    if (!plazas) { for (let z = 0; z < NZ; z++) dem += PUR[z] * UB[z];
+      const sB = dem > 0 ? Math.min(SUP.TOPE_MERC, KB / dem) : 0;
+      for (let z = 0; z < NZ; z++) TMP[z] = PUR[z] * sB; }
+    else { // e10: Bavaria cubre lo que falta hasta el mismo tope de la red (60 % de lo que se compra) después de las plazoletas
+      for (let z = 0; z < NZ; z++) { TMP[z] = Math.max(0, PUR[z] * SUP.TOPE_MERC - MK[z]); dem += TMP[z] * UB[z]; }
+      const sB = dem > 0 ? Math.min(1, KB / dem) : 0; for (let z = 0; z < NZ; z++) TMP[z] *= sB; }
     racionar(TMP, GB, UB, KB, BV); let perd = 0; for (let z = 0; z < NZ; z++) { const f = fe(z, JB); perd += BV[z] * (1 - f) * UB[z]; BV[z] *= f; }
     // lo que no llega por una ruta cortada queda en Bavaria y se manda a las zonas que aún tienen cupo (igual que los mercados de C en su segunda vuelta)
-    if (perd > 0) { let room = 0; for (let z = 0; z < NZ; z++) { DES[z] = Math.max(0, Math.min(PUR[z], NEED[z] * SUP.TOPE_MERC) - BV[z]); room += DES[z] * UB[z]; }
+    if (perd > 0) { let room = 0; for (let z = 0; z < NZ; z++) { DES[z] = Math.max(0, Math.min(PUR[z], NEED[z] * SUP.TOPE_MERC) - BV[z] - (plazas ? MK[z] : 0)); room += DES[z] * UB[z]; }
       if (room > 0) for (let z = 0; z < NZ; z++) { const capU = perd * DES[z] * UB[z] / room, f = fe(z, JB); BV[z] += Math.min(DES[z], capU / UB[z] * f); } }
     for (let z = 0; z < NZ; z++) bavKg += BV[z]; }
   let R = 0; for (let z = 0; z < NZ; z++) { RQ[z] = Math.max(0, PUR[z] - MK[z] - BV[z]); R += RQ[z]; }
-  racionar(RQ, GC, UNO, s.Kc, CO);
+  racionar(RQ, GC, UNO, MF && MF.sinCora != null && t >= MF.sinCora ? 0 : s.Kc, CO); // e5: desde la semana sinCora Corabastos no abastece (capacidad 0, sin reemplazo)
   let zMin = Infinity, zArg = -1, rec = 0, coraT = 0, nBajo = 0, b90 = 0;
   for (let z = 0; z < NZ; z++) { CO[z] *= fe(z, JC); coraT += CO[z]; const got = LOCZ[z] + MK[z] + BV[z] + CO[z], r = got / NEED[z]; rec += got; if (r < zMin) { zMin = r; zArg = z; } if (r < 0.8) nBajo++; if (r < 0.9) b90++; }
   // por zona (para los picos del mapa, data3d/picos_zonas.js): fracción de lo que necesita que recibe, y cuánto de eso viene de huertas y de la red (mercados o Bavaria)
@@ -305,13 +318,13 @@ export function paso(s, PAR) {
   const dist = !prop ? 28 : e === 'B' ? 4.5 : P2.dist;
 
   /* ---- humedal, aves y HÁBITAT (metapoblación) ---- */
-  const huertas = e === 'C' ? P3.borde * s.supF : 0; // [SUP] B produce en Bavaria (lejos del borde); C tiene módulos en parques junto al humedal
+  const huertas = e === 'C' || (e === 'B' && MF && MF.huertasC) ? P3.borde * s.supF : 0; // e11: las huertas de parque de C junto al humedal también en B // [SUP] B produce en Bavaria (lejos del borde); C tiene módulos en parques junto al humedal
   const presion = 0.004 + huertas * 0.00012 * 0.7;
   s.W = cl(s.W + P3.rec * (1 - s.W) * 0.2 - presion * s.W, 0.05, 1);
   calidad(e, s, P3, s.q);
   const trampa = 1 + 3 * P3.luz * (P3.anti ? 0.3 : 1); // [SUP] luz y vidrio de los módulos: más extinción de aves de árbol en ellos
   const H_ = s.hab, q = s.q, occ = s.occ, raizB = Math.sqrt(Math.max(0.05, s.cora.ha)); let esp = 0; // el borde restaurado pesa según su área de esta semana
-  const ET = efectoTrafico(t, e === 'D' ? planAutos / PLAN_BAV.AUTOS_KEN : 0), MQ = ET.mq, XQ = ET.xq; // tráfico que crece: ruido para las aves (MQ por parche) y atropellos al cruzar para la fauna terrestre (XQ por par)
+  const ET = efectoTrafico(t, e === 'D' ? planAutos / PLAN_BAV.AUTOS_KEN : 0, MF && MF.metro && t >= MF.metro.desde ? MF.metro : null), MQ = ET.mq, XQ = ET.xq; // tráfico que crece: ruido para las aves (MQ por parche) y atropellos al cruzar para la fauna terrestre (XQ por par)
   let ocAve = 0, ocTer = 0;
   for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP), ave = ES_AVE[i], ter = ES_TERR[i]; let hay = 0;
     for (let pp = 0; pp < NP; pp++) { const u = H_(), h = apto(i, pp, q) * (ave ? MQ[pp] : 1); if (h <= 0) { nuevo[pp] = 0; continue; }
