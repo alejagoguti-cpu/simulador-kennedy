@@ -35,14 +35,17 @@ const NOMBRE_CAPA = { ruido: 'Ruido de los carros', especies: 'Fauna y red biót
 /* ---------- paleta de la maqueta (sRGB) ---------- */
 const LUZ = { exp: 0.9, hemiCielo: 0xffffff, hemiSuelo: 0xd2d5d0, hemi: 0.8, sol: 0xfff1de, solI: 3.3,
   niebla: 0xe8edf1, densK: 0.8, top: 0xb9d0e8, mid: 0xdbe6ef, bot: 0xeef1f3 };
+/* FOTO (2026-11-23, referencia de la autora): la ciudad sigue siendo la foto 3D de Google con luz de día; solo la infraestructura de la
+   propuesta y del plan parcial se pinta como volúmenes de color sólido (huertas verde, mercados azul, plan parcial…). Sin maqueta blanca. */
+const FOTO = true;
 const C = { edif: 0xefeeea, acera: 0xd2d1cc, via: 0xb1b0ac, suelo: 0xc4c3bf, parque: 0xc8dcb0, agua: 0x9fb6ad };
 /* infraestructura de la propuesta: grupo de la escena -> categoría (solo se pinta si está visible: es la que existe en esta simulación y semana) */
 const CAT = {
   huerta: { col: '#3faa4c', t: 'Huerta en techo o en parque', g: ['huertas-hidroponicas', 'huertasTecho', 'huertas-barrio', 'huerta-circular', 'huerta-tintal', 'bavaria_huertas', 'huerta_circular'] },
   mercado: { col: '#2f6bdc', t: 'Mercado de barrio · plazoleta en parque', g: ['mercados-barrio', 'mercados-mallas'] },
-  instituto: { col: '#ee8a2c', t: 'Bavaria Común · instituto', g: ['bavaria_distrito'] },
+  instituto: { col: '#f2c63a', t: 'Bavaria Común · instituto', g: ['bavaria_distrito'] },
   compost: { col: '#9a6a34', t: 'Compostaje y acopio', g: ['residuos', 'red_produccion'] },
-  plan: { col: '#f0cfa4', t: 'Plan parcial · edificios nuevos', g: [] },
+  plan: { col: '#e23b3b', t: 'Plan parcial · edificios nuevos', g: [] },
   parqueCora: { col: '#7fc47c', t: 'Parque Corabastos', g: ['parque_corabastos'] }
 };
 const GRUPO_CAT = new Map(); for (const k in CAT) for (const n of CAT[k].g) GRUPO_CAT.set(n, k);
@@ -185,7 +188,7 @@ function recorrer(o, cat) { // cat: categoría de la propuesta o null (blanco)
     if (conLuz(m)) {
       if (cat === 'plan' && !o.castShadow) prestar(o, verde(m) ? C.parque : C.acera); // suelo del plan parcial (calzadas, andenes, lotes, patios): suelo de la maqueta
       else if (cat) { prestar(o, MAT.catHex[cat]); presentes.add(cat); }
-      else if (!verde(m)) prestar(o, C.edif);
+      else if (!verde(m) && !FOTO) prestar(o, C.edif);
     }
   }
   for (const ch of o.children) recorrer(ch, cat);
@@ -202,13 +205,13 @@ function resolver() {
     else if (planDe(c)) { recorrer(c, 'plan'); }
   }
   // vías propias (aceras y calzada) en gris claro, visibles aunque la vista de Google las apague
-  const V = T3.viasMallas || [];
+  const V = FOTO ? [] : (T3.viasMallas || []);
   for (let i = 0; i < V.length; i++) { const m = V[i]; if (!m) continue; ponerVis(m, true); if (i < 3) { const po = m.material.polygonOffset ? [m.material.polygonOffsetFactor, m.material.polygonOffsetUnits] : null; lista.o[lista.n] = m; lista.m[lista.n] = material(i === 2 ? C.via : C.acera, false, po); lista.n++; } }
-  if (T3.waterMesh) { const m = T3.waterMesh.material; lista.o[lista.n] = T3.waterMesh; lista.m[lista.n] = material(C.agua, false, m.polygonOffset ? [m.polygonOffsetFactor, m.polygonOffsetUnits] : [-2, -8]); lista.n++; }
-  if (tiles) ponerVis(tiles, false);
-  if (parques) ponerVis(parques, true);
+  if (T3.waterMesh && !FOTO) { const m = T3.waterMesh.material; lista.o[lista.n] = T3.waterMesh; lista.m[lista.n] = material(C.agua, false, m.polygonOffset ? [m.polygonOffsetFactor, m.polygonOffsetUnits] : [-2, -8]); lista.n++; }
+  if (tiles && !FOTO) ponerVis(tiles, false);
+  if (parques && !FOTO) ponerVis(parques, true);
   // siluetas lejanas de los árboles (material básico, sin luz): se aclaran en el cuadro para que lean verdes junto al blanco
-  arb.n = 0; for (const c of sc.children) { const m = c.material; if (!c.isInstancedMesh || !c.instanceColor || !m || arb.n >= arb.m.length) continue;
+  arb.n = 0; if (!FOTO) for (const c of sc.children) { const m = c.material; if (!c.isInstancedMesh || !c.instanceColor || !m || arb.n >= arb.m.length) continue;
     const sil = m.isMeshBasicMaterial && m.alphaTest > 0, hoja = !sil && /leaves|hoja|copa/i.test(m.name || ''); if (!sil && !hoja) continue;
     let ya = false; for (let j = 0; j < arb.n; j++) if (arb.m[j] === m) ya = true; if (!ya) { arb.k[arb.n] = sil ? ARB_K : HOJA_K; arb.m[arb.n++] = m; } }
   // mercados abiertos: si sus modelos no están en la escena, un volumen azul simple en cada parque
@@ -375,13 +378,13 @@ function leyenda() {
   const sig = [ruido, traf, cats.join(','), resaltados.join(',')].join('|');
   if (!ley) { estilos(); ley = document.createElement('div'); ley.id = 'foco-ley'; ley.setAttribute('role', 'note'); ley.setAttribute('aria-label', 'Leyenda de la maqueta'); document.body.appendChild(ley); }
   if (sig !== leySig) {
-    leySig = sig; let h = '<h4>Maqueta de análisis</h4>';
+    leySig = sig; let h = '<h4>Lo que cambia</h4>';
     if (ruido) h += `<div class="r"><b>Ruido de los carros<small>dB</small></b><i style="background:linear-gradient(90deg,${RAMPA_RUIDO.join(',')})"></i><div class="l"><span>55</span><span>60</span><span>65</span><span>70+</span></div></div>`;
     if (traf) h += `<div class="r"><b>Flujo de carros<small>carros/km por carril</small></b><i style="background:linear-gradient(90deg,${ESC_TRAF.map(([d, c]) => `rgb(${c.map(x => Math.round(x * 255)).join(',')}) ${Math.round(d / 30 * 100)}%`).join(',')})"></i><div class="l"><span>pocos</span><span>muchos</span></div></div>`;
     if (cats.length) h += '<ul>' + cats.map(c => `<li><em style="background:${CAT[c].col}"></em>${CAT[c].t}</li>`).join('') + '</ul>';
     const otros = resaltados.filter(t => !(ruido && t === NOMBRE_CAPA.ruido) && !(traf && t === NOMBRE_CAPA.trafico));
     if (otros.length) h += '<ul>' + otros.map(t => `<li><em class="p"></em>${t}<span style="color:var(--ui-tx3,#646c71);margin-left:auto;font-size:9.5px">en color</span></li>`).join('') + '</ul>';
-    h += `<div class="s"><span><em style="background:${hx(C.edif)}"></em>Edificios</span><span><em style="background:#5f9a4a"></em>Árboles</span><span><em style="background:${hx(C.parque)}"></em>Parques</span><span><em style="background:${hx(C.agua)}"></em>Agua</span></div>`;
+    if (!FOTO) h += `<div class="s"><span><em style="background:${hx(C.edif)}"></em>Edificios</span><span><em style="background:#5f9a4a"></em>Árboles</span><span><em style="background:${hx(C.parque)}"></em>Parques</span><span><em style="background:${hx(C.agua)}"></em>Agua</span></div>`;
     ley.innerHTML = h;
   }
   if (aplicado) { colocarLeyenda(); ley.classList.add('on'); }
