@@ -34,7 +34,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   st.textContent = `
   .su-glass { background: linear-gradient(180deg, rgba(40,44,52,.62), rgba(20,22,28,.74)); border: 1px solid rgba(255,255,255,.14); border-radius: 16px;
     backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #eef1f4; font-family: Geist, system-ui, sans-serif; }
-  #su-der { position: fixed; right: 16px; top: 16px; width: 300px; max-height: calc(100vh - 120px); overflow-y: auto; z-index: 39; padding: 12px 14px; display: none; }
+  #su-der { position: fixed; right: 16px; top: 16px; width: 300px; max-height: calc(100vh - 200px); overflow-y: auto; z-index: 39; padding: 12px 14px; display: none; }
   #su-der.on { display: block; }
   #su-der h4 { margin: 10px 0 6px; font: 600 10.5px/1 Geist, system-ui, sans-serif; letter-spacing: .18em; text-transform: uppercase; opacity: .6; }
   #su-der .pre { margin: 0 0 4px; font: 500 12px/1.35 system-ui, sans-serif; opacity: .8; }
@@ -114,7 +114,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       M.paso(R.s); const I = M.ind(R.s); R.hist.push(I);
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
-      if (I.sem % 4 === 0) ponerPicos(I);
+      if (I.sem % 4 === 0 || R.hist.length === 1) ponerPicos(I);
     }
     if (R.hist.length >= FIN && !R.fin) { R.fin = true; RELOJ.pausarAños(true); setTimeout(() => abrirInforme(), 700); }
     if (n) pintarIndicadores();
@@ -140,7 +140,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     der.querySelectorAll('.su-seg[data-g] button').forEach(b => b.onclick = () => {
       const g = b.parentNode.dataset.g; b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
       if (g === 'picos') { R.picos = b.dataset.v || null; const I = R.hist[R.hist.length - 1]; if (R.picos && I) ponerPicos(I); else if (window.KEN_PICOS_IND) window.KEN_PICOS_IND.ver(false); }
-      if (g === 'foco' && window.KEN_FOCO) { if (b.dataset.v) window.KEN_FOCO.on(b.dataset.v); else window.KEN_FOCO.off(); }
+      if (g === 'foco' && window.KEN_FOCO) { if (b.dataset.v === 'ruido') { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); } if (b.dataset.v) window.KEN_FOCO.on(b.dataset.v); else window.KEN_FOCO.off(); }
     });
     const bi = der.querySelector('[data-inf]'); if (bi) bi.onclick = () => abrirInforme();
     pintarIndicadores();

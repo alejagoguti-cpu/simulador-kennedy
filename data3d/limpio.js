@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=2';
+import { iniciarSimUI } from './sim_ui.js?v=4';
 
 export const METRO_SEM_OP = 114;
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
@@ -31,7 +31,7 @@ export const SIMS = [
   { id: 12, n: 'Huertas en techos', base: 'C', cam: 'general' }
 ];
 
-const OCULTAR = ['#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et'];
+const OCULTAR = ['#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
 
 export function iniciarLimpio({ T3 }) {
   const html = document.documentElement;
@@ -147,6 +147,8 @@ export function iniciarLimpio({ T3 }) {
     if (window.KEN_PLANBAV) window.KEN_PLANBAV.ver(S.base === 'D');
     // queda en el año 1, en pausa: corre al darle play
     setTimeout(() => { reiniciar(); if (UI) UI.preparar(id); }, 60);
+    // rutas y vehículos de reparto de «Viajes de abastecimiento» (panel escondido): apagados, tiñen el mapa de naranja y pesan
+    for (const ms of [400, 1500, 3500]) setTimeout(() => { const vm = document.getElementById('vm-panel'); if (vm) vm.querySelectorAll('button').forEach(b => { if (/^Apagar$/.test(b.textContent.trim()) && !b.classList.contains('on')) b.click(); }); }, ms);
     volar(S.cam);
   }
   function volar(cual) {
