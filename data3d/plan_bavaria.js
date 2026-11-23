@@ -74,7 +74,7 @@ export async function iniciarPlanBavaria({ T3 }) {
 
   /* ---------- suelo del plan: calzada, andén, alameda, lote (antejardín) y patio, parques; cada capa aparece en su año ---------- */
   const suelo = (color, rough, dy, ro) => new THREE.MeshStandardMaterial({ color, roughness: rough, polygonOffset: true, polygonOffsetFactor: -1 - ro, polygonOffsetUnits: -2 - ro, emissive: new THREE.Color(color).multiplyScalar(0.12) });
-  const mS = { calzada: suelo(0x4b4e52, 0.95, 0, 1), anden: suelo(0xbdb8ae, 0.9, 0, 2), alameda: suelo(0xb9b3a4, 0.9, 0, 2), lote: suelo(0x8f8a7f, 0.95, 0, 3), patio: suelo(0x7f9a5c, 0.95, 0, 4), parque: suelo(0x76964e, 0.95, 0, 3) };
+  const mS = { calzada: suelo(0x4b4e52, 0.95, 0, 1), anden: suelo(0xbdb8ae, 0.9, 0, 2), alameda: suelo(0xb9b3a4, 0.9, 0, 2), lote: suelo(0x8f8a7f, 0.95, 0, 3), patio: suelo(0xa8a396, 0.95, 0, 4), parque: suelo(0x9c978a, 0.95, 0, 3) }; // patios y parques en concreto (sin verde: pedido de la autora)
   const capas = []; // { mesh, anio, dy }
   const capa = (polys, mat, anio, dy, ro) => {
     if (!polys || !polys.length) return;

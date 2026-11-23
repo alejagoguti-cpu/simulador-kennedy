@@ -56,7 +56,8 @@ const SUMIDEROS = [['B12', 0.42], ['S4', 0.12], ['T4', 0.12], ['N9', 0.34]]; // 
 const SOTANOS = ['a1', 'c7', 'f3', 'g2', 'j3', 'n1'];                        // fondos de vía: rampas a los sótanos de las manzanas
 
 const GATES = ['a2', 'a4', 'a7', 's1', 'n3', 'n5'];                         // nodos internos de los accesos
-const LARGO = 4.6, CARRIL = 1.75, NMAX = 420, V_AV = 11, V_INT = 8, V_ACC = 5, NVIRT = 6000;
+const ESC_VIS = 2.6; // carros dibujados 2,6 veces más grandes: se ven moverse desde la vista general (la física sigue a tamaño real)
+  const LARGO = 4.6, CARRIL = 1.75, NMAX = 420, V_AV = 11, V_INT = 8, V_ACC = 5, NVIRT = 6000;
 
 export function crearPredio({ T3, RELOJ }) {
   const THREE = T3.THREE;
@@ -387,8 +388,8 @@ export function crearPredio({ T3, RELOJ }) {
       if (rutaFin[r] && cLeg[i] === rutas[r].length - 1 && L - s < 8) y -= 2.4 * (1 - (L - s) / 8);
       if (rutaIni[r] && cLeg[i] === 0 && s < 8) y -= 2.4 * (1 - s / 8);
       const c = Math.cos(h), sn = Math.sin(h), b = i * 16;
-      A[b] = c; A[b + 1] = 0; A[b + 2] = -sn; A[b + 3] = 0; A[b + 4] = 0; A[b + 5] = 1; A[b + 6] = 0; A[b + 7] = 0;
-      A[b + 8] = sn; A[b + 9] = 0; A[b + 10] = c; A[b + 11] = 0; A[b + 12] = x; A[b + 13] = y; A[b + 14] = z; A[b + 15] = 1;
+      const S = ESC_VIS; A[b] = c * S; A[b + 1] = 0; A[b + 2] = -sn * S; A[b + 3] = 0; A[b + 4] = 0; A[b + 5] = S; A[b + 6] = 0; A[b + 7] = 0;
+      A[b + 8] = sn * S; A[b + 9] = 0; A[b + 10] = c * S; A[b + 11] = 0; A[b + 12] = x; A[b + 13] = y; A[b + 14] = z; A[b + 15] = 1;
     }
     while (alto > 0 && !cAct[alto - 1]) alto--;
     malla.count = alto; malla.instanceMatrix.needsUpdate = true;

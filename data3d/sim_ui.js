@@ -135,9 +135,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5);
+      // sin propuesta (plan parcial): capa «Flujo de carros» prendida para ver las vías internas de Bavaria y Boyacá congestionadas
+      if (R.def && R.def.par != null && !R.def.propuesta) { const fv = document.querySelector('#gs-fc button[data-v="1"]'); if (fv && !fv.classList.contains('on')) fv.click(); }
       // el indicador del par se prende solo, bajo y transparente para no tapar la vista
       const IND_PAR = { 1: 'CCL', 2: 'PM', 3: 'SE', 4: 'SE', 5: 'CV', 6: 'OC' }, ci = IND_PAR[R.def && R.def.par];
-      if (ci) { R.ind = ci; R.alto = 0.09; indApi().then(A => { if (A.estilo) A.estilo({ opacidad: 0.42, base: 4 }); A.altura(R.alto); }); mostrarInd(); pintarPicos(); } }, 900);
+      if (ci) { R.ind = ci; R.alto = 0.09; indApi().then(A => { if (A.estilo) A.estilo({ opacidad: 0.72, base: 4 }); A.altura(R.alto); }); mostrarInd(); pintarPicos(); } }, 900);
     if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
       // el tráfico se ve con la capa de RUIDO de carros (no con el flujo de puntos): ruido prendido, flujo apagado
       const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click();
@@ -342,8 +344,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      descartan (siguen en el informe final, «Lo que pasó, año por año»), primero las que no son de especies que se pierden */
   const cola = []; let tUlt = 0;
   setInterval(() => { if (!cola.length || viendo) return; const ahora = performance.now(); if (ahora - tUlt < 5000 || avs.children.length >= 2) return; tUlt = ahora; mostrarAviso(cola.shift()); }, 400);
+  /* cuando una especie desaparece o se va de un lugar, el aviso se abre SOLO con «Ver» (pausa + Ojo de Dios al lugar), como mucho una
+     vez cada año simulado para no interrumpir todo el tiempo */
+  let semAuto = -999;
+  const esMuerte = (ev) => ev.tipo === 'especies' && ev.signo < 0 && ev.x != null && /desapareci|deja |dejan |se van|se fue/i.test(ev.titulo || '');
   function avisar(ev) {
     if (!ev || !ev.titulo) return; R.eventos.push(ev);
+    if (esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo) { semAuto = ev.sem || 0; ev.auto = true; cola.unshift(ev); tUlt = 0; return; }
     cola.push(ev); while (cola.length > 3) { const k = cola.findIndex(e => !(e.tipo === 'especies' && e.signo < 0)); cola.splice(k >= 0 ? k : 0, 1); }
   }
   function mostrarAviso(ev) {
@@ -356,6 +363,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     avs.prepend(c); requestAnimationFrame(() => c.classList.add('on'));
     while (avs.children.length > 2) avs.lastElementChild.remove();
     c._t = setTimeout(() => { if (viendo !== c) quitar(c); }, 9000);
+    if (ev.auto) setTimeout(() => verEvento(ev, c), 300); // muerte de una especie: se muestra sola (Ojo de Dios)
   }
   function quitar(c) { clearTimeout(c._t); c.classList.remove('on'); setTimeout(() => c.remove(), 350); }
   function limpiarAvisos() { avs.innerHTML = ''; cola.length = 0; if (viendo) seguir(); }
@@ -364,6 +372,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (viendo) await seguir(true);
     viendo = c; clearTimeout(c._t); c.classList.add('viendo');
     corria = !RELOJ.pausaSem; RELOJ.pausarAños(true);
+    if (pInd || window.KEN_IND) indApi().then(A => A.ver(false)); // de cerca los picos tapan todo: se esconden mientras se muestra
     const capa = ev.capa || (ev.tipo === 'ruido' ? 'ruido' : ev.tipo === 'trafico' ? 'trafico' : 'especies');
     if (capa === 'ruido') { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); if (window.KEN_PREDIO && ultimo() && ultimo().predio) window.KEN_PREDIO.ruido(true); }
     if (window.KEN_FOCO) window.KEN_FOCO.on([capa, 'predio', 'cierre', 'basura', 'degradacion', 'caminos', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // lo que explica el aviso queda en color
@@ -375,7 +384,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   async function seguir(sinCorrer, yaCerrado) {
     const c = viendo; viendo = null; if (!c) return;
-    focoHistoria(1);
+    focoHistoria(1); if (R.ind) indApi().then(A => A.ver(true));
     if (window.KEN_OJO && !yaCerrado) window.KEN_OJO.cerrar();
     quitar(c);
     if (corria && !sinCorrer && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); }
@@ -385,7 +394,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let PRE = null, pPre = null;
   function ponerPredio(P) {
     if (!P) { if (PRE) { PRE.ver(false); } return; }
-    if (!PRE) { if (!pPre) pPre = import('./predio_trafico.js?v=3').then(m => { PRE = m.crearPredio({ T3, RELOJ }); return PRE; }).catch(() => null); pPre.then(x => { if (x && R.sim) ponerPredio(R.hist.length ? R.hist[R.hist.length - 1].predio : null); }); return; }
+    if (!PRE) { if (!pPre) pPre = import('./predio_trafico.js?v=4').then(m => { PRE = m.crearPredio({ T3, RELOJ }); return PRE; }).catch(() => null); pPre.then(x => { if (x && R.sim) ponerPredio(R.hist.length ? R.hist[R.hist.length - 1].predio : null); }); return; }
     PRE.ver(true); PRE.poner({ trafico: P.trafico, trafico0: P.trafico0, ruidoDb: P.ruidoDb, ruidoDb0: P.ruidoDb0, vias: P.vias, sem: R.hist.length, vehiculosDia: P.vehiculosDia });
   }
   /* ---------- BASURA Y RATAS (data3d/basura.js) y CIERRE GRADUAL DE VÍA (data3d/cierre_gradual.js), si están ---------- */
@@ -494,6 +503,20 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* BLANCO Y NEGRO DE LA HISTORIA: al prender una simulación el territorio se va volviendo blanco y negro de a poco (5 s) y quedan en
      color solo las capas de su historia (y el ruido o las especies si son parte de ella). «Ver» y «Mira en el territorio» lo cambian un
      rato y al cerrar vuelve a este. */
+  /* OSCURECER SOLO LA CIUDAD (pedido de la autora): en vez de oscurecer toda la pantalla, se oscurecen de a poco los edificios (la malla
+     de Google y los edificios propios); las capas, el ruido, los indicadores y los animales quedan como están. KEN_FOCO se reemplaza por
+     este atenuador mientras está la vista limpia, así «Ver», «Mira en el territorio» y el game over también usan esto. */
+  let kCiu = 1, metaCiu = 1, durCiu = 5, tCiu = 0, tRec = 0; const matsCiu = new Set();
+  function recolectar() { matsCiu.clear(); const add = (o) => o.traverse(x => { const ms = x.material ? (Array.isArray(x.material) ? x.material : [x.material]) : []; for (const m of ms) if (m && m.color) matsCiu.add(m); });
+    const tg = T3.tiles && T3.tiles.group; if (tg) add(tg); for (const e of (T3.edificios || [])) if (e && e.mesh) add(e.mesh); }
+  function aplicarCiu() { for (const m of matsCiu) { if (!m.userData._c0) m.userData._c0 = m.color.clone(); m.color.copy(m.userData._c0).multiplyScalar(kCiu); } }
+  RELOJ.alDibujar(() => { const ahora = performance.now(), dt = tCiu ? Math.min(0.1, (ahora - tCiu) / 1000) : 0; tCiu = ahora;
+    if (kCiu === metaCiu && kCiu === 1) return;
+    if (ahora - tRec > 600) { tRec = ahora; recolectar(); } // la malla de Google carga teselas nuevas: se recogen cada 0,6 s
+    const paso = dt / Math.max(0.2, durCiu) * 0.55; kCiu = kCiu > metaCiu ? Math.max(metaCiu, kCiu - paso) : Math.min(metaCiu, kCiu + paso); aplicarCiu(); });
+  const ciudad = (on, dur = 1) => { metaCiu = on ? 0.45 : 1; durCiu = dur; };
+  const FOCO_CIU = { on: (c, o) => { ciudad(true, o && o.dur ? o.dur : 1); return Promise.resolve(true); }, off: (o) => ciudad(false, o && o.dur ? o.dur : 1), get activo() { return metaCiu < 1; }, get nivel() { return (1 - kCiu) / 0.55; } };
+  setInterval(() => { if (window.KEN_FOCO !== FOCO_CIU) window.KEN_FOCO = FOCO_CIU; }, 500);
   function focoHistoria(dur = 5) { const H = HISTORIA[R.def && R.def.par]; if (!H || !window.KEN_FOCO) return;
     window.KEN_FOCO.on([...H.capas, ...(H.ruido ? ['ruido'] : []), ...(H.capas.includes('biotica') ? ['especies'] : []), 'indicadores', ...(R.def && !R.def.propuesta ? ['plan_parcial', 'bavaria'] : ['bavaria', 'bavaria_distrito'])], { dur }); } // sin propuesta: Bavaria y su plan parcial también en color
 
