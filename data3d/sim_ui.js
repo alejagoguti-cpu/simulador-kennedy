@@ -132,7 +132,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -150,7 +150,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (H.length < hasta) return void setTimeout(lote, 0);
       R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
-      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); } }
+      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
     };
     lote();
   }
@@ -181,6 +181,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.basura || BAS) ponerBasura(I);
       if (I.cierre || CIE) ponerCierre(I.cierre);
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
+      ponerCapaPar(I);
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
       if (I.sem % 13 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada trimestre: los picos se recalculan con lo que ya pasó // cada medio año: los picos se recalculan con lo que ya pasó
     }
@@ -337,7 +338,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     corria = !RELOJ.pausaSem; RELOJ.pausarAños(true);
     const capa = ev.capa || (ev.tipo === 'ruido' ? 'ruido' : ev.tipo === 'trafico' ? 'trafico' : 'especies');
     if (capa === 'ruido') { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); if (window.KEN_PREDIO && R.sim === 4) window.KEN_PREDIO.ruido(true); }
-    if (window.KEN_FOCO) window.KEN_FOCO.on([capa, 'predio', 'cierre', 'basura', 'degradacion', 'caminos']); // lo que explica el aviso queda en color
+    if (window.KEN_FOCO) window.KEN_FOCO.on([capa, 'predio', 'cierre', 'basura', 'degradacion', 'caminos', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // lo que explica el aviso queda en color
     const bv = c.querySelector('.ver'); if (bv) { bv.textContent = 'Seguir'; bv.onclick = () => seguir(); }
     if (window.KEN_OJO && ev.x != null) {
       await window.KEN_OJO.ir({ x: ev.x, z: ev.z, titulo: ev.titulo, texto: ev.texto, color: ev.signo > 0 ? '#8ee6a8' : '#ff8a80' });
@@ -388,10 +389,22 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     CAM.ver(true); CAM.poner({ fase: Math.max(0.05, Math.min(1, (I.sem || 0) / 104)) });
   }
 
+  /* ---------- CAPA PRINCIPAL DE CADA PAR (data3d/capas_pares.js): abasto, residuos, biodiversidad, suelo, gobernanza ---------- */
+  let PAR = null, pPar = null;
+  const capaPar = () => { const c = R.def && R.def.capa; return c && c !== 'movilidad' ? c : null; };
+  function ponerCapaPar(I) {
+    const c = I ? capaPar() : null;
+    if (!c) { if (PAR) PAR.quitar(); return; }
+    if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
+    PAR.poner(c, I);
+  }
+
   /* ---------- MIRA EN EL TERRITORIO: botones que vuelan (Ojo de Dios) a lo que importa en cada simulación y lo dejan en color ---------- */
   const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
   function lugares() {
     const b = (R.def && R.def.base) || 'A', L = [], I = ultimo() || {};
+    { const c = capaPar(); const NOM = { abasto: 'Abastecimiento: nodos y rutas', residuos: 'Estaciones y residuos', biodiversidad: 'Parche, corredores y refugios', suelo: 'Usos del suelo y presión', gobernanza: 'Barrios, asambleas y recursos' };
+      if (c) L.push({ n: NOM[c] || c, donde: c, alto: true, capa: [c], t: (R.def && R.def.parN) || NOM[c], tx: (R.def && R.def.prueba) || '' }); }
     const [cx, cz] = T3.lw ? T3.lw(6330, 2170) : [989, 992];
     L.push({ n: 'Basura en Corabastos', x: cx, z: cz, capa: ['basura'], t: 'Basura alrededor de Corabastos', tx: I.basura ? `${Math.round(I.basura.total_t_dia)} t/día en Kennedy; ${Math.round((I.sinRecoger || 0) * 100)} % no se recoge.` : '' });
     L.push({ n: 'Humedal El Burro', x: 2095, z: -109, capa: ['degradacion', 'basura', 'especies'], t: 'Humedal El Burro', tx: I.humedalFuncional != null ? `Los humedales funcionan al ${Math.round(I.humedalFuncional)} % de hoy.` : '' });
@@ -409,6 +422,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const corria = !RELOJ.pausaSem; RELOJ.pausarAños(true);
     if (window.KEN_FOCO) window.KEN_FOCO.on(l.capa);
     if (l.capa.includes('ruido')) { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); }
+    if (l.alto) { // capa que cubre todo Kennedy: vista alta de toda el área (no el Ojo de Dios, que se acerca demasiado)
+      const g = T3.scene.getObjectByName(l.donde), bx = g ? new T3.THREE.Box3().setFromObject(g) : null, s = bx && !bx.isEmpty() ? bx.getSize(new T3.THREE.Vector3()) : { x: 3000, z: 3000 }, D = Math.min(4200, Math.max(1600, Math.max(s.x, s.z) * 0.95));
+      T3.anim = { t: 0, dur: 2.2, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1: new T3.THREE.Vector3(x + D * 0.12, D * 0.82, z + D * 0.5), c1: new T3.THREE.Vector3(x, 0, z) };
+      const c = document.createElement('div'); c.className = 'su-av on'; c.style.cssText = 'position:fixed;left:296px;bottom:92px;z-index:46;max-width:360px'; c.innerHTML = `<div><small>${l.t}</small><b>${l.tx}</b></div><div class="bt"><button type="button">Cerrar</button></div>`;
+      document.body.appendChild(c); c.querySelector('button').onclick = () => { c.remove(); if (window.KEN_FOCO) window.KEN_FOCO.off(); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } };
+      return;
+    }
     if (window.KEN_OJO) { await window.KEN_OJO.ir({ x, z, titulo: l.t, texto: l.tx, color: '#ffcf7a' });
       const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (window.KEN_FOCO) window.KEN_FOCO.off(); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } }, { once: true }); }
   }
@@ -417,7 +437,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function gameOver(g) {
     R.go = g; RELOJ.pausarAños(true);
     go.querySelector('p').textContent = `Año ${(g.sem / 52 + 1).toFixed(1)} · ${g.motivo || g.regla}`;
-    go.classList.add('on'); if (window.KEN_FOCO) window.KEN_FOCO.on([g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' ? 'trafico' : 'especies', 'cierre', 'predio', 'basura']); // la causa queda en color: el cierre, el predio o la basura
+    go.classList.add('on'); if (window.KEN_FOCO) window.KEN_FOCO.on([g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' ? 'trafico' : 'especies', 'cierre', 'predio', 'basura', 'degradacion', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // la causa queda en color: el cierre, el predio o la basura
     setTimeout(() => { go.classList.remove('on'); abrirInforme(); }, 4200);
   }
 
