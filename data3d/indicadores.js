@@ -6,7 +6,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   const I = await (await fetch('data3d/indicadores/index.json?v=2')).json();
   const g = new THREE.Group(); g.name = 'indicadores'; g.visible = false; T3.scene.add(g);
   const dec = (b) => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
-  const mallas = new Map(); let alto = 0.3, sel = null, anio = false;
+  const mallas = new Map(); let alto = 0.3, sel = null, anio = false, baseY = 2, opac = 0.9;
   async function malla(f) {
     if (mallas.has(f)) return mallas.get(f);
     const d = await (await fetch('data3d/indicadores/' + f + '?v=1')).json();
@@ -19,14 +19,14 @@ export async function crearIndicadores({ THREE, T3 }) {
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
     const col = new Float32Array(n * 3); for (let k = 0; k < n * 3; k++) col[k] = Math.pow(cu[k] / 255, 2.2); /* rampa de las láminas (sRGB -> lineal) */
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: 0.9, emissive: 0xffffff, emissiveIntensity: 0, toneMapped: false }));
+    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: opac, depthWrite: opac > 0.85, emissive: 0xffffff, emissiveIntensity: 0, toneMapped: false }));
     /* sombreado suave: color propio + algo de luz del sol para leer el relieve */
     m.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', 'outgoingLight = mix(diffuseColor.rgb, outgoingLight, 0.45);\n#include <opaque_fragment>'); };
     m.frustumCulled = false; m.renderOrder = 3; m.userData = { z, d };
     const M = { mesh: m, d, z, z0: z.slice(), zP: z.slice(), col0: col.slice(), zs, pos, code: f.replace(/(_2020)?\.json$/, ''), ramp: (I.lista.find(x => x.f === f) || {}).ramp }; mallas.set(f, M); return M;
   }
   function elevar(M) {
-    const p = M.mesh.geometry.attributes.position.array, z = M.z, base = (T3.viaY != null ? T3.viaY : 0.6) + 2;
+    const p = M.mesh.geometry.attributes.position.array, z = M.z, base = (T3.viaY != null ? T3.viaY : 0.6) + baseY;
     for (let k = 0; k < z.length; k++) p[k * 3 + 1] = base + z[k] * alto;
     M.mesh.geometry.attributes.position.needsUpdate = true; M.mesh.geometry.computeVertexNormals(); M.mesh.geometry.computeBoundingSphere();
   }
@@ -52,7 +52,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   const cerca = (L, x, z, r0, r1) => { let w = 0; for (const c of L) { const dx = c[0] - x, dz = c[1] - z; if (Math.abs(dx) > r1 || Math.abs(dz) > r1) continue; const v = caida(Math.hypot(dx, dz), r0, r1); if (v > w) w = v; } return w; };
   /* Con las 12 simulaciones (data3d/sim_ui.js) T3.simInd = {huerta, merc, cora, bav, verde, techo} de 0 a 1 dice cuánto de cada intervención existe en la semana
      actual del modelo: los picos se recalculan con eso (cada año) en vez de con la propuesta completa. Sin simInd todo vale 1 (la propuesta entera). */
-  const UNO = { huerta: 1, merc: 1, cora: 1, bav: 1, verde: 1, techo: 1 }, SF = () => T3.simInd || UNO, proyecto = () => T3.escenario === 'proyecto' || !!T3.simInd;
+  const UNO = { huerta: 1, merc: 1, cora: 1, bav: 1, verde: 1, techo: 1, pres: 0, rec: 0 }, SF = () => T3.simInd || UNO, proyecto = () => T3.escenario === 'proyecto' || !!T3.simInd;
   const reduccion = () => { if (T3.simInd) return { car: 0.6 * T3.simInd.cora, cam: 0.95 * T3.simInd.cora }; const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
 
   /* ---------- COBERTURA DE ÁRBOLES NUEVOS: una rejilla con cada árbol de la propuesta ----------
@@ -123,6 +123,19 @@ export async function crearIndicadores({ THREE, T3 }) {
       const x = M.pos[k * 3], z = M.pos[k * 3 + 2], v = M.z0[k] / zs;
       const wC = caida(Math.hypot(x - CORA[0], z - CORA[1]), 600, 2600), wB = s.bav * caida(Math.hypot(x - BAV[0], z - BAV[1]), 400, 1600);
       let u = v;
+      /* [SUP] TENDENCIA (vista de las 12 simulaciones): s.pres = presión urbana acumulada (población, tráfico, ruido, pérdida de verde; sube
+         sola en el estado actual) y s.rec = red ecológica recuperada (interacciones y hábitat que ganan las intervenciones), de 0 a 1.
+         La presión lleva cada lámina hacia lo malo (SE −45 %; IC, PA, EPO, PM +30–40 % de lo que les falta para 1; CCL se concentra en
+         Corabastos); la recuperación reparte soporte ecológico por todo el territorio (+65 % de lo que falta) y baja calor y aire (−25 %),
+         no solo junto a cada huerta o árbol. */
+      const p = s.pres || 0, rc = s.rec || 0;
+      if (p || rc) {
+        if (c === 'SE' || c === 'OC') u = u * (1 - (c === 'SE' ? 0.45 : 0.2) * p) + (1 - u * (1 - 0.45 * p)) * (c === 'SE' ? 0.65 : 0.25) * rc;
+        else if (c === 'IC' || c === 'PA' || c === 'EPO' || c === 'PM' || c === 'CV') { const k = c === 'PM' ? 0.4 : c === 'CV' ? 0.25 : c === 'EPO' ? 0.3 : 0.35; u = (u + (1 - u) * k * p) * (1 - (c === 'IC' || c === 'PA' ? 0.25 : 0.1) * rc); }
+        else if (c === 'CCL') u = u + (1 - u) * 0.3 * p * wC;
+        else if (c === 'CO') u = u * (1 - 0.1 * p) + (1 - u) * 0.2 * rc;
+      }
+      const v0 = v; { const v = u; // los efectos locales de abajo parten del valor ya afectado por la tendencia
       if (c === 'PM') u = v * (1 - 0.9 * r.car * wC);
       else if (c === 'PA') { const a = s.verde * leer(F, F.cAr, x, z), t = s.techo * leer(F, F.cT, x, z); u = v * (1 - 0.6 * r.car * wC) * (1 - 0.15 * a - 0.03 * t); }
       else if (c === 'EPO') u = v * (1 - 0.45 * r.car * wC) * (1 - 0.1 * s.verde * leer(F, F.cAr, x, z));
@@ -137,6 +150,7 @@ export async function crearIndicadores({ THREE, T3 }) {
       else if (c === 'SE') { const a = s.verde * leer(F, F.cS, x, z), t = s.techo * leer(F, F.cT, x, z), h = s.huerta * cerca(HUERTA, x, z, 40, 300); u = v + (1 - v) * Math.min(1, 0.6 * a + 0.15 * t + 0.2 * h); }
       else if (c === 'OC') u = v + (1 - v) * 0.45 * s.huerta * cerca(HUERTA, x, z, 80, 600);
       else if (c === 'CO') u = v + (1 - v) * 0.5 * wB;
+      }
       Z[k] = Math.max(0, Math.min(1, u)) * zs;
     }
     M.ms = performance.now() - t0; api.ultimoCalculo = { code: c, vertices: n, ms: +M.ms.toFixed(1) };
@@ -184,7 +198,9 @@ export async function crearIndicadores({ THREE, T3 }) {
     recalcular: (suave = true) => aplicarEscenario(suave), // para data3d/sim_ui.js: recalcula sin disparar el evento global «escenario»
     resumen, onCambio: null, ultimoCalculo: null, cobertura: () => CAMPO, // ultimoCalculo: {code, vertices, ms} del último recálculo con la propuesta
     altura(v) { alto = v; for (const M of mallas.values()) if (M.mesh.visible) elevar(M); },
-    ver(on) { g.visible = on; }
+    ver(on) { g.visible = on; },
+    // vista limpia: láminas bajas, pegadas al piso y algo transparentes para ver el territorio debajo
+    estilo({ opacidad, base } = {}) { if (opacidad != null) opac = opacidad; if (base != null) baseY = base; for (const M of mallas.values()) { M.mesh.material.opacity = opac; M.mesh.material.depthWrite = opac > 0.85; M.mesh.material.needsUpdate = true; if (M.mesh.visible) elevar(M); } }
   };
   window.KEN_IND = api; // para revisar desde la consola (resumen, cobertura, ultimoCalculo)
   return api;

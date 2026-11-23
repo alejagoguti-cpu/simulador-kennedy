@@ -187,8 +187,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
       for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
     })();
   }
-  import('./escenarios_sim.js?v=50').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
-  import('./cambio_50.js?v=6').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
+  import('./escenarios_sim.js?v=51').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  import('./cambio_50.js?v=7').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=6').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
   import('./trafico_plan.js?v=2').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio
   import('./metro_l1.js?v=2').then(m => m.iniciarMetro({ T3 })).catch(e => console.warn('Metro de Bogotá, Línea 1:', e)); // viaducto, estaciones 2-6 y trenes de la Línea 1 (proyecto real, en todos los escenarios)

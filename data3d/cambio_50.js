@@ -25,7 +25,7 @@
 import { RELOJ } from './reloj.js?v=5';
 import { SIMST } from './sim_modelos.js?v=7';
 import { crecimiento } from './sim_vida.js?v=7';
-import { añoActual } from './tope_anos.js?v=2';
+import { añoActual } from './tope_anos.js?v=3';
 
 const TAU = 6, ADULTO = 20; // [SUP] años: tiempo característico de crecimiento y edad en que el árbol llega al ~95 % de su altura
 const AÑO = 52, W0_HUM = 55, AVES0 = 900, ACT0 = 120; // valores iniciales del modelo (sim_vida.js: W0 = 0,55 · s.B = 900 · A0 = 120)

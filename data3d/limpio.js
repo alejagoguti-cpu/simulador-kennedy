@@ -9,11 +9,25 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=6';
+import { iniciarSimUI } from './sim_ui.js?v=11';
 
 export const METRO_SEM_OP = 114;
+export const SEMANAS_FIN = 1040;
+/* dos escenarios: Kennedy como está (sin la propuesta de la tesis) y Kennedy con la propuesta */
+const GRUPOS = [
+  { n: 'Kennedy · estado actual', d: 'sin la propuesta', ids: [1, 4, 5, 7, 8] },
+  { n: 'Con la propuesta', d: 'instituto, red de mercados, huertas', ids: [2, 3, 6, 9, 10, 11, 12] }
+];
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
-const VELS = [4, 8, 16];                  // semanas por segundo (1×, 2×, 4×): 10 años en ~130 s, ~65 s, ~33 s
+/* UN SOLO TIEMPO. La barra corre 20 años (1040 semanas) en tres plazos. 1× = un año en 12 s reales (20 años ≈ 4 min); 2× y 4× lo
+   comprimen. El día (carros, fauna, cielo, reloj de la izquierda) corre con la MISMA velocidad: al subir la velocidad de los años suben
+   también los carros (VEL_DIA = segundos simulados del día por segundo real). Un año real a 1× no es viable en una presentación. */
+const FIN_SEM = 1040, AÑOS = 20;
+const VELS = [52 / 12, 52 / 6, 52 / 3];   // semanas del modelo por segundo real: 1× = 1 año / 12 s, 2× = 6 s, 4× = 3 s
+const VEL_DIA = [40, 80, 160];            // el día corre al mismo ritmo relativo (en pausa vuelve a tiempo real: 1×). Tope real: cada segundo
+                                          // simulado del día cuesta ~4 ms (boids 2, carros 1, agentes 0,7, aves 0,4): con 10 ms por cuadro a 60 fps
+                                          // caben ~150 s simulados por segundo; más que eso el reloj recorta (no hay pasos más grandes).
+const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 20 }];
 
 // las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
 export const SIMS = [
@@ -43,6 +57,10 @@ export function iniciarLimpio({ T3 }) {
     #lp-sims { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
     #lp-sims button { padding: 7px 4px; font-size: 12.5px; letter-spacing: .01em; }
     #lp-sims button.on { box-shadow: inset 0 0 0 1px rgba(255,190,90,.9); }
+#lp-sims .lp-gr { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 8px 0 1px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.1); }
+#lp-sims .lp-gr:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+#lp-sims .lp-gr b { font: 600 11px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #ffd28a; }
+#lp-sims .lp-gr span { font: 400 10.5px system-ui, sans-serif; opacity: .55; text-align: right; }
     #lp-simn { margin: 6px 2px 2px; font: 500 12px/1.3 system-ui, sans-serif; opacity: .75; min-height: 16px; }
     /* barra de años (abajo, mismo vidrio de los paneles) */
     #lp-anos { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px;
@@ -57,7 +75,9 @@ export function iniciarLimpio({ T3 }) {
     #lp-anos .pista { position: relative; flex: 1; height: 26px; }
     #lp-anos .pista i { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 3px; background: rgba(255,255,255,.16); }
     #lp-anos .pista b { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #ffb347, #ffd86b); width: 0; }
-    #lp-anos .pista s { position: absolute; top: 18px; transform: translateX(-50%); font: 500 10px system-ui, sans-serif; opacity: .55; text-decoration: none; }
+    #lp-anos .pista u { position: absolute; top: -3px; height: 12px; border-left: 1px solid rgba(255,255,255,.28); padding-left: 5px; box-sizing: border-box; font: 600 9px/12px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; opacity: .6; white-space: nowrap; overflow: hidden; }
+#lp-anos .ano small { display: block; font: 600 9px/1.2 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .6; text-align: right; }
+#lp-anos .pista s { position: absolute; top: 18px; transform: translateX(-50%); font: 500 10px system-ui, sans-serif; opacity: .55; text-decoration: none; }
     #lp-anos.vacia .play, #lp-anos.vacia .vel, #lp-anos.vacia .rei { opacity: .45; pointer-events: none; }
     @media (max-width: 640px) { #lp-anos .tit { display: none; } #lp-anos { gap: 8px; padding: 8px 10px; } }`;
   document.head.appendChild(css);
@@ -82,7 +102,8 @@ export function iniciarLimpio({ T3 }) {
     if (!document.getElementById('lp-sims')) {
       const h = document.createElement('div'); h.className = 'gs-sub'; h.textContent = 'SIMULACIONES';
       const f = document.createElement('div'); f.id = 'lp-sims';
-      f.innerHTML = SIMS.map(s => `<button type="button" data-s="${s.id}" title="${s.n}">Simulación ${s.id}</button>`).join('');
+      const bot = (s) => `<button type="button" data-s="${s.id}" title="${s.n}">Simulación ${s.id}</button>`;
+      f.innerHTML = GRUPOS.map(g => `<div class="lp-gr"><b>${g.n}</b><span>${g.d}</span></div>` + SIMS.filter(s => g.ids.includes(s.id)).map(bot).join('')).join('');
       const nm = document.createElement('div'); nm.id = 'lp-simn';
       const ancla = g.querySelector('.gs-reloj'); (ancla ? ancla.parentNode : g).insertBefore(h, ancla ? ancla.nextSibling : g.firstChild); h.after(f); f.after(nm);
       f.querySelectorAll('button').forEach(b => { b.onclick = () => escoger(+b.dataset.s); });
@@ -91,6 +112,8 @@ export function iniciarLimpio({ T3 }) {
   };
   const intentar = () => { if (!limpiarPanel()) setTimeout(intentar, 300); };
   intentar();
+  // el tablero de interacciones (su panel está escondido en esta vista) no necesita correr: libera ~0,2 ms por segundo simulado
+  let nTb = 0; const apTb = setInterval(() => { const s = RELOJ.sistemas.find(x => x.nombre === 'tablero'); if (s && !s._lp) { s._lp = 1; s.step = () => {}; } if (s || ++nTb > 60) clearInterval(apTb); }, 1000);
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
 
   /* sin la franja verde de la orilla del humedal ni los rellenos planos verdes de zonas (se veían raros sobre la foto) */
@@ -105,26 +128,28 @@ export function iniciarLimpio({ T3 }) {
   bar.innerHTML = `<button type="button" class="play" title="Correr la simulación (barra espaciadora)">▶</button>
     <button type="button" class="rei" title="Volver al año 1">⟲</button>
     <span class="tit">Escoge una simulación</span>
-    <div class="pista"><i></i><b></b>${Array.from({ length: 10 }, (_, k) => `<s style="left:${(k / 9) * 100}%">${k + 1}</s>`).join('')}</div>
-    <span class="ano">Año 1</span>
+    <div class="pista"><i></i><b></b>${FASES.map(f => `<u title="${f.n} · años ${f.a0}–${f.a1}" style="left:${(f.a0 - 1) / AÑOS * 100}%;width:${(f.a1 - f.a0 + 1) / AÑOS * 100}%">${f.n.replace(' plazo', '')}</u>`).join('')}${[1, 5, 10, 15, 20].map(a => `<s style="left:${(a - 0.5) / AÑOS * 100}%">${a}</s>`).join('')}</div>
+    <span class="ano">Año 1<small>Corto plazo</small></span>
     <button type="button" class="vel" title="Velocidad">1×</button>`;
   document.body.appendChild(bar);
   const $b = (s) => bar.querySelector(s);
   let vel = 0;
   $b('.play').onclick = () => alternar();
   $b('.rei').onclick = () => { if (!ESC.activo) return; reiniciar(); };
-  $b('.vel').onclick = () => { vel = (vel + 1) % VELS.length; $b('.vel').textContent = ['1×', '2×', '4×'][vel]; if (!RELOJ.pausaSem) RELOJ.ponerVelAños(VELS[vel]); };
+  $b('.vel').onclick = () => { vel = (vel + 1) % VELS.length; $b('.vel').textContent = ['1×', '2×', '4×'][vel]; if (!RELOJ.pausaSem) { RELOJ.ponerVelAños(VELS[vel]); RELOJ.ponerVel(VEL_DIA[vel]); } };
   addEventListener('keydown', (e) => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement && document.activeElement.tagName)) { e.preventDefault(); alternar(); } });
   function alternar() {
     if (!ESC.activo) return;
-    if (RELOJ.pausaSem) { if (RELOJ.sem >= 520) reiniciar(); RELOJ.detenerSemEn = 520; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); }
-    else RELOJ.pausarAños(true);
+    if (RELOJ.pausaSem) { if (RELOJ.sem >= FIN_SEM) reiniciar(); RELOJ.detenerSemEn = FIN_SEM; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); RELOJ.presupuestoMs = 10; RELOJ.ponerVel(VEL_DIA[vel]); }
+    else { RELOJ.pausarAños(true); RELOJ.presupuestoMs = 6; RELOJ.ponerVel(1); }
   }
-  function reiniciar() { if (RELOJ.saltando) return; RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); dispatchEvent(new Event('lp-reinicio')); }
+  function reiniciar() { if (RELOJ.saltando) return; RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); RELOJ.ponerVel(1); dispatchEvent(new Event('lp-reinicio')); }
   RELOJ.alDibujar(() => {
-    const s = Math.min(520, RELOJ.semanas || RELOJ.sem), corre = !RELOJ.pausaSem;
-    $b('.pista b').style.width = (s / 520 * 100).toFixed(2) + '%';
-    $b('.ano').textContent = 'Año ' + Math.min(10, Math.floor(s / 52) + 1);
+    const s = Math.min(FIN_SEM, RELOJ.semanas || RELOJ.sem), corre = !RELOJ.pausaSem;
+    if (RELOJ.pausaSem && RELOJ.vel > 1 && !RELOJ.saltando) { RELOJ.ponerVel(1); RELOJ.presupuestoMs = 6; } // la pausa al llegar al final (o por un aviso) también vuelve el día a tiempo real
+    $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
+    const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${fa.n}</small>`;
+    if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
     const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
   });
 

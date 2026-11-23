@@ -16,7 +16,7 @@ import { RELOJ as R0 } from './reloj.js?v=5';
 import { ESCENARIOS, REGLAS, MERCADOS, BODEGAS, MOTIVO, diagnostico, crear, paso } from './sim_vida.js?v=7';
 import { ZONAS } from './sim_red_datos.js?v=2';
 import { PAR, SIMST } from './sim_modelos.js?v=7';
-import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=2';
+import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=3';
 
 const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b', D: '#c9706a' };
 const LARGO = { A: 'Hoy', B: 'Bavaria central', C: 'Red de mercados', D: 'Plan parcial' };

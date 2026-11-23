@@ -8,7 +8,7 @@
    «+2 h»: salto sin dibujo (RELOJ.saltar): la lógica de todos los sistemas corre paso a paso sin dibujar la escena; mientras tanto una
    capa bloquea la interfaz (nada cambia la corrida a mitad del salto) y muestra el progreso, la fecha simulada y Cancelar (también Esc). */
 import { RELOJ as R0, VELOCIDADES, VEL_AÑOS } from './reloj.js?v=5';
-import { armarTope, terminado, TOPE_AÑOS } from './tope_anos.js?v=2'; // el modelo semanal se detiene solo en el año 50
+import { armarTope, terminado, TOPE_AÑOS } from './tope_anos.js?v=3'; // el modelo semanal se detiene solo en el año 50
 const txtAños = (R) => terminado(R) ? 'Fin: ' + TOPE_AÑOS + ' años' : R.textoAños();
 export const SALTO_PASOS = 2 * 3600; // +2 horas simuladas (pasos de 1 s)
 
