@@ -276,10 +276,10 @@ export const SUP_SIMS = {
       por población, con la información de hace medio año. Con: las asambleas locales (una Junta de Acción Comunal por sector, IDPAC) presentan
       prioridades y una federación con vocerías rotativas reparte según la necesidad reportada (ver GOBERNANZA abajo). */
 export const PARES = [
-  { par: 1, n: '01 Abastecimiento', prueba: 'Interrupción temporal de una parte del suministro externo de alimentos', capa: 'abasto',
-    sin: 'Corabastos y la red de referencia responden con sus capacidades existentes.', con: 'Mercados barriales, producción local y puntos de acopio intentan compensar parte del déficit.',
-    visible: 'Mercados, alimentos y rutas: distribución de productos, volúmenes y nodos activos.',
-    pregSin: '¿Qué pasaría si se corta una parte de la comida que llega de fuera y Kennedy solo cuenta con Corabastos?', pregCon: '¿Qué pasaría si se corta una parte de la comida que llega de fuera y los mercados de barrio, las huertas y los puntos de acopio intentan compensar?' },
+  { par: 1, n: '01 Abastecimiento', prueba: 'La demanda de alimentos crece y Corabastos tiene un tope', capa: 'abasto',
+    sin: 'Todo pasa por Corabastos: se va llenando hasta su tope; más carga, más basura junto a los humedales.', con: 'Mercados en parques y en Bavaria Común, producción local y puntos de acopio reparten la demanda: Corabastos no llega a su tope.',
+    visible: 'Corabastos como un contenedor que se llena hasta su tope; los mercados de la propuesta como contenedores que se reparten la carga.',
+    pregSin: '¿Qué pasaría si Kennedy necesita cada año más comida y todo sigue pasando por Corabastos, que tiene un tope?', pregCon: '¿Qué pasaría si la comida que Kennedy necesita cada año se reparte entre Corabastos y los mercados de barrio, las huertas y los puntos de acopio?' },
   { par: 2, n: '02 Movilidad', prueba: 'Cierre temporal de una vía estratégica (Av. de las Américas)', capa: 'movilidad',
     sin: 'Los vehículos buscan rutas en la red existente.', con: 'Se evalúa la respuesta con mercados distribuidos, accesos y conexiones propuestas.',
     visible: 'Vías, vehículos y congestión: rutas, velocidades y acumulación de vehículos.',
@@ -317,9 +317,8 @@ const sRuido = { k: 'mitiga', n: 'Calles pacificadas y con barreras verdes', min
 const sRecol = { k: 'recoleccion', n: 'Recolección de la basura', min: 50, max: 100, paso: 1, val: 84, unidad: '%', ayuda: 'UAESP 2026: 5.680 t/día recogidas por el servicio y 1.089 t/día en puntos críticos y arrojo clandestino (16 % sin recoger).' };
 const sFrac = { k: 'P2.frac', n: 'Hogares que separan los orgánicos', min: 0, max: 1, paso: 0.05, val: 0.4, unidad: '0–1', ayuda: 'Fracción de los hogares cubiertos que separa sus orgánicos para las Estaciones Circulares (sim_modelos.js: 0,4).' };
 const PAR_SL = {
-  1: [{ k: 'corte', n: 'Parte del suministro externo que se corta', min: 0, max: 100, paso: 5, val: 40, unidad: '%', ayuda: 'Corabastos solo puede traer esta fracción menos de lo que traía (paro, derrumbe en una vía nacional, inundación) [SUP: la prueba].' },
-    { k: 'corteT0', n: 'Semana en que empieza el corte', min: 1, max: 1000, paso: 1, val: 104, unidad: 'semana', ayuda: 'Semana del modelo en que empieza la interrupción.' },
-    { k: 'corteDur', n: 'Duración del corte', min: 1, max: 52, paso: 1, val: 12, unidad: 'semanas', ayuda: 'Semanas que dura la interrupción.' }, sCapRed, sPob()],
+  1: [{ k: 'coraTope', n: 'Tope de Corabastos', min: 0, max: 60, paso: 1, val: 15, unidad: '% sobre la demanda de hoy', ayuda: 'Lo máximo que Corabastos puede recibir y despachar para Kennedy, por encima de lo que se pide hoy [SUP: 15 %: ya trabaja con 10 % de holgura y sus bodegas no crecen].' },
+    { ...sPob(1.5), n: 'Crecimiento de la demanda de alimentos', ayuda: 'Crecimiento anual de la población de Kennedy (y con ella la comida que necesita, los residuos y los carros).' }, { ...sCapRed, max: 900, val: 600 }],
   2: [sT0, sDur, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
@@ -450,7 +449,8 @@ function paresPoli(s) { let n = 0; for (const i of PRE.POLI) for (let p = 0; p <
    su gancho por parche (mod.metro {k, f, desde}); si todo vale 1 no se pasa nada (la dinámica es la de siempre). Se actualiza una vez por año. */
 const vAño = (r, a) => 0.70 * Math.pow(1 + r, a) + 0.22 + 0.08;
 function factorTraf(E, t) { const a = Math.max(0, Math.floor(t / V.AÑO)), T = E.traf;
-  return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * (E.s.pob / V.POB_K); }
+  const fp = E.s.pob / V.POB_K; // [SUP] par 01 con propuesta: con mercados de barrio a pie, la población nueva suma 30 % de los viajes en carro
+  return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * (E.par === 1 && E.prop ? 1 + (fp - 1) * 0.2 : fp); }
 function ganchoTraf(E, t) {
   const T = E.traf, mOn = E.metro && t >= E.metro.desde;
   const gE = Math.round(factorTraf(E, t) * Math.pow(10, -MITIGA_DB / 10 * T.mit) * 1000) / 1000;
@@ -500,9 +500,13 @@ function basuraPaso(E, t) {
   const prop = s.e === 'B' || s.e === 'C', fSin = Math.pow(1 + B.ARROJO_EXTRA, a) * (1 - b.rec) / (1 - B.RECOLECCION);
   const capt = prop ? B.ORGANICO * Math.min(1, (o.nodos || 0) / MERCADOS.length) : E.techos ? B.ORGANICO * Math.max(Math.min(1, E.techos.m2 * s.supF / SUP_SIMS.M2_HUERTA * PLAN_BAV.PERS_HOG / s.pob), Math.min(1, a / (SUP_SIMS.TECHOS_SEM / 52))) : 0; // techos (sim. 12): los hogares con huerta compostan en casa y, además, Bavaria Común (instituto de tecnologías convergentes) enseña compostaje y abre puntos de compostaje y gestión de residuos al mismo ritmo que se montan los techos [SUP]: recoge la parte orgánica como la red
   b.captura = capt; let acum = 0, capturado = 0;
+  /* [SUP] par 01: Corabastos cerca de su tope = bodegas saturadas, más merma y más basura en su entorno y en los bordes de los humedales
+     vecinos (La Vaca, El Burro): la generación de esos puntos se multiplica por (1 + 2·sat) en Corabastos y (1 + 0,45·sat) en los bordes, sat = (carga − 0,9) / 0,1 entre 0 y 1 */
+  let sat = 0; if (E.tope) { const ped = (o.coraKg || 0) + Math.max(0, (o.need || 0) * (1 - (o.recib || 1))); sat = Math.max(0, Math.min(1, (ped / E.tope.kc - 0.9) / 0.1)); E.tope.sat = sat; }
   for (const P of b.pts) {
     if (P.fuente === 'humedal') { const g1 = P.g0 * g * fPob * fSin; P.t = g1 * (1 - capt); P.u = P.t; capturado += g1 * capt; }
     else { P.t = P.g0 * g * (P.fuente === 'corabastos' || P.fuente === 'flores' ? fCora : fPob * (1 + B.ORGANICO * (E.fOrg - 1))); const u0 = Math.min(P.t, P.t * (1 - B.RECOLECCION) * fSin); P.u = u0 * (P.fuente === 'vivienda' ? 1 - Math.max(org, capt) : 1 - capt); capturado += u0 * (P.fuente === 'vivienda' ? Math.max(0, capt - org) : capt); }
+    if (sat > 0 && (P.fuente === 'corabastos' || P.fuente === 'humedal')) { const k = 1 + (P.fuente === 'humedal' ? 0.45 : 2) * sat; P.t *= k; P.u *= k; }
     P.acum += P.u * 7 - P.acum * B.LIMPIEZA; acum += P.acum; }
   b.capturado = capturado; b.acum = acum; b.ratas = acum / b.acum0; s.red.fRata = Math.max(0.2, b.ratas);
   b.total = (V.POB_K * fPob + (o.plan ? o.plan.personas : 0)) * B.KG_HAB / 1000 * g + (B.CORA_T + B.FLORES_T) * g * fCora + b.pts.reduce((x, P) => x + (P.fuente === 'humedal' ? P.t : 0), 0);
@@ -580,7 +584,10 @@ const MERC_ZONA = MERCADOS.map(M => { let b = 0, d = Infinity; ZONAS.forEach((Z,
 const ZONA_MERC = ZONAS.map(Z => MERCADOS.some(M => Math.hypot(M.x - Z[0], M.z - Z[1]) <= 400));
 function pruebaIni(E) {
   const v = E.val;
-  if (E.par === 1) E.corte = { f: (v.corte || 0) / 100, t0: Math.round(v.corteT0), dur: Math.round(v.corteDur), ref: null, activo: false };
+  /* 01 ABASTECIMIENTO: Corabastos tiene un TOPE fijo (sus bodegas no crecen) = demanda de hoy × (1 + coraTope); la demanda crece con la población
+     (y el plan parcial en «sin»). Cuando lo que se le pide pasa el tope, la comida que falta no llega a las zonas -> game over por abasto.
+     Con propuesta los mercados de barrio y Bavaria Común venden parte de lo fresco y Corabastos se llena más despacio. */
+  if (E.par === 1) E.tope = { kc: E.s.Kc / (1 + 0.10) * (1 + (v.coraTope != null ? v.coraTope : 15) / 100) };
   if (E.par === 3) E.org = { f: (v.orgAumento || 0) / 100, t0: Math.round(v.orgT0) };
   if (E.par === 4) { const k = Math.max(1, Math.min(4, Math.round(v.parche))) - 1, p = FRAG_P[k]; E.frag = { p, f: (v.parchePerdida || 0) / 100, t0: Math.round(v.parcheT0), arb0: E.PAR.P3.arboles };
     const vec = HAB_P.filter(q => q !== p).map(q => [q, Math.hypot(PARCHES[q].x - PARCHES[p].x, PARCHES[q].z - PARCHES[p].z)]).sort((a, b) => a[1] - b[1]).slice(0, 3);
@@ -591,6 +598,7 @@ function pruebaIni(E) {
 function fOrgDe(E, t) { return E.org ? 1 + E.org.f * cl01((t - E.org.t0) / V.AÑO) : 1; }
 function pruebaAntes(E, t) { // antes de V.paso
   const s = E.s;
+  if (E.tope) s.Kc = Math.min(s.Kc, E.tope.kc); // el tope de Corabastos no se acomoda a la demanda
   if (E.corte) { const C = E.corte; C.activo = t >= C.t0 && t < C.t0 + C.dur;
     if (C.activo) { if (C.ref == null) C.ref = s.Kc;
       /* [SUP] CON PROPUESTA: durante el corte los puntos de acopio de la red compran directo a productores de la región (circuitos cortos)
@@ -646,7 +654,11 @@ function indAbasto(E) { if (E.par !== 1 && E.par !== 2) return null;
   for (const [z, v] of cz) rutas.push({ de: { x: nodos[0].x, z: nodos[0].z }, a: { x: Math.round(ZONAS[z][0]), z: Math.round(ZONAS[z][1]) }, t_dia: v });
   if (o.merc) [...o.merc].map((v, k) => [v, k]).filter(a => a[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, 8).forEach(([v, k]) => { const z = MERC_ZONA[k];
     rutas.push({ de: { x: Math.round(MERCADOS[k].x), z: Math.round(MERCADOS[k].z) }, a: { x: Math.round(ZONAS[z][0]), z: Math.round(ZONAS[z][1]) }, t_dia: v / 7000 }); });
-  return { deficit: Math.max(0, 1 - (o.recib || 0)), deficitZonaPeor: Math.max(0, 1 - o.zMin), corte: E.corte ? { activo: E.corte.activo, f: E.corte.f, t0: E.corte.t0, dur: E.corte.dur } : null, nodos, rutas }; }
+  const tope = E.tope ? E.tope.kc : null, pedidoCora = (o.coraKg || 0) + Math.max(0, (o.need || 0) * (1 - (o.recib || 1)));
+  const cora = tope ? { x: nodos[0].x, z: nodos[0].z, tope_t_dia: tope / 7000, pedido_t_dia: pedidoCora / 7000, carga: Math.min(1.5, pedidoCora / tope) } : null;
+  const fC = (E.val && E.val['P1.capAcopio'] != null ? E.val['P1.capAcopio'] : V.CAP_RED_TDIA) / V.CAP_RED_TDIA;
+  const mercados = o.merc ? MERCADOS.map((M, k) => ({ n: M.n, x: Math.round(M.x), z: Math.round(M.z), tipo: M.tipo || 'mercado', activo: t >= M.desde, cap_t_dia: (M.cap || 0) * fC / 1000, t_dia: o.merc[k] / 7000, carga: (M.cap || 0) > 0 ? Math.min(1.5, o.merc[k] / 7 / ((M.cap || 1) * fC)) : 0 })) : [];
+  return { cora, mercados, deficit: Math.max(0, 1 - (o.recib || 0)), deficitZonaPeor: Math.max(0, 1 - o.zMin), corte: E.corte ? { activo: E.corte.activo, f: E.corte.f, t0: E.corte.t0, dur: E.corte.dur } : null, nodos, rutas }; }
 function indEstaciones(E) { if (E.par !== 3) return null;
   const o = E.o, s = E.s, t = s.t, H = { x: Math.round(KEN_XZ[0]), z: Math.round(KEN_XZ[1]) };
   const est = [{ n: 'Relleno Doña Juana', x: DJ_XZ[0], z: DJ_XZ[1], tipo: 'relleno', cap_t_dia: (s.Kr || 0) / 7000, tratado_t_dia: (o.relleno || 0) / 7000, acumulado_t: (s.pr || 0) / 1000 }], rec = [];

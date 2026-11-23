@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=11'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=13'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -129,6 +129,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
+    if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
+      const fc = document.querySelector('#gs-fc button[data-v="1"]'); if (fc && !fc.classList.contains('on')) fc.click();
+      R.ind = 'CCL'; mostrarInd(); pintarPicos(); }, 700);
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
@@ -392,8 +395,12 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* ---------- CAPA PRINCIPAL DE CADA PAR (data3d/capas_pares.js): abasto, residuos, biodiversidad, suelo, gobernanza ---------- */
   let PAR = null, pPar = null;
   const capaPar = () => { const c = R.def && R.def.capa; return c && c !== 'movilidad' ? c : null; };
+  let CONT = null, pCont = null;
   function ponerCapaPar(I) {
     const c = I ? capaPar() : null;
+    // par 01: contenedores (Corabastos con su tope y los mercados) en vez de nodos y rutas
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=2').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
+    if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
     PAR.poner(c, I);
@@ -403,8 +410,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
   function lugares() {
     const b = (R.def && R.def.base) || 'A', L = [], I = ultimo() || {};
-    { const c = capaPar(); const NOM = { abasto: 'Abastecimiento: nodos y rutas', residuos: 'Estaciones y residuos', biodiversidad: 'Parche, corredores y refugios', suelo: 'Usos del suelo y presión', gobernanza: 'Barrios, asambleas y recursos' };
-      if (c) L.push({ n: NOM[c] || c, donde: c, alto: true, capa: [c], t: (R.def && R.def.parN) || NOM[c], tx: (R.def && R.def.prueba) || '' }); }
+    { const c = capaPar(); const NOM = { abasto: 'Corabastos y mercados (tope)', residuos: 'Estaciones y residuos', biodiversidad: 'Parche, corredores y refugios', suelo: 'Usos del suelo y presión', gobernanza: 'Barrios, asambleas y recursos' };
+      if (c) L.push({ n: NOM[c] || c, donde: c === 'abasto' ? 'abasto_cont' : c, alto: true, capa: c === 'abasto' ? ['abasto_cont', 'especies', 'basura', 'degradacion', 'trafico'] : [c], t: (R.def && R.def.parN) || NOM[c], tx: (R.def && R.def.prueba) || '' }); }
     const [cx, cz] = T3.lw ? T3.lw(6330, 2170) : [989, 992];
     L.push({ n: 'Basura en Corabastos', x: cx, z: cz, capa: ['basura'], t: 'Basura alrededor de Corabastos', tx: I.basura ? `${Math.round(I.basura.total_t_dia)} t/día en Kennedy; ${Math.round((I.sinRecoger || 0) * 100)} % no se recoge.` : '' });
     L.push({ n: 'Humedal El Burro', x: 2095, z: -109, capa: ['degradacion', 'basura', 'especies'], t: 'Humedal El Burro', tx: I.humedalFuncional != null ? `Los humedales funcionan al ${Math.round(I.humedalFuncional)} % de hoy.` : '' });

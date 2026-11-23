@@ -6,13 +6,13 @@
   {
    "par": 1,
    "n": "01 Abastecimiento",
-   "prueba": "Interrupción temporal de una parte del suministro externo de alimentos",
+   "prueba": "La demanda de alimentos crece y Corabastos tiene un tope",
    "capa": "abasto",
-   "sin": "Corabastos y la red de referencia responden con sus capacidades existentes.",
-   "con": "Mercados barriales, producción local y puntos de acopio intentan compensar parte del déficit.",
-   "visible": "Mercados, alimentos y rutas: distribución de productos, volúmenes y nodos activos.",
-   "pregSin": "¿Qué pasaría si se corta una parte de la comida que llega de fuera y Kennedy solo cuenta con Corabastos?",
-   "pregCon": "¿Qué pasaría si se corta una parte de la comida que llega de fuera y los mercados de barrio, las huertas y los puntos de acopio intentan compensar?"
+   "sin": "Todo pasa por Corabastos: se va llenando hasta su tope; más carga, más basura junto a los humedales.",
+   "con": "Mercados en parques y en Bavaria Común, producción local y puntos de acopio reparten la demanda: Corabastos no llega a su tope.",
+   "visible": "Corabastos como un contenedor que se llena hasta su tope; los mercados de la propuesta como contenedores que se reparten la carga.",
+   "pregSin": "¿Qué pasaría si Kennedy necesita cada año más comida y todo sigue pasando por Corabastos, que tiene un tope?",
+   "pregCon": "¿Qué pasaría si la comida que Kennedy necesita cada año se reparte entre Corabastos y los mercados de barrio, las huertas y los puntos de acopio?"
   },
   {
    "par": 2,
@@ -271,32 +271,30 @@
    "id": 1,
    "par": 1,
    "propuesta": false,
-   "prueba": "Interrupción temporal de una parte del suministro externo de alimentos",
+   "prueba": "La demanda de alimentos crece y Corabastos tiene un tope",
    "n": "Abastecimiento · sin propuesta",
    "base": "A",
    "sliders": {
-    "corte": 40,
-    "corteT0": 104,
-    "corteDur": 12,
-    "P1.capAcopio": 200,
-    "pobCrece": 0
+    "coraTope": 15,
+    "pobCrece": 1.5,
+    "P1.capAcopio": 600
    },
    "gameover": {
-    "regla": "abasto",
-    "sem": 108,
-    "motivo": "una zona recibió menos del 80 % de los alimentos",
-    "valor": 13.644
+    "regla": "humedal",
+    "sem": 347,
+    "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
+    "valor": 69.637
    },
    "semillas30": {
     "gameover": 30,
     "de": 30,
-    "mediana_sem": 108,
+    "mediana_sem": 347,
     "por_regla": {
-     "abasto": 30
+     "humedal": 30
     }
    },
    "grupo": "actual",
-   "pregunta": "¿Qué pasaría si se corta una parte de la comida que llega de fuera y Kennedy solo cuenta con Corabastos?",
+   "pregunta": "¿Qué pasaría si Kennedy necesita cada año más comida y todo sigue pasando por Corabastos, que tiene un tope?",
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
@@ -308,9 +306,9 @@
    },
    "indicadores": {
     "fauna": {
-     "min": 19,
+     "min": 16,
      "max": 23,
-     "final": 20
+     "final": 16
     },
     "flora": {
      "min": 54,
@@ -319,28 +317,28 @@
     },
     "red": {
      "min": 1298,
-     "max": 3477,
-     "final": 3037
+     "max": 3453,
+     "final": 2827
     },
     "redTipos": {
-     "min": 185,
+     "min": 165,
      "max": 220,
-     "final": 190
+     "final": 165
     },
     "pares": {
      "min": 135,
-     "max": 318,
-     "final": 262
+     "max": 315,
+     "final": 243
     },
     "aves": {
-     "min": 13,
+     "min": 11,
      "max": 14,
-     "final": 13
+     "final": 11
     },
     "poliniz": {
      "min": 27,
      "max": 81,
-     "final": 73
+     "final": 70
     },
     "polinizEsp": {
      "min": 3,
@@ -349,33 +347,33 @@
     },
     "trafico": {
      "min": 1,
-     "max": 1.24,
-     "final": 1.24
+     "max": 1.67,
+     "final": 1.67
     },
     "ruidoDb": {
-     "min": 60.889,
-     "max": 61.821,
-     "final": 61.821
+     "min": 60.89,
+     "max": 63.114,
+     "final": 63.114
     },
     "callesRuidosas": {
-     "min": 30.232,
-     "max": 36.678,
-     "final": 36.678
+     "min": 30.497,
+     "max": 41.055,
+     "final": 41.055
     },
     "callesOMS": {
-     "min": 75.651,
-     "max": 95.891,
-     "final": 95.891
+     "min": 75.995,
+     "max": 100,
+     "final": 100
     },
     "atropellos": {
-     "min": 6.287,
-     "max": 12.525,
-     "final": 6.457
+     "min": 6.289,
+     "max": 12.323,
+     "final": 6.838
     },
     "comidaMin": {
-     "min": 0.136,
+     "min": 0.206,
      "max": 1,
-     "final": 1
+     "final": 0.206
     },
     "residuos": {
      "min": 0,
@@ -393,39 +391,39 @@
      "final": 0
     },
     "congestion": {
-     "min": 69.9,
-     "max": 165.045,
-     "final": 165.045
+     "min": 69.98,
+     "max": 543.109,
+     "final": 543.109
     },
     "tiempo10km": {
-     "min": 31.75,
-     "max": 49.53,
-     "final": 49.53
+     "min": 31.765,
+     "max": 120.181,
+     "final": 120.181
     },
     "presion": {
-     "min": 0,
-     "max": 0.681,
-     "final": 0.681
+     "min": 0.001,
+     "max": 0.961,
+     "final": 0.961
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.059,
+     "max": 0.055,
      "final": 0
     },
     "ratas": {
      "min": 1,
-     "max": 3.171,
-     "final": 3.171
+     "max": 5.601,
+     "final": 5.601
     },
     "humedalHa": {
-     "min": 36.349,
+     "min": 34.496,
      "max": 38.399,
-     "final": 36.349
+     "final": 34.496
     },
     "humedalFuncional": {
-     "min": 53.794,
-     "max": 99.997,
-     "final": 53.794
+     "min": 31.936,
+     "max": 99.996,
+     "final": 31.936
     },
     "arboles": {
      "min": 0.362,
@@ -433,9 +431,9 @@
      "final": 0.362
     },
     "comidaLocal": {
-     "min": 0.007,
+     "min": 0.005,
      "max": 0.012,
-     "final": 0.007
+     "final": 0.005
     },
     "circularIndice": {
      "min": 0.003,
@@ -449,8 +447,8 @@
     },
     "hogaresRiesgo": {
      "min": 0,
-     "max": 2986,
-     "final": 2986
+     "max": 4021,
+     "final": 4021
     },
     "metroReduccion": {
      "min": 0,
@@ -460,13 +458,22 @@
    },
    "extinciones": [
     {
-     "sem": 537,
+     "sem": 448,
      "especie": "monjita",
      "nombre": "Monjita bogotana",
-     "motivo": "tráfico y ruido",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "techo",
+     "x": 2997.3,
+     "z": -606
+    },
+    {
+     "sem": 713,
+     "especie": "caracol",
+     "nombre": "Caracol de jardín",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq4",
+     "x": 771.4,
+     "z": 1641.9
     },
     {
      "sem": 715,
@@ -478,18 +485,45 @@
      "z": -606
     },
     {
-     "sem": 725,
+     "sem": 737,
      "especie": "rana",
      "nombre": "Rana sabanera",
      "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "techo",
+     "x": 2997.3,
+     "z": -606
+    },
+    {
+     "sem": 757,
+     "especie": "focha",
+     "nombre": "Focha común",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "techo",
+     "x": 2997.3,
+     "z": -606
+    },
+    {
+     "sem": 764,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "sin recursos de la red",
      "parche": "burro",
      "x": 2095.7,
      "z": -109.1
     },
     {
-     "sem": 850,
-     "especie": "culebra",
-     "nombre": "Serpiente sabanera",
+     "sem": 954,
+     "especie": "tingua",
+     "nombre": "Tingua moteada",
+     "motivo": "tráfico y ruido",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 999,
+     "especie": "lagartija",
+     "nombre": "Lagartija bogotana",
      "motivo": "azar demográfico (parche pequeño o de baja calidad)",
      "parche": "pq11",
      "x": 3002.4,
@@ -532,14 +566,6 @@
     },
     {
      "sem": 105,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Se corta 40 % del suministro externo de alimentos",
-     "texto": "Durante 12 semanas Corabastos solo puede traer 60 % de lo que traía y no hay otra red. Hoy llega 66 % de lo que necesita Kennedy."
-    },
-    {
-     "sem": 105,
      "tipo": "obra",
      "capa": "ruido",
      "signo": -1,
@@ -547,12 +573,12 @@
      "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
     },
     {
-     "sem": 108,
-     "tipo": "comida",
+     "sem": 105,
+     "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
-     "titulo": "Game over: una zona recibió menos del 80 % de los alimentos",
-     "texto": "Regla «Abastecimiento» cumplida 4 semanas seguidas (valor 14 %)."
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,2 min (hoy 31,8 min en 2025); congestión 88 %. Circulan 6 % más vehículos que hoy."
     },
     {
      "sem": 115,
@@ -563,20 +589,20 @@
      "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
     },
     {
-     "sem": 117,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": 1,
-     "titulo": "Termina el corte del suministro",
-     "texto": "Corabastos vuelve a traer lo de antes; la zona peor servida recibe 16 % de lo que necesita."
-    },
-    {
      "sem": 141,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
      "titulo": "Menos carros junto al metro",
-     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 1,00 y el ruido promedio en 60,9 dB."
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 1,05 y el ruido promedio en 61,1 dB."
+    },
+    {
+     "sem": 142,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 73,7 dB (+1,0 dB) por los 3.824 vehículos diarios, 195 de ellos camiones."
     },
     {
      "sem": 145,
@@ -587,12 +613,12 @@
      "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tala."
     },
     {
-     "sem": 149,
+     "sem": 147,
      "tipo": "suelo",
      "capa": "trafico",
      "signo": -1,
      "titulo": "1.000 hogares en riesgo de desplazamiento",
-     "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.002 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+     "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.000 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
      "sem": 149,
@@ -600,7 +626,7 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 0,9 dB por los 4.126 vehículos diarios y el frente de obra."
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 1,1 dB por los 4.126 vehículos diarios y el frente de obra."
     },
     {
      "sem": 157,
@@ -611,28 +637,36 @@
      "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
     },
     {
-     "sem": 157,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
-    },
-    {
      "sem": 167,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
-     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+     "texto": "Unas 24.320 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
-     "sem": 193,
+     "sem": 177,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.802 al día salen o entran por las vías nuevas del plan."
+     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 8.792 al día salen o entran por las vías nuevas del plan."
+    },
+    {
+     "sem": 201,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 85 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 202,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura invade el borde del Humedal La Vaca",
+     "texto": "Hay 590 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,9 t/día y el humedal queda con 85 % de su calidad y 7,7 ha."
     },
     {
      "sem": 210,
@@ -643,44 +677,52 @@
      "texto": "Los predios más cercanos valen 10 % más que hoy; los arriendos suben con ellos."
     },
     {
-     "sem": 239,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
-     "sem": 311,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las aves dejan el borde de Corabastos",
-     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 40 % más que hoy, depredan nidos y la basura las espanta."
-    },
-    {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,7 min (hoy 31,8 min en 2025); congestión 91 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 371,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura invade el borde del Humedal La Vaca",
-     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
-    },
-    {
-     "sem": 469,
+     "sem": 218,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,4 min (hoy 31,8 min en 2025); congestión 105 %. Circulan 11 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 38,3 min (hoy 31,8 min en 2025); congestión 105 %. Circulan 11 % más vehículos que hoy."
+    },
+    {
+     "sem": 242,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: humedales",
+     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
+    },
+    {
+     "sem": 310,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las aves dejan el borde de Corabastos",
+     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 97 % más que hoy, depredan nidos y la basura las espanta."
+    },
+    {
+     "sem": 311,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura en los bordes de los humedales se duplica",
+     "texto": "Hay 786 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 3,8 t/día y el humedal queda con 74 % de su calidad y 7,5 ha."
+    },
+    {
+     "sem": 347,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
+     "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
+    },
+    {
+     "sem": 448,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal de Techo; causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
      "sem": 521,
@@ -691,132 +733,28 @@
      "texto": "14.002 viviendas y 38.646 habitantes nuevos; 80 tramos de vía; 16.785 vehículos entran y salen al día."
     },
     {
-     "sem": 534,
+     "sem": 713,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
-     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
-     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
+     "titulo": "Caracol de jardín desaparece de Kennedy",
+     "texto": "Caracol de jardín ya no está en ningún parche de Kennedy. El último lugar fue Cayetano Cañizares; causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
-     "sem": 537,
+     "sem": 954,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
-    },
-    {
-     "sem": 628,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
-    },
-    {
-     "sem": 665,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Pato andino deja Humedal La Vaca",
-     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
-    },
-    {
-     "sem": 680,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se duplican cerca de Corabastos",
-     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.257 t/día en Kennedy y 24 % no se recoge."
-    },
-    {
-     "sem": 683,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las aves dejan el borde de Corabastos",
-     "texto": "Las aves ocupan 25 % menos lugares a 1 km de Corabastos (se fueron focha común, garza blanca, monjita bogotana y colibrí chillón): las ratas, 113 % más que hoy, depredan nidos y la basura las espanta."
-    },
-    {
-     "sem": 715,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Comadreja desaparece de Kennedy",
-     "texto": "Comadreja ya no está en ningún parche de Kennedy. El último lugar fue Humedal de Techo; causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 781,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 75,7 dB (+3,0 dB) por los 16.785 vehículos diarios."
-    },
-    {
-     "sem": 781,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 100 % más vehículos que hoy; 16.785 al día salen o entran por las vías nuevas del plan."
-    },
-    {
-     "sem": 804,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Humedal La Vaca pierde 1 ha",
-     "texto": "La basura arrojada en su borde rellenó 1,0 ha: quedan 6,9 de 7,9 ha y su fauna tiene menos hábitat."
-    },
-    {
-     "sem": 833,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,7 min (hoy 31,8 min en 2025); congestión 144 %. Circulan 20 % más vehículos que hoy."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Serpiente sabanera desaparece de Kennedy",
-     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 880,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La fauna ocupa 10 % menos lugares que en el año 1",
-     "texto": "Las especies ocupan 261 pares especie–parche frente a 290 en el año 1. Donde más se nota es en Humedal La Vaca (se fueron tingua moteada, monjita bogotana, rana sabanera y curí; causa principal: azar demográfico (parche pequeño o de baja calidad))."
-    },
-    {
-     "sem": 991,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se triplican cerca de Corabastos",
-     "texto": "Hay 12.120 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.478 t/día en Kennedy y 29 % no se recoge."
-    },
-    {
-     "sem": 1025,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Rana sabanera desaparece de Kennedy",
-     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Biblioteca El Tintal; causa: tráfico y ruido."
+     "titulo": "Tingua moteada desaparece de Kennedy",
+     "texto": "Tingua moteada ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
     }
    ],
    "predio": {
     "año5": {
-     "trafico": 1.637,
-     "ruidoDb": 74.842,
+     "trafico": 1.718,
+     "ruidoDb": 75.049,
      "ruidoDb0": 72.648,
-     "ocupacion": 30,
+     "ocupacion": 29,
      "ocupacion0": 30.077,
      "habitantes": 31167,
      "vias": 54,
@@ -853,10 +791,10 @@
      ]
     },
     "año10": {
-     "trafico": 1.926,
-     "ruidoDb": 75.508,
+     "trafico": 2.105,
+     "ruidoDb": 75.893,
      "ruidoDb0": 72.648,
-     "ocupacion": 28,
+     "ocupacion": 26,
      "ocupacion0": 30.077,
      "habitantes": 38616,
      "vias": 80,
@@ -867,6 +805,13 @@
        "nombre": "Torcaza",
        "antes": 3,
        "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "cernicalo",
+       "nombre": "Cernícalo",
+       "antes": 2,
+       "ahora": 1,
        "causa": "ambas"
       },
       {
@@ -893,10 +838,10 @@
      ]
     },
     "año15": {
-     "trafico": 1.988,
-     "ruidoDb": 75.632,
+     "trafico": 2.281,
+     "ruidoDb": 76.23,
      "ruidoDb0": 72.648,
-     "ocupacion": 31,
+     "ocupacion": 28,
      "ocupacion0": 30.077,
      "habitantes": 38646,
      "vias": 80,
@@ -917,11 +862,25 @@
        "causa": "ambas"
       },
       {
+       "especie": "cernicalo",
+       "nombre": "Cernícalo",
+       "antes": 2,
+       "ahora": 1,
+       "causa": "ambas"
+      },
+      {
        "especie": "buho",
        "nombre": "Búho sabanero",
        "antes": 3,
-       "ahora": 2,
+       "ahora": 1,
        "causa": "ambas"
+      },
+      {
+       "especie": "lagartija",
+       "nombre": "Lagartija bogotana",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "nidos"
       },
       {
        "especie": "comadreja",
@@ -947,10 +906,10 @@
      ]
     },
     "año20": {
-     "trafico": 2.055,
-     "ruidoDb": 75.777,
+     "trafico": 2.485,
+     "ruidoDb": 76.602,
      "ruidoDb0": 72.648,
-     "ocupacion": 28,
+     "ocupacion": 27,
      "ocupacion0": 30.077,
      "habitantes": 38646,
      "vias": 80,
@@ -960,7 +919,7 @@
        "especie": "buho",
        "nombre": "Búho sabanero",
        "antes": 3,
-       "ahora": 1,
+       "ahora": 2,
        "causa": "ambas"
       },
       {
@@ -985,15 +944,13 @@
    "id": 2,
    "par": 1,
    "propuesta": true,
-   "prueba": "Interrupción temporal de una parte del suministro externo de alimentos",
+   "prueba": "La demanda de alimentos crece y Corabastos tiene un tope",
    "n": "Abastecimiento · con propuesta",
    "base": "C",
    "sliders": {
-    "corte": 40,
-    "corteT0": 104,
-    "corteDur": 12,
-    "P1.capAcopio": 200,
-    "pobCrece": 0
+    "coraTope": 15,
+    "pobCrece": 1.5,
+    "P1.capAcopio": 600
    },
    "gameover": null,
    "semillas30": {
@@ -1005,7 +962,7 @@
     }
    },
    "grupo": "propuesta",
-   "pregunta": "¿Qué pasaría si se corta una parte de la comida que llega de fuera y los mercados de barrio, las huertas y los puntos de acopio intentan compensar?",
+   "pregunta": "¿Qué pasaría si la comida que Kennedy necesita cada año se reparte entre Corabastos y los mercados de barrio, las huertas y los puntos de acopio?",
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
@@ -1019,7 +976,7 @@
     "fauna": {
      "min": 22,
      "max": 23,
-     "final": 23
+     "final": 22
     },
     "flora": {
      "min": 54,
@@ -1028,28 +985,28 @@
     },
     "red": {
      "min": 1298,
-     "max": 6725,
-     "final": 6152
+     "max": 6750,
+     "final": 6164
     },
     "redTipos": {
-     "min": 206,
+     "min": 207,
      "max": 224,
-     "final": 218
+     "final": 212
     },
     "pares": {
      "min": 135,
-     "max": 560,
-     "final": 512
+     "max": 562,
+     "final": 516
     },
     "aves": {
-     "min": 13,
+     "min": 14,
      "max": 14,
      "final": 14
     },
     "poliniz": {
      "min": 27,
      "max": 183,
-     "final": 157
+     "final": 155
     },
     "polinizEsp": {
      "min": 3,
@@ -1057,29 +1014,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 0.992,
-     "max": 1.194,
-     "final": 1.194
+     "min": 0.999,
+     "max": 1.277,
+     "final": 1.277
     },
     "ruidoDb": {
-     "min": 60.854,
-     "max": 61.658,
-     "final": 61.658
+     "min": 60.883,
+     "max": 61.949,
+     "final": 61.949
     },
     "callesRuidosas": {
-     "min": 30.011,
-     "max": 36.041,
-     "final": 36.041
+     "min": 30.232,
+     "max": 37.049,
+     "final": 37.049
     },
     "callesOMS": {
      "min": 75.651,
-     "max": 78.199,
-     "final": 78.199
+     "max": 95.891,
+     "final": 95.891
     },
     "atropellos": {
      "min": 6.287,
-     "max": 14.071,
-     "final": 9.242
+     "max": 15.542,
+     "final": 11.518
     },
     "comidaMin": {
      "min": 1,
@@ -1088,8 +1045,8 @@
     },
     "residuos": {
      "min": 0,
-     "max": 0.017,
-     "final": 0
+     "max": 0.193,
+     "final": 0.187
     },
     "huertas": {
      "min": 121.736,
@@ -1102,19 +1059,19 @@
      "final": 8
     },
     "congestion": {
-     "min": 67.736,
-     "max": 142.058,
-     "final": 142.058
+     "min": 69.568,
+     "max": 185.771,
+     "final": 185.771
     },
     "tiempo10km": {
-     "min": 31.346,
-     "max": 45.234,
-     "final": 45.234
+     "min": 31.688,
+     "max": 53.403,
+     "final": 53.403
     },
     "presion": {
      "min": 0,
-     "max": 0.344,
-     "final": 0.344
+     "max": 0.767,
+     "final": 0.767
     },
     "recuperacion": {
      "min": 0,
@@ -1122,19 +1079,19 @@
      "final": 0.7
     },
     "ratas": {
-     "min": 0.763,
-     "max": 1.343,
-     "final": 1.343
+     "min": 0.823,
+     "max": 1.662,
+     "final": 1.662
     },
     "humedalHa": {
-     "min": 38.259,
-     "max": 41.405,
-     "final": 40.937
+     "min": 38.298,
+     "max": 41.55,
+     "final": 40.893
     },
     "humedalFuncional": {
-     "min": 93.963,
-     "max": 107.826,
-     "final": 93.963
+     "min": 82.865,
+     "max": 108.102,
+     "final": 82.865
     },
     "arboles": {
      "min": 0.4,
@@ -1143,13 +1100,13 @@
     },
     "comidaLocal": {
      "min": 0.01,
-     "max": 1.018,
-     "final": 1.011
+     "max": 0.813,
+     "final": 0.751
     },
     "circularIndice": {
      "min": 0,
-     "max": 0.064,
-     "final": 0.064
+     "max": 0.056,
+     "final": 0.048
     },
     "sueloIndice": {
      "min": 1,
@@ -1158,8 +1115,8 @@
     },
     "hogaresRiesgo": {
      "min": 0,
-     "max": 1059,
-     "final": 1059
+     "max": 1426,
+     "final": 1426
     },
     "metroReduccion": {
      "min": 0,
@@ -1169,22 +1126,13 @@
    },
    "extinciones": [
     {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "humedal degradado",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 569,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq15",
-     "x": 3210.9,
-     "z": 2921.6
+     "sem": 844,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "sin recursos de la red",
+     "parche": "burro",
+     "x": 2095.7,
+     "z": -109.1
     }
    ],
    "avisos": [
@@ -1213,6 +1161,14 @@
      "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
     },
     {
+     "sem": 69,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmonta la primera bodega junto a La Vaca",
+     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
      "sem": 75,
      "tipo": "huertas",
      "capa": "especies",
@@ -1237,22 +1193,6 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
-     "sem": 105,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Se corta 40 % del suministro externo de alimentos",
-     "texto": "Durante 12 semanas Corabastos solo puede traer 60 % de lo que traía; los mercados de barrio, las huertas y el acopio de Bavaria Común intentan cubrir el resto. Hoy llega 100 % de lo que necesita Kennedy."
-    },
-    {
-     "sem": 106,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmonta la primera bodega junto a La Vaca",
-     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
      "sem": 115,
      "tipo": "metro",
      "capa": "trafico",
@@ -1261,20 +1201,12 @@
      "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
     },
     {
-     "sem": 117,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": 1,
-     "titulo": "Termina el corte del suministro",
-     "texto": "Corabastos vuelve a traer lo de antes; la zona peor servida recibe 100 % de lo que necesita (la red tarda en reacomodarse: decide por asambleas)."
-    },
-    {
      "sem": 119,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 25 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 418 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, cucarachero y chamón."
+     "texto": "Las especies ocupan 419 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, cucarachero y chamón."
     },
     {
      "sem": 119,
@@ -1290,7 +1222,7 @@
      "capa": "trafico",
      "signo": 1,
      "titulo": "Menos carros junto al metro",
-     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 1,00 y el ruido promedio en 60,9 dB."
     },
     {
      "sem": 167,
@@ -1298,18 +1230,18 @@
      "capa": "trafico",
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
-     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+     "texto": "Unas 24.320 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
-     "sem": 179,
+     "sem": 178,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 50 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 503 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, colibrí chillón y torcaza."
+     "texto": "Las especies ocupan 503 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, focha común, serpiente sabanera y mirla patiamarilla."
     },
     {
-     "sem": 196,
+     "sem": 195,
      "tipo": "polinizadores",
      "capa": "especies",
      "signo": 1,
@@ -1317,15 +1249,15 @@
      "texto": "Abejas, colibríes y cucaracheros ocupan 172 pares especie–parche (en el año 1 86), gracias a las huertas y parques con flor."
     },
     {
-     "sem": 214,
+     "sem": 208,
      "tipo": "suelo",
      "capa": "trafico",
      "signo": -1,
      "titulo": "1.000 hogares en riesgo de desplazamiento",
-     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+     "texto": "Con el alza del suelo cerca del metro, 1.005 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
-     "sem": 417,
+     "sem": 238,
      "tipo": "corabastos",
      "capa": "especies",
      "signo": 1,
@@ -1333,7 +1265,7 @@
      "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 31.050 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
-     "sem": 417,
+     "sem": 356,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
@@ -1341,12 +1273,12 @@
      "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
     },
     {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
+     "sem": 521,
+     "tipo": "trafico",
+     "capa": "trafico",
      "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: humedal degradado."
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 38,9 min (hoy 31,8 min en 2025); congestión 108 %. Circulan 12 % más vehículos que hoy."
     },
     {
      "sem": 600,
@@ -1357,20 +1289,52 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
-     "sem": 677,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
-    },
-    {
-     "sem": 989,
+     "sem": 781,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 45,7 min (hoy 31,8 min en 2025); congestión 144 %. Circulan 20 % más vehículos que hoy."
+    },
+    {
+     "sem": 793,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: tráfico",
+     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
+    },
+    {
+     "sem": 844,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Serpiente sabanera desaparece de Kennedy",
+     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: sin recursos de la red."
+    },
+    {
+     "sem": 866,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura invade el borde del Humedal El Burro",
+     "texto": "Hay 589 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 4,4 t/día y el humedal queda con 85 % de su calidad y 18,6 ha."
+    },
+    {
+     "sem": 912,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 989,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "El ruido de las calles sube 1 dB",
+     "texto": "El promedio de las calles pasa de 60,9 a 61,9 dB; 37 % de las calles son ruidosas (65 dB o más)."
     }
    ],
    "predio": null
@@ -6829,5 +6793,5 @@
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.733
+ "ms_por_paso_node": 0.743
 }
