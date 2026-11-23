@@ -9,6 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
+import { iniciarSimUI } from './sim_ui.js?v=2';
 
 export const METRO_SEM_OP = 114;
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
@@ -65,10 +66,10 @@ export function iniciarLimpio({ T3 }) {
   const limpiarPanel = () => {
     const g = document.getElementById('gs-izq'); if (!g) return false;
     const off = (el) => el && el.classList.add('lp-off');
-    for (const s of g.querySelectorAll(':scope > .gs-sub')) {
+    for (const s of g.querySelectorAll('.gs-sub')) {
       const t = (s.textContent || '').trim().toUpperCase();
       if (t.startsWith('ÁNGULO') || t.startsWith('FLUJO DE AGENTES')) off(s);
-      if (t.startsWith('CORABASTOS')) { off(s); for (let k = s.nextElementSibling; k && !k.classList.contains('gs-sub') && !k.classList.contains('ui-capas-h'); k = k.nextElementSibling) off(k); } // «Kennedy hoy / Con la propuesta»: lo deciden las simulaciones
+      if (t.startsWith('CORABASTOS')) { off(s); if (s.parentElement !== g && s.parentElement.children.length < 8) off(s.parentElement); for (let k = s.nextElementSibling; k && !k.classList.contains('gs-sub') && !k.classList.contains('ui-capas-h'); k = k.nextElementSibling) off(k); } // «Kennedy hoy / Con la propuesta»: lo deciden las simulaciones
     }
     const ang = document.getElementById('gs-ang'); off(ang); if (ang && ang.nextElementSibling && /⟲|＋/.test(ang.nextElementSibling.textContent)) off(ang.nextElementSibling);
     g.querySelectorAll(':scope > h3, :scope > p').forEach(off); off(document.getElementById('gs-dia')); off(document.getElementById('gs-jor'));
@@ -119,7 +120,7 @@ export function iniciarLimpio({ T3 }) {
     if (RELOJ.pausaSem) { if (RELOJ.sem >= 520) reiniciar(); RELOJ.detenerSemEn = 520; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); }
     else RELOJ.pausarAños(true);
   }
-  function reiniciar() { if (RELOJ.saltando) return; RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); }
+  function reiniciar() { if (RELOJ.saltando) return; RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); dispatchEvent(new Event('lp-reinicio')); }
   RELOJ.alDibujar(() => {
     const s = Math.min(520, RELOJ.semanas || RELOJ.sem), corre = !RELOJ.pausaSem;
     $b('.pista b').style.width = (s / 520 * 100).toFixed(2) + '%';
@@ -129,6 +130,7 @@ export function iniciarLimpio({ T3 }) {
 
   /* ---------- escoger simulación: prepara el territorio y espera PLAY ---------- */
   const ESC = window.KEN_LIMPIO = { activo: 0, sim: null, factorCarros: () => factorCarros(), SIMS };
+  let UI = null; iniciarSimUI({ T3, SIMS_UI: SIMS }).then(u => { UI = window.KEN_SIMUI = u; if (ESC.activo) u.preparar(ESC.activo); }).catch(e => console.warn('interfaz de simulaciones:', e));
   function factorCarros() { // multiplica la demanda de tráfico que se dibuja (index.html, updateTraffic)
     if (ESC.activo !== 7) return 1;
     const d = RELOJ.sem - METRO_SEM_OP; if (d < 0) return 1;
@@ -144,7 +146,7 @@ export function iniciarLimpio({ T3 }) {
     const btn = document.querySelector(`#esim .seg button[data-e="${S.base}"]`); if (btn) btn.click();
     if (window.KEN_PLANBAV) window.KEN_PLANBAV.ver(S.base === 'D');
     // queda en el año 1, en pausa: corre al darle play
-    setTimeout(() => { reiniciar(); }, 60);
+    setTimeout(() => { reiniciar(); if (UI) UI.preparar(id); }, 60);
     volar(S.cam);
   }
   function volar(cual) {
