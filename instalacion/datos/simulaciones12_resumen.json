@@ -94,7 +94,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -110,6 +112,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3431,
+     "final": 3168
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -125,6 +132,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 79
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -199,7 +211,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -215,6 +229,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3738,
+     "final": 3487
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -230,6 +249,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 86,
+     "final": 84
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -304,7 +328,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -320,6 +346,11 @@
      "final": 55
     },
     "red": {
+     "min": 1298,
+     "max": 6696,
+     "final": 6276
+    },
+    "redTipos": {
      "min": 207,
      "max": 223,
      "final": 216
@@ -335,6 +366,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 183,
+     "final": 165
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -407,7 +443,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -423,6 +461,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3420,
+     "final": 3144
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -438,6 +481,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 79
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -515,7 +563,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -531,6 +581,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3431,
+     "final": 3168
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -546,6 +601,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 79
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -617,7 +677,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -633,6 +695,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3661,
+     "final": 3420
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 212
@@ -648,6 +715,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 84,
+     "final": 82
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -721,7 +793,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -737,6 +811,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3431,
+     "final": 3168
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -752,6 +831,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 79
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -829,7 +913,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -845,6 +931,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3431,
+     "final": 3168
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -860,6 +951,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 79
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -938,7 +1034,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -954,6 +1052,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3727,
+     "final": 3498
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -969,6 +1072,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 86,
+     "final": 84
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -1042,7 +1150,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -1058,6 +1168,11 @@
      "final": 54
     },
     "red": {
+     "min": 1298,
+     "max": 3750,
+     "final": 3496
+    },
+    "redTipos": {
      "min": 207,
      "max": 220,
      "final": 209
@@ -1073,6 +1188,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 86,
+     "final": 84
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -1146,7 +1266,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -1162,6 +1284,11 @@
      "final": 55
     },
     "red": {
+     "min": 1298,
+     "max": 6842,
+     "final": 6387
+    },
+    "redTipos": {
      "min": 207,
      "max": 223,
      "final": 216
@@ -1177,6 +1304,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 188,
+     "final": 167
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -1250,7 +1382,9 @@
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
-    "red0": 207,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
     "pares0": 122,
     "ruidoDb0": 60.88858117579581
    },
@@ -1266,6 +1400,11 @@
      "final": 55
     },
     "red": {
+     "min": 1298,
+     "max": 4236,
+     "final": 3884
+    },
+    "redTipos": {
      "min": 207,
      "max": 222,
      "final": 211
@@ -1281,6 +1420,11 @@
      "final": 14
     },
     "poliniz": {
+     "min": 27,
+     "max": 105,
+     "final": 99
+    },
+    "polinizEsp": {
      "min": 3,
      "max": 3,
      "final": 3
@@ -1334,5 +1478,5 @@
    "extinciones": []
   }
  ],
- "ms_por_paso_node": 0.363
+ "ms_por_paso_node": 0.285
 }

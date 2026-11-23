@@ -116,7 +116,7 @@ export function crearRed(D, V, PARCHES) {
      humedal W0/W (la extinción va como 1/calidad), ruido para aves 1/MQ, atropellos para terrestres 1/(éxito medio de cruzar hacia el parche, XQ promediado con el núcleo de dispersión). Si ninguno llega, «azar demográfico». */
   const W0 = 0.55, ATRIB = 1.25;
   return {
-    FAUNA, FLORA, ENL, RF, RA, NFA, NFL, NP, W3, FI, FLI, esFa, esFl, NAT_I, NAT_NUEVA, AVE, TER, KERN, GR,
+    FAUNA, FLORA, ENL, RF, RA, NFA, NFL, NP, W3, FI, FLI, esFa, esFl, NAT_I, NAT_NUEVA, AVE, TER, KERN, GR, ALC, ENL_IDX,
     iniciar(s) {
       s.red = { diag: { n: 0, sR: 0, r0: 0 }, firma: null, flM: new Uint32Array(NFL * W3), flA: new Uint16Array(NFA * NP), ocM: new Uint32Array(NFA * W3), R: new Float32Array(NFA * NP), mot: new Uint8Array(NFA * NP), XQ: null };
       s.occ = new Uint8Array(NFA * NP); floraEstado(s);
