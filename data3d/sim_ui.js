@@ -26,12 +26,12 @@ const IND = [ // resultados en vivo: clave en ind(), nombre, formato, mejor si s
   { k: 'sinRecoger', n: 'Basura sin recoger', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, pts: 100, ayuda: 'fracción de la basura que nadie recoge (termina en calles y bordes de humedales)' },
   { k: 'arbolesPerdidos', n: 'Árboles perdidos en parques', f: (v) => (v * 100).toFixed(1) + ' %', sube: false, pts: 100 },
   { k: 'circularIdx', n: 'Economía circular', f: (v) => (v * 100).toFixed(1) + ' %', sube: true, pts: 100, ayuda: 'orgánicos que vuelven como abono a las huertas' },
-  { k: 'suelo', n: 'Precio del suelo (cerca del metro y proyectos)', f: (v) => '×' + (+v).toFixed(2), sube: false, ayuda: '1 = hoy; sube con el metro y el plan parcial (especulación)' },
+  { k: 'sueloIdx', n: 'Precio del suelo (cerca del metro y proyectos)', f: (v) => '×' + (+v).toFixed(2), sube: false, ayuda: '1 = hoy; sube con el metro y el plan parcial (especulación)' },
   { k: 'hogaresRiesgo', n: 'Hogares en riesgo de desplazamiento', f: (v) => fmt(v), sube: false },
   { k: 'residuos', n: 'Orgánicos sin compostar', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% de la capacidad de las composteras de la red', soloSi: (H) => H.some(h => h.residuos > 0.005) }
 ];
 const fmt = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString('es-CO');
-const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (I.especulacion) { I.suelo = I.especulacion.indice; I.hogaresRiesgo = I.especulacion.hogaresRiesgo; } if (I.basura) { I.basuraT = I.basura.total_t_dia; if (I.basura.fraccionSinRecoger != null) I.sinRecoger = I.basura.fraccionSinRecoger; } return I; };
+const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (I.especulacion) { I.sueloIdx = I.especulacion.indice; I.hogaresRiesgo = I.especulacion.hogaresRiesgo; } if (I.basura) { I.basuraT = I.basura.total_t_dia; if (I.basura.fraccionSinRecoger != null) I.sinRecoger = I.basura.fraccionSinRecoger; } return I; };
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
@@ -67,6 +67,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-que { margin: 9px 0 2px; font: 400 12px/1.4 system-ui, sans-serif; opacity: .9; } .su-que b { font-weight: 600; } .su-que span { opacity: .6; font-size: 11px; }
   #ojo-t { right: auto !important; left: 296px !important; transform: none; top: auto !important; bottom: 92px !important; z-index: 46 !important; } @media (max-width: 760px) { #ojo-t { left: 50% !important; transform: translateX(-50%); } } /* abajo a la izquierda: a la derecha va la leyenda de la maqueta */ /* la tarjeta del Ojo de Dios abajo al centro: arriba a la derecha la tapaba el panel */
   .su-lug { display: flex; flex-wrap: wrap; gap: 5px; } .su-lug button { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; border-radius: 8px; font: 500 11.5px system-ui, sans-serif; padding: 5px 9px; cursor: pointer; } .su-lug button:hover { background: rgba(255,207,122,.18); border-color: rgba(255,207,122,.5); }
+  #su-hist { position: fixed; left: 296px; top: 16px; z-index: 43; width: 330px; max-width: calc(100vw - 640px); padding: 11px 13px 9px; border-radius: 14px; color: #f2f3f5; background: linear-gradient(180deg, rgba(40,44,52,.74), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,.35); display: none; font: 400 11.5px/1.35 system-ui, sans-serif; }
+  #su-hist.on { display: block; } #su-hist h5 { margin: 0 0 2px; font: 600 10.5px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #ffd28a; } #su-hist p { margin: 0 0 7px; opacity: .75; }
+  #su-hist .cab, #su-hist li { display: grid; grid-template-columns: 1fr 86px 78px; gap: 6px; align-items: baseline; } #su-hist .cab { font: 600 9.5px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .6; padding-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,.1); }
+  #su-hist ul { list-style: none; margin: 0; padding: 0; } #su-hist li { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.05); } #su-hist li .n { opacity: .85; } #su-hist li b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; color: #8ee6a8; text-align: right; } #su-hist li i { font: 500 13px 'Barlow Condensed', system-ui, sans-serif; font-style: normal; opacity: .55; text-align: right; }
+  @media (max-width: 1100px) { #su-hist { display: none !important; } }
   #su-previa { margin: 4px 0 8px; padding: 7px 9px; border-radius: 8px; background: rgba(255,207,122,.12); border: 1px solid rgba(255,207,122,.3); font: 500 11.5px/1.35 system-ui, sans-serif; color: #ffe3ad; }
   #su-cambio { margin: 7px 0 0; font: 500 11.5px system-ui, sans-serif; opacity: .9; } #su-cambio b { font: 600 14px 'Barlow Condensed', system-ui, sans-serif; } #su-cambio.bien b { color: #8ee6a8; } #su-cambio.mal b { color: #ff8a80; }
   .su-alto { display: flex; align-items: center; gap: 10px; margin-top: 8px; font: 500 11px system-ui, sans-serif; opacity: .85; } .su-alto input { flex: 1; accent-color: #ffcf7a; }
@@ -101,7 +106,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-inf h3 { margin: 18px 0 4px; font: 600 11px Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
   #su-inf .bot { display: flex; gap: 8px; } #su-inf .bot button { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
   #su-inf .bot button.pri { background: rgba(255,176,70,.9); color: #1b1206; border-color: transparent; }
-  #su-avisos { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 44; width: min(370px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  #su-avisos { position: fixed; top: 14px; left: calc(50% + 130px); transform: translateX(-50%); z-index: 44; width: min(370px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
   .su-av { pointer-events: auto; display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px 7px 10px; border-radius: 14px; color: #f2f3f5;
     background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.84)); border: 1px solid rgba(255,255,255,.14); border-left: 3px solid #ffcf7a;
     backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); box-shadow: 0 10px 30px rgba(0,0,0,.35);
@@ -129,6 +134,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
+    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); }, 900);
     if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
       // el tráfico se ve con la capa de RUIDO de carros (no con el flujo de puntos): ruido prendido, flujo apagado
       const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click();
@@ -187,6 +193,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.cierre || CIE) ponerCierre(I.cierre);
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       ponerCapaPar(I);
+      if (I.sem % 4 === 0 || R.hist.length === 1) pintarHistoria();
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
@@ -409,6 +416,67 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
     PAR.poner(c, I);
   }
+
+  /* ---------- CLARIDAD: UNA HISTORIA POR PAR ----------
+     1) Solo quedan visibles las capas que explican la prueba del par (lo demás se apaga mientras corre esa simulación).
+     2) Tarjeta «¿Qué está pasando?»: la cadena causa → efecto con cifras en vivo, y la misma cifra en la otra mitad del par
+        (sin propuesta / con propuesta, mismos valores, misma semana) para ver cómo la arquitectura cambia la dinámica. */
+  const TODAS = ['abasto_cont', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza', 'basura', 'degradacion', 'cierre', 'caminos', 'predio', 'biotica', 'indicadores'];
+  const HISTORIA = {
+    1: { capas: ['abasto_cont', 'basura', 'degradacion', 'biotica', 'predio', 'caminos'], ruido: true, etq: ['bas'] },
+    2: { capas: ['cierre', 'biotica', 'predio', 'caminos'], ruido: true, etq: [] },
+    3: { capas: ['residuos', 'basura', 'degradacion', 'predio', 'caminos'], ruido: false, etq: ['bas', 'pares'] },
+    4: { capas: ['biodiversidad', 'biotica', 'degradacion', 'predio', 'caminos'], ruido: false, etq: ['pares'] },
+    5: { capas: ['suelo', 'predio', 'caminos'], ruido: false, etq: ['pares'] },
+    6: { capas: ['gobernanza', 'caminos'], ruido: false, etq: ['pares'] }
+  };
+  const pct = (a, b) => (b ? (a / b - 1) * 100 : 0), sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+  const CADENA = { // pasos de la historia: [texto, valor(I, I1), formato]
+    1: [['Lo que se le pide a Corabastos', (I, I1) => sg(pct(I.abasto && I.abasto.cora ? I.abasto.cora.pedido_t_dia : 0, I1.abasto && I1.abasto.cora ? I1.abasto.cora.pedido_t_dia : 0)) + ' %'],
+        ['Corabastos frente a su tope', (I) => I.abasto && I.abasto.cora ? Math.round(I.abasto.cora.carga * 100) + ' %' : '—'],
+        ['Basura sin recoger', (I) => fmt(I.basura ? I.basura.acumulada : 0) + ' t'],
+        ['Humedales que funcionan', (I) => Math.round(I.humedalFuncional || 0) + ' %'],
+        ['Interacciones entre especies', (I, I1) => sg(pct(I.red, I1.red)) + ' %']],
+    2: [['Vía cerrada', (I) => I.cierre && I.cierre.fase ? Math.round(I.cierre.fase * 100) + ' % cerrada' : 'abierta'],
+        ['Tráfico en las calles del desvío', (I) => I.cierre && I.cierre.traficoDesvio ? '+' + Math.round((I.cierre.traficoDesvio - 1) * 100) + ' %' : '—'],
+        ['Comida en la zona peor servida', (I) => Math.round((I.comidaMin || 0) * 100) + ' %'],
+        ['Ruido promedio', (I) => (I.ruidoDb || 0).toFixed(1) + ' dB'],
+        ['Interacciones entre especies', (I, I1) => sg(pct(I.red, I1.red)) + ' %']],
+    3: [['Orgánicos generados', (I, I1) => sg(pct(I.basuraT, I1.basuraT)) + ' %'],
+        ['Tratados en estaciones / relleno', (I) => I.estaciones ? fmt(I.estaciones.reduce((a, e) => a + (e.tratado_t_dia || 0), 0)) + ' t/día' : '—'],
+        ['Economía circular', (I) => ((I.circularIdx || 0) * 100).toFixed(1) + ' %'],
+        ['Basura sin recoger', (I) => fmt(I.basura ? I.basura.acumulada : 0) + ' t'],
+        ['Humedales que funcionan', (I) => Math.round(I.humedalFuncional || 0) + ' %']],
+    4: [['Parche perdido', (I) => I.fragmento ? (I.fragmento.nombre || 'parche') + ' · ' + (I.fragmento.haPerdidas || 0).toFixed(1) + ' ha' : '—'],
+        ['Corredores y refugios', (I) => (I.corredores ? I.corredores.length : 0) + ' corredores · ' + (I.refugios ? I.refugios.length : 0) + ' refugios'],
+        ['Territorio con fauna', (I, I1) => sg(pct(I.pares, I1.pares)) + ' %'],
+        ['Especies de fauna', (I) => I.fauna + ' de ' + I.fauna0],
+        ['Interacciones entre especies', (I, I1) => sg(pct(I.red, I1.red)) + ' %']],
+    5: [['Precio del suelo', (I) => '×' + (I.sueloIdx || 1).toFixed(2)],
+        ['Zonas desplazadas / que cambian de uso', (I) => I.suelo && typeof I.suelo === 'object' ? I.suelo.desplazadas + ' / ' + I.suelo.cambian : (I.especulacion ? '' : '—')],
+        ['Hogares en riesgo de desplazamiento', (I) => fmt(I.hogaresRiesgo || 0)],
+        ['Tráfico', (I) => Math.round((I.trafico || 1) * 100) + ' % de hoy']],
+    6: [['Recursos que alcanzan', (I) => I.gobernanza ? Math.round(I.gobernanza.coberturaMedia * 100) + ' % de la necesidad' : '—'],
+        ['Equidad entre barrios', (I) => I.gobernanza ? I.gobernanza.equidad.toFixed(2) : '—'],
+        ['Decisiones tomadas', (I) => I.gobernanza ? fmt(I.gobernanza.decisiones) : '—'],
+        ['Equipamientos habilitados', (I) => I.gobernanza ? fmt(I.gobernanza.equipamientos.length) : '—']]
+  };
+  const hist = document.createElement('div'); hist.id = 'su-hist'; document.body.appendChild(hist);
+  function pintarHistoria() {
+    const d = R.def || {}, P = d.par, C = CADENA[P], I = ultimo(); if (!C || !I) { hist.classList.remove('on'); return; }
+    const I1 = R.hist[Math.min(R.hist.length - 1, 51)] || I, B = R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, B1 = R.base ? R.base[51] || R.base[0] : null;
+    const otra = d.propuesta ? 'Sin propuesta' : null; // la «sin» no tiene base calculada: se muestra sola
+    const filas = C.map(([n, f], k) => { let a = '—', b = ''; try { a = f(I, I1); } catch (e) { /* sin dato */ } if (B && B1) { try { b = f(B, B1); } catch (e) { /* */ } }
+      return `<li><span class="n">${k ? '↓ ' : ''}${n}</span><b>${a}</b>${otra && b ? `<i>${b}</i>` : ''}</li>`; }).join('');
+    hist.innerHTML = `<h5>¿Qué está pasando? · ${d.parN || ''}</h5><p>${d.prueba || ''}</p>${otra ? '<div class="cab"><span></span><b>Con propuesta</b><i>Sin propuesta</i></div>' : `<div class="cab"><span></span><b>${d.propuesta ? 'Con propuesta' : 'Sin propuesta'}</b></div>`}<ul>${filas}</ul>`;
+    hist.classList.add('on');
+  }
+  function aplicarHistoria() {
+    const P = R.def && R.def.par, H = HISTORIA[P]; if (!H) return;
+    for (const nm of TODAS) { const g = T3.scene.getObjectByName(nm); if (!g) continue; const si = H.capas.includes(nm) || (nm === 'indicadores' && R.ind); if (!si && g.visible) g.visible = false; }
+    for (const e of ['bas', 'pares']) { const el = document.getElementById(e + '-etq'); if (el) el.style.display = H.etq.includes(e) ? '' : 'none'; }
+  }
+  setInterval(() => { if (R.sim && !viendo) aplicarHistoria(); }, 400);
 
   /* ---------- MIRA EN EL TERRITORIO: botones que vuelan (Ojo de Dios) a lo que importa en cada simulación y lo dejan en color ---------- */
   const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
