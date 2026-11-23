@@ -1,20 +1,34 @@
 /* ============ VISTA LIMPIA (por defecto) ============
-   Al entrar solo se ve el territorio y el panel de la izquierda reducido a: el reloj (esfera y hora), Sintaxis espacial
-   (Integración · Elección · Apagar), Flujo de carros (Ver · Apagar), la foto (prender/apagar) y los ESCENARIOS (por ahora el 1).
-   Todo lo demás (paneles de escenarios A·B·C, agentes, red biótica, barra de abajo, años/día, textos) se esconde.
+   Al entrar solo se ve el territorio, el panel de la izquierda (reloj, SIMULACIONES 1–12, sintaxis espacial con su barra de
+   colores, flujo de carros con su barra, capas: ruido, foto, etc.) y abajo la barra de años con play.
+   Se esconden: paneles de escenarios A·B·C, agentes, red biótica (panel), barra de render/noche/…, años/día y los textos largos.
    ?modo=completo vuelve a la interfaz de antes.
 
-   ESCENARIO 1 · METRO LÍNEA 1: corre del año 1 al 10. El metro está en obra desde ya (data3d/metro_l1.js: viaducto levantado,
-   estaciones terminadas en 2027) y opera desde marzo de 2028 = semana 114 del modelo (año 3; fecha de la Empresa Metro de Bogotá).
-   Desde que opera, parte de los carros pasa al metro: el tráfico que se dibuja baja de forma gradual durante un año hasta METRO_MENOS_CARROS.
-   [SUP] METRO_MENOS_CARROS = 0,10 (10 % menos carros en Kennedy): no hay cifra oficial de cuánto tráfico quita la Línea 1 (la Empresa
-   Metro solo publica 171.000 t de CO2 evitadas al año en toda la ciudad, sumando carro, moto, SITP y TransMilenio). Cambiar aquí cuando
-   haya una fuente. */
+   SIMULACIONES: al escoger una se prepara el territorio (proyecto dibujado, cámara) y se queda en el año 1 esperando PLAY.
+   La 7 es el Metro Línea 1: en obra desde ya (data3d/metro_l1.js) y opera desde marzo de 2028 = semana 114 del modelo (año 3;
+   Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
+   [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 
-export const METRO_SEM_OP = 114;          // operación comercial: 15 de marzo de 2028 (metro_l1.js)
+export const METRO_SEM_OP = 114;
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
-const VEL_ESC = 8;                        // semanas por segundo: los 10 años en ~65 s
+const VELS = [4, 8, 16];                  // semanas por segundo (1×, 2×, 4×): 10 años en ~130 s, ~65 s, ~33 s
+
+// las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
+export const SIMS = [
+  { id: 1, n: 'Hoy, sin proyecto', base: 'A', cam: 'inicio' },
+  { id: 2, n: 'Instituto en Bavaria', base: 'B', cam: 'bavaria' },
+  { id: 3, n: 'Red de mercados de barrio', base: 'C', cam: 'general' },
+  { id: 4, n: 'Plan parcial Bavaria', base: 'D', cam: 'bavaria' },
+  { id: 5, n: 'Corabastos cierra', base: 'A', cam: 'corabastos' },
+  { id: 6, n: 'Corabastos se reduce + borde de La Vaca', base: 'A', cam: 'corabastos' },
+  { id: 7, n: 'Metro Línea 1', base: 'A', cam: 'metro' },
+  { id: 8, n: 'Cierre de vía, hoy', base: 'A', cam: 'general' },
+  { id: 9, n: 'Cierre de vía con instituto', base: 'B', cam: 'general' },
+  { id: 10, n: 'Instituto + plazas de mercado', base: 'B', cam: 'general' },
+  { id: 11, n: 'Instituto + huertas', base: 'B', cam: 'general' },
+  { id: 12, n: 'Huertas en techos', base: 'C', cam: 'general' }
+];
 
 const OCULTAR = ['#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et'];
 
@@ -24,98 +38,146 @@ export function iniciarLimpio({ T3 }) {
   const css = document.createElement('style'); css.id = 'limpio-css';
   css.textContent = `html.limpio ${OCULTAR.join(', html.limpio ')} { display: none !important; }
     html.limpio .lp-off, html.limpio #gs-izq .lp-off, html.limpio #gs-izq button.lp-off, html.limpio #gs-izq > .lp-off { display: none !important; }
-    html.limpio #gs-izq { max-height: calc(100vh - 28px); }
-    #lp-esc { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
-    #lp-esc button { flex: 1; }
-    #lp-esc b { font: 600 15px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .04em; min-width: 54px; text-align: right; opacity: .9; }`;
+    html.limpio #gs-izq { max-height: calc(100vh - 118px); overflow-y: auto; }
+    #lp-sims { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    #lp-sims button { padding: 7px 4px; font-size: 12.5px; letter-spacing: .01em; }
+    #lp-sims button.on { box-shadow: inset 0 0 0 1px rgba(255,190,90,.9); }
+    #lp-simn { margin: 6px 2px 2px; font: 500 12px/1.3 system-ui, sans-serif; opacity: .75; min-height: 16px; }
+    /* barra de años (abajo, mismo vidrio de los paneles) */
+    #lp-anos { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; width: min(760px, calc(100vw - 32px)); box-sizing: border-box; border-radius: 16px;
+      background: linear-gradient(180deg, rgba(40,44,52,.62), rgba(20,22,28,.72)); border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #eef1f4; }
+    #lp-anos button { flex: none; height: 34px; min-width: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+    #lp-anos button:hover { background: rgba(255,255,255,.16); }
+    #lp-anos button.play { min-width: 44px; background: rgba(255,170,70,.9); color: #1c1205; border-color: transparent; }
+    #lp-anos .tit { flex: none; max-width: 230px; font: 600 13px/1.2 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #lp-anos .ano { flex: none; font: 600 20px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .03em; min-width: 62px; text-align: right; }
+    #lp-anos .pista { position: relative; flex: 1; height: 26px; }
+    #lp-anos .pista i { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 3px; background: rgba(255,255,255,.16); }
+    #lp-anos .pista b { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #ffb347, #ffd86b); width: 0; }
+    #lp-anos .pista s { position: absolute; top: 18px; transform: translateX(-50%); font: 500 10px system-ui, sans-serif; opacity: .55; text-decoration: none; }
+    #lp-anos.vacia .play, #lp-anos.vacia .vel, #lp-anos.vacia .rei { opacity: .45; pointer-events: none; }
+    @media (max-width: 640px) { #lp-anos .tit { display: none; } #lp-anos { gap: 8px; padding: 8px 10px; } }`;
   document.head.appendChild(css);
 
-  // el panel de la izquierda: se quitan las partes y textos que no van
+  /* ---------- panel de la izquierda: se quita poco (ángulo, textos largos, flujo de agentes, ¿de dónde vienen?, agentes) ---------- */
   const limpiarPanel = () => {
     const g = document.getElementById('gs-izq'); if (!g) return false;
     const off = (el) => el && el.classList.add('lp-off');
-    const subs = [...g.querySelectorAll(':scope > .gs-sub')];
-    const tituloDe = (el) => (el.textContent || '').trim().toUpperCase();
-    for (const s of subs) {
-      const t = tituloDe(s);
+    for (const s of g.querySelectorAll(':scope > .gs-sub')) {
+      const t = (s.textContent || '').trim().toUpperCase();
       if (t.startsWith('ÁNGULO') || t.startsWith('FLUJO DE AGENTES')) off(s);
-      else s.querySelectorAll('span').forEach(off); // subtítulos (DepthmapX, simulación SUMO…)
+      if (t.startsWith('CORABASTOS')) { off(s); for (let k = s.nextElementSibling; k && !k.classList.contains('gs-sub') && !k.classList.contains('ui-capas-h'); k = k.nextElementSibling) off(k); } // «Kennedy hoy / Con la propuesta»: lo deciden las simulaciones
     }
-    off(document.getElementById('gs-ang')); const rot = document.getElementById('gs-ang') && document.getElementById('gs-ang').nextElementSibling; if (rot && /⟲|＋/.test(rot.textContent)) off(rot);
-    // reloj: solo la esfera y la hora
+    const ang = document.getElementById('gs-ang'); off(ang); if (ang && ang.nextElementSibling && /⟲|＋/.test(ang.nextElementSibling.textContent)) off(ang.nextElementSibling);
     g.querySelectorAll(':scope > h3, :scope > p').forEach(off); off(document.getElementById('gs-dia')); off(document.getElementById('gs-jor'));
     g.querySelectorAll('.gs-reloj em, .gs-reloj small').forEach(off);
-    // sintaxis: solo los botones
-    off(document.getElementById('gs-ley-sx')); g.querySelectorAll('.ci-sx').forEach(off);
-    // flujo de agentes, ¿de dónde vienen?, agentes
+    g.querySelectorAll('.ci-sx').forEach(off);                         // el párrafo largo de la sintaxis (la barra de colores se queda)
     off(document.getElementById('gs-flujo')); off(document.getElementById('gs-og'));
     const ag = document.getElementById('gs-ag'); if (ag) off(ag.closest('.gs-fila'));
-    // flujo de carros: solo Ver / Apagar
-    off(document.getElementById('gs-dem')); const fc = document.getElementById('gs-fc'); if (fc && fc.nextElementSibling && fc.nextElementSibling.classList.contains('gs-ley')) off(fc.nextElementSibling);
-    // capas: solo las fotos
-    g.querySelectorAll('.ui-capas-h').forEach(off);
-    g.querySelectorAll('button[id$="-btn"], #ci-open').forEach(b => { if (b.id !== 'fb-btn' && b.id !== 'fr-btn') off(b); });
-    // párrafos sueltos de ayuda dentro del panel
-    g.querySelectorAll(':scope > div:not([id]):not([class])').forEach(d => { if (!d.querySelector('button') && (d.textContent || '').trim().length > 30) off(d); });
-    // ESCENARIOS
-    if (!document.getElementById('lp-esc')) {
-      const h = document.createElement('div'); h.className = 'gs-sub'; h.innerHTML = 'ESCENARIOS';
-      const f = document.createElement('div'); f.id = 'lp-esc'; f.className = 'gs-fila';
-      f.innerHTML = '<button type="button" data-e="1">Escenario 1</button><b id="lp-ano"></b>';
-      const ancla = g.querySelector('.gs-reloj'); (ancla ? ancla.parentNode : g).insertBefore(h, ancla ? ancla.nextSibling : g.firstChild); h.after(f);
-      f.querySelector('[data-e="1"]').onclick = (ev) => correrEscenario(1, ev.currentTarget);
+    g.querySelectorAll(':scope > div:not([id]):not([class])').forEach(d => { if (!d.querySelector('button') && (d.textContent || '').trim().length > 60) off(d); });
+    // SIMULACIONES
+    if (!document.getElementById('lp-sims')) {
+      const h = document.createElement('div'); h.className = 'gs-sub'; h.textContent = 'SIMULACIONES';
+      const f = document.createElement('div'); f.id = 'lp-sims';
+      f.innerHTML = SIMS.map(s => `<button type="button" data-s="${s.id}" title="${s.n}">Simulación ${s.id}</button>`).join('');
+      const nm = document.createElement('div'); nm.id = 'lp-simn';
+      const ancla = g.querySelector('.gs-reloj'); (ancla ? ancla.parentNode : g).insertBefore(h, ancla ? ancla.nextSibling : g.firstChild); h.after(f); f.after(nm);
+      f.querySelectorAll('button').forEach(b => { b.onclick = () => escoger(+b.dataset.s); });
     }
     return true;
   };
   const intentar = () => { if (!limpiarPanel()) setTimeout(intentar, 300); };
   intentar();
-  // los módulos que se cargan después pueden volver a meter elementos al panel: se repasa unos segundos
-  let n = 0; const rep = setInterval(() => { limpiarPanel(); if (++n > 30) clearInterval(rep); }, 1000);
-  // red biótica: sin las líneas curvas de interacciones (los animales siguen)
-  setInterval(() => { const bio = T3.scene.getObjectByName('biotica'); if (bio) bio.traverse(x => { if ((x.isLine || x.isLineSegments || x.type === 'LineSegments2') && x.visible) x.visible = false; }); }, 1000);
+  let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
 
-  /* ---------- escenarios ---------- */
-  const ESC = window.KEN_LIMPIO = { activo: 0, factorCarros: () => factorCarros() };
+  /* sin la franja verde de la orilla del humedal ni los rellenos planos verdes de zonas (se veían raros sobre la foto) */
+  const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
+    if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
+  setInterval(() => { T3.scene.traverse(o => {
+    if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
+    else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
+
+  /* ---------- barra de años ---------- */
+  const bar = document.createElement('div'); bar.id = 'lp-anos'; bar.className = 'vacia';
+  bar.innerHTML = `<button type="button" class="play" title="Correr la simulación (barra espaciadora)">▶</button>
+    <button type="button" class="rei" title="Volver al año 1">⟲</button>
+    <span class="tit">Escoge una simulación</span>
+    <div class="pista"><i></i><b></b>${Array.from({ length: 10 }, (_, k) => `<s style="left:${(k / 9) * 100}%">${k + 1}</s>`).join('')}</div>
+    <span class="ano">Año 1</span>
+    <button type="button" class="vel" title="Velocidad">1×</button>`;
+  document.body.appendChild(bar);
+  const $b = (s) => bar.querySelector(s);
+  let vel = 0;
+  $b('.play').onclick = () => alternar();
+  $b('.rei').onclick = () => { if (!ESC.activo) return; reiniciar(); };
+  $b('.vel').onclick = () => { vel = (vel + 1) % VELS.length; $b('.vel').textContent = ['1×', '2×', '4×'][vel]; if (!RELOJ.pausaSem) RELOJ.ponerVelAños(VELS[vel]); };
+  addEventListener('keydown', (e) => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement && document.activeElement.tagName)) { e.preventDefault(); alternar(); } });
+  function alternar() {
+    if (!ESC.activo) return;
+    if (RELOJ.pausaSem) { if (RELOJ.sem >= 520) reiniciar(); RELOJ.detenerSemEn = 520; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); }
+    else RELOJ.pausarAños(true);
+  }
+  function reiniciar() { if (RELOJ.saltando) return; RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); }
+  RELOJ.alDibujar(() => {
+    const s = Math.min(520, RELOJ.semanas || RELOJ.sem), corre = !RELOJ.pausaSem;
+    $b('.pista b').style.width = (s / 520 * 100).toFixed(2) + '%';
+    $b('.ano').textContent = 'Año ' + Math.min(10, Math.floor(s / 52) + 1);
+    const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
+  });
+
+  /* ---------- escoger simulación: prepara el territorio y espera PLAY ---------- */
+  const ESC = window.KEN_LIMPIO = { activo: 0, sim: null, factorCarros: () => factorCarros(), SIMS };
   function factorCarros() { // multiplica la demanda de tráfico que se dibuja (index.html, updateTraffic)
-    if (ESC.activo !== 1) return 1;
+    if (ESC.activo !== 7) return 1;
     const d = RELOJ.sem - METRO_SEM_OP; if (d < 0) return 1;
     return 1 - METRO_MENOS_CARROS * Math.min(1, d / 52);
   }
-  function correrEscenario(k, btn) {
-    ESC.activo = k;
-    document.querySelectorAll('#lp-esc button').forEach(b => b.classList.toggle('on', b === btn));
-    if (RELOJ.saltando) return;
-    RELOJ.reiniciarModelo(); RELOJ.detenerSemEn = 520; RELOJ.ponerVelAños(VEL_ESC); RELOJ.pausarAños(false);
-    // la cámara va a la Línea 1 del metro y la encuadra entera desde lo alto (de cerca, esa franja del sur no tiene edificios
-    // propios en el modelo y la foto se ve pixelada: desde arriba se ve nítida y se lee todo el trazado)
-    if (k === 1 && T3.camera && T3.orbit) {
-      const M = window.KEN_METRO, V = T3.THREE.Vector3;
-      let cx, cz;
-      if (M && M.punto) { let sx = 0, sz = 0, n = 0; for (let f = 0.2; f <= 0.8; f += 0.1) { const q = M.punto(f * M.largo); const x = q.x != null ? q.x : q[0], z = q.z != null ? q.z : q[1]; sx += x; sz += z; n++; } cx = sx / n; cz = sz / n; }
-      else { [cx, cz] = T3.lw(6325, 560); }
-      T3.anim = { t: 0, dur: 3.2, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1: new V(cx - 700, 1500, cz + 1500), c1: new V(cx, 0, cz) };
-    }  }
-  /* trazo de la Línea 1 (solo en el escenario 1): naranja tenue mientras está en obra, amarillo encendido desde que opera */
+  function escoger(id) {
+    const S = SIMS.find(s => s.id === id); if (!S) return;
+    ESC.activo = id; ESC.sim = S; bar.classList.remove('vacia');
+    document.querySelectorAll('#lp-sims button').forEach(b => b.classList.toggle('on', +b.dataset.s === id));
+    const nm = document.getElementById('lp-simn'); if (nm) nm.textContent = S.n;
+    $b('.tit').textContent = `Simulación ${id} · ${S.n}`;
+    // escenario del modelo en el mapa (los botones del panel A·B·C·D, escondido)
+    const btn = document.querySelector(`#esim .seg button[data-e="${S.base}"]`); if (btn) btn.click();
+    if (window.KEN_PLANBAV) window.KEN_PLANBAV.ver(S.base === 'D');
+    // queda en el año 1, en pausa: corre al darle play
+    setTimeout(() => { reiniciar(); }, 60);
+    volar(S.cam);
+  }
+  function volar(cual) {
+    if (!T3.camera || !T3.orbit) return; const V = T3.THREE.Vector3; let c, d;
+    if (cual === 'metro') {
+      const M = window.KEN_METRO; let cx, cz;
+      if (M && M.punto) { let sx = 0, sz = 0, n = 0; for (let f = 0.2; f <= 0.8; f += 0.1) { const q = M.punto(f * M.largo); sx += q.x != null ? q.x : q[0]; sz += q.z != null ? q.z : q[1]; n++; } cx = sx / n; cz = sz / n; }
+      else [cx, cz] = T3.lw(6325, 560);
+      c = new V(cx, 0, cz); d = new V(-700, 1500, 1500);
+    } else if (cual === 'bavaria') { c = new V(3950, 0, 180); d = new V(-620, 620, 760); }
+    else if (cual === 'corabastos') { const [x, z] = T3.lw(5900, 2850); c = new V(x, 0, z); d = new V(-500, 640, 820); }
+    else if (cual === 'general') { c = new V(2600, 0, 300); d = new V(-1300, 1700, 2000); }
+    else { c = new V(2480, 25, -90); d = new V(-760, 535, 1030); }
+    T3.anim = { t: 0, dur: 3.0, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1: c.clone().add(d), c1: c };
+  }
+
+  /* trazo de la Línea 1 (simulación 7): naranja tenue mientras está en obra, amarillo encendido desde que opera */
   let trazo = null;
   const armarTrazo = () => {
     const M = window.KEN_METRO; if (trazo || !M || !M.punto) return;
     const THREE = T3.THREE, pts = [], G = (T3.sueloY != null ? T3.sueloY : 0.3) + 13;
-    for (let s = 0; s <= M.largo; s += 25) { const q = M.punto(s); const x = q.x != null ? q.x : q[0], z = q.z != null ? q.z : q[1]; pts.push(new THREE.Vector3(x, G, z)); }
+    for (let s = 0; s <= M.largo; s += 25) { const q = M.punto(s); pts.push(new THREE.Vector3(q.x != null ? q.x : q[0], G, q.z != null ? q.z : q[1])); }
     if (pts.length < 2) return;
     const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 7, 6, false);
     const mat = new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false });
     trazo = new THREE.Mesh(geo, mat); trazo.renderOrder = 9; trazo.frustumCulled = false; trazo.visible = false; T3.scene.add(trazo);
   };
-  const pintarTrazo = () => {
+  RELOJ.alDibujar(() => {
     if (!trazo) { armarTrazo(); if (!trazo) return; }
-    trazo.visible = ESC.activo === 1;
-    if (!trazo.visible) return;
-    const opera = RELOJ.sem >= METRO_SEM_OP, m = trazo.material;
-    if (opera) { m.color.setHex(0xfff04a); m.opacity = 0.95; }
+    trazo.visible = ESC.activo === 7; if (!trazo.visible) return;
+    const m = trazo.material;
+    if (RELOJ.sem >= METRO_SEM_OP) { m.color.setHex(0xfff04a); m.opacity = 0.95; }
     else { m.color.setHex(0xff8a1e); m.opacity = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(RELOJ.tAnim * 3)); }
-  };
-  RELOJ.alDibujar(pintarTrazo);
-  const ano = () => { const b = document.getElementById('lp-ano'); if (b) b.textContent = ESC.activo ? 'Año ' + Math.min(10, RELOJ.año) : ''; };
-  RELOJ.alDibujar(ano);
+  });
   return ESC;
 }
