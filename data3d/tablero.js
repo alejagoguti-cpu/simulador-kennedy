@@ -302,7 +302,7 @@ body.tb-abierto #dock{display:none}
       VISTO.set(kv, ahora);
     }
     ahoraEnc = n; primado = true;
-    if (RELOJ.t - tCambio >= 10) { const sl = Math.floor(t / 15) % 96, V = VIVO[escAct]; if (!V[sl]) V[sl] = { v: n, k: 1 }; else { V[sl].k++; V[sl].v += (n - V[sl].v) / Math.min(V[sl].k, 20); } } // encuentros por cuarto de hora en el escenario activo
+    if (RELOJ.t - tCambio >= 10) { const sl = Math.floor(t / 15) % 96, V = VIVO[escAct] || (VIVO[escAct] = new Array(96).fill(null)); if (!V[sl]) V[sl] = { v: n, k: 1 }; else { V[sl].k++; V[sl].v += (n - V[sl].v) / Math.min(V[sl].k, 20); } } // encuentros por cuarto de hora en el escenario activo
     while (EV.length && ahoraA - EV[0].tr > 92000) EV.shift(); if (EV.length > 1500) EV.splice(0, EV.length - 1500);
     if (VISTO.size > 20000) for (const [k, u0] of VISTO) if (ahora - u0 > 60000) VISTO.delete(k);
     // cada 10 s: qué árboles tienen nodo propio (los más visitados del día)

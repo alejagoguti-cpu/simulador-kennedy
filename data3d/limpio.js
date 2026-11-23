@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=4';
+import { iniciarSimUI } from './sim_ui.js?v=5';
 
 export const METRO_SEM_OP = 114;
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
@@ -31,7 +31,7 @@ export const SIMS = [
   { id: 12, n: 'Huertas en techos', base: 'C', cam: 'general' }
 ];
 
-const OCULTAR = ['#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
+const OCULTAR = ['#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
 
 export function iniciarLimpio({ T3 }) {
   const html = document.documentElement;

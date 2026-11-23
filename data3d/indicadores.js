@@ -50,7 +50,10 @@ export async function crearIndicadores({ THREE, T3 }) {
   fetch('data3d/carga.json?v=1').then(r => r.json()).then(K => { KMERC = K.mercados || []; mercadosMundo(); }).catch(() => {});
   const leerParches = () => import('./parches_arboles.js?v=9').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
   const cerca = (L, x, z, r0, r1) => { let w = 0; for (const c of L) { const dx = c[0] - x, dz = c[1] - z; if (Math.abs(dx) > r1 || Math.abs(dz) > r1) continue; const v = caida(Math.hypot(dx, dz), r0, r1); if (v > w) w = v; } return w; };
-  const reduccion = () => { const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
+  /* Con las 12 simulaciones (data3d/sim_ui.js) T3.simInd = {huerta, merc, cora, bav, verde, techo} de 0 a 1 dice cuánto de cada intervención existe en la semana
+     actual del modelo: los picos se recalculan con eso (cada año) en vez de con la propuesta completa. Sin simInd todo vale 1 (la propuesta entera). */
+  const UNO = { huerta: 1, merc: 1, cora: 1, bav: 1, verde: 1, techo: 1 }, SF = () => T3.simInd || UNO, proyecto = () => T3.escenario === 'proyecto' || !!T3.simInd;
+  const reduccion = () => { if (T3.simInd) return { car: 0.6 * T3.simInd.cora, cam: 0.95 * T3.simInd.cora }; const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
 
   /* ---------- COBERTURA DE ÁRBOLES NUEVOS: una rejilla con cada árbol de la propuesta ----------
      Se cuentan (si ya están cargados): los árboles de los parches nativos (data3d/parches_arboles.js, solo los que deja ver el slider «Densidad de
@@ -112,27 +115,27 @@ export async function crearIndicadores({ THREE, T3 }) {
                                  nuevos: Bavaria Común (hasta 0,62), los 8 mercados de barrio (hasta 0,55, radio ~450 m) y las huertas (hasta 0,42, radio ~220 m) */
   function calcularPropuesta(M) {
     mercadosMundo();
-    const t0 = performance.now(), n = M.z0.length, Z = M.zP, r = reduccion(), c = M.code, zs = M.zs || 1;
+    const t0 = performance.now(), n = M.z0.length, Z = M.zP, r = reduccion(), c = M.code, zs = M.zs || 1, s = SF();
     const verde = c === 'SE' || c === 'IC' || c === 'PA' || c === 'EPO', F = verde ? campo() : null;
     if (c === 'CCL' && M.media == null) { let s = 0; for (let k = 0; k < n; k++) s += M.z0[k]; M.media = s / n / zs; }
     const kR = Math.min(1, 0.4 + r.cam); // los mercados nuevos crecen con la carga que deja de ir a Corabastos
     for (let k = 0; k < n; k++) {
       const x = M.pos[k * 3], z = M.pos[k * 3 + 2], v = M.z0[k] / zs;
-      const wC = caida(Math.hypot(x - CORA[0], z - CORA[1]), 600, 2600), wB = caida(Math.hypot(x - BAV[0], z - BAV[1]), 400, 1600);
+      const wC = caida(Math.hypot(x - CORA[0], z - CORA[1]), 600, 2600), wB = s.bav * caida(Math.hypot(x - BAV[0], z - BAV[1]), 400, 1600);
       let u = v;
       if (c === 'PM') u = v * (1 - 0.9 * r.car * wC);
-      else if (c === 'PA') { const a = leer(F, F.cAr, x, z), t = leer(F, F.cT, x, z); u = v * (1 - 0.6 * r.car * wC) * (1 - 0.15 * a - 0.03 * t); }
-      else if (c === 'EPO') u = v * (1 - 0.45 * r.car * wC) * (1 - 0.1 * leer(F, F.cAr, x, z));
+      else if (c === 'PA') { const a = s.verde * leer(F, F.cAr, x, z), t = s.techo * leer(F, F.cT, x, z); u = v * (1 - 0.6 * r.car * wC) * (1 - 0.15 * a - 0.03 * t); }
+      else if (c === 'EPO') u = v * (1 - 0.45 * r.car * wC) * (1 - 0.1 * s.verde * leer(F, F.cAr, x, z));
       else if (c === 'CV') u = v * (1 - 0.55 * r.cam * wC);
       else if (c === 'CCL') {
         u = v * (1 - 0.95 * r.cam * wC); // Corabastos descentralizado
         const md = M.media, ach = 0.15 + 0.35 * r.cam; if (u > md) u = md + (u - md) * (1 - ach); // los picos rojos se achatan hacia la media
         const sube = (meta, w) => { if (w > 0 && u < meta) u += (meta - u) * w; };
-        sube(0.62, 0.85 * wB); sube(0.55, 0.8 * kR * cerca(MERCADOS, x, z, 60, 450)); sube(0.42, 0.6 * kR * cerca(HUERTA, x, z, 30, 220));
+        sube(0.62, 0.85 * wB); sube(0.55, 0.8 * kR * s.merc * cerca(MERCADOS, x, z, 60, 450)); sube(0.42, 0.6 * kR * s.huerta * cerca(HUERTA, x, z, 30, 220));
       }
-      else if (c === 'IC') { const a = leer(F, F.cI, x, z), t = leer(F, F.cT, x, z), h = cerca(HUERTA, x, z, 40, 300); u = v * Math.max(0.4, 1 - 0.4 * a - 0.2 * t - 0.1 * h); }
-      else if (c === 'SE') { const a = leer(F, F.cS, x, z), t = leer(F, F.cT, x, z), h = cerca(HUERTA, x, z, 40, 300); u = v + (1 - v) * Math.min(1, 0.6 * a + 0.15 * t + 0.2 * h); }
-      else if (c === 'OC') u = v + (1 - v) * 0.45 * cerca(HUERTA, x, z, 80, 600);
+      else if (c === 'IC') { const a = s.verde * leer(F, F.cI, x, z), t = s.techo * leer(F, F.cT, x, z), h = s.huerta * cerca(HUERTA, x, z, 40, 300); u = v * Math.max(0.4, 1 - 0.4 * a - 0.2 * t - 0.1 * h); }
+      else if (c === 'SE') { const a = s.verde * leer(F, F.cS, x, z), t = s.techo * leer(F, F.cT, x, z), h = s.huerta * cerca(HUERTA, x, z, 40, 300); u = v + (1 - v) * Math.min(1, 0.6 * a + 0.15 * t + 0.2 * h); }
+      else if (c === 'OC') u = v + (1 - v) * 0.45 * s.huerta * cerca(HUERTA, x, z, 80, 600);
       else if (c === 'CO') u = v + (1 - v) * 0.5 * wB;
       Z[k] = Math.max(0, Math.min(1, u)) * zs;
     }
@@ -150,7 +153,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   }
   let anim = 0;
   async function aplicarEscenario(suave = true) {
-    const pro = T3.escenario === 'proyecto'; if (pro) await leerParches();
+    const pro = proyecto(); if (pro) await leerParches();
     const vis = [...mallas.values()].filter(M => M.mesh.visible); if (!vis.length) return;
     for (const M of vis) { if (pro) calcularPropuesta(M); M.zA = M.z.slice(); M.zB = pro ? M.zP : M.z0; }
     const id = ++anim, t0 = performance.now(), dur = suave ? 1600 : 0;
@@ -160,8 +163,8 @@ export async function crearIndicadores({ THREE, T3 }) {
     requestAnimationFrame(paso);
   }
   addEventListener('escenario', () => setTimeout(() => aplicarEscenario(true), 120));
-  let tSl = 0; addEventListener('cora-cambio', () => { clearTimeout(tSl); tSl = setTimeout(() => { if (T3.escenario === 'proyecto') aplicarEscenario(false); }, 250); });
-  const resumen = () => { const M = [...mallas.values()].find(q => q.mesh.visible); if (!M || T3.escenario !== 'proyecto') return null;
+  let tSl = 0; addEventListener('cora-cambio', () => { clearTimeout(tSl); tSl = setTimeout(() => { if (proyecto()) aplicarEscenario(false); }, 250); });
+  const resumen = () => { const M = [...mallas.values()].find(q => q.mesh.visible); if (!M || !proyecto()) return null;
     let a = 0, b = 0, mx = 0; for (let k = 0; k < M.z0.length; k++) { a += M.z0[k]; b += M.zP[k]; const d = (M.zP[k] - M.z0[k]) / (M.zs || 1); if (Math.abs(d) > Math.abs(mx)) mx = d; }
     const F = CAMPO && !CAMPO.vacio ? CAMPO : null;
     return { prom: a ? (b / a - 1) * 100 : 0, max: mx * 100, arboles: F ? F.arboles : 0, techos: F ? F.techos : 0, mercados: MERCADOS.length }; };
@@ -175,9 +178,10 @@ export async function crearIndicadores({ THREE, T3 }) {
       const it = I.lista.find(x => x.code === code && (anio ? x.year : !x.year)); const M = await malla(it.f);
       if (sel !== code) return null; /* se eligió otro mientras cargaba */
       if (!M.mesh.parent) g.add(M.mesh); M.mesh.visible = true; anim++;
-      const pro = T3.escenario === 'proyecto'; if (pro) { await leerParches(); calcularPropuesta(M); }
+      const pro = proyecto(); if (pro) { await leerParches(); calcularPropuesta(M); }
       M.z.set(pro ? M.zP : M.z0); elevar(M); colorear(M, pro); return it;
     },
+    recalcular: (suave = true) => aplicarEscenario(suave), // para data3d/sim_ui.js: recalcula sin disparar el evento global «escenario»
     resumen, onCambio: null, ultimoCalculo: null, cobertura: () => CAMPO, // ultimoCalculo: {code, vertices, ms} del último recálculo con la propuesta
     altura(v) { alto = v; for (const M of mallas.values()) if (M.mesh.visible) elevar(M); },
     ver(on) { g.visible = on; }

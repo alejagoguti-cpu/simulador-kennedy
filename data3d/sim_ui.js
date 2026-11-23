@@ -8,25 +8,23 @@
 import { RELOJ } from './reloj.js?v=5';
 
 const SEMILLA = 1, FIN = 520;
-const IND = [ // indicadores en vivo: clave en ind(), nombre, formato, mejor si sube (true) o baja (false)
-  { k: 'fauna', n: 'Especies de fauna', f: (v, I) => `${v}/${I.fauna0}`, sube: true, max: (I) => I.fauna0 },
-  { k: 'red', n: 'Interacciones vivas', f: (v) => fmt(v), sube: true },
-  { k: 'pares', n: 'Territorio ocupado', f: (v) => fmt(v), sube: true, ayuda: 'pares especie × parche' },
-  { k: 'poliniz', n: 'Polinizadores', f: (v) => fmt(v), sube: true },
+const IND = [ // resultados en vivo: clave en ind(), nombre, formato, mejor si sube (true) o baja (false)
+  { k: 'fauna', n: 'Especies de fauna', f: (v, I) => `${v} de ${I.fauna0}`, sube: true },
+  { k: 'red', n: 'Interacciones entre especies', f: (v) => fmt(v), sube: true, ayuda: 'relaciones de la red biótica que ocurren en cada lugar' },
+  { k: 'poliniz', n: 'Polinizadores', f: (v) => fmt(v), sube: true, ayuda: 'lugares con abejas, colibríes y otros polinizadores' },
+  { k: 'huertas', n: 'Huertas activas', f: (v) => fmt(v), sube: true },
+  { k: 'pares', n: 'Territorio con fauna', f: (v) => fmt(v), sube: true, ayuda: 'pares especie × lugar ocupados' },
   { k: 'trafico', n: 'Tráfico', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '100 % = hoy' },
   { k: 'ruidoDb', n: 'Ruido promedio', f: (v) => v == null ? '—' : v.toFixed(1) + ' dB', sube: false },
-  { k: 'callesOMS', n: 'Calles sobre el límite OMS', f: (v) => v == null ? '—' : v.toFixed(0) + ' %', sube: false, ayuda: '≥ 53 dB Lden (OMS 2018)' },
-  { k: 'callesRuidosas', n: 'Calles > 65 dB', f: (v) => v == null ? '—' : v.toFixed(0) + ' %', sube: false },
-  { k: 'atropellos', n: 'Fauna atropellada', f: (v) => v == null ? '—' : fmt(v), sube: false, ayuda: 'por semana' },
-  { k: 'comidaMin', n: 'Comida (zona peor)', f: (v) => (v * 100).toFixed(0) + ' %', sube: true },
-  { k: 'residuos', n: 'Residuos pendientes', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% del almacenamiento' },
-  { k: 'huertas', n: 'Huertas activas', f: (v) => fmt(v), sube: true }
+  { k: 'atropellos', n: 'Fauna atropellada', f: (v) => v == null ? '—' : fmt(v), sube: false, ayuda: 'índice por semana' },
+  { k: 'comidaMin', n: 'Comida en la zona peor', f: (v) => (v * 100).toFixed(0) + ' %', sube: true },
+  { k: 'residuos', n: 'Residuos sin tratar', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% del almacenamiento' }
 ];
 const fmt = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString('es-CO');
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=1'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=2'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
 
   /* ---------- estilos (vidrio, como los paneles del simulador) ---------- */
@@ -49,6 +47,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-ind b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; text-align: right; }
   .su-ind b.bien { color: #8ee6a8; } .su-ind b.mal { color: #ff8a80; }
   .su-ind svg { grid-column: 1 / 3; width: 100%; height: 22px; }
+  .su-picos { display: grid; gap: 4px; } .su-picos button { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px 6px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: inherit; font: 500 12px system-ui, sans-serif; cursor: pointer; overflow: hidden; }
+  .su-picos button.on { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.55); } .su-picos i { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; } .su-picos b { font: 600 11px 'JetBrains Mono', ui-monospace, monospace; min-width: 30px; }
+  .su-que { margin: 9px 0 2px; font: 400 12px/1.4 system-ui, sans-serif; opacity: .9; } .su-que b { font-weight: 600; } .su-que span { opacity: .6; font-size: 11px; }
+  .su-alto { display: flex; align-items: center; gap: 10px; margin-top: 8px; font: 500 11px system-ui, sans-serif; opacity: .85; } .su-alto input { flex: 1; accent-color: #ffcf7a; }
+  .su-rampa { height: 8px; border-radius: 3px; margin-top: 8px; } .su-rampa-t { display: flex; justify-content: space-between; font: 500 10px system-ui, sans-serif; opacity: .6; margin-top: 2px; }
   .su-seg { display: flex; gap: 6px; flex-wrap: wrap; } .su-seg button { flex: 1; min-width: 70px; padding: 6px 4px; border-radius: 9px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07); color: inherit; font: 500 12px system-ui, sans-serif; cursor: pointer; }
   .su-seg button.on { background: rgba(255,176,70,.88); color: #1b1206; border-color: transparent; }
   /* GAME OVER */
@@ -93,6 +96,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const R = { sim: null, def: null, valores: {}, s: null, hist: [], go: null, fin: false, base: null, picos: 'soporte', foco: null, extinciones: [] };
   const defDe = (id) => (M && M.SIMS ? M.SIMS.find(x => x.id === id) : null);
   function preparar(id) {
+    setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
     if (M && !R.base) setTimeout(calcularBase, 300); // «Hoy» completo para comparar en el informe
@@ -100,6 +104,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function reiniciarModelo() {
     R.hist = []; R.go = null; R.fin = false; R.extinciones = []; go.classList.remove('on'); cerrarInforme();
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
+    refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
   function calcularBase() { // simulación 1 (Hoy) con sus valores por defecto, 10 años, para comparar
     try { const d = defDe(1), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = s.val; }); const s = M.crear(1, SEMILLA, v); const H = []; for (let k = 0; k < FIN; k++) { M.paso(s); H.push(M.ind(s)); if (M.gameOver(s)) break; } R.base = H; }
@@ -114,7 +119,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       M.paso(R.s); const I = M.ind(R.s); R.hist.push(I);
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
-      if (I.sem % 4 === 0 || R.hist.length === 1) ponerPicos(I);
+      if (I.sem % 52 === 0) refrescarPicos(); // cada año: los picos se recalculan con lo que ya se construyó
     }
     if (R.hist.length >= FIN && !R.fin) { R.fin = true; RELOJ.pausarAños(true); setTimeout(() => abrirInforme(), 700); }
     if (n) pintarIndicadores();
@@ -127,8 +132,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
     der.innerHTML = `<h4>Qué se prueba</h4><p class="pre">${d ? d.pregunta || d.desc || '' : ''}</p>
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
-      <h4>Indicadores</h4><div id="su-inds"></div>
-      <h4>Picos en el piso</h4><div class="su-seg" data-g="picos"><button data-v="soporte" class="${R.picos === 'soporte' ? 'on' : ''}">Soporte ecológico</button><button data-v="comercio" class="${R.picos === 'comercio' ? 'on' : ''}">Comercio</button><button data-v="" class="${!R.picos ? 'on' : ''}">Apagar</button></div>
+      <h4>Indicadores · picos sobre Kennedy</h4><div id="su-picos"></div>
+      <h4>Resultados en vivo</h4><div id="su-inds"></div>
       <h4>Resaltar</h4><div class="su-seg" data-g="foco"><button data-v="especies">Especies</button><button data-v="ruido">Ruido</button><button data-v="trafico">Tráfico</button><button data-v="" class="on">Normal</button></div>
       <h4>Informe</h4><div class="su-seg"><button data-inf>Ver informe ahora</button></div>`;
     der.querySelectorAll('input[type=range]').forEach(inp => {
@@ -143,7 +148,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (g === 'foco' && window.KEN_FOCO) { if (b.dataset.v === 'ruido') { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); } if (b.dataset.v) window.KEN_FOCO.on(b.dataset.v); else window.KEN_FOCO.off(); }
     });
     const bi = der.querySelector('[data-inf]'); if (bi) bi.onclick = () => abrirInforme();
-    pintarIndicadores();
+    pintarIndicadores(); pintarPicos();
   }
   const vfmt = (s, v) => (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
   function pintarIndicadores() {
@@ -163,6 +168,41 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
   };
 
+  /* ---------- INDICADORES como en la versión anterior: los picos 3D de las láminas (data3d/indicadores.js) ----------
+     Soporte ecológico, islas de calor, presión sobre el aire, exposición, comercio y logística, organización, conocimiento…
+     Con una simulación de la propuesta (B, C) cada indicador se recalcula donde actúa lo que se va construyendo (huertas, árboles,
+     mercados, Corabastos): cada año se vuelve a calcular y los picos se mueven. */
+  const QUE_IND = { // qué mide cada lámina y si alto es bueno, en una línea, para leer los picos sin explicación
+    SE: ['Dónde la fauna encuentra hábitat: árboles, humedales, huertas.', true], EPO: ['Cuánta gente vive expuesta a tráfico, ruido y carga.', false],
+    IC: ['Dónde se acumula calor: asfalto y techos sin sombra.', false], PA: ['Presión sobre el aire por tráfico y falta de árboles.', false],
+    OC: ['Juntas, colectivos y organizaciones que cuidan el barrio.', true], CO: ['Colegios, bibliotecas y lugares donde se aprende.', true],
+    CCL: ['Dónde se concentra el comercio y la logística (Corabastos).', null], PM: ['Presión de carros y camiones sobre las vías.', false], CV: ['Choque entre vivienda y bodegas o carga.', false] };
+  let pInd = null; R.ind = 'SE'; R.alto = 0.12; // altura más baja que en la vista completa: se lee la ciudad debajo
+  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=8').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
+  async function pintarPicos() {
+    const box = document.getElementById('su-picos'); if (!box) return;
+    let A; try { A = await indApi(); } catch (e) { box.innerHTML = '<p class="pre">No se pudieron cargar los indicadores.</p>'; return; }
+    const grad = (r, d) => `linear-gradient(${d},${r.join(',')})`;
+    box.innerHTML = `<div class="su-picos">${A.lista.map(x => `<button data-c="${x.code}" class="${x.code === R.ind ? 'on' : ''}"><i style="background:${grad(x.ramp, 'to top')}"></i><b>${x.code}</b><span>${x.name.replace(/\s*\([A-Z]+\)\s*$/, '')}</span></button>`).join('')}
+      <button data-c="" class="${!R.ind ? 'on' : ''}"><i style="background:rgba(255,255,255,.15)"></i><b>—</b><span>Apagar picos</span></button></div>
+      ${R.ind ? (() => { const it = A.lista.find(x => x.code === R.ind); const q = QUE_IND[it && it.code] || ['', null]; return it ? `<p class="su-que">${q[0]} <b>${q[1] === true ? 'Más alto = mejor.' : q[1] === false ? 'Más alto = peor.' : 'Lo sano es repartido, sin un solo pico.'}</b><br><span>Los picos cambian año a año con lo que la simulación va construyendo.</span></p><div class="su-rampa" style="background:${grad(it.ramp, '90deg')}"></div><div class="su-rampa-t"><span>bajo</span><span>alto</span></div><label class="su-alto"><span>Altura de los picos</span><input type="range" min="0.03" max="0.4" step="0.01" value="${R.alto}"></label>` : ''; })() : ''}`;
+    const ra = box.querySelector('.su-alto input'); if (ra) ra.oninput = () => { R.alto = +ra.value; A.altura(R.alto); };
+    box.querySelectorAll('button[data-c]').forEach(b => b.onclick = () => { R.ind = b.dataset.c || null; mostrarInd(); pintarPicos(); });
+  }
+  async function mostrarInd() { const A = await indApi(); if (!R.altoIni) { R.altoIni = 1; A.altura(R.alto); } A.ver(!!R.ind); await A.mostrar(R.ind || null, false); }
+  const prom = (A) => { if (!A || !A.length) return 0; let s = 0, n = 0; for (const v of A) if (isFinite(v)) { s += v; n++; } return n ? s / n : 0; };
+  const c01 = (v) => Math.max(0, Math.min(1, v || 0));
+  function factoresSim(I) { // cuánto de cada intervención existe en esta semana del modelo (0–1) -> T3.simInd para indicadores.js
+    const d = R.def || {}, b = d.base || 'A', id = R.sim, sem = I ? I.sem : 0, I0 = R.hist[0];
+    const h = I ? I.huertas : 120, HA = 120;                                                 // ~120 huertas que ya existen hoy en el modelo
+    const huerta = id === 12 ? 0 : c01((h - HA) / 1500);                                   // 1500: sim 11 llega a ~0,7 y la red de mercados (sim 3) se llena hacia el año 5
+    const techo = id === 12 ? c01((h - HA) / 950) : 0.4 * huerta;                          // sim 12: ~1070 huertas equivalentes en techos al tercer año
+    const merc = c01(I && I.zonas ? prom(I.zonas.comercio) / 0.3 : 0);                     // fracción que vende la red local (0,3 = lo máximo de sim 3 y 10)
+    const cora = id === 5 ? (sem >= (R.valores.sinCora || 52) ? 1 : 0) : id === 6 ? 0.5 * c01(sem / 156) * (R.valores.desmLib != null ? R.valores.desmLib : 1) : 0.8 * merc;    const bav = b === 'B' ? c01(sem / 104) : b === 'D' ? 0.6 * c01(sem / 260) : 0;
+    const verde = b === 'B' || b === 'C' ? c01(sem / 156) : id === 6 ? 0.5 * c01(sem / 156) : 0; // parches nativos que maduran en ~3 años
+    return { huerta, techo, merc, cora, bav, verde };
+  }
+  function refrescarPicos() { T3.simInd = factoresSim(R.hist[R.hist.length - 1]); if (!R.ind || !pInd && !window.KEN_IND) return; indApi().then(A => A.recalcular && A.recalcular(true)); } // indicadores.js recalcula y anima con lo construido hasta ahora
   /* ---------- picos en el piso (data3d/picos_indicadores.js) ---------- */
   function ponerPicos(I) {
     const P = window.KEN_PICOS_IND; if (!P || !R.picos || !I.zonas || !M.ZONAS_XZ) return;
