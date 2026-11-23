@@ -10,10 +10,10 @@ import { RELOJ } from './reloj.js?v=5';
 export function crearContenedores({ T3 }) {
   if (window.KEN_CONT) return window.KEN_CONT;
   const THREE = T3.THREE, G = new THREE.Group(); G.name = 'abasto_cont'; G.visible = false; T3.scene.add(G);
-  const ALTO = 5;          // el vaso es 5 veces más alto que las bodegas (14 m -> 70 m): se lee desde la vista alta
+  const ALTO = 9;          // el vaso es 5 veces más alto que las bodegas (14 m -> 70 m): se lee desde la vista alta
   const plano = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0); // corta el líquido a la altura del nivel
-  const vidrio = new THREE.MeshStandardMaterial({ color: 0xe8f1f6, transparent: true, opacity: 0.18, roughness: 0.05, depthWrite: false, side: THREE.DoubleSide });
-  const liq = new THREE.MeshStandardMaterial({ color: 0x4ade80, transparent: true, opacity: 0.85, roughness: 0.3, emissive: 0x1a3d22, emissiveIntensity: 0.5, clippingPlanes: [plano], side: THREE.DoubleSide });
+  const vidrio = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const liq = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: false, clippingPlanes: [plano], side: THREE.DoubleSide, toneMapped: false }); // color plano y brillante: se lee desde lejos
   const bordeTope = new THREE.LineBasicMaterial({ color: 0xff4d4d, transparent: true, opacity: 0.95 });
   let armado = false, y0 = 0, hVaso = 70, cx = 0, cz = 0;
   function armar() {
@@ -30,6 +30,8 @@ export function crearContenedores({ T3 }) {
     // línea roja del tope: el contorno de la planta (caja) arriba del vaso
     const s = box.getSize(new THREE.Vector3()), r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(s.x, s.z).rotateX(-Math.PI / 2)), bordeTope);
     r.position.set(cx, y0 + hVaso + 0.5, cz); G.add(r); G.userData.tope = r;
+    // contorno blanco del vaso completo (las 12 aristas de la caja) para leer el tope desde la vista alta
+    const caja = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s.x, hVaso, s.z)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })); caja.position.set(cx, y0 + hVaso / 2, cz); G.add(caja);
     armado = true; return true;
   }
   const et = document.createElement('div'); et.id = 'cont-et';
@@ -47,7 +49,7 @@ export function crearContenedores({ T3 }) {
     if (!G.visible || !A) return;
     const now = performance.now(), dt = tPrev ? Math.min(0.1, (now - tPrev) / 1000) : 0; tPrev = now;
     nivel += (meta - nivel) * (1 - Math.exp(-dt * 2.5));
-    plano.constant = y0 + 0.3 + nivel * hVaso; // el líquido se ve hasta esta altura
+    plano.constant = y0 + 0.3 + Math.max(0.04, nivel) * hVaso; // siempre se ve un fondo de líquido // el líquido se ve hasta esta altura
     if (nivel < 0.6) col.copy(V).lerp(Am, nivel / 0.6); else col.copy(Am).lerp(Ro, Math.min(1, (nivel - 0.6) / 0.4)); liq.color.copy(col);
     const r = G.userData.tope; if (r) r.material.opacity = nivel > 0.85 ? 0.55 + 0.45 * Math.abs(Math.sin(now / 220)) : 0.95;
     p.set(cx, y0 + hVaso + 30, cz).project(T3.camera);

@@ -995,12 +995,10 @@
    },
    "gameover": null,
    "semillas30": {
-    "gameover": 6,
+    "gameover": 0,
     "de": 30,
-    "mediana_sem": 655,
-    "por_regla": {
-     "fauna": 6
-    }
+    "mediana_sem": null,
+    "por_regla": {}
    },
    "grupo": "propuesta",
    "pregunta": "¿Qué pasaría si la comida que Kennedy necesita cada año se reparte entre Corabastos y los mercados de barrio, las huertas y los puntos de acopio?",
@@ -1026,18 +1024,18 @@
     },
     "red": {
      "min": 1298,
-     "max": 6758,
-     "final": 6135
+     "max": 6882,
+     "final": 6185
     },
     "redTipos": {
-     "min": 207,
+     "min": 206,
      "max": 224,
      "final": 212
     },
     "pares": {
      "min": 135,
-     "max": 563,
-     "final": 514
+     "max": 586,
+     "final": 521
     },
     "aves": {
      "min": 14,
@@ -1046,7 +1044,7 @@
     },
     "poliniz": {
      "min": 27,
-     "max": 183,
+     "max": 184,
      "final": 155
     },
     "polinizEsp": {
@@ -1055,29 +1053,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 0.999,
-     "max": 1.283,
-     "final": 1.283
+     "min": 0.763,
+     "max": 1,
+     "final": 0.962
     },
     "ruidoDb": {
-     "min": 60.885,
-     "max": 61.971,
-     "final": 61.971
+     "min": 59.714,
+     "max": 60.889,
+     "final": 60.722
     },
     "callesRuidosas": {
-     "min": 30.232,
-     "max": 37.26,
-     "final": 37.26
+     "min": 17.163,
+     "max": 34.089,
+     "final": 19.878
     },
     "callesOMS": {
-     "min": 75.651,
-     "max": 95.891,
-     "final": 95.891
+     "min": 73.727,
+     "max": 75.995,
+     "final": 75.651
     },
     "atropellos": {
-     "min": 6.287,
-     "max": 15.77,
-     "final": 11.944
+     "min": 6.285,
+     "max": 18.551,
+     "final": 14.204
     },
     "comidaMin": {
      "min": 1,
@@ -1100,19 +1098,19 @@
      "final": 8
     },
     "congestion": {
-     "min": 69.693,
-     "max": 189.523,
-     "final": 189.523
+     "min": 23.702,
+     "max": 69.917,
+     "final": 59.966
     },
     "tiempo10km": {
-     "min": 31.711,
-     "max": 54.104,
-     "final": 54.104
+     "min": 23.117,
+     "max": 31.753,
+     "final": 29.894
     },
     "presion": {
      "min": 0,
-     "max": 0.785,
-     "final": 0.785
+     "max": 0.542,
+     "final": 0.542
     },
     "recuperacion": {
      "min": 0,
@@ -1194,6 +1192,14 @@
      "texto": "Son el doble de las de hoy (122); producen 73 t de comida al año."
     },
     {
+     "sem": 24,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "La congestión baja 10 %",
+     "texto": "Recorrer 10 km toma 30,4 min (hoy 31,8 min)."
+    },
+    {
      "sem": 53,
      "tipo": "metro",
      "capa": "trafico",
@@ -1223,7 +1229,7 @@
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 368 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): mirla patiamarilla, colibrí chillón, cucarachero y chamón."
+     "texto": "Las especies ocupan 369 pares especie–parche frente a 335 en el año 1. Donde más llegan es a Huertas de parque (3): mirla patiamarilla, colibrí chillón, cucarachero y chamón."
     },
     {
      "sem": 80,
@@ -1242,12 +1248,12 @@
      "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
     },
     {
-     "sem": 119,
+     "sem": 118,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 25 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 419 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, cucarachero y chamón."
+     "texto": "Las especies ocupan 421 pares especie–parche frente a 335 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, cucarachero y chamón."
     },
     {
      "sem": 119,
@@ -1263,7 +1269,7 @@
      "capa": "trafico",
      "signo": 1,
      "titulo": "Menos carros junto al metro",
-     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 1,00 y el ruido promedio en 60,9 dB."
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,83 y el ruido promedio en 60,1 dB."
     },
     {
      "sem": 167,
@@ -1274,15 +1280,23 @@
      "texto": "Unas 24.397 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
-     "sem": 178,
+     "sem": 173,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 50 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 503 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, focha común, serpiente sabanera y mirla patiamarilla."
+     "texto": "Las especies ocupan 503 pares especie–parche frente a 335 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, colibrí chillón y torcaza."
     },
     {
-     "sem": 195,
+     "sem": 182,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": 1,
+     "titulo": "El ruido de las calles baja 1 dB",
+     "texto": "El promedio de las calles pasa de 60,9 a 59,9 dB."
+    },
+    {
+     "sem": 196,
      "tipo": "polinizadores",
      "capa": "especies",
      "signo": 1,
@@ -1306,44 +1320,12 @@
      "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 31.050 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
-     "sem": 334,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 39,1 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
-    },
-    {
      "sem": 600,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "Mirla patiamarilla llega a Huertas de parque (3)",
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
-    },
-    {
-     "sem": 772,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 44,8 min (hoy 31,8 min en 2025); congestión 140 %. Circulan 19 % más vehículos que hoy."
-    },
-    {
-     "sem": 781,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: tráfico",
-     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
     },
     {
      "sem": 844,
@@ -1368,14 +1350,6 @@
      "signo": -1,
      "titulo": "Los humedales pierden 10 % de su área funcional",
      "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
-     "sem": 940,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "El ruido de las calles sube 1 dB",
-     "texto": "El promedio de las calles pasa de 60,9 a 61,9 dB; 37 % de las calles son ruidosas (65 dB o más)."
     }
    ],
    "predio": null
@@ -6794,5 +6768,5 @@
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.645
+ "ms_por_paso_node": 0.672
 }

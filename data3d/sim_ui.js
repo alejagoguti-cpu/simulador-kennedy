@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=15'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=16'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -134,7 +134,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
-    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); }, 900);
+    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5); }, 900);
     if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
       // el tráfico se ve con la capa de RUIDO de carros (no con el flujo de puntos): ruido prendido, flujo apagado
       const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click();
@@ -361,7 +361,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   async function seguir(sinCorrer, yaCerrado) {
     const c = viendo; viendo = null; if (!c) return;
-    if (window.KEN_FOCO) window.KEN_FOCO.off();
+    focoHistoria(1);
     if (window.KEN_OJO && !yaCerrado) window.KEN_OJO.cerrar();
     quitar(c);
     if (corria && !sinCorrer && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); }
@@ -410,7 +410,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function ponerCapaPar(I) {
     const c = I ? capaPar() : null;
     // par 01: contenedores (Corabastos con su tope y los mercados) en vez de nodos y rutas
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=3').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=4').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -477,6 +477,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     for (const e of ['bas', 'pares']) { const el = document.getElementById(e + '-etq'); if (el) el.style.display = H.etq.includes(e) ? '' : 'none'; }
   }
   setInterval(() => { if (R.sim && !viendo) aplicarHistoria(); }, 400);
+  /* BLANCO Y NEGRO DE LA HISTORIA: al prender una simulación el territorio se va volviendo blanco y negro de a poco (5 s) y quedan en
+     color solo las capas de su historia (y el ruido o las especies si son parte de ella). «Ver» y «Mira en el territorio» lo cambian un
+     rato y al cerrar vuelve a este. */
+  function focoHistoria(dur = 5) { const H = HISTORIA[R.def && R.def.par]; if (!H || !window.KEN_FOCO) return;
+    window.KEN_FOCO.on([...H.capas, ...(H.ruido ? ['ruido'] : []), ...(H.capas.includes('biotica') ? ['especies'] : []), 'indicadores', 'avisos'], { dur }); }
 
   /* ---------- MIRA EN EL TERRITORIO: botones que vuelan (Ojo de Dios) a lo que importa en cada simulación y lo dejan en color ---------- */
   const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
@@ -505,11 +510,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const g = T3.scene.getObjectByName(l.donde), bx = g ? new T3.THREE.Box3().setFromObject(g) : null, s = bx && !bx.isEmpty() ? bx.getSize(new T3.THREE.Vector3()) : { x: 3000, z: 3000 }, D = Math.min(4200, Math.max(1600, Math.max(s.x, s.z) * 0.95));
       T3.anim = { t: 0, dur: 2.2, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1: new T3.THREE.Vector3(x + D * 0.12, D * 0.82, z + D * 0.5), c1: new T3.THREE.Vector3(x, 0, z) };
       const c = document.createElement('div'); c.className = 'su-av on'; c.style.cssText = 'position:fixed;left:296px;bottom:92px;z-index:46;max-width:360px'; c.innerHTML = `<div><small>${l.t}</small><b>${l.tx}</b></div><div class="bt"><button type="button">Cerrar</button></div>`;
-      document.body.appendChild(c); c.querySelector('button').onclick = () => { c.remove(); if (window.KEN_FOCO) window.KEN_FOCO.off(); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } };
+      document.body.appendChild(c); c.querySelector('button').onclick = () => { c.remove(); focoHistoria(1); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } };
       return;
     }
     if (window.KEN_OJO) { await window.KEN_OJO.ir({ x, z, titulo: l.t, texto: l.tx, color: '#ffcf7a' });
-      const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (window.KEN_FOCO) window.KEN_FOCO.off(); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } }, { once: true }); }
+      const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { focoHistoria(1); if (corria && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } }, { once: true }); }
   }
 
   /* ---------- GAME OVER ---------- */

@@ -450,7 +450,9 @@ function paresPoli(s) { let n = 0; for (const i of PRE.POLI) for (let p = 0; p <
 const vAño = (r, a) => 0.70 * Math.pow(1 + r, a) + 0.22 + 0.08;
 function factorTraf(E, t) { const a = Math.max(0, Math.floor(t / V.AÑO)), T = E.traf;
   const fp = E.s.pob / V.POB_K; // [SUP] par 01 con propuesta: con mercados de barrio a pie, la población nueva suma 30 % de los viajes en carro
-  return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * (E.par === 1 && E.prop ? 1 + (fp - 1) * 0.2 : fp); }
+  /* [SUP] par 01 con propuesta: los mercados de barrio a pie y el acopio cercano quitan viajes en carro y camión hacia Corabastos: el tráfico BAJA hasta −25 % en 4 años (a medida que abren) */
+  if (E.par === 1 && E.prop) return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * (1 + (fp - 1) * 0.2) * (1 - 0.25 * Math.min(1, t / (4 * V.AÑO)));
+  return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * fp; }
 function ganchoTraf(E, t) {
   const T = E.traf, mOn = E.metro && t >= E.metro.desde;
   const gE = Math.round(factorTraf(E, t) * Math.pow(10, -MITIGA_DB / 10 * T.mit) * 1000) / 1000;
