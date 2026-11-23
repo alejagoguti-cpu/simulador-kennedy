@@ -68,7 +68,7 @@ const ESP = {
 };
 const POR_HUMEDAL = { 'Humedal El Burro': 1, 'Humedal La Vaca': 0.6, 'Humedal de Techo': 0.45 };
 // zonas verdes (parques de data3d/parques.json): individuos por parque de tamaño medio (las especies de agua solo van en los humedales)
-const POR_HUERTA = { abeja: 14, lombriz: 6, copeton: 3, mirla: 3, colibri: 2 }; // por huerta (P4)
+const POR_HUERTA = { abeja: 22, lombriz: 9, copeton: 6, mirla: 6, colibri: 5, cucarachero: 3 }; // más fauna por huerta: con la propuesta se ven más interacciones // por huerta (P4)
 const POR_PARQUE = { abeja: 1.2, lombriz: 0.6, copeton: 3, mirla: 1.6, torcaza: 2.2, colibri: 1, chamon: 0.6, cucarachero: 1, rata: 0.8, lagartija: 0.8, caracol: 1.4, culebra: 0.25, curi: 0.3, comadreja: 0.12, cernicalo: 0.05, buho: 0.04 };
 // conexiones: con quién se une cada animal (individuo más cercano de cada especie relacionada en la red, y árbol relacionado)
 const R_RED = 220, R_RAPAZ = 420, R_ARBOL = 90, CERCA = 18;
@@ -151,7 +151,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const habitat = (n, polyModelo, cnt) => { const poly = polyModelo.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); } return { n, tipo: 'parque', poly, borde: poly.concat([poly[0]]), x0, x1, z0, z1, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, ag: {}, k: 1, cnt }; };
   const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
   // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
-  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
+  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 60, colibri: 14, copeton: 12, mirla: 10, cucarachero: 10, torcaza: 6, lombriz: 20 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
   /* ESTADO ACTUAL: más ratas donde se acumulan basura y residuos de alimentos (Corabastos, bordes de humedales y canales). Con la propuesta no existen:
      el centro de aprovechamiento de orgánicos y la recolección por barrio les quitan la comida (soloHoy: el bucle las esconde en «proyecto") [SUP] */
   if (CO && CO.poly) { const h = habitat('Basuras y residuos de Corabastos', CO.poly, { rata: 34 }); h.soloHoy = true; EXTRA.push(h); }
@@ -309,7 +309,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   }
   const largo = (k) => { const e = ESP[k]; if (e.ave) return e.ave.len * 1.4 + (e.ave.alto || 0); return { curi: 0.25, comadreja: 0.45, rata: 0.4, rana: 0.05, culebra: 0.45, lagartija: 0.17, caracol: 0.04, abeja: 0.015, lombriz: 0.08 }[e.cuerpo]; };
   // escala de maqueta: los animales se agrandan para verse desde la vista general (los pequeños más), sin pasar de ~1,2 m
-  const escala = (k) => 1.8 * (ESP[k].esc || Math.min(16, Math.max(3.2, 1.4 / largo(k)))); // ×1,8: más grandes en la vista general
+  const escala = (k) => 0.85 * (ESP[k].esc || Math.min(16, Math.max(3.2, 1.4 / largo(k)))); // animales más pequeños: se leen mejor las conexiones (como boids)
 
   /* ---------- agentes ---------- */
   const AG = [], POR = {}; let id = 0;
@@ -559,7 +559,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const o = new LineSegments2(g, m); o.frustumCulled = false; o.renderOrder = 8; grupo.add(o);
     return { g, m, o, p: g.attributes.instanceStart.data, c: g.attributes.instanceColorStart.data, n: 0 };
   };
-  const FUERTE = capa(movil ? 2.6 : 3.6, 0.95), TENUE = capa(movil ? 1.6 : 2.1, 0.65); // líneas delgadas: encuentro / conexión a distancia
+  const FUERTE = capa(movil ? 3 : 4.2, 1), TENUE = capa(movil ? 1.8 : 2.6, 0.75); // líneas delgadas: encuentro / conexión a distancia
   const resol = () => { const v = new THREE.Vector2(); T3.renderer.getSize ? T3.renderer.getSize(v) : v.set(innerWidth, innerHeight); FUERTE.m.resolution.copy(v); TENUE.m.resolution.copy(v); };
   resol(); addEventListener('resize', resol);
   const disco = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.beginPath(); g.arc(32, 32, 26, 0, 6.283); g.fill(); g.lineWidth = 6; g.strokeStyle = 'rgba(8,16,26,.85)'; g.stroke(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();

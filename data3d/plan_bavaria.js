@@ -19,7 +19,7 @@ export async function iniciarPlanBavaria({ T3 }) {
     for (const h of q.h || []) s.holes.push(new THREE.Path(h.map(p => { const w = W(p); return new THREE.Vector2(w[0], -w[1]); }))); return s; };
 
   const mats = {
-    ladrillo: new THREE.MeshStandardMaterial({ color: 0xb4643f, roughness: 0.85 }),
+    ladrillo: new THREE.MeshStandardMaterial({ color: 0xcfc6b8, roughness: 0.85 }), // fachada clara (antes ladrillo rojo saturado: se veía feo desde lejos)
     blanco: new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.7 }),
     vidrio: new THREE.MeshStandardMaterial({ color: 0xc9d2d8, roughness: 0.5 }),
     obra: new THREE.MeshStandardMaterial({ color: 0x9a9da0, roughness: 0.9 })
@@ -74,7 +74,7 @@ export async function iniciarPlanBavaria({ T3 }) {
 
   /* ---------- suelo del plan: calzada, andén, alameda, lote (antejardín) y patio, parques; cada capa aparece en su año ---------- */
   const suelo = (color, rough, dy, ro) => new THREE.MeshStandardMaterial({ color, roughness: rough, polygonOffset: true, polygonOffsetFactor: -1 - ro, polygonOffsetUnits: -2 - ro, emissive: new THREE.Color(color).multiplyScalar(0.12) });
-  const mS = { calzada: suelo(0x4b4e52, 0.95, 0, 1), anden: suelo(0xb3aea4, 0.9, 0, 2), alameda: suelo(0xc6b99c, 0.9, 0, 2), lote: suelo(0xa9a397, 0.9, 0, 3), patio: suelo(0x6a8a45, 0.95, 0, 4), parque: suelo(0x76964e, 0.95, 0, 3) };
+  const mS = { calzada: suelo(0x4b4e52, 0.95, 0, 1), anden: suelo(0xbdb8ae, 0.9, 0, 2), alameda: suelo(0xb9b3a4, 0.9, 0, 2), lote: suelo(0x8f8a7f, 0.95, 0, 3), patio: suelo(0x7f9a5c, 0.95, 0, 4), parque: suelo(0x76964e, 0.95, 0, 3) };
   const capas = []; // { mesh, anio, dy }
   const capa = (polys, mat, anio, dy, ro) => {
     if (!polys || !polys.length) return;
