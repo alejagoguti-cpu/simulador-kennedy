@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=29';
+import { iniciarSimUI } from './sim_ui.js?v=31';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -39,17 +39,17 @@ const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, 
 
 // las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
 export const SIMS = [
-  { id: 1, par: 1, n: 'Abastecimiento · sin propuesta', base: 'A', cam: 'general' },
+  { id: 1, par: 1, n: 'Abastecimiento · sin propuesta', base: 'D', cam: 'general' },
   { id: 2, par: 1, n: 'Abastecimiento · con propuesta', base: 'C', cam: 'general' },
-  { id: 3, par: 2, n: 'Movilidad · sin propuesta', base: 'A', cam: 'general' },
+  { id: 3, par: 2, n: 'Movilidad · sin propuesta', base: 'D', cam: 'general' },
   { id: 4, par: 2, n: 'Movilidad · con propuesta', base: 'C', cam: 'general' },
-  { id: 5, par: 3, n: 'Residuos · sin propuesta', base: 'A', cam: 'general' },
+  { id: 5, par: 3, n: 'Residuos · sin propuesta', base: 'D', cam: 'general' },
   { id: 6, par: 3, n: 'Residuos · con propuesta', base: 'C', cam: 'general' },
-  { id: 7, par: 4, n: 'Biodiversidad · sin propuesta', base: 'A', cam: 'general' },
+  { id: 7, par: 4, n: 'Biodiversidad · sin propuesta', base: 'D', cam: 'general' },
   { id: 8, par: 4, n: 'Biodiversidad · con propuesta', base: 'C', cam: 'general' },
-  { id: 9, par: 5, n: 'Población y especulación · sin propuesta', base: 'A', cam: 'general' },
+  { id: 9, par: 5, n: 'Población y especulación · sin propuesta', base: 'D', cam: 'general' },
   { id: 10, par: 5, n: 'Población y especulación · con propuesta', base: 'C', cam: 'general' },
-  { id: 11, par: 6, n: 'Gobernanza · sin propuesta', base: 'A', cam: 'general' },
+  { id: 11, par: 6, n: 'Gobernanza · sin propuesta', base: 'D', cam: 'general' },
   { id: 12, par: 6, n: 'Gobernanza · con propuesta', base: 'C', cam: 'general' }
 ];
 

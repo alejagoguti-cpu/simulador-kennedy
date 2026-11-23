@@ -398,7 +398,9 @@ const listo = () => { if (!D) throw new Error('simulaciones.js: falta await carg
 
 /* ---------- crear ---------- */
 const clonar = (o) => JSON.parse(JSON.stringify(o));
-const PRED_SIMS = new Set(); // el predio (plan parcial / instituto) ya no es una simulación propia: ind(s).predio = null
+/* PLAN PARCIAL BAVARIA EN «SIN PROPUESTA» (pedido de la autora, 2026-11-23): las 6 corridas sin propuesta (id impar) incluyen el Plan Parcial
+   Fábrica Bavaria (Decreto 448/2023) por etapas, como la trayectoria real de Kennedy; las corridas con propuesta tienen Bavaria Común en ese predio. */
+const PRED_SIMS = new Set([1, 3, 5, 7, 9, 11]);
 const KEN_XZ = (() => { let x = 0, z = 0, w = 0; for (const Z of ZONAS) { x += Z[0] * Z[2]; z += Z[1] * Z[2]; w += Z[2]; } return [x / w, z / w]; })(); // centro poblado de Kennedy
 const CORA_XZ = [BODEGAS.reduce((a, b) => a + b.x, 0) / BODEGAS.length, BODEGAS.reduce((a, b) => a + b.z, 0) / BODEGAS.length];
 const BORDE_TOT = BODEGAS.reduce((a, b) => a + (b.borde || 0), 0);
@@ -411,8 +413,10 @@ export function crear(id, semilla = 1, valores = {}) {
   const metro = { red: SUP_SIMS.METRO_RED, desde: SUP_SIMS.METRO_SEM, F: PRE.metroF(SUP_SIMS.METRO_RED) }; // metro Línea 1 en TODAS (proyecto real)
   if (P === 2) mod.cierre = { via: SUP_SIMS.CIERRE_VIA, t0: Math.round(val.cierreT0), dur: Math.round(val.cierreDur) };
   if (P === 4 && S.propuesta) PAR.P3.rec *= 1.5; // restauración de hábitat de la propuesta [SUP]
-  const s = V.crear(S.base, semilla, mod);
-  const plan = null;  const E = { id, semilla, val, PAR, s, mod, metro, plan, o: null, racha: Object.fromEntries(REGLAS.map(R => [R.k, 0])), go: null, ev: [], ind: null,
+  const s = V.crear(S.propuesta ? S.base : 'D', semilla, mod); // sin propuesta = escenario D de sim_vida.js (A + plan parcial)
+  const vivTot = PLAN_BAV.VIV_ETAPA.reduce((a, v) => a + v, 0);
+  const plan = !S.propuesta ? { esc: (val.planViv != null ? val.planViv : vivTot) / vivTot, autos: val.planAutos != null ? val.planAutos : PLAN_BAV.AUTOS_HOG, accesos: Math.max(1, Math.round(val.planAccesos || 2)) } : null;
+  if (plan) plan.viv = PLAN_BAV.VIV_ETAPA.map(v => v * plan.esc);  const E = { id, semilla, val, PAR, s, mod, metro, plan, o: null, racha: Object.fromEntries(REGLAS.map(R => [R.k, 0])), go: null, ev: [], ind: null,
     prev: new Uint8Array(s.occ.length), ruido0: null, techos: mod.techos || null,
     traf: { r: (val.trafCrece != null ? val.trafCrece : 100 * V.TRAFICO.carros) / 100, pob: (val.pobCrece || 0) / 100, mit: (val.mitiga || 0) / 100 },
     occ0: Uint8Array.from(s.occ), emaO: Float32Array.from(s.occ),

@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=10'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=11'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -337,7 +337,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     viendo = c; clearTimeout(c._t); c.classList.add('viendo');
     corria = !RELOJ.pausaSem; RELOJ.pausarAños(true);
     const capa = ev.capa || (ev.tipo === 'ruido' ? 'ruido' : ev.tipo === 'trafico' ? 'trafico' : 'especies');
-    if (capa === 'ruido') { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); if (window.KEN_PREDIO && R.sim === 4) window.KEN_PREDIO.ruido(true); }
+    if (capa === 'ruido') { const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click(); if (window.KEN_PREDIO && ultimo() && ultimo().predio) window.KEN_PREDIO.ruido(true); }
     if (window.KEN_FOCO) window.KEN_FOCO.on([capa, 'predio', 'cierre', 'basura', 'degradacion', 'caminos', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // lo que explica el aviso queda en color
     const bv = c.querySelector('.ver'); if (bv) { bv.textContent = 'Seguir'; bv.onclick = () => seguir(); }
     if (window.KEN_OJO && ev.x != null) {
@@ -412,7 +412,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const q = E ? { x: E.x, z: E.z } : (window.KEN_METRO && window.KEN_METRO.punto ? window.KEN_METRO.punto(window.KEN_METRO.largo * 0.5) : null);
       if (q) L.push({ n: 'Metro Línea 1', x: q.x != null ? q.x : q[0], z: q.z != null ? q.z : q[1], capa: ['metro', 'trafico'], t: 'Metro Línea 1' + (E ? ' · estación ' + E.n : ''), tx: I.metro && I.metro.fase === 'opera' ? `Ya opera: ${Math.round((I.metro.reduccion || 0) * 100)} % menos carros junto al corredor${E && E.peatonesDia ? '; ' + fmt(E.peatonesDia) + ' personas caminan al día hacia la estación' : ''}.` : 'En obra: empieza a operar en el año 3 (2028).' }); }
     if (I.especulacion && I.especulacion.zonas && I.especulacion.zonas.length) { const Z = I.especulacion.zonas.reduce((a, b) => (b.indice > a.indice ? b : a)); L.push({ n: 'Especulación del suelo', x: Z.x, z: Z.z, capa: ['metro'], t: 'Donde más sube el suelo', tx: `El suelo sube ×${Z.indice.toFixed(2)} aquí; ${fmt(I.especulacion.hogaresRiesgo)} hogares en riesgo de desplazamiento en Kennedy.` }); }
-    if (R.sim === 4) L.push({ n: 'Predio plan parcial', x: 4058, z: 214, capa: ['predio', 'ruido', 'trafico'], t: 'Plan parcial Bavaria', tx: I.predio ? `${fmt(I.predio.habitantes)} habitantes nuevos; ${fmt(I.predio.vehiculosDia)} vehículos/día; ruido ${(I.predio.ruidoDb - I.predio.ruidoDb0).toFixed(1)} dB más.` : '' });
+    if (I.predio || (R.def && R.def.par != null && !R.def.propuesta)) L.push({ n: 'Plan parcial Bavaria', x: 4058, z: 214, capa: ['predio', 'ruido', 'trafico'], t: 'Plan parcial Bavaria', tx: I.predio ? `${fmt(I.predio.habitantes)} habitantes nuevos; ${fmt(I.predio.vehiculosDia)} vehículos/día; ruido ${(I.predio.ruidoDb - I.predio.ruidoDb0).toFixed(1)} dB más.` : '' });
     if (b === 'B' || b === 'C' || R.sim === 12) L.push({ n: 'Bavaria Común', x: 3950, z: 180, capa: ['caminos', 'especies'], t: 'Bavaria Común · instituto', tx: 'Pasajes nuevos que abren el predio al barrio.' });
     if (R.sim === 8 || R.sim === 9) L.push({ n: 'Vía cerrada', donde: 'cierre', capa: ['cierre', 'trafico', 'ruido'], t: 'Cierre de la Av. de las Américas', tx: 'El tráfico se desvía por las calles vecinas (en rojo).' });
     return L;
