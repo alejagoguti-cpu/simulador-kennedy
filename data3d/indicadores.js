@@ -125,14 +125,14 @@ export async function crearIndicadores({ THREE, T3 }) {
       let u = v;
       /* [SUP] TENDENCIA (vista de las 12 simulaciones): s.pres = presión urbana acumulada (población, tráfico, ruido, pérdida de verde; sube
          sola en el estado actual) y s.rec = red ecológica recuperada (interacciones y hábitat que ganan las intervenciones), de 0 a 1.
-         La presión lleva cada lámina hacia lo malo (SE −45 %; IC, PA, EPO, PM +30–40 % de lo que les falta para 1; CCL se concentra en
+         La presión lleva cada lámina hacia lo malo (SE −75 %; IC, PA, EPO, PM +40–60 % de lo que les falta para 1; CCL se concentra en
          Corabastos); la recuperación reparte soporte ecológico por todo el territorio (+65 % de lo que falta) y baja calor y aire (−25 %),
          no solo junto a cada huerta o árbol. */
       const p = s.pres || 0, rc = s.rec || 0;
       if (p || rc) {
-        if (c === 'SE' || c === 'OC') u = u * (1 - (c === 'SE' ? 0.45 : 0.2) * p) + (1 - u * (1 - 0.45 * p)) * (c === 'SE' ? 0.65 : 0.25) * rc;
-        else if (c === 'IC' || c === 'PA' || c === 'EPO' || c === 'PM' || c === 'CV') { const k = c === 'PM' ? 0.4 : c === 'CV' ? 0.25 : c === 'EPO' ? 0.3 : 0.35; u = (u + (1 - u) * k * p) * (1 - (c === 'IC' || c === 'PA' ? 0.25 : 0.1) * rc); }
-        else if (c === 'CCL') u = u + (1 - u) * 0.3 * p * wC;
+        if (c === 'SE' || c === 'OC') u = u * (1 - (c === 'SE' ? 0.75 : 0.3) * p) + (1 - u * (1 - 0.75 * p)) * (c === 'SE' ? 0.65 : 0.25) * rc;
+        else if (c === 'IC' || c === 'PA' || c === 'EPO' || c === 'PM' || c === 'CV') { const k = c === 'PM' ? 0.6 : c === 'CV' ? 0.4 : c === 'EPO' ? 0.5 : 0.55; u = (u + (1 - u) * k * p) * (1 - (c === 'IC' || c === 'PA' ? 0.25 : 0.1) * rc); }
+        else if (c === 'CCL') u = u + (1 - u) * 0.45 * p * wC;
         else if (c === 'CO') u = u * (1 - 0.1 * p) + (1 - u) * 0.2 * rc;
       }
       const v0 = v; { const v = u; // los efectos locales de abajo parten del valor ya afectado por la tendencia

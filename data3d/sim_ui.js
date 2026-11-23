@@ -17,19 +17,22 @@ const IND = [ // resultados en vivo: clave en ind(), nombre, formato, mejor si s
   { k: 'trafico', n: 'Tráfico', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '100 % = hoy' },
   { k: 'ruidoDb', n: 'Ruido promedio', f: (v) => v == null ? '—' : v.toFixed(1) + ' dB', sube: false },
   { k: 'atropellos', n: 'Fauna atropellada', f: (v) => v == null ? '—' : fmt(v), sube: false, ayuda: 'índice por semana' },
-  { k: 'comidaMin', n: 'Comida en la zona peor', f: (v) => (v * 100).toFixed(0) + ' %', sube: true },
+  { k: 'comidaMin', n: 'Comida en la zona peor', f: (v) => (v * 100).toFixed(0) + ' %', sube: true, pts: 100 },
   { k: 'basuraT', n: 'Basura generada', f: (v) => fmt(v) + ' t/día', sube: false, ayuda: 'Corabastos, plaza de flores y viviendas alrededor' },
   { k: 'ratas', n: 'Ratas', f: (v, I) => I.ratas0 ? '×' + (v / I.ratas0).toFixed(1) : (+v).toFixed(2), sube: false, ayuda: 'veces las de hoy' },
   { k: 'humedalHa', n: 'Humedales', f: (v) => (+v).toFixed(1) + ' ha', sube: true },
-  { k: 'humedalFuncional', n: 'Humedales que funcionan', f: (v) => Math.round(v) + ' %', sube: true, ayuda: 'área sin rellenar × calidad frente a la basura del borde (game over si cae 30 %)' },
-  { k: 'congestion', n: 'Congestión (TomTom)', f: (v) => Math.round(v) + ' %', sube: false, ayuda: 'tiempo extra de viaje frente a vía libre' },
-  { k: 'residuos', n: 'Residuos sin tratar', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% del almacenamiento' }
+  { k: 'humedalFuncional', n: 'Humedales que funcionan', f: (v) => Math.round(v) + ' %', sube: true, pts: 1, ayuda: 'área sin rellenar × calidad frente a la basura del borde (game over si cae 30 %)' },
+  { k: 'congestion', n: 'Congestión', f: (v) => Math.round(v) + ' %', sube: false, ayuda: 'tiempo extra de viaje frente a vía libre' },
+  { k: 'sinRecoger', n: 'Basura sin recoger', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, pts: 100, ayuda: 'fracción de la basura que nadie recoge (termina en calles y bordes de humedales)' },
+  { k: 'arbolesPerdidos', n: 'Árboles perdidos en parques', f: (v) => (v * 100).toFixed(1) + ' %', sube: false, pts: 100 },
+  { k: 'residuos', n: 'Orgánicos sin compostar', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% de la capacidad de las composteras de la red', soloSi: (H) => H.some(h => h.residuos > 0.005) }
 ];
 const fmt = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString('es-CO');
+const derivar = (I) => { if (I.basura) { I.basuraT = I.basura.total_t_dia; if (I.basura.fraccionSinRecoger != null) I.sinRecoger = I.basura.fraccionSinRecoger; } return I; };
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=6'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=7'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -48,15 +51,19 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-sl input[type=range] { width: 100%; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #ffb347 var(--p,50%), rgba(255,255,255,.18) var(--p,50%)); outline: none; }
   .su-sl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #ffb347; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer; }
   .su-sl input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #ffb347; cursor: pointer; }
-  .su-ind { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 0; border-top: 1px solid rgba(255,255,255,.07); }
-  .su-ind span { font: 500 12px system-ui, sans-serif; opacity: .85; }
-  .su-ind b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; text-align: right; }
-  .su-ind b.bien { color: #8ee6a8; } .su-ind b.mal { color: #ff8a80; }
-  .su-ind svg { grid-column: 1 / 3; width: 100%; height: 22px; }
+  #su-inds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .su-ind { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'n n' 'v c' 's s'; gap: 2px 6px; align-items: end; padding: 7px 8px 5px; border-radius: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.07); border-left: 2px solid transparent; }
+  .su-ind.mueve.bien { border-left-color: #8ee6a8; } .su-ind.mueve.mal { border-left-color: #ff8a80; }
+  .su-ind i.ch { grid-area: c; font: 600 10.5px system-ui, sans-serif; font-style: normal; opacity: .8; white-space: nowrap; } .su-ind i.ch.bien { color: #8ee6a8; opacity: 1; } .su-ind i.ch.mal { color: #ff8a80; opacity: 1; }
+  .su-ind span { grid-area: n; font: 500 10.5px/1.25 system-ui, sans-serif; opacity: .75; min-height: 2.5em; }
+  .su-ind b { grid-area: v; font: 600 19px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; }
+  
+  .su-ind svg { grid-area: s; width: 100%; height: 26px; margin-top: 2px; }
   .su-picos { display: grid; gap: 4px; } .su-picos button { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px 6px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: inherit; font: 500 12px system-ui, sans-serif; cursor: pointer; overflow: hidden; }
   .su-picos button.on { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.55); } .su-picos i { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; } .su-picos b { font: 600 11px 'JetBrains Mono', ui-monospace, monospace; min-width: 30px; }
   .su-que { margin: 9px 0 2px; font: 400 12px/1.4 system-ui, sans-serif; opacity: .9; } .su-que b { font-weight: 600; } .su-que span { opacity: .6; font-size: 11px; }
   #su-previa { margin: 4px 0 8px; padding: 7px 9px; border-radius: 8px; background: rgba(255,207,122,.12); border: 1px solid rgba(255,207,122,.3); font: 500 11.5px/1.35 system-ui, sans-serif; color: #ffe3ad; }
+  #su-cambio { margin: 7px 0 0; font: 500 11.5px system-ui, sans-serif; opacity: .9; } #su-cambio b { font: 600 14px 'Barlow Condensed', system-ui, sans-serif; } #su-cambio.bien b { color: #8ee6a8; } #su-cambio.mal b { color: #ff8a80; }
   .su-alto { display: flex; align-items: center; gap: 10px; margin-top: 8px; font: 500 11px system-ui, sans-serif; opacity: .85; } .su-alto input { flex: 1; accent-color: #ffcf7a; }
   .su-rampa { height: 8px; border-radius: 3px; margin-top: 8px; } .su-rampa-t { display: flex; justify-content: space-between; font: 500 10px system-ui, sans-serif; opacity: .6; margin-top: 2px; }
   .su-seg { display: flex; gap: 6px; flex-wrap: wrap; } .su-seg button { flex: 1; min-width: 70px; padding: 6px 4px; border-radius: 9px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07); color: inherit; font: 500 12px system-ui, sans-serif; cursor: pointer; }
@@ -89,16 +96,16 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-inf h3 { margin: 18px 0 4px; font: 600 11px Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
   #su-inf .bot { display: flex; gap: 8px; } #su-inf .bot button { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
   #su-inf .bot button.pri { background: rgba(255,176,70,.9); color: #1b1206; border-color: transparent; }
-  #su-avisos { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 44; width: min(460px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-  .su-av { pointer-events: auto; display: flex; gap: 11px; align-items: flex-start; padding: 11px 12px 11px 13px; border-radius: 14px; color: #f2f3f5;
+  #su-avisos { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 44; width: min(370px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  .su-av { pointer-events: auto; display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px 7px 10px; border-radius: 14px; color: #f2f3f5;
     background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.84)); border: 1px solid rgba(255,255,255,.14); border-left: 3px solid #ffcf7a;
     backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    opacity: 0; transform: translateY(-8px); transition: opacity .35s, transform .35s; font: 400 12px/1.4 system-ui, sans-serif; }
+    opacity: 0; transform: translateY(-8px); transition: opacity .35s, transform .35s; font: 400 11px/1.35 system-ui, sans-serif; }
   .su-av.on { opacity: 1; transform: none; } .su-av.bien { border-left-color: #8ee6a8; } .su-av.mal { border-left-color: #ff8a80; } .su-av.viendo { box-shadow: 0 0 0 1px rgba(255,255,255,.4), 0 10px 30px rgba(0,0,0,.4); }
-  .su-av > i { font-style: normal; font-size: 18px; line-height: 1; margin-top: 2px; } .su-av > div:nth-child(2) { flex: 1; min-width: 0; }
+  .su-av > i { font-style: normal; font-size: 14px; line-height: 1; margin-top: 2px; } .su-av > div:nth-child(2) { flex: 1; min-width: 0; }
   .su-av small { display: block; font: 600 10px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
-  .su-av b { display: block; font: 600 13.5px/1.3 system-ui, sans-serif; margin: 2px 0 3px; } .su-av p { margin: 0; opacity: .85; }
-  .su-av .bt { display: flex; flex-direction: column; gap: 5px; } .su-av button { border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: inherit; border-radius: 8px; font: 600 12px system-ui, sans-serif; padding: 5px 10px; cursor: pointer; }
+  .su-av b { display: block; font: 600 12px/1.25 system-ui, sans-serif; margin: 1px 0 2px; } .su-av p { margin: 0; opacity: .8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .su-av.viendo p { -webkit-line-clamp: unset; display: block; }
+  .su-av .bt { display: flex; gap: 4px; align-items: center; } .su-av button { border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: inherit; border-radius: 7px; font: 600 11px system-ui, sans-serif; padding: 3px 8px; cursor: pointer; }
   .su-av button.ver { background: rgba(255,176,70,.92); color: #1b1206; border-color: transparent; } .su-av button.x { padding: 2px 8px; opacity: .7; }
   @media (max-width: 760px) { #su-der { width: calc(100vw - 32px); top: auto; bottom: 86px; max-height: 40vh; } #su-inf .caja { padding: 16px; } }
   @media print { body > *:not(#su-inf) { display: none !important; } #su-inf { position: static; background: none; } #su-inf .caja { max-height: none; color: #111; background: #fff; box-shadow: none; } #su-inf .bot { display: none; } }`;
@@ -134,10 +141,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const s = M.crear(R.sim, SEMILLA, R.valores), H = [];
     pintarPrevia(previa ? 'Calculando la vista previa…' : '');
     const lote = () => { if (id !== idRe) return;
-      for (let k = 0; k < 120 && H.length < hasta; k++) { M.paso(s); const I = M.ind(s); if (I.basura) I.basuraT = I.basura.total_t_dia; H.push(I); }
+      for (let k = 0; k < 120 && H.length < hasta; k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
       if (H.length < hasta) return void setTimeout(lote, 0);
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
-      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); } }
+      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); } }
     };
     lote();
   }
@@ -156,19 +163,19 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (R.previa && !RELOJ.pausaSem) { R.previa = false; pintarPrevia(''); } // al darle play la vista previa se va y los picos siguen la barra
     let n = 0;
     while (R.s && R.hist.length < Math.max(1, Math.min(FIN, RELOJ.sem)) && n++ < 30) {
-      M.paso(R.s); const I = M.ind(R.s); if (I.basura) I.basuraT = I.basura.total_t_dia; R.hist.push(I);
+      M.paso(R.s); const I = M.ind(R.s); derivar(I); R.hist.push(I);
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       for (const ev of I.eventos || []) avisar(ev);
       if (I.predio || PRE) ponerPredio(I.predio);
       if (I.basura || BAS) ponerBasura(I);
       if (I.cierre || CIE) ponerCierre(I.cierre);
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
-      if (I.sem % 26 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada medio año: los picos se recalculan con lo que ya pasó
+      if (I.sem % 13 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada trimestre: los picos se recalculan con lo que ya pasó // cada medio año: los picos se recalculan con lo que ya pasó
     }
     if (R.hist.length >= FIN && !R.fin) { R.fin = true; RELOJ.pausarAños(true); setTimeout(() => abrirInforme(), 700); }
     if (n) pintarIndicadores();
   });
-  addEventListener('lp-reinicio', () => { reiniciarModelo(); pintarIndicadores(); });
+  addEventListener('lp-reinicio', () => { reiniciarModelo(); pintarIndicadores(true); });
 
   /* ---------- panel de la derecha ---------- */
   function pintarPanel() {
@@ -192,24 +199,31 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (g === 'foco' && window.KEN_FOCO) { if (b.dataset.v === 'ruido') { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); } if (b.dataset.v) window.KEN_FOCO.on(b.dataset.v); else window.KEN_FOCO.off(); }
     });
     const bi = der.querySelector('[data-inf]'); if (bi) bi.onclick = () => abrirInforme();
-    pintarIndicadores(); pintarPicos();
+    pintarIndicadores(true); pintarPicos();
   }
   const vfmt = (s, v) => (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
-  function pintarIndicadores() {
+  /* RESULTADOS EN VIVO: una tarjeta por dato con el valor, cuánto cambió desde el año 1 (flecha y color: verde mejora, rojo empeora) y
+     su curva con la línea punteada del año 1. Se compara con el año 1 (semana 52) y no con la semana 0: el modelo tarda ~40 semanas en
+     asentarse. Se repinta como mucho 4 veces por segundo. */
+  let tPint = 0;
+  function pintarIndicadores(forzar) {
     const box = document.getElementById('su-inds'); if (!box) return;
-    const H = R.hist; if (!H.length) { box.innerHTML = ''; return; }
-    const I = H[H.length - 1], I0 = H[0];
-    box.innerHTML = IND.filter(x => I[x.k] != null).map(x => {
-      const v = I[x.k], v0 = I0[x.k], cambio = v - v0, clase = Math.abs(cambio) < 1e-9 ? '' : ((cambio > 0) === x.sube ? 'bien' : 'mal');
-      return `<div class="su-ind" title="${x.ayuda || ''}"><span>${x.n}</span><b class="${clase}">${x.f(v, I)}</b>${chispa(H.map(h => h[x.k]), clase)}</div>`;
+    const ahora = performance.now(); if (!forzar && ahora - tPint < 250) return; tPint = ahora;
+    const H = R.hist; if (!H.length) { box.innerHTML = '<p class="pre">Dale play para ver cómo cambian.</p>'; return; }
+    const I = H[H.length - 1], iR = H.length > 52 ? 51 : 0, I0 = H[iR];
+    box.innerHTML = IND.filter(x => I[x.k] != null && (!x.soloSi || x.soloSi(H))).map(x => {
+      const v = I[x.k], v0 = I0[x.k], d = v - v0, rel = Math.abs(v0) > 1e-9 ? d / Math.abs(v0) : (Math.abs(d) > 1e-9 ? 1 : 0);
+      const clase = Math.abs(rel) < 0.005 ? '' : ((d > 0) === x.sube ? 'bien' : 'mal');
+      const chip = H.length <= 52 ? '<i class="ch">año 1</i>' : `<i class="ch ${clase}">${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${x.pts ? (Math.abs(d * x.pts)).toFixed(1) + ' pts' : (Math.abs(rel * 100) < 10 ? Math.abs(rel * 100).toFixed(1) : Math.round(Math.abs(rel * 100))) + ' %'}</i>`;
+      return `<div class="su-ind ${Math.abs(rel) >= 0.05 ? 'mueve ' + clase : ''}" title="${x.ayuda || ''}"><span>${x.n}</span><b>${x.f(v, I)}</b>${chip}${chispa(H.map(h => h[x.k]), clase, iR)}</div>`;
     }).join('');
-  }
-  const chispa = (vals, clase) => { // gráfica mínima de la serie
-    const v = vals.filter(x => x != null && isFinite(x)); if (v.length < 2) return '<svg></svg>';
-    const mn = Math.min(...v), mx = Math.max(...v), r = mx - mn || 1, W = 260, Hh = 22, n = Math.min(v.length, 130), paso = (v.length - 1) / (n - 1);
-    const pts = Array.from({ length: n }, (_, i) => v[Math.round(i * paso)]).map((y, i) => `${(i / (n - 1) * W).toFixed(1)},${(Hh - 2 - (y - mn) / r * (Hh - 4)).toFixed(1)}`).join(' ');
-    const col = clase === 'bien' ? '#8ee6a8' : clase === 'mal' ? '#ff8a80' : '#ffcf7a';
-    return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+  }  const chispa = (vals, clase, iR = 0) => { // curva con área y la línea punteada del año 1
+    const v = vals.map(x => (x != null && isFinite(x) ? x : null)); const ok = v.filter(x => x != null); if (ok.length < 2) return '<svg></svg>';
+    const mn = Math.min(...ok), mx = Math.max(...ok), r = mx - mn || 1, W = 120, Hh = 26, n = Math.min(v.length, 90), paso = (v.length - 1) / (n - 1);
+    const Y = (y) => (Hh - 2 - (y - mn) / r * (Hh - 5)).toFixed(1), xs = (i) => (i / (n - 1) * W).toFixed(1);
+    const pts = Array.from({ length: n }, (_, i) => v[Math.round(i * paso)]).map((y, i) => y == null ? null : `${xs(i)},${Y(y)}`).filter(Boolean);
+    const col = clase === 'bien' ? '#8ee6a8' : clase === 'mal' ? '#ff8a80' : '#ffcf7a', b = v[iR] != null ? Y(v[iR]) : null;
+    return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polygon points="0,${Hh} ${pts.join(' ')} ${W},${Hh}" fill="${col}" fill-opacity=".14"/>${b != null ? `<line x1="0" x2="${W}" y1="${b}" y2="${b}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>` : ''}<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
   };
 
   /* ---------- INDICADORES como en la versión anterior: los picos 3D de las láminas (data3d/indicadores.js) ----------
@@ -222,15 +236,15 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     OC: ['Juntas, colectivos y organizaciones que cuidan el barrio.', true], CO: ['Colegios, bibliotecas y lugares donde se aprende.', true],
     CCL: ['Dónde se concentra el comercio y la logística (Corabastos).', null], PM: ['Presión de carros y camiones sobre las vías.', false], CV: ['Choque entre vivienda y bodegas o carga.', false] };
   let pInd = null; R.ind = 'SE'; R.alto = 0.2; // picos bajos, pegados al piso y transparentes: se lee la ciudad debajo y dónde está cada cosa
-  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=11').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
+  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=12').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
   async function pintarPicos() {
     const box = document.getElementById('su-picos'); if (!box) return;
     let A; try { A = await indApi(); } catch (e) { box.innerHTML = '<p class="pre">No se pudieron cargar los indicadores.</p>'; return; }
     const grad = (r, d) => `linear-gradient(${d},${r.join(',')})`;
     box.innerHTML = `<div class="su-picos">${A.lista.map(x => `<button data-c="${x.code}" class="${x.code === R.ind ? 'on' : ''}"><i style="background:${grad(x.ramp, 'to top')}"></i><b>${x.code}</b><span>${x.name.replace(/\s*\([A-Z]+\)\s*$/, '')}</span></button>`).join('')}
       <button data-c="" class="${!R.ind ? 'on' : ''}"><i style="background:rgba(255,255,255,.15)"></i><b>—</b><span>Apagar picos</span></button></div>
-      ${R.ind ? (() => { const it = A.lista.find(x => x.code === R.ind); const q = QUE_IND[it && it.code] || ['', null]; return it ? `<p class="su-que">${q[0]} <b>${q[1] === true ? 'Más alto = mejor.' : q[1] === false ? 'Más alto = peor.' : 'Lo sano es repartido, sin un solo pico.'}</b><br><span>Los picos cambian año a año con lo que la simulación va construyendo.</span></p><div class="su-rampa" style="background:${grad(it.ramp, '90deg')}"></div><div class="su-rampa-t"><span>bajo</span><span>alto</span></div><label class="su-alto"><span>Altura de los picos</span><input type="range" min="0.01" max="0.3" step="0.005" value="${R.alto}"></label>` : ''; })() : ''}`;
-    const ra = box.querySelector('.su-alto input'); if (ra) ra.oninput = () => { R.alto = +ra.value; A.altura(R.alto); };
+      ${R.ind ? (() => { const it = A.lista.find(x => x.code === R.ind); const q = QUE_IND[it && it.code] || ['', null]; return it ? `<p class="su-que">${q[0]} <b>${q[1] === true ? 'Más alto = mejor.' : q[1] === false ? 'Más alto = peor.' : 'Lo sano es repartido, sin un solo pico.'}</b><br><span>Los picos cambian año a año con lo que la simulación va construyendo.</span></p><div class="su-rampa" style="background:${grad(it.ramp, '90deg')}"></div><div class="su-rampa-t"><span>bajo</span><span>alto</span></div><p id="su-cambio"></p><label class="su-alto"><span>Altura de los picos</span><input type="range" min="0.01" max="0.3" step="0.005" value="${R.alto}"></label>` : ''; })() : ''}`;
+    const ra = box.querySelector('.su-alto input'); if (ra) ra.oninput = () => { R.alto = +ra.value; A.altura(R.alto); }; pintarCambio(A);
     box.querySelectorAll('button[data-c]').forEach(b => b.onclick = () => { R.ind = b.dataset.c || null; mostrarInd(); pintarPicos(); });
   }
   async function mostrarInd() { const A = await indApi(); if (!R.altoIni) { R.altoIni = 1; if (A.estilo) A.estilo({ opacidad: 0.66, base: 4 }); A.altura(R.alto); } A.ver(!!R.ind); await A.mostrar(R.ind || null, false); }
@@ -253,7 +267,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (I && I.recuperacion == null) pres = pres * (1 - 0.6 * rec); // lo recuperado amortigua la presión
     return { huerta, techo, merc, cora, bav, verde, pres, rec };
   }
-  function refrescarPicos(Iv) { T3.simInd = factoresSim(Iv || R.hist[R.hist.length - 1]); if (!R.ind || !pInd && !window.KEN_IND) return; indApi().then(A => A.recalcular && A.recalcular(true)); } // indicadores.js recalcula y anima con lo construido hasta ahora
+  function refrescarPicos(Iv) { T3.simInd = factoresSim(Iv || R.hist[R.hist.length - 1]); if (!R.ind || !pInd && !window.KEN_IND) return; indApi().then(async A => { if (A.recalcular) await A.recalcular(true); pintarCambio(A); }); }
+  function pintarCambio(A) { // cuánto cambió la lámina en promedio frente a como está hoy (sobre todo Kennedy)
+    const e = document.getElementById('su-cambio'); if (!e) return; const r = A.resumen && A.resumen(); const q = QUE_IND[R.ind] || ['', null];
+    if (!r || Math.abs(r.prom) < 0.3) { e.innerHTML = 'Igual que hoy: dale play para ver cómo cambia.'; e.className = ''; return; }
+    const mejor = q[1] == null ? null : (r.prom > 0) === q[1]; e.className = mejor == null ? '' : mejor ? 'bien' : 'mal';
+    e.innerHTML = `Promedio sobre Kennedy: <b>${r.prom > 0 ? '▲' : '▼'} ${Math.abs(r.prom).toFixed(Math.abs(r.prom) < 10 ? 1 : 0)} %</b> frente a hoy${mejor == null ? '' : mejor ? ' · mejora' : ' · empeora'}`;
+  } // indicadores.js recalcula y anima con lo construido hasta ahora
   /* ---------- picos en el piso (data3d/picos_indicadores.js) ---------- */
   function ponerPicos(I) {
     const P = window.KEN_PICOS_IND; if (!P || !R.picos || !I.zonas || !M.ZONAS_XZ) return;
@@ -275,8 +295,15 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const ICO = { especies: '🐦', polinizadores: '🐝', ruido: '🔊', trafico: '🚗', huertas: '🌱', comida: '🍎', residuos: '♻', metro: '🚇', corabastos: '🏭', obra: '🏗' };
   const escH = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let viendo = null;
+  /* cola: como mucho 2 tarjetas a la vez, una nueva cada 5 s (reales) como mínimo, cada una dura 9 s; si se acumulan más de 3 en espera se
+     descartan (siguen en el informe final, «Lo que pasó, año por año»), primero las que no son de especies que se pierden */
+  const cola = []; let tUlt = 0;
+  setInterval(() => { if (!cola.length || viendo) return; const ahora = performance.now(); if (ahora - tUlt < 5000 || avs.children.length >= 2) return; tUlt = ahora; mostrarAviso(cola.shift()); }, 400);
   function avisar(ev) {
     if (!ev || !ev.titulo) return; R.eventos.push(ev);
+    cola.push(ev); while (cola.length > 3) { const k = cola.findIndex(e => !(e.tipo === 'especies' && e.signo < 0)); cola.splice(k >= 0 ? k : 0, 1); }
+  }
+  function mostrarAviso(ev) {
     const c = document.createElement('div'); c.className = 'su-av ' + (ev.signo > 0 ? 'bien' : ev.signo < 0 ? 'mal' : '');
     const año = ev.sem != null ? Math.floor(ev.sem / 52) + 1 : null;
     c.innerHTML = `<i>${ICO[ev.tipo] || '•'}</i><div><small>${año ? 'Año ' + año : ''}${ev.especies && ev.especies.length ? ' · ' + escH(ev.especies.slice(0, 3).join(', ')) : ''}</small><b>${escH(ev.titulo)}</b><p>${escH(ev.texto)}</p></div>
@@ -284,11 +311,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     c.querySelector('.x').onclick = () => quitar(c);
     const bv = c.querySelector('.ver'); if (bv) bv.onclick = () => verEvento(ev, c);
     avs.prepend(c); requestAnimationFrame(() => c.classList.add('on'));
-    while (avs.children.length > 3) avs.lastElementChild.remove();
-    c._t = setTimeout(() => { if (viendo !== c) quitar(c); }, 14000);
+    while (avs.children.length > 2) avs.lastElementChild.remove();
+    c._t = setTimeout(() => { if (viendo !== c) quitar(c); }, 9000);
   }
   function quitar(c) { clearTimeout(c._t); c.classList.remove('on'); setTimeout(() => c.remove(), 350); }
-  function limpiarAvisos() { avs.innerHTML = ''; if (viendo) seguir(); }
+  function limpiarAvisos() { avs.innerHTML = ''; cola.length = 0; if (viendo) seguir(); }
   let corria = false;
   async function verEvento(ev, c) {
     if (viendo) await seguir(true);

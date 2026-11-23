@@ -274,7 +274,7 @@ export const SIMS = [
    · P1.sup: superficie de huertas de la red (m², sim_modelos.js, 9,8 ha). · planViv, planAutos, planAccesos: viviendas del plan parcial (14.002 en el
      decreto; las etapas se escalan), autos (cupos de parqueo) por vivienda (0,31 = autos por hogar, Encuesta de Movilidad 2023) y accesos viales nuevos
      al predio (la vía más cargada lleva 1/accesos de los viajes). */
-const sTraf = { k: 'trafCrece', n: 'Crecimiento anual del tráfico', min: 0, max: 3, paso: 0.1, val: 1.5, unidad: '%/año', ayuda: 'Carros nuevos cada año. 1,5 % = el parque automotor de Bogotá 2020–2024; la congestión parte del TomTom Traffic Index 2025 (69,9 %).' };
+const sTraf = { k: 'trafCrece', n: 'Crecimiento anual del tráfico', min: 0, max: 3, paso: 0.1, val: 1.5, unidad: '%/año', ayuda: 'Carros nuevos cada año. 1,5 % = el parque automotor de Bogotá 2020–2024; la congestión parte de la medida de 2025 (69,9 %).' };
 const sPob = { k: 'pobCrece', n: 'Crecimiento de la población', min: -1, max: 3, paso: 0.1, val: 0, unidad: '%/año', ayuda: 'Expansión y densificación de Kennedy: más comida necesaria, más orgánicos y más carros.' };
 const sRuido = { k: 'mitiga', n: 'Calles pacificadas y con barreras verdes', min: 0, max: 100, paso: 5, val: 0, unidad: '%', ayuda: 'Calles a 30 km/h y con franjas verdes: unos 3 dB menos en ellas; menos ruido para las aves.' };
 const sSup = { k: 'P1.sup', n: 'Superficie de huertas de la red', min: 0, max: 300000, paso: 2000, val: 98000, unidad: 'm²', ayuda: 'Cubiertas, colegios, parques y Bavaria que se vuelven huerta (9,8 ha en el modelo).' };
@@ -682,7 +682,7 @@ function avisos(E, x) {
     const kb = umbral(-d, [1, 2]); if (kb) add('ruido-', kb, 'ruido', `El ruido de las calles baja ${kb} dB`, `El promedio de las calles pasa de ${nf(x.ruidoDb0, 1)} a ${nf(x.ruidoDb, 1)} dB.`, KEN_XZ, 1, []);
     const rc = x.congestion / TOMTOM.congestion, kc = umbral(rc, [1.25, 1.5, 2]);
     if (kc) add('cong+', kc, 'trafico', ['La congestión sube 25 %', 'La congestión sube 50 %', 'La congestión se duplica'][kc - 1],
-      `Recorrer 10 km toma ${nf(x.tiempo10km, 1)} min (hoy ${nf(TOMTOM.min10km, 1)} min, TomTom 2025); congestión ${nf(x.congestion)} %. Circulan ${nf((x.trafico - 1) * 100)} % más vehículos que hoy.`, KEN_XZ, -1, []);
+      `Recorrer 10 km toma ${nf(x.tiempo10km, 1)} min (hoy ${nf(TOMTOM.min10km, 1)} min en 2025); congestión ${nf(x.congestion)} %. Circulan ${nf((x.trafico - 1) * 100)} % más vehículos que hoy.`, KEN_XZ, -1, []);
     const kd = umbral(1 / rc, [1 / 0.9]); if (kd) add('cong-', kd, 'trafico', 'La congestión baja 10 %', `Recorrer 10 km toma ${nf(x.tiempo10km, 1)} min (hoy ${nf(TOMTOM.min10km, 1)} min).`, KEN_XZ, 1, []); }
   // 9 · calendario: metro, Corabastos, cierre de vía, desmonte de bodegas
   if (E.metro && s.t === E.metro.desde) { const m = PRE.metro.cerca, xz = m.length ? [m.reduce((a, i) => a + PARCHES[i].x, 0) / m.length, m.reduce((a, i) => a + PARCHES[i].z, 0) / m.length] : KEN_XZ;
