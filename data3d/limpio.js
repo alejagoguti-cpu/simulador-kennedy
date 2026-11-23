@@ -161,7 +161,7 @@ export function iniciarLimpio({ T3 }) {
     } else if (cual === 'bavaria') { c = new V(3950, 0, 180); d = new V(-620, 620, 760); }
     else if (cual === 'corabastos') { const [x, z] = T3.lw(5900, 2850); c = new V(x, 0, z); d = new V(-500, 640, 820); }
     else if (cual === 'general') { c = new V(2600, 0, 300); d = new V(-1300, 1700, 2000); }
-    else { c = new V(2480, 25, -90); d = new V(-760, 535, 1030); }
+    else { c = new V(2320, 25, -100); d = new V(-580, 305, 800); }
     T3.anim = { t: 0, dur: 3.0, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1: c.clone().add(d), c1: c };
   }
 
