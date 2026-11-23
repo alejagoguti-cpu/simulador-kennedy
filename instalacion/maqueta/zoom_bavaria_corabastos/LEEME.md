@@ -7,13 +7,14 @@ Rectángulo de **50 × 28,1 cm** (16:9, la proporción del proyector), norte arr
 - **Entre los dos:** los barrios y las avenidas que los conectan.
 
 ## Piezas
-6 piezas STL de **16,7 × 14,1 cm**, que caben en cualquier impresora:
+4 piezas STL de **25 × 14,1 cm**, para impresora con cama de 25 cm (Bambu X1 / P1S / A1, Prusa MK4…):
 
-| | Oeste | Centro | Este |
-|---|---|---|---|
-| **Norte** | `zoom_A1.stl` | `zoom_A2.stl` | `zoom_A3.stl` (Bavaria) |
-| **Sur** | `zoom_B1.stl` | `zoom_B2.stl` | `zoom_B3.stl` |
+| | Oeste | Este |
+|---|---|---|
+| **Norte** | `zoom_A1.stl` | `zoom_A2.stl` (Bavaria) |
+| **Sur** | `zoom_B1.stl` (Corabastos) | `zoom_B2.stl` |
 
+El lado de 25 cm ocupa toda la cama. Ponla en diagonal o **sin borde (brim)**; si la placa se levanta, usa pegamento en barra en la cama. Si la impresora no alcanza, se generan 6 piezas de 16,7 × 14,1 cm con `python tools/maqueta_zoom.py 500 2 3 2 10 6000`.
 `Bavaria_Corabastos_maqueta.3dm` trae la maqueta completa para verla en Rhino (una capa por pieza).
 
 ## Alturas
@@ -30,7 +31,7 @@ Rectángulo de **50 × 28,1 cm** (16:9, la proporción del proyector), norte arr
 - **Primera capa:** borde (brim) de 3–5 mm si la placa se levanta.
 
 ## Armado y proyección
-1. Pega las 6 piezas sobre un tablero plano de unos 52 × 30 cm (A1-A2-A3 arriba, B1-B2-B3 abajo).
+1. Pega las 4 piezas sobre un tablero plano de unos 52 × 30 cm (A1-A2 arriba, B1-B2 abajo).
 2. Proyecta recto desde arriba. Como la maqueta tiene la misma proporción del proyector (16:9), la imagen la cubre completa sin sobrantes.
 3. En TouchDesigner ajusta las 4 esquinas de la proyección a las 4 esquinas de la maqueta.
 
@@ -45,5 +46,5 @@ Los edificios proyectados caen exactamente sobre los impresos. El encuadre anter
 - **Simplificación para imprimir:** las casas pegadas de la misma altura se funden. Las formas muy complejas se imprimen con su rectángulo o en cuadritos de 2 mm, para que la pieza cierre; no se pierde ningún edificio.
 
 ## Regenerar
-- Maqueta: `python tools/maqueta_zoom.py 500 2 3 2 10 6000` (largo en mm, exageración, piezas en x, piezas en y, tope en mm, ancho real en m).
+- Maqueta: `python tools/maqueta_zoom.py 500 2 2 2 10 6000` (largo en mm, exageración, piezas en x, piezas en y, tope en mm, ancho real en m).
 - Capas de la instalación: `node tools/exportar_instalacion.mjs`.
