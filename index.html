@@ -873,11 +873,11 @@ function flight(ms) {
           if (mov && fps < 25 && A.esc > 0.85) ponerRes(0.85); else if (mov && fps > 45 && A.esc < 1) ponerRes(1); /* un solo escalón (85 %) y solo moviendo la cámara: antes bajaba hasta 70 % y cada cambio rehacía los búferes */
           if (!mov && T3.ao && !T3.aoLento && !/[?&]ao=1\b/.test(location.search)) { A.lentos = fps < 12 ? A.lentos + 1 : 0; if (A.lentos >= 4) T3.aoLento = true; }
           /* EQUIPO LENTO (también con la cámara quieta): si sigue por debajo de 20 cuadros/s 4 s seguidos se baja un escalón de calidad
-             (1: sin oclusión ambiental y sombras de 2048 px · 2: menos carros; la resolución nunca se baja con la cámara quieta); ?calidad=alta lo evita */
+             (1: sin oclusión ambiental y sombras de 2048 px; la resolución y los carros nunca se tocan); ?calidad=alta lo evita */
           if (!mov && !T3.anim && !/[?&]calidad=alta\b/.test(location.search)) { A.lentos2 = fps < 20 ? (A.lentos2 || 0) + 1 : 0;
             if (A.lentos2 >= 4 && (T3.nivelBajo || 0) < 3) { A.lentos2 = 0; const nv = T3.nivelBajo = (T3.nivelBajo || 0) + 1;
               if (nv === 1) { T3.aoLento = true; const sh = T3.sun && T3.sun.shadow; if (sh && sh.mapSize.x > 2048) { sh.mapSize.set(2048, 2048); if (sh.map) { sh.map.dispose(); sh.map = null; } R.shadowMap.needsUpdate = true; } }
-              /* nivel 2: menos carros (ver updateTraffic). La resolución NO se baja: se veía borroso */
+              /* la resolución y los carros NO se tocan (se veía borroso y faltaban carros) */
               console.info('[rendimiento] calidad bajada al nivel', nv, '(' + Math.round(fps) + ' cuadros/s)'); } } } }
       if (!mov && A.esc < 1 && ahora - (T3._movT || 0) > 1200) ponerRes(1);
     }
@@ -888,9 +888,9 @@ function flight(ms) {
     { /* RENDIMIENTO · OBJETOS DIMINUTOS: las piezas sueltas (huertas de terraza y de barrio, parches, distrito Bavaria…: ~1.500 dibujos con la
          propuesta) que desde la cámara miden menos de ~5 píxeles no se mandan a dibujar (ni a la sombra). Se usa la capa 2 de three.js, no
          .visible, así no se pisa lo que cada módulo prende o apaga. Se revisa 4 veces por segundo; la lista se rehace cada 3 s. */
-      const ahora = performance.now(), C = T3._chico || (T3._chico = { t: 0, tl: 0, L: [] }), V3 = T3.THREE.Vector3;
+      const ahora = performance.now(), C = T3._chico || (T3._chico = { t: 0, tl: 0, L: [] }), CHICOS = new Set(['huertasTecho', 'huertas-barrio', 'parches_arboles', 'bavaria_huertas', 'bavaria_distrito', 'biblioteca-tintal', 'parque_corabastos', 'huertas-hidroponicas', 'torresBalcones', 'canchas']);
       if (ahora - C.tl > 3000) { C.tl = ahora; C.L.length = 0; const tilesG = T3.tiles && T3.tiles.group;
-        T3.scene.traverse(o => { if (!o.isMesh || o.frustumCulled === false || (o.layers.mask !== 1 && o.layers.mask !== 4)) return; /* solo los de la capa normal */ for (let k = o.parent; k; k = k.parent) if (k === tilesG) return;
+        T3.scene.traverse(o => { if (!o.isMesh || o.frustumCulled === false || (o.layers.mask !== 1 && o.layers.mask !== 4)) return; /* solo los de la capa normal */ let top = o; while (top.parent && top.parent !== T3.scene) top = top.parent; if (top === tilesG || !CHICOS.has(top.name)) return; /* solo piezas fijas de la propuesta: nunca carros, peatones ni fauna */
           const g = o.geometry; if (!g) return; if (!g.boundingSphere) { try { o.isInstancedMesh ? o.computeBoundingSphere() : g.computeBoundingSphere(); } catch (e) { return; } }
           const bs = o.isInstancedMesh ? o.boundingSphere : g.boundingSphere; if (!bs || !isFinite(bs.radius)) return;
           const c = bs.center.clone().applyMatrix4(o.matrixWorld), r = bs.radius * o.matrixWorld.getMaxScaleOnAxis(); if (r > 120) return;
@@ -2644,7 +2644,7 @@ function updateTraffic(dt) {
   if (!A0) { if (TRAF.pedirTrozo) TRAF.pedirTrozo(Math.floor(k0 / TRAF.chunk)); return; } // ese trozo aún no ha bajado: se pide ya y los carros esperan un instante
   /* MÁS VEHÍCULOS: la grabación SUMO (máx. ~2.600 a la vez en toda la localidad) se superpone desfasada en el tiempo: mismos recorridos
      reales, hasta 3 veces más vehículos en hora pico (1 en la madrugada, 2 al mediodía, 3 en los picos) */
-  const NCOP = KEN && T3.vehSUMO ? Math.max(1, Math.min((T3.nivelBajo || 0) >= 2 ? 1 : 3, Math.round(1 + 2.2 * Math.max(0, pDem - 0.25) / 0.72))) : 1, /* equipo lento (nivel 2+): solo la grabación real, sin copias desfasadas */ MAXV = TRAF.maxi * (KEN && T3.vehSUMO ? 3 : 1); TRAF.copias = NCOP;
+  const NCOP = KEN && T3.vehSUMO ? Math.max(1, Math.min(3, Math.round(1 + 2.2 * Math.max(0, pDem - 0.25) / 0.72))) : 1, MAXV = TRAF.maxi * (KEN && T3.vehSUMO ? 3 : 1); TRAF.copias = NCOP;
   const d = TRAF.dummy;
   const WO = [[1.45, 0.95], [1.45, -0.95], [-1.45, 0.95], [-1.45, -0.95]];
   let n = 0;
