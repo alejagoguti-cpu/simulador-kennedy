@@ -7,23 +7,29 @@
      Modelo de seguimiento (cada carro mantiene distancia al de adelante, sin adelantar: cola FIFO por carril) y cupo en los accesos: en
      cada salida a la avenida pasa un carro cada hOut segundos (y cada hIn en las entradas). Con más tráfico (trafico / trafico0) y en
      hora pico el cupo baja y se forma la cola en los accesos (lenta y apretada).
-   · RUIDO: capa translúcida sobre el suelo del predio y a lo largo de las vías nuevas, con la rampa del mapa de ruido
-     (data3d/ruido_cierre.js: amarillo pálido → naranja → rojo); su intensidad sigue ruidoDb − ruidoDb0 (0 dB invisible, +10 dB rojo fuerte).
-     Animada: respira a lo largo de las vías y desde cada acceso salen anillos que se alejan (más fuertes donde hay cola). Siempre se ve
-     con ver(true); más fuerte con ruido(true) o con la capa «Ruido de carros» (T3.rc.ruido) encendida.
-   · FLUJO DE LEJOS: un punto de luz por carro con estela (cálido si avanza, rojo si está detenido): legible desde la cámara alta.
-   · RÓTULO flotante (vidrio) sobre el predio: vehículos/día, ruido +X dB, habitantes, árboles talados; poner() acepta además
-     vehiculosDia, habitantes y tala (ind().predio del modelo); si faltan se estiman (tráfico del módulo, KEN_PLANBAV.avance).
+   · LOS VIAJES NUEVOS VAN A LAS CAPAS QUE YA TIENE EL SIMULADOR (nada de capas propias):
+     – FLUJO DE CARROS («Flujo de carros · Ver», index.html crearFlujoCarros / T3.flujoCarros): los vehiculosDia del plan se reparten por
+       hora (mismo perfil de demanda) y por ruta; en las avenidas de alrededor (Av. Boyacá, vía sur, avenida del noreste) se suman al conteo
+       de la capa como carros adicionales sobre esos carriles (T3.flujoCarros.contar envuelto mientras la sim. 4 está activa), y las vías
+       internas del plan se dibujan con la misma cinta y la misma escala de colores (carros/km) para que también se pongan rojas.
+     – RUIDO DE CARROS (#rc-btn, T3.ruidoMod + ruido_cierre.js): a las celdas de vía de la rejilla de 16 m alrededor del predio se les suma la
+       energía de los viajes nuevos que pasan por cada celda, con la fórmula de ruido de una vía del modelo (simulaciones12, la misma escala
+       del mapa: L = 74 dB + 10·log10(Q / 14.049), Q en veh/día): L' = 10·log10(10^(L/10) + 10^(Lx/10)); las vías internas abiertas se agregan
+       como celdas de vía intermedias con su Lx. Con ver(false) todo vuelve a como estaba (las demás simulaciones no cambian).
    RELOJ: los carros avanzan con RELOJ.dtAnim (tiempo simulado de animación del reloj universal: 0 en pausa, el día a 1× va a 1×, y a
    120×/240×/480× se topa en ×8 como el resto de las animaciones, para que no salten), nunca con performance.now. La demanda por hora
    sale de RELOJ.minutoDia con el mismo perfil de index.html (demandaHora).
-   Rendimiento: un InstancedMesh (una llamada de dibujo) para todos los carros, una malla para el ruido, arreglos fijos (sin crear objetos
+   Rendimiento: un InstancedMesh (una llamada de dibujo) para todos los carros, una cinta para las vías internas, arreglos fijos (sin crear objetos
    por cuadro); la red se arma al primer ver(true)/poner, no al importar. Todo cuelga de un THREE.Group llamado 'predio' (foco.js). */
 
 const DEMANDA_H = [0.06, 0.04, 0.03, 0.03, 0.08, 0.32, 0.78, 0.95, 0.82, 0.62, 0.58, 0.62, 0.72, 0.7, 0.62, 0.66, 0.82, 1.0, 0.97, 0.78, 0.52, 0.36, 0.22, 0.12]; // = index.html
 const demandaEn = (min) => { const h = (min / 60) % 24, a = Math.floor(h), f = h - a; return DEMANDA_H[a] + (DEMANDA_H[(a + 1) % 24] - DEMANDA_H[a]) * f; };
 const PINTURA = [0xeeeeec, 0xeeeeec, 0xe9e9e6, 0xb9bcc0, 0xb4b7bb, 0xa7abb0, 0x6d7177, 0x5b5f64, 0x141517, 0x101113, 0x8e1416, 0x1d2f5c, 0xc8b89a, 0x4a1219, 0x1f3a2c, 0x2b4a7a, 0xf2c300]; // = vehiculos.js (+ taxi)
-const STOPS = [[0, [255, 247, 179]], [0.2, [255, 224, 76]], [0.4, [255, 179, 77]], [0.6, [245, 124, 0]], [0.8, [230, 74, 25]], [1, [211, 47, 47]]]; // = ruido_cierre.js
+const SUMA_DEM = DEMANDA_H.reduce((a, b) => a + b, 0); // ≈ 12,4: el día equivale a 12,4 h de hora pico
+// escala de la capa «Flujo de carros» (index.html crearFlujoCarros): carros por km de vía
+const ESC = [[0, [0.10, 0.72, 0.29]], [2.5, [0.55, 0.85, 0.20]], [6, [0.98, 0.84, 0.10]], [11, [0.98, 0.50, 0.08]], [18, [0.90, 0.12, 0.10]], [30, [0.55, 0.03, 0.08]]];
+const colorDe = (d, o) => { let c = ESC[ESC.length - 1][1]; if (d <= ESC[0][0]) c = ESC[0][1]; else for (let i = 1; i < ESC.length; i++) if (d <= ESC[i][0]) { const [a, ca] = ESC[i - 1], [b, cb] = ESC[i], t = (d - a) / (b - a); o[0] = ca[0] + (cb[0] - ca[0]) * t; o[1] = ca[1] + (cb[1] - ca[1]) * t; o[2] = ca[2] + (cb[2] - ca[2]) * t; return o; } o[0] = c[0]; o[1] = c[1]; o[2] = c[2]; return o; };
+const LREF = [0, 60, 68, 74], TAU_FLUJO = 10; // = capas_escenario.js (dB por clase de vía) e index.html (olvido de la capa de flujo, s)
 
 /* ---------- red: nodos (modelo: x este, y norte) y tramos [a, b, puntos intermedios, tipo, año] ----------
    av: carril de avenida (un sentido) · i: vía interna del plan (doble sentido, año en que abre) · in / out: acceso desde / hacia la avenida */
@@ -49,16 +55,8 @@ const FUENTES = [['B0', 0.42], ['S0', 0.12], ['T0', 0.12], ['N0', 0.34]];   // d
 const SUMIDEROS = [['B12', 0.42], ['S4', 0.12], ['T4', 0.12], ['N9', 0.34]]; // a dónde se van
 const SOTANOS = ['a1', 'c7', 'f3', 'g2', 'j3', 'n1'];                        // fondos de vía: rampas a los sótanos de las manzanas
 
-const GATES = ['a2', 'a4', 'a7', 's1', 'n3', 'n5'];                         // nodos internos de los accesos (anillos de ruido)
-const LARGO = 4.6, CARRIL = 1.75, NMAX = 420, V_AV = 11, V_INT = 8, V_ACC = 5;
-const CSS_ROT = `.predio-rot{position:fixed;left:0;top:0;z-index:30;pointer-events:none;transform:translate(-9999px,0);will-change:transform;
-  min-width:186px;padding:10px 13px 11px;border-radius:12px;background:rgba(16,20,26,.58);-webkit-backdrop-filter:blur(12px) saturate(1.2);backdrop-filter:blur(12px) saturate(1.2);
-  border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 30px rgba(0,0,0,.32);color:#eef1f3;font:400 12px/1.35 Geist,Inter,system-ui,sans-serif}
-.predio-rot h6{margin:0 0 7px;font:600 9.5px/1.2 Geist,Inter,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#aab3b9}
-.predio-rot .f{display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:2px 0}
-.predio-rot .f span{color:#b9c1c6;font-size:11.5px}.predio-rot .f b{font-weight:600;font-variant-numeric:tabular-nums;font-size:14px;color:#fff;letter-spacing:-.01em}
-.predio-rot .f b.r{color:#ffb15c}.predio-rot::after{content:'';position:absolute;left:50%;bottom:-7px;width:1px;height:7px;background:rgba(255,255,255,.4)}
-@media (max-width:640px){.predio-rot{min-width:150px;padding:8px 10px;font-size:11px}.predio-rot .f b{font-size:12.5px}}`;
+const GATES = ['a2', 'a4', 'a7', 's1', 'n3', 'n5'];                         // nodos internos de los accesos
+const LARGO = 4.6, CARRIL = 1.75, NMAX = 420, V_AV = 11, V_INT = 8, V_ACC = 5, NVIRT = 6000;
 
 export function crearPredio({ T3, RELOJ }) {
   const THREE = T3.THREE;
@@ -66,7 +64,7 @@ export function crearPredio({ T3, RELOJ }) {
   const grupo = new THREE.Group(); grupo.name = 'predio'; grupo.visible = false; T3.scene.add(grupo);
   let listo = false, visible = false, ruidoOn = false;
   const est = { trafico: 1, trafico0: 1, ruidoDb: 0, ruidoDb0: 0, vias: undefined, sem: 0 };
-  let ratio = 1, uRuido = 0, firmaRed = '', puesto = false, calentado = false;
+  let ratio = 1, firmaRed = '', puesto = false, calentado = false;
 
   // ---------- estructuras (se llenan en armar) ----------
   let NL = 0, lnX, lnZ, lnCum, lnOff, lnN, lnLen, lnTipo, lnV, lnY0, lnY1, lnHIni, lnHFin, lnTramo, lnAbierto;
@@ -74,10 +72,10 @@ export function crearPredio({ T3, RELOJ }) {
   const rutas = [], rutaTasa = [], rutaAcc = [], rutaIni = [], rutaFin = []; // ruta: Int16Array de carriles
   const cAct = new Uint8Array(NMAX), cRuta = new Int16Array(NMAX), cLeg = new Int16Array(NMAX), cSeg = new Int16Array(NMAX), cS = new Float32Array(NMAX), cV = new Float32Array(NMAX);
   const cEx = new Float32Array(NMAX), cEz = new Float32Array(NMAX), cEd = new Float32Array(NMAX), cH = new Float32Array(NMAX);
-  let nAct = 0, alto = 0, malla = null, ruidoM = null, uI = null, tAnim = 0, puntos = null, lnGate = null, rotulo = null, tRuido = 0;
-  const uT = { value: 0 }, uJ = { value: 0 }, uLejos = { value: 0 }, uEsc = { value: 800 }, uGate = { value: GATES.map(() => new THREE.Vector3()) };
-  const pPos = new Float32Array(NMAX * 9), pV = new Float32Array(NMAX * 3), pA = new Float32Array(NMAX * 3);
-  const ancla = new THREE.Vector3(), proy = new THREE.Vector3(), paradosG = new Float32Array(GATES.length);
+  let nAct = 0, alto = 0, malla = null, tAnim = 0;
+  // flujo de los viajes nuevos: por carril (veh/s y carros/km), carros «virtuales» para la capa de flujo y cinta de las vías internas
+  let qDia = 0, lnWA = null, lnWD = null, lnQ = null, lnDens = null, qTotal = 0, cinta = null, cintaCol = null, cintaRango = null, cintaTramos = null;
+  const VX = new Float32Array(NVIRT), VZ = new Float32Array(NVIRT), VIRT = { n: 0, x: VX, z: VZ }, c3 = [0, 0, 0];
   const yInt = () => (T3.sueloY != null ? T3.sueloY : 0.3) + 0.24, yAv = () => (T3.viaY != null ? T3.viaY : 0.62) + 0.02;
 
   /* ---------- geometría del carro: sedán de pocos polígonos con la silueta de vehiculos.js (4,5 m, frente hacia +z) ---------- */
@@ -142,74 +140,21 @@ export function crearPredio({ T3, RELOJ }) {
     malla.instanceColor.needsUpdate = true; const A = malla.instanceMatrix.array; A.fill(0);
     grupo.add(malla);
 
-    // capa de ruido: un plano con un campo (vías y predio) pintado en un lienzo; el color sale de la rampa en el sombreador
-    const PL = window.KEN_PLANBAV && window.KEN_PLANBAV.datos;
-    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
-    for (const k in NODOS) { const w = W(NODOS[k]); x0 = Math.min(x0, w[0]); x1 = Math.max(x1, w[0]); z0 = Math.min(z0, w[1]); z1 = Math.max(z1, w[1]); }
-    x0 -= 60; x1 += 60; z0 -= 60; z1 += 60;
-    const cv = document.createElement('canvas'), RES = 2.5; cv.width = Math.ceil((x1 - x0) / RES); cv.height = Math.ceil((z1 - z0) / RES);
-    armar.lienzo = { cv, x0, z0, RES, borde: PL ? PL.borde.map(W) : null };
-    const tex = new THREE.CanvasTexture(cv); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false; armar.tex = tex;
-    const ramp = STOPS.map(s => `vec3(${(s[1][0] / 255).toFixed(3)},${(s[1][1] / 255).toFixed(3)},${(s[1][2] / 255).toFixed(3)})`);
-    uI = { value: 0 };
-    /* ruido animado: el campo (vías R, predio G) respira con una ondulación que corre por las vías, y desde cada acceso salen anillos
-       que se alejan (más fuertes y rápidos donde hay cola). uGate: x, z, fuerza de cada acceso; uT: tiempo de la animación. */
-    for (let k = 0; k < GATES.length; k++) { const w = W(NODOS[GATES[k]]); uGate.value[k].set(w[0], w[1], 0); }
-    const mR = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6,
-      uniforms: { uTex: { value: tex }, uI, uT, uGate, uJ, uLejos, uBox: { value: new THREE.Vector4(x0, z0, x1 - x0, z1 - z0) } },
-      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform sampler2D uTex; uniform float uI, uT, uJ, uLejos; uniform vec3 uGate[${GATES.length}]; uniform vec4 uBox; varying vec2 vUv;
-        vec3 rampa(float t){ t = clamp(t, 0.0, 1.0);
-          if (t < 0.2) return mix(${ramp[0]}, ${ramp[1]}, t / 0.2); if (t < 0.4) return mix(${ramp[1]}, ${ramp[2]}, (t - 0.2) / 0.2);
-          if (t < 0.6) return mix(${ramp[2]}, ${ramp[3]}, (t - 0.4) / 0.2); if (t < 0.8) return mix(${ramp[3]}, ${ramp[4]}, (t - 0.6) / 0.2); return mix(${ramp[4]}, ${ramp[5]}, (t - 0.8) / 0.2); }
-        void main(){ vec4 f = texture2D(uTex, vUv); float m = max(f.r, f.g * 0.12);
-          if (m * uI < 0.004) discard;
-          vec2 p = vec2(uBox.x + vUv.x * uBox.z, uBox.y + (1.0 - vUv.y) * uBox.w);
-          float ond = 0.5 + 0.5 * sin(p.x * 0.045 + uT * 1.4) * sin(p.y * 0.04 - uT * 1.1); // respiración a lo largo de las vías
-          float an = 0.0;
-          for (int k = 0; k < ${GATES.length}; k++) { float d = distance(p, uGate[k].xy); float fz = uGate[k].z;
-            float ph = d / 46.0 - uT * (0.55 + 0.6 * fz); float w = pow(0.5 + 0.5 * cos(6.2832 * ph), 10.0);
-            an += w * fz * exp(-d / 300.0); }
-          float base = m * (0.72 + 0.28 * ond);
-          float anM = an * max(f.r, f.g * 0.5) * (0.8 + 0.7 * uJ);
-          float v = uI * (base + 1.6 * anM);
-          if (v < 0.004) discard;
-          float a = smoothstep(0.0, 0.45, v) * (0.16 + 0.55 * max(f.r, min(1.0, anM * 1.5))) * (1.0 + 0.8 * uLejos);
-          gl_FragColor = vec4(rampa(0.25 + 0.75 * min(1.0, v * 1.3) + 0.1 * uLejos * f.r), min(0.85, a)); }` });
-    ruidoM = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), mR);
-    ruidoM.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); ruidoM.renderOrder = 5; ruidoM.visible = false; ruidoM.name = 'predio-ruido'; ruidoM.frustumCulled = false;
-    grupo.add(ruidoM);
+    lnWA = new Float32Array(NL); lnWD = new Float32Array(NL); lnQ = new Float32Array(NL); lnDens = new Float32Array(NL);
 
-    /* flujo legible de lejos: cada carro es un punto de luz con dos más detrás (estela que se alarga con la velocidad); cálido si
-       avanza, rojo si está detenido (la cola en los accesos se ve como un racimo rojo). De cerca se apaga y quedan los carros. */
-    const gP = new THREE.BufferGeometry();
-    gP.setAttribute('position', new THREE.BufferAttribute(pPos, 3).setUsage(THREE.DynamicDrawUsage));
-    gP.setAttribute('aV', new THREE.BufferAttribute(pV, 1).setUsage(THREE.DynamicDrawUsage));
-    gP.setAttribute('aA', new THREE.BufferAttribute(pA, 1).setUsage(THREE.DynamicDrawUsage));
-    gP.setDrawRange(0, 0);
-    const mP = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, toneMapped: false, uniforms: { uEsc },
-      vertexShader: `attribute float aV; attribute float aA; uniform float uEsc; varying float vV; varying float vA;
-        void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); float d = -mv.z; gl_Position = projectionMatrix * mv;
-          vA = aA * smoothstep(90.0, 300.0, d); vV = aV;
-          gl_PointSize = vA < 0.01 ? 0.0 : clamp(13.0 * uEsc / d, 4.5, 15.0) * (0.55 + 0.45 * aA); }`,
-      fragmentShader: `varying float vV; varying float vA;
-        void main(){ vec2 q = gl_PointCoord - 0.5; float r2 = dot(q, q) * 4.0; if (r2 > 1.0) discard;
-          vec3 c = mix(vec3(0.95, 0.12, 0.08), vec3(1.0, 0.92, 0.72), vV);
-          float nucleo = exp(-r2 * 3.0); gl_FragColor = vec4(mix(c * 0.55, c, nucleo), vA * min(1.0, 0.25 + nucleo)); }` });
-    puntos = new THREE.Points(gP, mP); puntos.frustumCulled = false; puntos.renderOrder = 8; puntos.name = 'predio-flujo'; grupo.add(puntos);
-
-    // índice de acceso de cada carril (para la fuerza de los anillos): los que llegan al nodo del acceso y los de entrada/salida
-    lnGate = new Int8Array(NL).fill(-1);
-    car.forEach((c, l) => { let k = GATES.indexOf(c.b); if (k < 0 && c.tipo === 'out') k = GATES.indexOf(c.a); if (k < 0 && c.tipo === 'in') k = GATES.indexOf(c.b); lnGate[l] = k; });
-
-    // rótulo flotante sobre el predio (vidrio, sans-serif)
-    rotulo = document.createElement('div'); rotulo.className = 'predio-rot'; rotulo.setAttribute('aria-live', 'polite');
-    if (!document.getElementById('predio-rot-css')) { const st = document.createElement('style'); st.id = 'predio-rot-css'; st.textContent = CSS_ROT; document.head.appendChild(st); }
-    rotulo.style.display = 'none'; document.body.appendChild(rotulo);
-    if (window.KEN_PLANBAV && window.KEN_PLANBAV.centro) { ancla.set(window.KEN_PLANBAV.centro[0], 70, window.KEN_PLANBAV.centro[1]); }
-    else { const w = W([9330, 3000]); ancla.set(w[0], 70, w[1]); }
+    /* vías internas del plan en la capa «Flujo de carros»: la misma cinta de index.html (crearFlujoCarros: ancho ≈ 0,55 × calzada, color por
+       carros/km con su escala, transparente, sobre el asfalto); se ve solo cuando esa capa está encendida y el tramo ya abrió */
+    const P = [], I = []; cintaRango = []; cintaTramos = [];
+    TRAMOS.forEach((t, ti) => { if (t[3] !== 'i') return; const q = [NODOS[t[0]], ...t[2], NODOS[t[1]]].map(W), wd = 7 * 0.55, base = P.length / 3;
+      for (let i = 0; i < q.length; i++) { const a = q[Math.max(0, i - 1)], b = q[Math.min(q.length - 1, i + 1)]; let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+        P.push(q[i][0] - dz * wd / 2, 0, q[i][1] + dx * wd / 2, q[i][0] + dz * wd / 2, 0, q[i][1] - dx * wd / 2);
+        if (i < q.length - 1) { const v = base + i * 2; I.push(v, v + 2, v + 1, v + 1, v + 2, v + 3); } }
+      cintaRango.push([base, q.length * 2]); cintaTramos.push(ti); });
+    cintaCol = new Float32Array(P.length / 3 * 4);
+    const gC = new THREE.BufferGeometry(); gC.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); gC.setAttribute('color', new THREE.BufferAttribute(cintaCol, 4)); gC.setIndex(I);
+    cinta = new THREE.Mesh(gC, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -24 }));
+    cinta.renderOrder = 4; cinta.frustumCulled = false; cinta.visible = false; cinta.name = 'predio-flujo-vias'; grupo.add(cinta);
   }
-
   /* ---------- tramos abiertos y rutas (cuando cambia vias / sem) ---------- */
   /* año en que abre cada tramo: el de su calzada en el plano, o antes si es el camino de una etapa temprana hasta un acceso (cada etapa
      se construye con su vía de acceso; si no, las primeras manzanas quedarían sin salida) */
@@ -273,23 +218,15 @@ export function crearPredio({ T3, RELOJ }) {
       for (let l = 0; l < NL; l++) { let w = 0; const n = qLen[l]; for (let k = 0; k < n; k++) { const i = qBuf[qIni[l] + (qHead[l] + k) % qCap[l]]; if (cAct[i]) { qBuf[qIni[l] + (qHead[l] + w) % qCap[l]] = i; w++; } } qLen[l] = w; }
     }
     rutasActivas = 0; for (let r = 0; r < rutas.length; r++) if (rutaTasa[r] !== 0) rutasActivas++;
-    pintarRuido();
+    // parte de los viajes que pasa por cada carril (llegadas y salidas por separado: cada grupo suma 1)
+    lnWA.fill(0); lnWD.fill(0);
+    for (let r = 0; r < rutas.length; r++) { const w = rutaTasa[r]; if (w === 0) continue; const ru = rutas[r]; for (let k = 0; k < ru.length; k++) { if (w > 0) lnWA[ru[k]] += w; else lnWD[ru[k]] -= w; } }
+    sucioRuido = true;
   }
   const rutaClave = new Map(); let rutasActivas = 0;
 
-  function pintarRuido() {
-    const Lz = armar.lienzo; if (!Lz) return; const { cv, x0, z0, RES } = Lz, g = cv.getContext('2d');
-    g.clearRect(0, 0, cv.width, cv.height); const P = (x, z) => [(x - x0) / RES, (z - z0) / RES];
-    if (Lz.borde) { g.save(); g.filter = 'blur(10px)'; g.fillStyle = 'rgb(0,255,0)'; g.beginPath(); Lz.borde.forEach((w, i) => { const p = P(w[0], w[1]); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill(); g.restore(); }
-    g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round'; g.lineJoin = 'round';
-    const trazo = (anchoM, blur, alfa) => { g.filter = `blur(${blur}px)`; g.strokeStyle = `rgba(255,0,0,${alfa})`; g.lineWidth = anchoM / RES;
-      armar.car.forEach((c, l) => { if (!lnAbierto[l] || (c.tipo === 'i' && c.a > c.b)) return; if (c.tipo === 'av') return; g.beginPath(); c.pts.forEach((w, i) => { const p = P(w[0], w[1]); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.stroke(); }); };
-    trazo(46, 9, 0.3); trazo(22, 4, 0.45); trazo(11, 1.5, 0.4);
-    g.restore(); armar.tex.needsUpdate = true;
-  }
-
   /* ---------- carros ---------- */
-  function quitar(i) { cAct[i] = 0; nAct--; const A = malla.instanceMatrix.array; for (let k = 0; k < 16; k++) A[i * 16 + k] = 0; pA[i * 3] = pA[i * 3 + 1] = pA[i * 3 + 2] = 0; }
+  function quitar(i) { cAct[i] = 0; nAct--; const A = malla.instanceMatrix.array; for (let k = 0; k < 16; k++) A[i * 16 + k] = 0; }
   const qTail = (l) => qLen[l] ? qBuf[qIni[l] + (qHead[l] + qLen[l] - 1) % qCap[l]] : -1;
   const qFront = (l) => qLen[l] ? qBuf[qIni[l] + qHead[l]] : -1;
   function meter(l, i) { if (qLen[l] >= qCap[l]) return false; qBuf[qIni[l] + (qHead[l] + qLen[l]) % qCap[l]] = i; qLen[l]++; return true; }
@@ -307,15 +244,84 @@ export function crearPredio({ T3, RELOJ }) {
     const min = RELOJ.minutoDia, dem = demandaEn(min), h = (min / 60) % 24;
     const j = Math.max(0, Math.min(1, (ratio - 1) / 1.1)) * Math.max(0, Math.min(1, (dem - 0.25) / 0.55)); // congestión 0…1
     hOut = 2.4 + 9 * j; hIn = 1.6 + 4 * j;
-    factorTasa = 0.5 * dem * ratio; // veh/s en total (≈ 1.200 veh/h en hora pico con el tráfico de referencia)
+    // viajes nuevos del plan (veh/s a esta hora): vehiculosDia del modelo repartido con el perfil de demanda del día
+    // si no llega vehiculosDia, se despeja de la fórmula del modelo (simulaciones12: trafico = (Q₀·índice + viajes/accesos) / Q₀, Q₀ = 10.291 veh/día, 2 accesos)
+    const Q = est.vehiculosDia != null && isFinite(est.vehiculosDia) ? Math.max(0, +est.vehiculosDia) : Math.max(0, ratio - 1) * 10291 * 2;
+    qTotal = Q * dem / SUMA_DEM / 3600; qDia = Q;
+    factorTasa = Math.min(1.2, qTotal); // carros reales que salen/entran (tope visual: la cola los limita)
     partLlega = h >= 5 && h < 10 ? 0.32 : h >= 16 && h < 21 ? 0.68 : 0.5; // mañana salen, tarde llegan
-    ajustar.j = j; ajustar.dem = dem; uJ.value = j;
-    // fuerza de los anillos por acceso: base por la demanda y el tráfico + carros detenidos que esperan en ese acceso
-    if (lnGate) { paradosG.fill(0);
-      for (let l = 0; l < NL; l++) { const g = lnGate[l]; if (g < 0) continue; const n = qLen[l]; for (let k = 0; k < n; k++) if (cV[qBuf[qIni[l] + (qHead[l] + k) % qCap[l]]] < 0.8) paradosG[g]++; }
-      for (let g = 0; g < GATES.length; g++) uGate.value[g].z = Math.min(1.3, (0.25 + 0.35 * dem * Math.min(2, ratio)) + paradosG[g] / 10); }
+    ajustar.j = j; ajustar.dem = dem;
+    if (!lnWA) return;
+    // flujo y densidad por carril (carros/km: flujo / velocidad, más lenta con la congestión)
+    for (let l = 0; l < NL; l++) { if (!lnAbierto[l]) { lnQ[l] = lnDens[l] = 0; continue; }
+      const q = qTotal * (lnWA[l] * partLlega + lnWD[l] * (1 - partLlega)); lnQ[l] = q; lnDens[l] = q / (lnV[l] * (1 - 0.7 * j)) * 1000; }
+    // carros «virtuales» sobre los carriles de avenida: en la capa de flujo cuentan como carros presentes (densidad × largo × carriles)
+    let n = 0;
+    for (let l = 0; l < NL && n < NVIRT; l++) { if (lnTipo[l] !== 0 || lnDens[l] <= 0) continue;
+      const L = lnLen[l], m = Math.min(NVIRT - n, Math.round(lnDens[l] * L / 1000 * 2.5)), o = lnOff[l], nn = lnN[l]; let sg = 0;
+      for (let k = 0; k < m; k++) { const s = (k + 0.5) / m * L; while (sg < nn - 2 && lnCum[o + sg + 1] < s) sg++; const a = o + sg, f = Math.min(1, (s - lnCum[a]) / (lnCum[a + 1] - lnCum[a] || 1));
+        VX[n] = lnX[a] + (lnX[a + 1] - lnX[a]) * f; VZ[n] = lnZ[a] + (lnZ[a + 1] - lnZ[a]) * f; n++; } }
+    VIRT.n = n;
+    pintarCinta();
   }
-  function paso(dt) {
+  // color de las vías internas con la escala de la capa de flujo (los dos sentidos comparten la cinta, como en index.html)
+  function pintarCinta() {
+    if (!cinta) return;
+    for (let k = 0; k < cintaTramos.length; k++) { const ti = cintaTramos[k]; let d = 0, ab = 0;
+      for (let l = 0; l < NL; l++) if (lnTramo[l] === ti) { d += lnDens[l]; ab = lnAbierto[l]; }
+      colorDe(d, c3); const al = ab ? Math.min(0.92, 0.35 + d * 0.12) : 0, [b0, nv] = cintaRango[k];
+      for (let v = b0; v < b0 + nv; v++) { const o = v * 4; cintaCol[o] = c3[0]; cintaCol[o + 1] = c3[1]; cintaCol[o + 2] = c3[2]; cintaCol[o + 3] = al; } }
+    cinta.geometry.attributes.color.needsUpdate = true;
+  }
+
+  /* ---------- enganche con la capa «Flujo de carros» (index.html): mientras la sim. 4 está activa, cada conteo suma los carros virtuales ----------
+     contar(V, dt) primero olvida (× e^(−dt/TAU)) y luego suma; para no olvidar dos veces se compensa el olvido antes del segundo conteo. */
+  let fcOrig = null, fcObj = null;
+  const fcEnv = function (V, dt) { fcOrig.call(this, V, dt); if (VIRT.n && dt > 0 && fcObj && fcObj.acum) { const A = fcObj.acum, k = Math.exp(dt / TAU_FLUJO); for (let i = 0; i < A.length; i++) A[i] *= k; fcOrig.call(this, VIRT, dt); } };
+  function engancharFlujo(on) {
+    const FC = T3.flujoCarros;
+    if (on && FC && FC.contar && FC.contar !== fcEnv) { fcOrig = FC.contar; fcObj = FC; FC.contar = fcEnv; }
+    else if (!on && fcObj && fcObj.contar === fcEnv) { fcObj.contar = fcOrig; fcObj = null; }
+  }
+
+  /* ---------- enganche con el mapa de ruido (T3.ruidoMod, capas_escenario.js; lo pinta ruido_cierre.js) ----------
+     Se guardan las celdas originales y se ponen unas con el aporte del plan; ver(false) las devuelve. */
+  let rmOrig = null, rmMio = null, sucioRuido = true, ruidoUlt = -1e9, ruidoFirma = '';
+  function ruidoPlan(on) {
+    const RM = T3.ruidoMod, G = RM && RM.G;
+    if (!on) { if (rmOrig && G) { if (G.L0R === rmMio) { Object.assign(G, rmOrig); } else { Object.assign(G, { roads: rmOrig.roads, clsR: rmOrig.clsR, pwR: rmOrig.pwR, vegR: rmOrig.vegR }); RM.fl = null; } G.sig = ''; RM.ver++; } rmOrig = rmMio = null; ruidoFirma = ''; return; }
+    if (!G || !G.L0R || !lnQ) return;
+    if (rmOrig && G.L0R !== rmMio) { rmOrig = null; ruidoFirma = ''; } // el modelo rehizo su rejilla: se vuelve a tomar
+    if (!rmOrig) rmOrig = { roads: G.roads, clsR: G.clsR, pwR: G.pwR, vegR: G.vegR, L0R: G.L0R };
+    const firma = firmaRed + '|' + Math.round(qDia / 50); if (firma === ruidoFirma) return; ruidoFirma = firma;
+    // celdas afectadas: se calculan solo cuando cambia la red abierta o la rejilla del modelo (lo caro); el nivel, cuando cambian los viajes
+    if (!rmCel || rmCel.red !== firmaRed || rmCel.base !== rmOrig.L0R) {
+      const cs = G.cs, nx = G.nx, nz = G.nz, celda = (x, z) => { const i = Math.floor((x - G.x0) / cs), j = Math.floor((z - G.z0) / cs); return i >= 0 && j >= 0 && i < nx && j < nz ? j * nx + i : -1; };
+      // flujo de los viajes nuevos por celda (el máximo de los carriles que la cruzan; promedio del día: el mapa es diario)
+      const qc = new Map(); let qMax = 0;
+      for (let l = 0; l < NL; l++) { if (!lnAbierto[l]) continue; const q = lnWA[l] * 0.5 + lnWD[l] * 0.5; if (q <= 0) continue; qMax = Math.max(qMax, q);
+        const o = lnOff[l]; for (let s = 0; s <= lnLen[l]; s += cs * 0.6) { let a = o; while (a < o + lnN[l] - 2 && lnCum[a + 1] < s) a++; const f = Math.min(1, (s - lnCum[a]) / (lnCum[a + 1] - lnCum[a] || 1));
+          const k = celda(lnX[a] + (lnX[a + 1] - lnX[a]) * f, lnZ[a] + (lnZ[a + 1] - lnZ[a]) * f); if (k < 0) continue; const ent = qc.get(k); if (!ent || q > ent[0]) qc.set(k, [q, lnTipo[l]]); } }
+      const esVia = new Map(); for (let k = 0; k < rmOrig.roads.length; k++) esVia.set(rmOrig.roads[k], k);
+      const exI = [], exR = [], nuK = [], nuR = [];
+      qc.forEach((v, k) => { const i = esVia.get(k); if (i != null) { exI.push(i); exR.push(v[0]); } else if (v[1] === 1) { nuK.push(k); nuR.push(v[0]); } }); // parte de los viajes del día que pasa por la celda
+      const n0 = rmOrig.roads.length, n = n0 + nuK.length, roads = new Int32Array(n), clsR = new Uint8Array(n), pwR = new Float32Array(n), vegR = new Float32Array(n);
+      roads.set(rmOrig.roads); clsR.set(rmOrig.clsR); pwR.set(rmOrig.pwR); vegR.set(rmOrig.vegR);
+      nuK.forEach((k, m) => { roads[n0 + m] = k; clsR[n0 + m] = 2; pwR[n0 + m] = G.pw[k]; vegR[n0 + m] = G.veg[k]; });
+      rmCel = { red: firmaRed, base: rmOrig.L0R, ok: qMax > 0, exI, exR, nuR, n0, roads, clsR, pwR, vegR };
+    }
+    if (!rmCel.ok) { ruidoPlan(false); return; }
+    const C = rmCel, L = new Float32Array(C.roads.length); L.set(rmOrig.L0R);
+    // nivel de los viajes nuevos que pasan por la celda con la fórmula del modelo para una vía (simulaciones12): L = 74 + 10·log10(Q / 14.049), Q en veh/día
+    const Lx = (parte) => 74 + 10 * Math.log10(Math.max(1, qDia * parte) / 14049);
+    // vías existentes alrededor: la energía de hoy más la de los viajes nuevos, L' = 10·log10(10^(L/10) + 10^(Lx/10)); tope +10 dB sobre la referencia de su clase
+    for (let m = 0; m < C.exI.length; m++) { const i = C.exI[m], c = rmOrig.clsR[i];
+      L[i] = Math.min(LREF[c] + 10, 10 * Math.log10(Math.pow(10, rmOrig.L0R[i] / 10) + Math.pow(10, Lx(C.exR[m]) / 10))); }
+    // vías internas del plan (celdas nuevas, clase intermedia): solo los viajes nuevos (hoy no hay vía)
+    for (let m = 0; m < C.nuR.length; m++) L[C.n0 + m] = Math.max(LREF[2] - 8, Math.min(LREF[3] + 10, Lx(C.nuR[m])));
+    Object.assign(G, { roads: C.roads, clsR: C.clsR, pwR: C.pwR, vegR: C.vegR, L0R: L }); rmMio = L; RM.ver++;
+  }
+  let rmCel = null;  function paso(dt) {
     tAnim += dt;
     // nacimientos
     for (let r = 0; r < rutas.length; r++) { const w = rutaTasa[r]; if (w === 0) continue; const q = w > 0 ? partLlega : 1 - partLlega; rutaAcc[r] = Math.min(2, rutaAcc[r] + Math.abs(w) * q * 2 * factorTasa * dt);
@@ -383,84 +389,48 @@ export function crearPredio({ T3, RELOJ }) {
       const c = Math.cos(h), sn = Math.sin(h), b = i * 16;
       A[b] = c; A[b + 1] = 0; A[b + 2] = -sn; A[b + 3] = 0; A[b + 4] = 0; A[b + 5] = 1; A[b + 6] = 0; A[b + 7] = 0;
       A[b + 8] = sn; A[b + 9] = 0; A[b + 10] = c; A[b + 11] = 0; A[b + 12] = x; A[b + 13] = y; A[b + 14] = z; A[b + 15] = 1;
-      // puntos de luz: el carro y dos detrás (más separados cuanto más rápido)
-      const vn = Math.min(1, cV[i] / 7), paso3 = 2 + 6 * vn;
-      for (let k = 0; k < 3; k++) { const p = i * 3 + k, q = p * 3; pPos[q] = x - sn * paso3 * k; pPos[q + 1] = y + 1.6; pPos[q + 2] = z - c * paso3 * k; pV[p] = vn; pA[p] = k === 0 ? 1 : (k === 1 ? 0.55 : 0.28) * (0.25 + 0.75 * vn); }
     }
     while (alto > 0 && !cAct[alto - 1]) alto--;
     malla.count = alto; malla.instanceMatrix.needsUpdate = true;
-    const gP = puntos.geometry; gP.setDrawRange(0, alto * 3); gP.attributes.position.needsUpdate = gP.attributes.aV.needsUpdate = gP.attributes.aA.needsUpdate = true;
   }
 
-  let cuadroAjuste = 0;
-  function cuadro(info) {
+  let cuadroAjuste = 0, msCuadro = 0, msMax = 0;
+  function cuadro() {
     if (!visible) return;
-    // ruido: siempre en la simulación 4; más fuerte con ruido(true) o con la capa «Ruido de carros» encendida
-    const rc = T3.rc && T3.rc.ruido, fuerte = ruidoOn || (rc && rc.visible);
-    const iR = Math.max(uRuido > 0 ? 0.32 : 0, uRuido) * (fuerte ? 1 : 0.75); ruidoM.visible = iR > 0.004;
-    // de lejos (cámara alta, ~2 km) la capa se refuerza para que se lea
-    const cp = T3.camera.position, dC = Math.hypot(cp.x - ancla.x, cp.y, cp.z - ancla.z); uLejos.value = Math.min(1, Math.max(0, (dC - 500) / 1500));
-    if (ruidoM.visible) { uI.value = iR; ruidoM.position.y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.43; } // justo sobre el suelo del plan (capas a +0,22…+0,40), a la altura de las llantas
-    // la onda del ruido corre siempre (más rápido con el reloj andando): es decorativa, no mueve carros
-    const dtR = Math.min(0.1, (info && info.dtReal) || 0.016); tRuido += dtR * (RELOJ.corriendo ? 1 + Math.min(1, (RELOJ.vel || 1) / 240) : 0.7); uT.value = tRuido;
-    uEsc.value = T3.renderer.domElement.height / (2 * Math.tan(T3.camera.fov * Math.PI / 360));
-    ponerRotulo();
-    let dt = RELOJ.dtAnim || 0; if (!(dt > 0)) return;
     const m0 = performance.now(); // solo para medir el costo (el movimiento va con el reloj)
-    if (++cuadroAjuste >= 30) { cuadroAjuste = 0; ajustar(); }
-    dt = Math.min(dt, 1);
-    const nSub = Math.ceil(dt / 0.25), h = dt / nSub; for (let k = 0; k < nSub; k++) paso(h);
-    dibujar();
+    // cinta de las vías internas: visible con la capa «Flujo de carros»; enganches con las capas existentes
+    const FC = T3.flujoCarros, fv = !!(FC && FC.visible); if (cinta && cinta.visible !== fv) cinta.visible = fv;
+    if (cinta && fv) cinta.position.y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.47; // sobre el suelo del plan (capas hasta +0,40)
+    if (fcObj !== FC || !FC || FC.contar !== fcEnv) engancharFlujo(true);
+    let dt = RELOJ.dtAnim || 0;
+    if (++cuadroAjuste >= 30) { cuadroAjuste = 0; ajustar();
+      // el mapa de ruido se rehace como mucho cada 1,5 s (repintarlo cuesta) y solo si cambió algo o el modelo rehizo su rejilla
+      const G = T3.ruidoMod && T3.ruidoMod.G; if (G && G.L0R && (sucioRuido || G.L0R !== rmMio) && m0 - ruidoUlt > 1500) { sucioRuido = false; ruidoUlt = m0; ruidoPlan(true); } }
+    if (dt > 0) { dt = Math.min(dt, 1); const nSub = Math.ceil(dt / 0.25), h = dt / nSub; for (let k = 0; k < nSub; k++) paso(h); dibujar(); }
     const ms = performance.now() - m0; msCuadro += (ms - msCuadro) * 0.05; if (ms > msMax) msMax = ms;
-  }
-  let msCuadro = 0, msMax = 0, rotX = -1, rotY = -1, rotOn = false, rotW = 0, rotH = 0;
-  function ponerRotulo() {
-    if (!rotulo) return;
-    proy.copy(ancla).project(T3.camera);
-    const W = innerWidth, H = innerHeight, on = proy.z < 1 && proy.x > -1.1 && proy.x < 1.1 && proy.y > -1.1 && proy.y < 1.1 && rotulo.firstChild;
-    if (!!on !== rotOn) { rotOn = !!on; rotulo.style.display = on ? '' : 'none'; }
-    if (!on) return;
-    if (!rotW) { rotW = rotulo.offsetWidth; rotH = rotulo.offsetHeight; } // se mide solo cuando cambia el texto
-    const rw = rotW || 200, rh = rotH || 120; // siempre dentro de la pantalla
-    const mI = W > 1000 ? 300 : 12, mD = W > 1000 ? 330 : 12; // en pantalla ancha, fuera de los paneles laterales
-    const x = Math.round(Math.min(W - rw / 2 - mD, Math.max(rw / 2 + mI, (proy.x * 0.5 + 0.5) * W))), y = Math.round(Math.min(H - 12, Math.max(rh + 20, (-proy.y * 0.5 + 0.5) * H)));
-    if (x !== rotX || y !== rotY) { rotX = x; rotY = y; rotulo.style.transform = `translate(${x}px,${y}px) translate(-50%,calc(-100% - 8px))`; }
-  }
-  const fmt = (n) => Math.round(n).toLocaleString('es-CO');
-  let textoRot = '';
-  function textoRotulo() {
-    if (!rotulo) return;
-    const PB = window.KEN_PLANBAV, años = (est.sem || 0) / 52, av = PB && PB.avance ? PB.avance(años) : null;
-    const veh = est.vehiculosDia != null ? +est.vehiculosDia : 0.5 * 12.6 * 3600 * ratio; // Σ demanda horaria del día ≈ 12,6 h equivalentes de pico
-    const hab = est.habitantes != null ? +est.habitantes : av ? av.viviendas * 3.1 : 0;     // 3,1 personas por hogar (Bogotá)
-    const tala = est.tala != null ? +est.tala : av ? av.arboles : 0;
-    const d = (+est.ruidoDb || 0) - (+est.ruidoDb0 || 0);
-    const t = `<h6>Predio Bavaria · plan parcial</h6><div class="f"><span>Vehículos/día</span><b>${fmt(veh)}</b></div>`
-      + `<div class="f"><span>Ruido</span><b class="${d > 0.05 ? 'r' : ''}">${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(1).replace('.', ',')} dB</b></div>`
-      + `<div class="f"><span>Habitantes</span><b>${fmt(hab)}</b></div><div class="f"><span>Árboles talados</span><b>${fmt(tala)}</b></div>`;
-    if (t !== textoRot) { textoRot = t; rotulo.innerHTML = t; rotW = 0; }
   }
   RELOJ.alDibujar(cuadro);
 
   const api = {
+    // trafico/trafico0, ruidoDb/ruidoDb0 (acceso más cargado), vias (tramos del modelo), sem (semanas), vehiculosDia (viajes nuevos del plan)
     poner(o = {}) {
       Object.assign(est, o); armar();
       const t0 = +est.trafico0 > 0 ? +est.trafico0 : 1; ratio = Math.max(0, Math.min(4, (+est.trafico || t0) / t0));
-      const d = (+est.ruidoDb || 0) - (+est.ruidoDb0 || 0); uRuido = Math.max(ratio > 0 ? 0.22 : 0, Math.min(1, d / 10)); // +10 dB = rojo fuerte; un mínimo tenue mientras haya tráfico
-      puesto = true; rehacerRed(); ajustar(); textoRotulo();
+      puesto = true; rehacerRed(); ajustar(); sucioRuido = true;
       if (visible) { if (nAct === 0 && rutasActivas > 0 && !calentado) { calentado = true; calentar(240); } dibujar(); }
     },
+    // ver(false): se esconden los carros y la cinta, se suelta la capa de flujo y el mapa de ruido vuelve a como estaba
     ver(on) {
       on = !!on; if (on === visible) return; visible = on; grupo.visible = on;
-      if (on) { armar(); if (puesto) { rehacerRed(); if (nAct === 0) calentar(240); } textoRotulo(); dibujar(); rotOn = false; rotulo.style.display = 'none'; ponerRotulo(); }
-      else { if (ruidoM) ruidoM.visible = false; if (rotulo) { rotulo.style.display = 'none'; rotOn = false; } }
+      if (on) { armar(); if (puesto) { rehacerRed(); if (nAct === 0) calentar(240); } ajustar(); dibujar(); engancharFlujo(true); sucioRuido = true; ruidoUlt = -1e9; }
+      else { engancharFlujo(false); ruidoPlan(false); VIRT.n = 0; }
     },
-    ruido(on) { ruidoOn = !!on; },
+    ruido() {}, // compatibilidad: el ruido del plan va en el mapa de ruido existente (#rc-btn)
     get visible() { return visible; },
     // carriles con carros detenidos (cola): [{ de, a, carros, parados }] (pruebas y paneles)
     colas() { const o = []; if (!armar.car) return o; armar.car.forEach((c, l) => { let p = 0; for (let k = 0; k < qLen[l]; k++) if (cV[qBuf[qIni[l] + (qHead[l] + k) % qCap[l]]] < 0.6) p++; if (p) o.push({ de: c.a, a: c.b, carros: qLen[l], parados: p }); }); return o.sort((x, y) => y.parados - x.parados); },
     get nVias() { return VIAS_MODELO.reduce((a, b) => a + b, 0); }, // vias = tramos de calzada abiertos como los cuenta el modelo (80 al final); se pasa a etapas del plan
-    estado() { return { ms: +msCuadro.toFixed(3), msMax: +msMax.toFixed(3), carros: nAct, rutas: rutasActivas, ratio, congestion: ajustar.j || 0, demanda: ajustar.dem || 0, hSalida: hOut, ruido: uRuido, parados: (() => { let n = 0; for (let i = 0; i < alto; i++) if (cAct[i] && cV[i] < 0.6) n++; return n; })(), colas:armar.car ? armar.car.map((c, l) => lnTipo[l] >= 2 ? qLen[l] : 0).reduce((a, b) => a + b, 0) : 0 }; },
+    estado() { return { ms: +msCuadro.toFixed(3), msMax: +msMax.toFixed(3), carros: nAct, rutas: rutasActivas, ratio, congestion: ajustar.j || 0, demanda: ajustar.dem || 0, hSalida: hOut, vehS: +qTotal.toFixed(3), virtuales: VIRT.n, ruidoActivo: !!rmMio, parados: (() => { let n = 0; for (let i = 0; i < alto; i++) if (cAct[i] && cV[i] < 0.6) n++; return n; })(), colas:armar.car ? armar.car.map((c, l) => lnTipo[l] >= 2 ? qLen[l] : 0).reduce((a, b) => a + b, 0) : 0 }; },
     grupo
   };
   window.KEN_PREDIO = api;

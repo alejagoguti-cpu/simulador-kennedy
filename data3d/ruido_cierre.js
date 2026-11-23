@@ -47,7 +47,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
   const preparar = (RM) => { const G = RM.G;
     if (!pxIdx) { pxIdx = new Int32Array(W * H).fill(-1);
       for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) { const wx = bx0 + (px + 0.5) / sx - LC.x, wz = LC.y - (by0 + (H - py - 0.5) / sy), i = Math.floor((wx - G.x0) / G.cs), j = Math.floor((wz - G.z0) / G.cs); if (i >= 0 && j >= 0 && i < G.nx && j < G.nz) pxIdx[py * W + px] = j * G.nx + i; } }
-    if (!cov) { const I = new Float32Array(G.nx * G.nz); for (let k = 0; k < G.roads.length; k++) I[G.roads[k]] = 1; cov = RM.caja(I, G.nx, G.nz, 1, false); } // cuántas celdas de vía hay en cada ventana de 3×3
+    if (!cov || covSig !== G.roads) { covSig = G.roads; /* se rehace si cambian las celdas de vía (data3d/predio_trafico.js agrega las vías nuevas del plan parcial en la sim. 4) */ const I = new Float32Array(G.nx * G.nz); for (let k = 0; k < G.roads.length; k++) I[G.roads[k]] = 1; cov = RM.caja(I, G.nx, G.nz, 1, false); } // cuántas celdas de vía hay en cada ventana de 3×3
     const campo = (L) => { const E = new Float32Array(G.nx * G.nz); for (let k = 0; k < G.roads.length; k++) E[G.roads[k]] = Math.pow(10, L[k] / 10); return RM.caja(E, G.nx, G.nz, 1, false); };
     const nv = RM.niveles(); if (!nv) return null;
     if (!campoH || sigH !== RM.ver) { campoH = campo(G.L0R); sigH = RM.ver; } if (sigP !== nv.sig) { campoP = campo(nv.Lp); sigP = nv.sig; }
