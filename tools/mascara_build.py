@@ -25,9 +25,10 @@ def propios():
     B = json.load(open(os.path.join(D, 'bavaria.json')))
     for e in B['edif']: P.append(Polygon(e['p']).buffer(3))
     for t in B['tanques']: P.append(Point(t).buffer(9))
-    from shapely.geometry import box as _box
-    I = json.load(open(os.path.join(D, 'inem', 'inem.json')))['caja_giro']  # sector INEM Kennedy (modelo oficial de Bogotá, data3d/inem.js)
-    for (a, b) in json.load(open(os.path.join(D, 'inem', 'inem.json')))['huellas_giro']: xs = [a[0] + 7437, b[0] + 7437]; ys = [3270.96 - a[1], 3270.96 - b[1]]; P.append(_box(min(xs) - 1, min(ys) - 1, max(xs) + 1, max(ys) + 1))
+    # sector INEM Kennedy (modelo oficial, data3d/inem.js): YA NO se recorta. Antes iban las cajas alineadas a los ejes de sus ~5.900
+    # huellas al nivel 0 (recorte desde 0,9 m): las cajas de casas en diagonal cubrían manzanas enteras, calles incluidas, y la foto del
+    # piso quedaba gris al sur de Corabastos (y del todo gris de lejos, cuando el modelo del INEM no se dibuja). Ahora la malla de Google
+    # queda entera ahí y el modelo del INEM se dibuja encima (en Kennedy la profundidad de la foto se borra: lo propio va siempre encima).
     import math as _m
     for r in json.load(open(os.path.join(D, 'conjuntos.json')))['barras']:  # conjuntos de bloques de cubierta roja (data3d/conjuntos.js)
         ux, uy = _m.cos(r['a']), _m.sin(r['a']); vx, vy = -uy, ux; L2, W2 = r['L'] / 2 + 2, r['W'] / 2 + 2
@@ -42,6 +43,8 @@ def propios_suelo():  # se recorta solo lo que Google levanta (palmas y edificio
         if b['h'] >= 30 and len(p) > 3 and math.hypot(sum(q[0] for q in p) / len(p) - 7024.1, sum(q[1] for q in p) / len(p) - 3655.4) < 180: P.append(Polygon(p).buffer(3))
     return P
 
+INEM_CELDAS = set(json.load(open(os.path.join(D, 'inem', 'celdas.json'))))  # celdas de 6 m con construcción del modelo del INEM
+
 def mascara(B, salida):
     im = Image.new('L', (W, H), 255)
     dr = ImageDraw.Draw(im)
@@ -50,6 +53,7 @@ def mascara(B, salida):
         p = b['pts']
         if len(p) > 1 and p[0] == p[-1]: p = p[:-1]
         if len(p) < 3: continue
+        if '%d_%d' % (math.floor(sum(q[0] for q in p) / len(p) / 6), math.floor(sum(q[1] for q in p) / len(p) / 6)) in INEM_CELDAS: continue  # = deInem de index.html: esa caja propia no se dibuja (la reemplaza el INEM), así que tampoco se recorta Google ahí
         xs = [q[0] for q in p]; ys = [q[1] for q in p]
         if (max(xs) - min(xs)) < 2 and (max(ys) - min(ys)) < 2 and b['h'] <= 3: continue  # la misma basura que descarta buildChunks
         poly = [(x / R, (YM - y) / R) for x, y in p]

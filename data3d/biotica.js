@@ -657,15 +657,20 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   /* ---------- instancias ---------- */
   const m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), e4 = new THREE.Euler(), v4 = new THREE.Vector3(), s4 = new THREE.Vector3(), w4 = new THREE.Matrix4(), w5 = new THREE.Matrix4();
   const OCULTO = new THREE.Matrix4().makeScale(0, 0, 0);
+  const VIS_UMBRAL = 220, VIS_TOPE = 12, VIS_TOPE_PISO = 4; // m desde la cámara a partir de los cuales se agranda; tope para los que vuelan / en el piso
   function instancias(dt, alfa = 1) { // dt: tiempo de animación del reloj (aleteo); alfa: interpolación entre el paso anterior y el actual
     const n = {}; for (const k in MAL) n[k] = 0;
+    // TAMAÑO MÍNIMO EN PANTALLA (solo dibujo, el estado no cambia): de lejos los animales se agrandan con la distancia a la cámara
+    // (escala = distancia / VIS_UMBRAL, entre 1 y un tope) para que las bandadas se lean desde la vista general
+    const cp = T3.camera.position, cpx = cp.x, cpy = cp.y, cpz = cp.z;
     for (const a of AG) {
       const Mk = MAL[a.e], i = n[a.e]++, e = ESP[a.e];
       if (!a.vis || !ESTADO.agentes) { Mk.cu.setMatrixAt(i, OCULTO); if (Mk.al) { Mk.al.setMatrixAt(i * 2, OCULTO); Mk.al.setMatrixAt(i * 2 + 1, OCULTO); } continue; }
       const vuela = a.st === 'vuelo' || a.st === 'liba' || a.st === 'planea' || a.st === 'picada' || a.st === 'sube' || (a.e === 'colibri') || (a.e === 'abeja' && a.st !== 'colmena');
       const bob = !vuela && a.vel > 0.05 ? Math.abs(Math.sin(a.flap * 0.5)) * 0.04 * Mk.s * (e.ave ? e.ave.len : 0.1) : 0;
       const li = a.x0 !== undefined && Math.abs(a.x - a.x0) + Math.abs(a.z - a.z0) < 80, ix = li ? a.x0 + (a.x - a.x0) * alfa : a.x, iy = li ? a.y0 + (a.y - a.y0) * alfa : a.y, iz = li ? a.z0 + (a.z - a.z0) * alfa : a.z;
-      e4.set(0, a.rot, vuela ? -a.pitch : 0, 'YXZ'); q4.setFromEuler(e4); v4.set(ix, iy + bob, iz); s4.setScalar(Mk.s);
+      const dc = Math.hypot(ix - cpx, iy - cpy, iz - cpz), kv = dc > VIS_UMBRAL ? Math.min(vuela ? VIS_TOPE : VIS_TOPE_PISO, dc / VIS_UMBRAL) : 1;
+      e4.set(0, a.rot, vuela ? -a.pitch : 0, 'YXZ'); q4.setFromEuler(e4); v4.set(ix, iy + bob, iz); s4.setScalar(Mk.s * kv);
       m4.compose(v4, q4, s4); Mk.cu.setMatrixAt(i, m4);
       if (Mk.al) {
         if (!vuela) { Mk.al.setMatrixAt(i * 2, OCULTO); Mk.al.setMatrixAt(i * 2 + 1, OCULTO); }
