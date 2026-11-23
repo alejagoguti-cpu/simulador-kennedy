@@ -134,7 +134,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
-    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5); }, 900);
+    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5);
+      // el indicador del par se prende solo, bajo y transparente para no tapar la vista
+      const IND_PAR = { 1: 'CCL', 2: 'PM', 3: 'SE', 4: 'SE', 5: 'CV', 6: 'OC' }, ci = IND_PAR[R.def && R.def.par];
+      if (ci) { R.ind = ci; R.alto = 0.09; indApi().then(A => { if (A.estilo) A.estilo({ opacidad: 0.42, base: 4 }); A.altura(R.alto); }); mostrarInd(); pintarPicos(); } }, 900);
     if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
       // el tráfico se ve con la capa de RUIDO de carros (no con el flujo de puntos): ruido prendido, flujo apagado
       const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click();
@@ -509,7 +512,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (I.especulacion && I.especulacion.zonas && I.especulacion.zonas.length) { const Z = I.especulacion.zonas.reduce((a, b) => (b.indice > a.indice ? b : a)); L.push({ n: 'Especulación del suelo', x: Z.x, z: Z.z, capa: ['metro'], t: 'Donde más sube el suelo', tx: `El suelo sube ×${Z.indice.toFixed(2)} aquí; ${fmt(I.especulacion.hogaresRiesgo)} hogares en riesgo de desplazamiento en Kennedy.` }); }
     if (I.predio || (R.def && R.def.par != null && !R.def.propuesta)) L.push({ n: 'Plan parcial Bavaria', x: 4058, z: 214, capa: ['predio', 'ruido', 'trafico'], t: 'Plan parcial Bavaria', tx: I.predio ? `${fmt(I.predio.habitantes)} habitantes nuevos; ${fmt(I.predio.vehiculosDia)} vehículos/día; ruido ${(I.predio.ruidoDb - I.predio.ruidoDb0).toFixed(1)} dB más.` : '' });
     if (b === 'B' || b === 'C' || R.sim === 12) L.push({ n: 'Bavaria Común', x: 3950, z: 180, capa: ['caminos', 'especies'], t: 'Bavaria Común · instituto', tx: 'Pasajes nuevos que abren el predio al barrio.' });
-    if (R.sim === 8 || R.sim === 9) L.push({ n: 'Vía cerrada', donde: 'cierre', capa: ['cierre', 'trafico', 'ruido'], t: 'Cierre de la Av. de las Américas', tx: 'El tráfico se desvía por las calles vecinas (en rojo).' });
+    if (R.def && R.def.par === 2) L.push({ n: 'Vía cerrada', donde: 'cierre', capa: ['cierre', 'trafico', 'ruido'], t: 'Cierre de la Av. de las Américas', tx: 'El tráfico se desvía por las calles vecinas (en rojo).' });
     return L;
   }
   async function irLugar(l, boton) {
