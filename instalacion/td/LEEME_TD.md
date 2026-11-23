@@ -22,7 +22,7 @@ Red: `/project1/KENNEDY_REACCIONA` (atajo `parent.Kr`).
 - Página **Calibracion**: las 4 esquinas (fracción 0–1, origen abajo a la izquierda), Pantalla del proyector, Abrir/Cerrar salida.
 
 ## Origen de cada cosa que se ve (no se inventa nada)
-- **Vehículos**: REPRODUCCIÓN de la grabación SUMO del simulador (`data3d/traf`, 1.500 s, en bucle). No se re-simula. Se omite el arranque (0–300 s, cuando la red se llena) y se reproduce el régimen estable (85–100 vehículos en el encuadre).
+- **Vehículos (flujo de carros)**: REPRODUCCIÓN de la grabación SUMO del simulador (`data3d/traf`). No se re-simula. Como en el simulador web, solo se reproduce la parte llena de la grabación (segundos 900–1.499: 1.900–2.470 vehículos; antes la red se está llenando) y en hora pico se superponen hasta 3 copias desfasadas de la misma grabación (mismos recorridos reales): 1 de madrugada, 3 en los picos, según el perfil horario. Los carros solo aparecen donde la simulación SUMO tiene red (centro y norte de Kennedy).
 - **Color**: velocidad grabada (<1, 1–5, 5–10, >10 m/s).
 - **Cantidad por hora**: perfil horario de demanda del simulador (ESTIMADO, perfil típico de Bogotá; la grabación es de hora pico = 100 %).
 - **Estela**: rastro visual de las posiciones anteriores de cada vehículo (solo sobre su trayectoria grabada); recurso visual, no un dato.
