@@ -25,14 +25,17 @@ const IND = [ // resultados en vivo: clave en ind(), nombre, formato, mejor si s
   { k: 'congestion', n: 'Congestión', f: (v) => Math.round(v) + ' %', sube: false, ayuda: 'tiempo extra de viaje frente a vía libre' },
   { k: 'sinRecoger', n: 'Basura sin recoger', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, pts: 100, ayuda: 'fracción de la basura que nadie recoge (termina en calles y bordes de humedales)' },
   { k: 'arbolesPerdidos', n: 'Árboles perdidos en parques', f: (v) => (v * 100).toFixed(1) + ' %', sube: false, pts: 100 },
+  { k: 'circularIdx', n: 'Economía circular', f: (v) => (v * 100).toFixed(1) + ' %', sube: true, pts: 100, ayuda: 'orgánicos que vuelven como abono a las huertas' },
+  { k: 'suelo', n: 'Precio del suelo (cerca del metro y proyectos)', f: (v) => '×' + (+v).toFixed(2), sube: false, ayuda: '1 = hoy; sube con el metro y el plan parcial (especulación)' },
+  { k: 'hogaresRiesgo', n: 'Hogares en riesgo de desplazamiento', f: (v) => fmt(v), sube: false },
   { k: 'residuos', n: 'Orgánicos sin compostar', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% de la capacidad de las composteras de la red', soloSi: (H) => H.some(h => h.residuos > 0.005) }
 ];
 const fmt = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString('es-CO');
-const derivar = (I) => { if (I.basura) { I.basuraT = I.basura.total_t_dia; if (I.basura.fraccionSinRecoger != null) I.sinRecoger = I.basura.fraccionSinRecoger; } return I; };
+const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (I.especulacion) { I.suelo = I.especulacion.indice; I.hogaresRiesgo = I.especulacion.hogaresRiesgo; } if (I.basura) { I.basuraT = I.basura.total_t_dia; if (I.basura.fraccionSinRecoger != null) I.sinRecoger = I.basura.fraccionSinRecoger; } return I; };
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=7'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=8'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -347,14 +350,14 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let PRE = null, pPre = null;
   function ponerPredio(P) {
     if (!P) { if (PRE) { PRE.ver(false); } return; }
-    if (!PRE) { if (!pPre) pPre = import('./predio_trafico.js?v=1').then(m => { PRE = m.crearPredio({ T3, RELOJ }); return PRE; }).catch(() => null); pPre.then(x => { if (x && R.sim) ponerPredio(R.hist.length ? R.hist[R.hist.length - 1].predio : null); }); return; }
+    if (!PRE) { if (!pPre) pPre = import('./predio_trafico.js?v=2').then(m => { PRE = m.crearPredio({ T3, RELOJ }); return PRE; }).catch(() => null); pPre.then(x => { if (x && R.sim) ponerPredio(R.hist.length ? R.hist[R.hist.length - 1].predio : null); }); return; }
     PRE.ver(true); PRE.poner({ trafico: P.trafico, trafico0: P.trafico0, ruidoDb: P.ruidoDb, ruidoDb0: P.ruidoDb0, vias: P.vias, sem: R.hist.length });
   }
   /* ---------- BASURA Y RATAS (data3d/basura.js) y CIERRE GRADUAL DE VÍA (data3d/cierre_gradual.js), si están ---------- */
   let BAS = null, pBas = null, CIE = null, pCie = null;
   function ponerBasura(I) {
     if (!I || !I.basura) { if (BAS) BAS.ver(false); return; }
-    if (!BAS) { if (!pBas) pBas = import('./basura.js?v=1').then(m => { BAS = m.crearBasura({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.basura) ponerBasura(L); }).catch(() => null); return; }
+    if (!BAS) { if (!pBas) pBas = import('./basura.js?v=2').then(m => { BAS = m.crearBasura({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.basura) ponerBasura(L); }).catch(() => null); return; }
     BAS.ver(true); BAS.poner({ puntos: I.basura.puntos, total_t_dia: I.basura.total_t_dia, acumulada: I.basura.acumulada, ratas: I.ratas, ratas0: I.ratas0 });
   }
   function ponerCierre(C) {
@@ -369,7 +372,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function ponerDegrada(I) {
     if (!I || !I.humedales) { if (DEG) DEG.ver(false); return; }
     if (!DEG) { if (!pDeg) pDeg = import('./degradacion.js?v=1').then(m => { DEG = m.crearDegradacion({ T3, RELOJ }); const L = ultimo(); if (L) ponerDegrada(L); }).catch(() => null); return; }
-    DEG.ver(true); DEG.poner({ humedales: I.humedales, humedalFuncional: I.humedalFuncional, arbolesPerdidos: I.arbolesPerdidos || 0,
+    DEG.ver(true); DEG.poner({ humedales: I.humedales, humedalFuncional: I.humedalFuncional, arbolesPerdidos: Math.floor((I.arbolesPerdidos || 0) / 0.025) * 0.025, // en escalones de 2,5 %: los árboles caen en tandas (cada tanda sube todo el bosque a la tarjeta de video; cada 4 semanas trababa)
       basuraHumedal: ((I.basura && I.basura.puntos) || []).filter(p => p.fuente === 'humedal').map(p => ({ x: p.x, z: p.z, acumulada: p.acumulada })) });
   }
   function ponerCaminos(I) { // con el instituto (B) o la red (C) o los techos con Bavaria Común (12): se abren en los primeros dos años
@@ -386,7 +389,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const [cx, cz] = T3.lw ? T3.lw(6330, 2170) : [989, 992];
     L.push({ n: 'Basura en Corabastos', x: cx, z: cz, capa: ['basura'], t: 'Basura alrededor de Corabastos', tx: I.basura ? `${Math.round(I.basura.total_t_dia)} t/día en Kennedy; ${Math.round((I.sinRecoger || 0) * 100)} % no se recoge.` : '' });
     L.push({ n: 'Humedal El Burro', x: 2095, z: -109, capa: ['degradacion', 'basura', 'especies'], t: 'Humedal El Burro', tx: I.humedalFuncional != null ? `Los humedales funcionan al ${Math.round(I.humedalFuncional)} % de hoy.` : '' });
-    if (window.KEN_METRO && window.KEN_METRO.punto) { const q = window.KEN_METRO.punto(window.KEN_METRO.largo * 0.5); L.push({ n: 'Metro Línea 1', x: q.x != null ? q.x : q[0], z: q.z != null ? q.z : q[1], capa: ['metro', 'trafico'], t: 'Metro Línea 1', tx: I.metro && I.metro.fase === 'opera' ? 'El metro ya opera: menos carros junto al corredor.' : 'En obra: empieza a operar hacia el año 3.' }); }
+    { const E = I.metro && I.metro.estaciones && I.metro.estaciones.find(e => /Kennedy/.test(e.n)) || (I.metro && I.metro.estaciones && I.metro.estaciones[0]);
+      const q = E ? { x: E.x, z: E.z } : (window.KEN_METRO && window.KEN_METRO.punto ? window.KEN_METRO.punto(window.KEN_METRO.largo * 0.5) : null);
+      if (q) L.push({ n: 'Metro Línea 1', x: q.x != null ? q.x : q[0], z: q.z != null ? q.z : q[1], capa: ['metro', 'trafico'], t: 'Metro Línea 1' + (E ? ' · estación ' + E.n : ''), tx: I.metro && I.metro.fase === 'opera' ? `Ya opera: ${Math.round((I.metro.reduccion || 0) * 100)} % menos carros junto al corredor${E && E.peatonesDia ? '; ' + fmt(E.peatonesDia) + ' personas caminan al día hacia la estación' : ''}.` : 'En obra: empieza a operar en el año 3 (2028).' }); }
+    if (I.especulacion && I.especulacion.zonas && I.especulacion.zonas.length) { const Z = I.especulacion.zonas.reduce((a, b) => (b.indice > a.indice ? b : a)); L.push({ n: 'Especulación del suelo', x: Z.x, z: Z.z, capa: ['metro'], t: 'Donde más sube el suelo', tx: `El suelo sube ×${Z.indice.toFixed(2)} aquí; ${fmt(I.especulacion.hogaresRiesgo)} hogares en riesgo de desplazamiento en Kennedy.` }); }
     if (R.sim === 4) L.push({ n: 'Predio plan parcial', x: 4058, z: 214, capa: ['predio', 'ruido', 'trafico'], t: 'Plan parcial Bavaria', tx: I.predio ? `${fmt(I.predio.habitantes)} habitantes nuevos; ${fmt(I.predio.vehiculosDia)} vehículos/día; ruido ${(I.predio.ruidoDb - I.predio.ruidoDb0).toFixed(1)} dB más.` : '' });
     if (b === 'B' || b === 'C' || R.sim === 12) L.push({ n: 'Bavaria Común', x: 3950, z: 180, capa: ['caminos', 'especies'], t: 'Bavaria Común · instituto', tx: 'Pasajes nuevos que abren el predio al barrio.' });
     if (R.sim === 8 || R.sim === 9) L.push({ n: 'Vía cerrada', donde: 'cierre', capa: ['cierre', 'trafico', 'ruido'], t: 'Cierre de la Av. de las Américas', tx: 'El tráfico se desvía por las calles vecinas (en rojo).' });
@@ -410,7 +416,17 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
 
   /* ---------- INFORME ---------- */
-  function abrirInforme() {
+  /* informe nuevo (data3d/informe.js): veredicto «¿Fue sostenible?», antes → después, estado actual vs esta simulación, gráficas por año,
+     red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
+  async function abrirInforme() {
+    const H = R.hist; if (!H.length) return;
+    try { const { abrirInforme2 } = await import('./informe.js?v=1');
+      abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: R.sim !== 1 ? R.base : null, reglas: (M && M.REGLAS) || [], go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, onCerrar: cerrarInforme });
+      inf.classList.add('on'); return;
+    } catch (e) { console.warn('informe nuevo:', e); }
+    abrirInformeViejo();
+  }
+  function abrirInformeViejo() {
     const H = R.hist; if (!H.length) return;
     const I0 = H[0], I = H[H.length - 1], d = R.def || {}, nombre = (SIMS_UI.find(s => s.id === R.sim) || {}).n || d.n || '';
     const B = R.base && R.base[Math.min(R.base.length - 1, H.length - 1)];
