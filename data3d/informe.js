@@ -396,10 +396,10 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
     if (B) { const vb = get(BC, it.k), vh = get(HC, it.k), cb = cambio(it, vb, vh);
       if (cb) { const mx = Math.max(Math.abs(vb), Math.abs(vh)) || 1, wb = Math.abs(vb) / mx * 100, wh = Math.abs(vh) / mx * 100;
         tag = `<span class="i2-tag ${cb.cls}">${MARCA[cb.cls]} ${PALABRA[cb.cls]}</span>`;
-        vs = `<div class="i2-vs"><small>Frente al estado actual · año ${añoC}</small>
-          <div class="i2-bar"><span>Estado actual</span><div class="i2-tr"><i class="ref" style="width:${wb.toFixed(1)}%"></i></div><b>${esc(it.f(vb, BC))}</b></div>
+        vs = `<div class="i2-vs"><small>Frente a la misma prueba sin propuesta · año ${añoC}</small>
+          <div class="i2-bar"><span>Sin propuesta</span><div class="i2-tr"><i class="ref" style="width:${wb.toFixed(1)}%"></i></div><b>${esc(it.f(vb, BC))}</b></div>
           <div class="i2-bar"><span>Esta simulación</span><div class="i2-tr"><i class="${cb.cls}" style="width:${wh.toFixed(1)}%"></i></div><b>${esc(it.f(vh, HC))}</b></div>
-          <p class="i2-vt ${cb.cls}">${MARCA[cb.cls]} ${esc(fraseVs(it, cb, 'el estado actual'))}${cb.igual ? '' : ' · ' + PALABRA[cb.cls]}</p></div>`;
+          <p class="i2-vt ${cb.cls}">${MARCA[cb.cls]} ${esc(fraseVs(it, cb, 'la misma prueba sin propuesta'))}${cb.igual ? '' : ' · ' + PALABRA[cb.cls]}</p></div>`;
         if (it.clave) comps.push({ it, c: cb }); } }
     else if (it.clave && c) comps.push({ it, c });
     return `<div class="i2-card"><div class="i2-cn"><span>${esc(it.n)}</span>${tag}</div>
@@ -415,7 +415,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
   const cerca = estR.filter(e => !go && e.pF >= 2 / 3).sort((a, b) => b.pF - a.pF);
 
   /* --- veredicto --- */
-  const quien = B ? 'el estado actual' : 'el año 1', frente = B ? 'frente al estado actual' : 'frente al año 1';
+  const quien = B ? 'la misma prueba sin propuesta' : 'el año 1', frente = B ? 'frente a la misma prueba sin propuesta' : 'frente al año 1';
   const mejor = comps.filter(x => x.c.cls === 'bien').sort((a, b) => b.c.dd - a.c.dd), peor = comps.filter(x => x.c.cls === 'mal').sort((a, b) => b.c.dd - a.c.dd), igual = comps.filter(x => x.c.cls === 'igual');
   const nom = (arr, k = 3) => lista(arr.slice(0, k).map(x => min1(x.it.n)));
   let V, razon, razon2 = '';
@@ -440,7 +440,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
       <li><b>No</b>: se cumplió una regla de game over (cualquiera de las ${RG.length}, 4 semanas seguidas; ver al final).</li>
       <li><b>Sí</b>: no hubo game over, ningún indicador de las reglas terminó a 2/3 o más del camino entre hoy y su límite (el mismo umbral del aviso «Kennedy se acerca al game over»), y mejoran más indicadores clave de los que empeoran.</li>
       <li><b>En parte</b>: no hubo game over pero falla alguna de las otras dos condiciones.</li>
-      <li>Indicadores clave: ${esc(lista(temas.flatMap(T => T.items.filter(i => i.clave).map(i => min1(i.n)))))}. Se comparan ${B ? `con el estado actual (simulación 1, misma semilla) en la misma semana (año ${añoC}${baseCorta ? ', cuando el estado actual llegó a game over' : ''})` : 'el año 1 con el final'}. «Casi igual» = menos de 2 % (0,5 puntos, 0,2 dB o ninguna especie).</li></ol></details></div>`;
+      <li>Indicadores clave: ${esc(lista(temas.flatMap(T => T.items.filter(i => i.clave).map(i => min1(i.n)))))}. Se comparan ${B ? `con su pareja sin propuesta (mismos valores y semilla) en la misma semana (año ${añoC}${baseCorta ? ', cuando la versión sin propuesta llegó a game over' : ''})` : 'el año 1 con el final'}. «Casi igual» = menos de 2 % (0,5 puntos, 0,2 dB o ninguna especie).</li></ol></details></div>`;
 
   /* --- encabezado --- */
   const años = wFin / AÑO;
@@ -449,7 +449,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
       <p class="i2-preg">${esc(def.pregunta || '')}</p>${def.desc ? `<p class="i2-desc">${esc(def.desc)}</p>` : ''}
       <div class="i2-chips"><span class="i2-chip">Escenario: <b>${grupo === 'propuesta' ? 'propuesta de la tesis' : 'Kennedy sin la propuesta'}</b></span>
         <span class="i2-chip">Corrió <b>${nf(años, años % 1 ? 1 : 0)} de 20 años</b> (${nf(wFin)} semanas)${go ? ' · se detuvo por game over' : ''}</span>
-        ${B ? `<span class="i2-chip">Comparada con <b>el estado actual</b> (simulación 1)</span>` : ''}<span class="i2-chip">Semilla <b>${esc(semilla)}</b></span></div></div>`;
+        ${B ? `<span class="i2-chip">Comparada con <b>la misma prueba sin propuesta</b></span>` : ''}<span class="i2-chip">Semilla <b>${esc(semilla)}</b></span></div></div>`;
 
   /* --- curvas: límites que más se acercaron (el del game over primero) + interacciones --- */
   const orden = estR.slice().sort((a, b) => (go && b.r.k === go.regla) - (go && a.r.k === go.regla) || b.mx - a.mx || a.r.k.localeCompare(b.r.k));
@@ -458,7 +458,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
       fn: (h) => VAL[k](h), lim: um, limTxt: fmtR(k, um), sube: !(HOY[k] < um), fy: (v) => fmtR(k, v) }; });
   GR.push({ t: 'Interacciones entre especies', sub: 'Relaciones de la red que ocurren en cada lugar de Kennedy (más es mejor).', fn: (h) => h.red, sube: true, fy: (v) => nf(v), cero: true });
   const htmlGr = `<div class="i2-sec"><div class="i2-sh"><span class="i2-n">Cómo cambió en el tiempo</span><p class="i2-st">Los límites que más se acercaron, año por año</p></div>
-    <div class="i2-leg"><span><i></i>Esta simulación</span>${B ? '<span><i class="ref"></i>Estado actual</span>' : ''}<span><i class="lim"></i>Límite de game over</span>${go ? '<span><i class="go"></i>Game over</span>' : ''}<span><i class="band"></i>Corto (1–5), mediano (6–10) y largo plazo (11–20)</span></div>
+    <div class="i2-leg"><span><i></i>Esta simulación</span>${B ? '<span><i class="ref"></i>Sin propuesta</span>' : ''}<span><i class="lim"></i>Límite de game over</span>${go ? '<span><i class="go"></i>Game over</span>' : ''}<span><i class="band"></i>Corto (1–5), mediano (6–10) y largo plazo (11–20)</span></div>
     <div class="i2-charts">${GR.map((g, i) => `<div class="i2-ch" data-i2-g="${i}"><div class="i2-cht">${esc(g.t)}</div><div class="i2-chs">${esc(g.sub)}</div><div data-i2-svg></div><div class="i2-tip"></div></div>`).join('')}</div></div>`;
   GR.forEach(g => { g.s = serie(H, g.fn); g.r = B ? serie(B, g.fn) : null; g.go = go ? go.sem : null; });
 
@@ -485,13 +485,13 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
     <ul class="i2-sup">
       <li>Todo sale del modelo semanal (data3d/simulaciones12.js) con la semilla ${esc(semilla)}: la misma semilla da siempre el mismo resultado.</li>
       <li>«Año 1» es la semana 52: el modelo arranca por debajo de su equilibrio (la ocupación de la fauna se duplica en las primeras ~40 semanas en todas las simulaciones), así que la semana 1 exageraría los cambios.</li>
-      ${B ? `<li>El estado actual es la simulación 1 con la misma semilla; se compara en la misma semana (año ${añoC})${baseCorta ? ', porque el estado actual se detuvo por game over' : ''}.</li>` : ''}
+      ${B ? `<li>La comparación es con la misma prueba sin propuesta, con los mismos valores de las variables y la misma semilla; se compara en la misma semana (año ${añoC})${baseCorta ? ', porque el estado actual se detuvo por game over' : ''}.</li>` : ''}
       <li>Las curvas promedian cada ${CADA} semanas; el punto final es el último valor.</li>
       <li>Red: ${PF.exacto ? '' : 'el modelo no informa qué especies faltaban al inicio; '}la presencia de la fauna se ${PF.volvieron.length || !Array.isArray(L.presentes) ? 'reconstruye con las extinciones de cada semana (si una especie vuelve, se toma la última que desapareció)' : 'toma del modelo'}. Plantas: censo de árboles SIGAU y bosque de Bavaria; las nativas de los módulos de huertas se suman cuando sube el conteo de flora del modelo. Una relación está activa si sus dos especies viven en Kennedy.</li>
     </ul><p class="i2-pie">Informe generado en el navegador a partir de ${nf(nH)} semanas simuladas.</p></div>`;
 
-  cont.innerHTML = `<div class="inf2">${htmlHd}${htmlVer}<div class="i2-sec"><div class="i2-sh"><span class="i2-n">Antes y después</span><p class="i2-st">Año 1 → año ${añoDe(wFin)}${B ? ', y frente al estado actual' : ''}</p>
-    <p class="i2-sd">${B ? 'Arriba, cómo cambió cada indicador en esta simulación. Abajo, la misma cifra en el estado actual (barra rayada) y en esta simulación (verde si es mejor, rojo si es peor).' : 'Cómo cambió cada indicador desde el año 1 hasta el final: verde si mejoró, rojo si empeoró.'}</p></div>${htmlTemas}</div>${htmlGr}${htmlRed}${htmlEv}${htmlPie}</div>`;
+  cont.innerHTML = `<div class="inf2">${htmlHd}${htmlVer}<div class="i2-sec"><div class="i2-sh"><span class="i2-n">Antes y después</span><p class="i2-st">Año 1 → año ${añoDe(wFin)}${B ? ', y frente a la misma prueba sin propuesta' : ''}</p>
+    <p class="i2-sd">${B ? 'Arriba, cómo cambió cada indicador en esta simulación. Abajo, la misma cifra sin propuesta (barra rayada) y en esta simulación (verde si es mejor, rojo si es peor).' : 'Cómo cambió cada indicador desde el año 1 hasta el final: verde si mejoró, rojo si empeoró.'}</p></div>${htmlTemas}</div>${htmlGr}${htmlRed}${htmlEv}${htmlPie}</div>`;
   const root = cont.firstElementChild;
   root.querySelector('[data-i2-imp]').onclick = () => window.print();
   root.querySelector('[data-i2-x]').onclick = () => { if (onCerrar) onCerrar(); else { const s = cont.closest('#su-inf'); if (s) s.classList.remove('on'); } };
@@ -504,7 +504,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
         let best = g.s[0]; for (const p of g.s) if (Math.abs(p[0] - w) < Math.abs(best[0] - w)) best = p;
         let rb = null; if (g.r) for (const p of g.r) if (!rb || Math.abs(p[0] - best[0]) < Math.abs(rb[0] - best[0])) rb = p; if (rb && Math.abs(rb[0] - best[0]) > 8) rb = null;
         const xx = R.x(best[0]); ln.setAttribute('x1', xx); ln.setAttribute('x2', xx); dt.setAttribute('cx', xx); dt.setAttribute('cy', R.y(best[1])); cr.style.display = '';
-        tip.innerHTML = `<b>Año ${añoDe(best[0])}</b> · semana ${nf(best[0])}<br>Esta simulación: <b>${esc(g.fy(best[1]))}</b>${rb ? `<br>Estado actual: <b>${esc(g.fy(rb[1]))}</b>` : ''}`;
+        tip.innerHTML = `<b>Año ${añoDe(best[0])}</b> · semana ${nf(best[0])}<br>Esta simulación: <b>${esc(g.fy(best[1]))}</b>${rb ? `<br>Sin propuesta: <b>${esc(g.fy(rb[1]))}</b>` : ''}`;
         tip.style.display = 'block'; const fx = svg.offsetLeft + xx * (bb.width / W), tw = tip.offsetWidth; tip.style.left = Math.max(4, Math.min(fig.clientWidth - tw - 4, fx + 12 > fig.clientWidth - tw ? fx - tw - 12 : fx + 12)) + 'px'; tip.style.top = (svg.offsetTop + 8) + 'px'; };
       const salir = () => { cr.style.display = 'none'; tip.style.display = 'none'; };
       svg.addEventListener('pointermove', mover); svg.addEventListener('pointerdown', mover); svg.addEventListener('pointerleave', salir); });

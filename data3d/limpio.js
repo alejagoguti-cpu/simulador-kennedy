@@ -9,14 +9,20 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=24';
+import { iniciarSimUI } from './sim_ui.js?v=26';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
 /* dos escenarios: Kennedy como está (sin la propuesta de la tesis) y Kennedy con la propuesta */
-const GRUPOS = [
-  { n: 'Kennedy · estado actual', d: 'sin la propuesta', ids: [1, 4, 5, 7, 8] },
-  { n: 'Con la propuesta', d: 'instituto, red de mercados, huertas', ids: [2, 3, 6, 9, 10, 11, 12] }
+/* SEIS PARES: cada par pone a prueba lo mismo, con las mismas variables; uno corre Kennedy sin la propuesta y el otro con la
+   infraestructura propuesta (id impar = sin, id par = con). */
+const PARES = [
+  { par: 1, n: 'Abastecimiento', prueba: 'Se corta parte del suministro externo de alimentos' },
+  { par: 2, n: 'Movilidad', prueba: 'Se cierra temporalmente una vía estratégica' },
+  { par: 3, n: 'Residuos', prueba: 'Aumentan los residuos orgánicos' },
+  { par: 4, n: 'Biodiversidad', prueba: 'Se fragmenta o se pierde un parche ecológico' },
+  { par: 5, n: 'Población y especulación', prueba: 'Sube la presión inmobiliaria' },
+  { par: 6, n: 'Gobernanza', prueba: 'No alcanzan los recursos para todos los barrios' }
 ];
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
 /* UN SOLO TIEMPO. La barra corre 20 años (1040 semanas) en tres plazos. 1× = un año en 12 s reales (20 años ≈ 4 min); 2× y 4× lo
@@ -33,18 +39,18 @@ const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, 
 
 // las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
 export const SIMS = [
-  { id: 1, n: 'Estado actual', base: 'A', cam: 'inicio' },
-  { id: 2, n: 'Instituto en Bavaria', base: 'B', cam: 'bavaria' },
-  { id: 3, n: 'Red de mercados de barrio', base: 'C', cam: 'general' },
-  { id: 4, n: 'Plan parcial Bavaria', base: 'D', cam: 'bavaria' },
-  { id: 5, n: 'Corabastos cierra', base: 'A', cam: 'corabastos' },
-  { id: 6, n: 'Corabastos se reduce + borde de La Vaca', base: 'A', cam: 'corabastos' },
-  { id: 7, n: 'Metro Línea 1', base: 'A', cam: 'metro' },
-  { id: 8, n: 'Cierre de vía, hoy', base: 'A', cam: 'general' },
-  { id: 9, n: 'Cierre de vía con instituto', base: 'B', cam: 'general' },
-  { id: 10, n: 'Instituto + plazas de mercado', base: 'B', cam: 'general' },
-  { id: 11, n: 'Instituto + huertas', base: 'B', cam: 'general' },
-  { id: 12, n: 'Huertas en techos', base: 'C', cam: 'general' }
+  { id: 1, par: 1, n: 'Abastecimiento · sin propuesta', base: 'A', cam: 'general' },
+  { id: 2, par: 1, n: 'Abastecimiento · con propuesta', base: 'C', cam: 'general' },
+  { id: 3, par: 2, n: 'Movilidad · sin propuesta', base: 'A', cam: 'general' },
+  { id: 4, par: 2, n: 'Movilidad · con propuesta', base: 'C', cam: 'general' },
+  { id: 5, par: 3, n: 'Residuos · sin propuesta', base: 'A', cam: 'general' },
+  { id: 6, par: 3, n: 'Residuos · con propuesta', base: 'C', cam: 'general' },
+  { id: 7, par: 4, n: 'Biodiversidad · sin propuesta', base: 'A', cam: 'general' },
+  { id: 8, par: 4, n: 'Biodiversidad · con propuesta', base: 'C', cam: 'general' },
+  { id: 9, par: 5, n: 'Población y especulación · sin propuesta', base: 'A', cam: 'general' },
+  { id: 10, par: 5, n: 'Población y especulación · con propuesta', base: 'C', cam: 'general' },
+  { id: 11, par: 6, n: 'Gobernanza · sin propuesta', base: 'A', cam: 'general' },
+  { id: 12, par: 6, n: 'Gobernanza · con propuesta', base: 'C', cam: 'general' }
 ];
 
 const OCULTAR = ['#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
@@ -62,7 +68,8 @@ export function iniciarLimpio({ T3 }) {
 #lp-sims .lp-gr { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 8px 0 1px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.1); }
 #lp-sims .lp-gr:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 #lp-sims .lp-gr b { font: 600 11px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #ffd28a; }
-#lp-sims .lp-gr span { font: 400 10.5px system-ui, sans-serif; opacity: .55; text-align: right; }
+#lp-sims .lp-gr { display: block !important; } #lp-sims .lp-gr span { display: block; font: 400 10.5px/1.3 system-ui, sans-serif; opacity: .6; margin-top: 2px; text-align: left; }
+#lp-sims button.con { border-color: rgba(142,230,168,.35); } #lp-sims button.con.on { box-shadow: inset 0 0 0 1px rgba(142,230,168,.95); }
     #lp-simn { margin: 6px 2px 2px; font: 500 12px/1.3 system-ui, sans-serif; opacity: .75; min-height: 16px; }
     /* barra de años (abajo, mismo vidrio de los paneles) */
     #lp-anos { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px;
@@ -105,8 +112,7 @@ export function iniciarLimpio({ T3 }) {
     if (!document.getElementById('lp-sims')) {
       const h = document.createElement('div'); h.className = 'gs-sub'; h.textContent = 'SIMULACIONES';
       const f = document.createElement('div'); f.id = 'lp-sims';
-      const bot = (s) => `<button type="button" data-s="${s.id}" title="${s.n}">Simulación ${s.id}</button>`;
-      f.innerHTML = GRUPOS.map(g => `<div class="lp-gr"><b>${g.n}</b><span>${g.d}</span></div>` + SIMS.filter(s => g.ids.includes(s.id)).map(bot).join('')).join('');
+      f.innerHTML = PARES.map(P => `<div class="lp-gr"><b>${String(P.par).padStart(2, '0')} · ${P.n}</b><span>${P.prueba}</span></div><button type="button" data-s="${2 * P.par - 1}" title="${P.n} sin propuesta">Sin propuesta</button><button type="button" data-s="${2 * P.par}" class="con" title="${P.n} con propuesta">Con propuesta</button>`).join('');
       const nm = document.createElement('div'); nm.id = 'lp-simn';
       const ancla = g.querySelector('.gs-reloj'); (ancla ? ancla.parentNode : g).insertBefore(h, ancla ? ancla.nextSibling : g.firstChild); h.after(f); f.after(nm);
       f.querySelectorAll('button').forEach(b => { b.onclick = () => escoger(+b.dataset.s); });
@@ -160,6 +166,7 @@ export function iniciarLimpio({ T3 }) {
   const ESC = window.KEN_LIMPIO = { activo: 0, sim: null, factorCarros: () => factorCarros(), SIMS };
   let UI = null; iniciarSimUI({ T3, SIMS_UI: SIMS }).then(u => { UI = window.KEN_SIMUI = u; if (ESC.activo) u.preparar(ESC.activo); }).catch(e => console.warn('interfaz de simulaciones:', e));
   function factorCarros() { // multiplica la demanda de tráfico que se dibuja (index.html, updateTraffic)
+    return 1; // el metro está en todas las simulaciones: su efecto lo lleva el modelo semanal
     if (ESC.activo !== 7) return 1;
     const d = RELOJ.sem - METRO_SEM_OP; if (d < 0) return 1;
     return 1 - METRO_MENOS_CARROS * Math.min(1, d / 52);
@@ -194,7 +201,7 @@ export function iniciarLimpio({ T3 }) {
     try { const g = ['metro_l1_estaciones', 'metro_l1_catenaria', 'metro_l1_letreros', 'metro_l1_obra'].map(n => T3.scene.getObjectByName(n)).filter(Boolean);
       const antes = g.map(o => o.visible); g.forEach(o => { o.visible = true; }); if (T3.renderer.compile) T3.renderer.compile(T3.scene, T3.camera); g.forEach((o, i) => { o.visible = antes[i]; }); } catch (e) { /* sin precompilar */ }
   }, 2500);  /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=3', './predio_trafico.js?v=3', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=1']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=3', './predio_trafico.js?v=3', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=2']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');
@@ -227,7 +234,7 @@ export function iniciarLimpio({ T3 }) {
   };
   RELOJ.alDibujar(() => {
     if (!trazo) { armarTrazo(); if (!trazo) return; }
-    trazo.visible = ESC.activo === 7; if (!trazo.visible) return;
+    trazo.visible = !!ESC.activo; if (!trazo.visible) return; // el metro está en todas
     const m = trazo.material;
     if (RELOJ.sem >= METRO_SEM_OP) { m.color.setHex(0xfff04a); m.opacity = 0.95; }
     else { m.color.setHex(0xff8a1e); m.opacity = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(RELOJ.tAnim * 3)); }

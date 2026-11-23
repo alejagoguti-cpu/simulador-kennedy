@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=8'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=9'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -129,7 +129,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on');
-    if (M && !R.base) setTimeout(calcularBase, 300); // «Hoy» completo para comparar en el informe
+    R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
     R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
@@ -148,6 +148,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const lote = () => { if (id !== idRe) return;
       for (let k = 0; k < 120 && H.length < hasta; k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
       if (H.length < hasta) return void setTimeout(lote, 0);
+      R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
       else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); } }
     };
@@ -155,13 +156,18 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   function pintarPrevia(txt) { let e = document.getElementById('su-previa'); const box = document.getElementById('su-picos'); if (!box) return;
     if (!e) { e = document.createElement('p'); e.id = 'su-previa'; box.before(e); } e.textContent = txt; e.style.display = txt ? '' : 'none'; }
-  function calcularBase() { // simulación 1 (Hoy) con sus valores por defecto, 20 años, para comparar
-    try { const d = defDe(1), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = s.val; }); const s = M.crear(1, SEMILLA, v); const H = [];
-      const lote = () => { try { for (let k = 0; k < 80 && H.length < FIN; k++) { M.paso(s); H.push(M.ind(s)); if (M.gameOver(s)) { R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else R.base = H; } catch (e) { console.warn('base:', e); } };
+  /* COMPARACIÓN DEL PAR: cada simulación «con propuesta» (id par) se compara con su pareja «sin propuesta» (id impar), corrida con los
+     MISMOS valores de las variables; la «sin propuesta» no tiene contra qué compararse (es el punto de partida). Sin pares en el modelo
+     (versión vieja) se compara con la simulación 1. */
+  let idBase = 0;
+  function parejaSin() { const d = R.def || {}; if (d.par != null) return d.propuesta ? R.sim - 1 : null; return R.sim !== 1 ? 1 : null; }
+  function calcularBase() {
+    const otra = parejaSin(); if (!M || otra == null) { R.base = null; return; }
+    try { const id = ++idBase, d = defDe(otra), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = R.valores[s.k] != null ? R.valores[s.k] : s.val; }); const s = M.crear(otra, SEMILLA, v); const H = [];
+      const lote = () => { if (id !== idBase) return; try { for (let k = 0; k < 80 && H.length < FIN; k++) { M.paso(s); H.push(derivar(M.ind(s))); if (M.gameOver(s)) { R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else R.base = H; } catch (e) { console.warn('base:', e); } };
       lote(); } // por lotes: 20 años de una vez trabarían la página
-    catch (e) { console.warn('base estado actual:', e); }
+    catch (e) { console.warn('base del par:', e); }
   }
-
   /* avanzar el modelo al paso de la barra de años */
   RELOJ.alDibujar(() => {
     if (!R.s || R.go || R.fin) return;
@@ -187,7 +193,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function pintarPanel() {
     const d = R.def;
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
-    der.innerHTML = `<h4>${d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4><p class="pre">${d ? d.pregunta || d.desc || '' : ''}</p>
+    der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">Prueba: ${d.prueba}</p>` : ''}<p class="pre">${d ? d.pregunta || d.desc || '' : ''}</p>
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
       <h4>Mira en el territorio</h4><div class="su-lug">${lugares().map((l, i) => `<button type="button" data-l="${i}">${l.n}</button>`).join('')}</div>
       <h4>Indicadores · picos sobre Kennedy</h4><div id="su-picos"></div>
@@ -420,8 +426,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=1');
-      abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: R.sim !== 1 ? R.base : null, reglas: (M && M.REGLAS) || [], go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, onCerrar: cerrarInforme });
+    try { const { abrirInforme2 } = await import('./informe.js?v=2');
+      abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: (M && M.REGLAS) || [], go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, onCerrar: cerrarInforme });
       inf.classList.add('on'); return;
     } catch (e) { console.warn('informe nuevo:', e); }
     abrirInformeViejo();
