@@ -22,7 +22,7 @@ export async function crearIndicadores({ THREE, T3 }) {
     const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: opac, depthWrite: opac > 0.85, emissive: 0xffffff, emissiveIntensity: 0, toneMapped: false }));
     /* sombreado suave: color propio + algo de luz del sol para leer el relieve */
     m.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', 'outgoingLight = mix(diffuseColor.rgb, outgoingLight, 0.45);\n#include <opaque_fragment>'); };
-    m.frustumCulled = false; m.renderOrder = 3; m.userData = { z, d };
+    m.frustumCulled = false; m.renderOrder = opac < 0.85 ? 20 : 3; m.userData = { z, d };
     const M = { mesh: m, d, z, z0: z.slice(), zP: z.slice(), col0: col.slice(), zs, pos, code: f.replace(/(_2020)?\.json$/, ''), ramp: (I.lista.find(x => x.f === f) || {}).ramp }; mallas.set(f, M); return M;
   }
   function elevar(M) {
@@ -200,7 +200,7 @@ export async function crearIndicadores({ THREE, T3 }) {
     altura(v) { alto = v; for (const M of mallas.values()) if (M.mesh.visible) elevar(M); },
     ver(on) { g.visible = on; },
     // vista limpia: láminas bajas, pegadas al piso y algo transparentes para ver el territorio debajo
-    estilo({ opacidad, base } = {}) { if (opacidad != null) opac = opacidad; if (base != null) baseY = base; for (const M of mallas.values()) { M.mesh.material.opacity = opac; M.mesh.material.depthWrite = opac > 0.85; M.mesh.material.needsUpdate = true; if (M.mesh.visible) elevar(M); } }
+    estilo({ opacidad, base } = {}) { if (opacidad != null) opac = opacidad; if (base != null) baseY = base; for (const M of mallas.values()) { M.mesh.material.opacity = opac; M.mesh.material.depthWrite = opac > 0.85; if (opac < 0.85) M.mesh.renderOrder = 20; /* encima del agua de los humedales (antes se veían huecos negros) */ M.mesh.material.needsUpdate = true; if (M.mesh.visible) elevar(M); } }
   };
   window.KEN_IND = api; // para revisar desde la consola (resumen, cobertura, ultimoCalculo)
   return api;

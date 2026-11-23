@@ -220,8 +220,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     IC: ['Dónde se acumula calor: asfalto y techos sin sombra.', false], PA: ['Presión sobre el aire por tráfico y falta de árboles.', false],
     OC: ['Juntas, colectivos y organizaciones que cuidan el barrio.', true], CO: ['Colegios, bibliotecas y lugares donde se aprende.', true],
     CCL: ['Dónde se concentra el comercio y la logística (Corabastos).', null], PM: ['Presión de carros y camiones sobre las vías.', false], CV: ['Choque entre vivienda y bodegas o carga.', false] };
-  let pInd = null; R.ind = 'SE'; R.alto = 0.045; // picos bajos, pegados al piso y transparentes: se lee la ciudad debajo y dónde está cada cosa
-  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=10').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
+  let pInd = null; R.ind = 'SE'; R.alto = 0.2; // picos bajos, pegados al piso y transparentes: se lee la ciudad debajo y dónde está cada cosa
+  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=11').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
   async function pintarPicos() {
     const box = document.getElementById('su-picos'); if (!box) return;
     let A; try { A = await indApi(); } catch (e) { box.innerHTML = '<p class="pre">No se pudieron cargar los indicadores.</p>'; return; }
@@ -232,7 +232,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const ra = box.querySelector('.su-alto input'); if (ra) ra.oninput = () => { R.alto = +ra.value; A.altura(R.alto); };
     box.querySelectorAll('button[data-c]').forEach(b => b.onclick = () => { R.ind = b.dataset.c || null; mostrarInd(); pintarPicos(); });
   }
-  async function mostrarInd() { const A = await indApi(); if (!R.altoIni) { R.altoIni = 1; if (A.estilo) A.estilo({ opacidad: 0.62, base: 1.6 }); A.altura(R.alto); } A.ver(!!R.ind); await A.mostrar(R.ind || null, false); }
+  async function mostrarInd() { const A = await indApi(); if (!R.altoIni) { R.altoIni = 1; if (A.estilo) A.estilo({ opacidad: 0.66, base: 4 }); A.altura(R.alto); } A.ver(!!R.ind); await A.mostrar(R.ind || null, false); }
   const prom = (A) => { if (!A || !A.length) return 0; let s = 0, n = 0; for (const v of A) if (isFinite(v)) { s += v; n++; } return n ? s / n : 0; };
   const c01 = (v) => Math.max(0, Math.min(1, v || 0));
   function factoresSim(I) { // cuánto de cada intervención existe en esta semana del modelo (0–1) -> T3.simInd para indicadores.js
