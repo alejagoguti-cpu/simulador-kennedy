@@ -21,6 +21,7 @@ const IND = [ // resultados en vivo: clave en ind(), nombre, formato, mejor si s
   { k: 'basuraT', n: 'Basura generada', f: (v) => fmt(v) + ' t/día', sube: false, ayuda: 'Corabastos, plaza de flores y viviendas alrededor' },
   { k: 'ratas', n: 'Ratas', f: (v, I) => I.ratas0 ? '×' + (v / I.ratas0).toFixed(1) : (+v).toFixed(2), sube: false, ayuda: 'veces las de hoy' },
   { k: 'humedalHa', n: 'Humedales', f: (v) => (+v).toFixed(1) + ' ha', sube: true },
+  { k: 'humedalFuncional', n: 'Humedales que funcionan', f: (v) => Math.round(v) + ' %', sube: true, ayuda: 'área sin rellenar × calidad frente a la basura del borde (game over si cae 30 %)' },
   { k: 'congestion', n: 'Congestión (TomTom)', f: (v) => Math.round(v) + ' %', sube: false, ayuda: 'tiempo extra de viaje frente a vía libre' },
   { k: 'residuos', n: 'Residuos sin tratar', f: (v) => (v * 100).toFixed(0) + ' %', sube: false, ayuda: '% del almacenamiento' }
 ];
@@ -28,7 +29,7 @@ const fmt = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString(
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=4'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=5'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
