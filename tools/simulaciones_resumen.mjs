@@ -7,7 +7,7 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const S = await import(pathToFileURL(join(REPO, 'data3d/simulaciones12.js')).href);
 await S.cargarDatos((u) => JSON.parse(readFileSync(fileURLToPath(u), 'utf8')));
 const N = S.SEMANAS_FIN, SEMS = 30;
-const CLAVES = ['fauna', 'flora', 'red', 'redTipos', 'pares', 'aves', 'poliniz', 'polinizEsp', 'trafico', 'ruidoDb', 'callesRuidosas', 'callesOMS', 'atropellos', 'comidaMin', 'residuos', 'huertas', 'bodegas', 'congestion', 'tiempo10km', 'presion', 'recuperacion', 'ratas', 'humedalHa', 'comidaLocal'];
+const CLAVES = ['fauna', 'flora', 'red', 'redTipos', 'pares', 'aves', 'poliniz', 'polinizEsp', 'trafico', 'ruidoDb', 'callesRuidosas', 'callesOMS', 'atropellos', 'comidaMin', 'residuos', 'huertas', 'bodegas', 'congestion', 'tiempo10km', 'presion', 'recuperacion', 'ratas', 'humedalHa', 'humedalFuncional', 'arboles', 'comidaLocal'];
 const r3 = (v) => v == null ? null : Math.round(v * 1000) / 1000;
 const out = { generado: new Date().toISOString().slice(0, 10), fuente: 'data3d/simulaciones12.js (tools/simulaciones_resumen.mjs)', semanas: N,
   fases: S.FASES, tomtom: S.TOMTOM, reglas: S.REGLAS, supuestos: S.SUP_SIMS, predio_sup: S.PREDIO_SUP, basura_sup: S.BASURA_SUP, desvio_sup: S.DESVIO_SUP, avisos_sup: S.AVISOS_SUP, simulaciones: [] };
