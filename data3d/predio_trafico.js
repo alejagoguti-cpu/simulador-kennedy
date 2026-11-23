@@ -9,7 +9,11 @@
      hora pico el cupo baja y se forma la cola en los accesos (lenta y apretada).
    · RUIDO: capa translúcida sobre el suelo del predio y a lo largo de las vías nuevas, con la rampa del mapa de ruido
      (data3d/ruido_cierre.js: amarillo pálido → naranja → rojo); su intensidad sigue ruidoDb − ruidoDb0 (0 dB invisible, +10 dB rojo fuerte).
-     Se ve con ruido(true) o cuando la capa «Ruido de carros» (T3.rc.ruido) está encendida.
+     Animada: respira a lo largo de las vías y desde cada acceso salen anillos que se alejan (más fuertes donde hay cola). Siempre se ve
+     con ver(true); más fuerte con ruido(true) o con la capa «Ruido de carros» (T3.rc.ruido) encendida.
+   · FLUJO DE LEJOS: un punto de luz por carro con estela (cálido si avanza, rojo si está detenido): legible desde la cámara alta.
+   · RÓTULO flotante (vidrio) sobre el predio: vehículos/día, ruido +X dB, habitantes, árboles talados; poner() acepta además
+     vehiculosDia, habitantes y tala (ind().predio del modelo); si faltan se estiman (tráfico del módulo, KEN_PLANBAV.avance).
    RELOJ: los carros avanzan con RELOJ.dtAnim (tiempo simulado de animación del reloj universal: 0 en pausa, el día a 1× va a 1×, y a
    120×/240×/480× se topa en ×8 como el resto de las animaciones, para que no salten), nunca con performance.now. La demanda por hora
    sale de RELOJ.minutoDia con el mismo perfil de index.html (demandaHora).
@@ -45,7 +49,16 @@ const FUENTES = [['B0', 0.42], ['S0', 0.12], ['T0', 0.12], ['N0', 0.34]];   // d
 const SUMIDEROS = [['B12', 0.42], ['S4', 0.12], ['T4', 0.12], ['N9', 0.34]]; // a dónde se van
 const SOTANOS = ['a1', 'c7', 'f3', 'g2', 'j3', 'n1'];                        // fondos de vía: rampas a los sótanos de las manzanas
 
+const GATES = ['a2', 'a4', 'a7', 's1', 'n3', 'n5'];                         // nodos internos de los accesos (anillos de ruido)
 const LARGO = 4.6, CARRIL = 1.75, NMAX = 420, V_AV = 11, V_INT = 8, V_ACC = 5;
+const CSS_ROT = `.predio-rot{position:fixed;left:0;top:0;z-index:30;pointer-events:none;transform:translate(-9999px,0);will-change:transform;
+  min-width:186px;padding:10px 13px 11px;border-radius:12px;background:rgba(16,20,26,.58);-webkit-backdrop-filter:blur(12px) saturate(1.2);backdrop-filter:blur(12px) saturate(1.2);
+  border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 30px rgba(0,0,0,.32);color:#eef1f3;font:400 12px/1.35 Geist,Inter,system-ui,sans-serif}
+.predio-rot h6{margin:0 0 7px;font:600 9.5px/1.2 Geist,Inter,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#aab3b9}
+.predio-rot .f{display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:2px 0}
+.predio-rot .f span{color:#b9c1c6;font-size:11.5px}.predio-rot .f b{font-weight:600;font-variant-numeric:tabular-nums;font-size:14px;color:#fff;letter-spacing:-.01em}
+.predio-rot .f b.r{color:#ffb15c}.predio-rot::after{content:'';position:absolute;left:50%;bottom:-7px;width:1px;height:7px;background:rgba(255,255,255,.4)}
+@media (max-width:640px){.predio-rot{min-width:150px;padding:8px 10px;font-size:11px}.predio-rot .f b{font-size:12.5px}}`;
 
 export function crearPredio({ T3, RELOJ }) {
   const THREE = T3.THREE;
@@ -53,7 +66,7 @@ export function crearPredio({ T3, RELOJ }) {
   const grupo = new THREE.Group(); grupo.name = 'predio'; grupo.visible = false; T3.scene.add(grupo);
   let listo = false, visible = false, ruidoOn = false;
   const est = { trafico: 1, trafico0: 1, ruidoDb: 0, ruidoDb0: 0, vias: undefined, sem: 0 };
-  let ratio = 1, uRuido = 0, firmaRed = '';
+  let ratio = 1, uRuido = 0, firmaRed = '', puesto = false, calentado = false;
 
   // ---------- estructuras (se llenan en armar) ----------
   let NL = 0, lnX, lnZ, lnCum, lnOff, lnN, lnLen, lnTipo, lnV, lnY0, lnY1, lnHIni, lnHFin, lnTramo, lnAbierto;
@@ -61,7 +74,10 @@ export function crearPredio({ T3, RELOJ }) {
   const rutas = [], rutaTasa = [], rutaAcc = [], rutaIni = [], rutaFin = []; // ruta: Int16Array de carriles
   const cAct = new Uint8Array(NMAX), cRuta = new Int16Array(NMAX), cLeg = new Int16Array(NMAX), cSeg = new Int16Array(NMAX), cS = new Float32Array(NMAX), cV = new Float32Array(NMAX);
   const cEx = new Float32Array(NMAX), cEz = new Float32Array(NMAX), cEd = new Float32Array(NMAX), cH = new Float32Array(NMAX);
-  let nAct = 0, alto = 0, malla = null, ruidoM = null, uI = null, tAnim = 0;
+  let nAct = 0, alto = 0, malla = null, ruidoM = null, uI = null, tAnim = 0, puntos = null, lnGate = null, rotulo = null, tRuido = 0;
+  const uT = { value: 0 }, uJ = { value: 0 }, uLejos = { value: 0 }, uEsc = { value: 800 }, uGate = { value: GATES.map(() => new THREE.Vector3()) };
+  const pPos = new Float32Array(NMAX * 9), pV = new Float32Array(NMAX * 3), pA = new Float32Array(NMAX * 3);
+  const ancla = new THREE.Vector3(), proy = new THREE.Vector3(), paradosG = new Float32Array(GATES.length);
   const yInt = () => (T3.sueloY != null ? T3.sueloY : 0.3) + 0.24, yAv = () => (T3.viaY != null ? T3.viaY : 0.62) + 0.02;
 
   /* ---------- geometría del carro: sedán de pocos polígonos con la silueta de vehiculos.js (4,5 m, frente hacia +z) ---------- */
@@ -136,33 +152,89 @@ export function crearPredio({ T3, RELOJ }) {
     const tex = new THREE.CanvasTexture(cv); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false; armar.tex = tex;
     const ramp = STOPS.map(s => `vec3(${(s[1][0] / 255).toFixed(3)},${(s[1][1] / 255).toFixed(3)},${(s[1][2] / 255).toFixed(3)})`);
     uI = { value: 0 };
+    /* ruido animado: el campo (vías R, predio G) respira con una ondulación que corre por las vías, y desde cada acceso salen anillos
+       que se alejan (más fuertes y rápidos donde hay cola). uGate: x, z, fuerza de cada acceso; uT: tiempo de la animación. */
+    for (let k = 0; k < GATES.length; k++) { const w = W(NODOS[GATES[k]]); uGate.value[k].set(w[0], w[1], 0); }
     const mR = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6,
-      uniforms: { uTex: { value: tex }, uI },
+      uniforms: { uTex: { value: tex }, uI, uT, uGate, uJ, uLejos, uBox: { value: new THREE.Vector4(x0, z0, x1 - x0, z1 - z0) } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform sampler2D uTex; uniform float uI; varying vec2 vUv;
+      fragmentShader: `uniform sampler2D uTex; uniform float uI, uT, uJ, uLejos; uniform vec3 uGate[${GATES.length}]; uniform vec4 uBox; varying vec2 vUv;
         vec3 rampa(float t){ t = clamp(t, 0.0, 1.0);
           if (t < 0.2) return mix(${ramp[0]}, ${ramp[1]}, t / 0.2); if (t < 0.4) return mix(${ramp[1]}, ${ramp[2]}, (t - 0.2) / 0.2);
           if (t < 0.6) return mix(${ramp[2]}, ${ramp[3]}, (t - 0.4) / 0.2); if (t < 0.8) return mix(${ramp[3]}, ${ramp[4]}, (t - 0.6) / 0.2); return mix(${ramp[4]}, ${ramp[5]}, (t - 0.8) / 0.2); }
-        void main(){ vec4 f = texture2D(uTex, vUv); float c = max(f.r, f.g * 0.22);
-          float v = c * uI; if (v < 0.004) discard;
-          float a = smoothstep(0.0, 0.6, v) * (0.12 + 0.46 * f.r);
-          gl_FragColor = vec4(rampa(0.12 + 0.88 * v), a); }` });
+        void main(){ vec4 f = texture2D(uTex, vUv); float m = max(f.r, f.g * 0.12);
+          if (m * uI < 0.004) discard;
+          vec2 p = vec2(uBox.x + vUv.x * uBox.z, uBox.y + (1.0 - vUv.y) * uBox.w);
+          float ond = 0.5 + 0.5 * sin(p.x * 0.045 + uT * 1.4) * sin(p.y * 0.04 - uT * 1.1); // respiración a lo largo de las vías
+          float an = 0.0;
+          for (int k = 0; k < ${GATES.length}; k++) { float d = distance(p, uGate[k].xy); float fz = uGate[k].z;
+            float ph = d / 46.0 - uT * (0.55 + 0.6 * fz); float w = pow(0.5 + 0.5 * cos(6.2832 * ph), 10.0);
+            an += w * fz * exp(-d / 300.0); }
+          float base = m * (0.72 + 0.28 * ond);
+          float anM = an * max(f.r, f.g * 0.5) * (0.8 + 0.7 * uJ);
+          float v = uI * (base + 1.6 * anM);
+          if (v < 0.004) discard;
+          float a = smoothstep(0.0, 0.45, v) * (0.16 + 0.55 * max(f.r, min(1.0, anM * 1.5))) * (1.0 + 0.8 * uLejos);
+          gl_FragColor = vec4(rampa(0.25 + 0.75 * min(1.0, v * 1.3) + 0.1 * uLejos * f.r), min(0.85, a)); }` });
     ruidoM = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), mR);
     ruidoM.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); ruidoM.renderOrder = 5; ruidoM.visible = false; ruidoM.name = 'predio-ruido'; ruidoM.frustumCulled = false;
     grupo.add(ruidoM);
+
+    /* flujo legible de lejos: cada carro es un punto de luz con dos más detrás (estela que se alarga con la velocidad); cálido si
+       avanza, rojo si está detenido (la cola en los accesos se ve como un racimo rojo). De cerca se apaga y quedan los carros. */
+    const gP = new THREE.BufferGeometry();
+    gP.setAttribute('position', new THREE.BufferAttribute(pPos, 3).setUsage(THREE.DynamicDrawUsage));
+    gP.setAttribute('aV', new THREE.BufferAttribute(pV, 1).setUsage(THREE.DynamicDrawUsage));
+    gP.setAttribute('aA', new THREE.BufferAttribute(pA, 1).setUsage(THREE.DynamicDrawUsage));
+    gP.setDrawRange(0, 0);
+    const mP = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, toneMapped: false, uniforms: { uEsc },
+      vertexShader: `attribute float aV; attribute float aA; uniform float uEsc; varying float vV; varying float vA;
+        void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); float d = -mv.z; gl_Position = projectionMatrix * mv;
+          vA = aA * smoothstep(90.0, 300.0, d); vV = aV;
+          gl_PointSize = vA < 0.01 ? 0.0 : clamp(13.0 * uEsc / d, 4.5, 15.0) * (0.55 + 0.45 * aA); }`,
+      fragmentShader: `varying float vV; varying float vA;
+        void main(){ vec2 q = gl_PointCoord - 0.5; float r2 = dot(q, q) * 4.0; if (r2 > 1.0) discard;
+          vec3 c = mix(vec3(0.95, 0.12, 0.08), vec3(1.0, 0.92, 0.72), vV);
+          float nucleo = exp(-r2 * 3.0); gl_FragColor = vec4(mix(c * 0.55, c, nucleo), vA * min(1.0, 0.25 + nucleo)); }` });
+    puntos = new THREE.Points(gP, mP); puntos.frustumCulled = false; puntos.renderOrder = 8; puntos.name = 'predio-flujo'; grupo.add(puntos);
+
+    // índice de acceso de cada carril (para la fuerza de los anillos): los que llegan al nodo del acceso y los de entrada/salida
+    lnGate = new Int8Array(NL).fill(-1);
+    car.forEach((c, l) => { let k = GATES.indexOf(c.b); if (k < 0 && c.tipo === 'out') k = GATES.indexOf(c.a); if (k < 0 && c.tipo === 'in') k = GATES.indexOf(c.b); lnGate[l] = k; });
+
+    // rótulo flotante sobre el predio (vidrio, sans-serif)
+    rotulo = document.createElement('div'); rotulo.className = 'predio-rot'; rotulo.setAttribute('aria-live', 'polite');
+    if (!document.getElementById('predio-rot-css')) { const st = document.createElement('style'); st.id = 'predio-rot-css'; st.textContent = CSS_ROT; document.head.appendChild(st); }
+    rotulo.style.display = 'none'; document.body.appendChild(rotulo);
+    if (window.KEN_PLANBAV && window.KEN_PLANBAV.centro) { ancla.set(window.KEN_PLANBAV.centro[0], 70, window.KEN_PLANBAV.centro[1]); }
+    else { const w = W([9330, 3000]); ancla.set(w[0], 70, w[1]); }
   }
 
   /* ---------- tramos abiertos y rutas (cuando cambia vias / sem) ---------- */
+  /* año en que abre cada tramo: el de su calzada en el plano, o antes si es el camino de una etapa temprana hasta un acceso (cada etapa
+     se construye con su vía de acceso; si no, las primeras manzanas quedarían sin salida) */
+  let efAnio = null;
+  function aniosEfectivos() {
+    efAnio = TRAMOS.map(t => t[4]); const ady = {};
+    TRAMOS.forEach((t, i) => { if (t[3] !== 'i') return; const L = Math.hypot(NODOS[t[1]][0] - NODOS[t[0]][0], NODOS[t[1]][1] - NODOS[t[0]][1]); (ady[t[0]] = ady[t[0]] || []).push([t[1], i, L]); (ady[t[1]] = ady[t[1]] || []).push([t[0], i, L]); });
+    const aAcceso = (n0) => { const dist = { [n0]: 0 }, prev = {}, cola = [n0], hecho = new Set();
+      while (cola.length) { let bi = 0; for (let k = 1; k < cola.length; k++) if (dist[cola[k]] < dist[cola[bi]]) bi = k; const u = cola.splice(bi, 1)[0];
+        if (hecho.has(u)) continue; hecho.add(u); if (GATES.includes(u)) { const r = []; let v = u; while (v !== n0) { r.push(prev[v][1]); v = prev[v][0]; } return r; }
+        for (const [v, i, L] of ady[u] || []) { const d = dist[u] + L; if (dist[v] == null || d < dist[v]) { dist[v] = d; prev[v] = [u, i]; cola.push(v); } } }
+      return []; };
+    TRAMOS.forEach((t, i) => { if (t[3] !== 'i') return; for (const j of aAcceso(t[0])) efAnio[j] = Math.min(efAnio[j], t[4]); });
+  }
+  const VIAS_MODELO = [9, 8, 14, 15, 8, 7, 7, 7, 1, 4]; // tramos de calzada que abre cada etapa en el modelo (simulaciones12: PREDIO_PLAN.vias)
   function rehacerRed() {
-    const ti = TRAMOS.map((t, i) => i).filter(i => TRAMOS[i][3] === 'i').sort((a, b) => TRAMOS[a][4] - TRAMOS[b][4] || a - b);
+    if (!efAnio) aniosEfectivos();
+    const ti = TRAMOS.map((t, i) => i).filter(i => TRAMOS[i][3] === 'i');
     const abiertoT = new Uint8Array(TRAMOS.length).fill(1);
-    let nAb;
-    if (est.vias != null && isFinite(est.vias)) nAb = Math.max(0, Math.min(ti.length, Math.floor(est.vias)));
-    else if (est.sem != null && est.sem > 0 && window.KEN_PLANBAV) { const año = Math.floor(est.sem / 52) + 1; nAb = ti.filter(i => TRAMOS[i][4] <= año).length; }
-    else nAb = ti.length;
-    ti.forEach((i, k) => { abiertoT[i] = k < nAb ? 1 : 0; });
+    let etapas = 10; // etapas del plan con vías abiertas
+    if (est.vias != null && isFinite(est.vias)) { let c = 0; etapas = 0; for (const v of VIAS_MODELO) { c += v; if (+est.vias >= c) etapas++; } }
+    else if (est.sem != null && est.sem > 0) etapas = Math.min(10, Math.floor(est.sem / 52) + 1);
+    for (const i of ti) abiertoT[i] = efAnio[i] <= etapas ? 1 : 0;
     const firma = Array.prototype.join.call(abiertoT, '');
-    if (firma === firmaRed) return; firmaRed = firma;
+    if (firma === firmaRed) return; firmaRed = firma; calentado = false;
     for (let l = 0; l < NL; l++) lnAbierto[l] = abiertoT[lnTramo[l]];
     // grafo por nodos
     const car = armar.car, sale = {}; car.forEach((c, l) => { if (lnAbierto[l]) (sale[c.a] = sale[c.a] || []).push(l); });
@@ -217,7 +289,7 @@ export function crearPredio({ T3, RELOJ }) {
   }
 
   /* ---------- carros ---------- */
-  function quitar(i) { cAct[i] = 0; nAct--; const A = malla.instanceMatrix.array; for (let k = 0; k < 16; k++) A[i * 16 + k] = 0; }
+  function quitar(i) { cAct[i] = 0; nAct--; const A = malla.instanceMatrix.array; for (let k = 0; k < 16; k++) A[i * 16 + k] = 0; pA[i * 3] = pA[i * 3 + 1] = pA[i * 3 + 2] = 0; }
   const qTail = (l) => qLen[l] ? qBuf[qIni[l] + (qHead[l] + qLen[l] - 1) % qCap[l]] : -1;
   const qFront = (l) => qLen[l] ? qBuf[qIni[l] + qHead[l]] : -1;
   function meter(l, i) { if (qLen[l] >= qCap[l]) return false; qBuf[qIni[l] + (qHead[l] + qLen[l]) % qCap[l]] = i; qLen[l]++; return true; }
@@ -235,9 +307,13 @@ export function crearPredio({ T3, RELOJ }) {
     const min = RELOJ.minutoDia, dem = demandaEn(min), h = (min / 60) % 24;
     const j = Math.max(0, Math.min(1, (ratio - 1) / 1.1)) * Math.max(0, Math.min(1, (dem - 0.25) / 0.55)); // congestión 0…1
     hOut = 2.4 + 9 * j; hIn = 1.6 + 4 * j;
-    factorTasa = 0.34 * dem * ratio; // veh/s en total (≈ 1.200 veh/h en hora pico con el tráfico de referencia)
+    factorTasa = 0.5 * dem * ratio; // veh/s en total (≈ 1.200 veh/h en hora pico con el tráfico de referencia)
     partLlega = h >= 5 && h < 10 ? 0.32 : h >= 16 && h < 21 ? 0.68 : 0.5; // mañana salen, tarde llegan
-    ajustar.j = j; ajustar.dem = dem;
+    ajustar.j = j; ajustar.dem = dem; uJ.value = j;
+    // fuerza de los anillos por acceso: base por la demanda y el tráfico + carros detenidos que esperan en ese acceso
+    if (lnGate) { paradosG.fill(0);
+      for (let l = 0; l < NL; l++) { const g = lnGate[l]; if (g < 0) continue; const n = qLen[l]; for (let k = 0; k < n; k++) if (cV[qBuf[qIni[l] + (qHead[l] + k) % qCap[l]]] < 0.8) paradosG[g]++; }
+      for (let g = 0; g < GATES.length; g++) uGate.value[g].z = Math.min(1.3, (0.25 + 0.35 * dem * Math.min(2, ratio)) + paradosG[g] / 10); }
   }
   function paso(dt) {
     tAnim += dt;
@@ -307,16 +383,28 @@ export function crearPredio({ T3, RELOJ }) {
       const c = Math.cos(h), sn = Math.sin(h), b = i * 16;
       A[b] = c; A[b + 1] = 0; A[b + 2] = -sn; A[b + 3] = 0; A[b + 4] = 0; A[b + 5] = 1; A[b + 6] = 0; A[b + 7] = 0;
       A[b + 8] = sn; A[b + 9] = 0; A[b + 10] = c; A[b + 11] = 0; A[b + 12] = x; A[b + 13] = y; A[b + 14] = z; A[b + 15] = 1;
+      // puntos de luz: el carro y dos detrás (más separados cuanto más rápido)
+      const vn = Math.min(1, cV[i] / 7), paso3 = 2 + 6 * vn;
+      for (let k = 0; k < 3; k++) { const p = i * 3 + k, q = p * 3; pPos[q] = x - sn * paso3 * k; pPos[q + 1] = y + 1.6; pPos[q + 2] = z - c * paso3 * k; pV[p] = vn; pA[p] = k === 0 ? 1 : (k === 1 ? 0.55 : 0.28) * (0.25 + 0.75 * vn); }
     }
     while (alto > 0 && !cAct[alto - 1]) alto--;
     malla.count = alto; malla.instanceMatrix.needsUpdate = true;
+    const gP = puntos.geometry; gP.setDrawRange(0, alto * 3); gP.attributes.position.needsUpdate = gP.attributes.aV.needsUpdate = gP.attributes.aA.needsUpdate = true;
   }
 
   let cuadroAjuste = 0;
-  function cuadro() {
+  function cuadro(info) {
     if (!visible) return;
-    const rc = T3.rc && T3.rc.ruido, ver = uRuido > 0.004 && (ruidoOn || (rc && rc.visible));
-    ruidoM.visible = !!ver; if (ver) { uI.value = uRuido; ruidoM.position.y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.43; } // justo sobre el suelo del plan (capas a +0,22…+0,40), a la altura de las llantas
+    // ruido: siempre en la simulación 4; más fuerte con ruido(true) o con la capa «Ruido de carros» encendida
+    const rc = T3.rc && T3.rc.ruido, fuerte = ruidoOn || (rc && rc.visible);
+    const iR = Math.max(uRuido > 0 ? 0.32 : 0, uRuido) * (fuerte ? 1 : 0.75); ruidoM.visible = iR > 0.004;
+    // de lejos (cámara alta, ~2 km) la capa se refuerza para que se lea
+    const cp = T3.camera.position, dC = Math.hypot(cp.x - ancla.x, cp.y, cp.z - ancla.z); uLejos.value = Math.min(1, Math.max(0, (dC - 500) / 1500));
+    if (ruidoM.visible) { uI.value = iR; ruidoM.position.y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.43; } // justo sobre el suelo del plan (capas a +0,22…+0,40), a la altura de las llantas
+    // la onda del ruido corre siempre (más rápido con el reloj andando): es decorativa, no mueve carros
+    const dtR = Math.min(0.1, (info && info.dtReal) || 0.016); tRuido += dtR * (RELOJ.corriendo ? 1 + Math.min(1, (RELOJ.vel || 1) / 240) : 0.7); uT.value = tRuido;
+    uEsc.value = T3.renderer.domElement.height / (2 * Math.tan(T3.camera.fov * Math.PI / 360));
+    ponerRotulo();
     let dt = RELOJ.dtAnim || 0; if (!(dt > 0)) return;
     const m0 = performance.now(); // solo para medir el costo (el movimiento va con el reloj)
     if (++cuadroAjuste >= 30) { cuadroAjuste = 0; ajustar(); }
@@ -325,26 +413,53 @@ export function crearPredio({ T3, RELOJ }) {
     dibujar();
     const ms = performance.now() - m0; msCuadro += (ms - msCuadro) * 0.05; if (ms > msMax) msMax = ms;
   }
-  let msCuadro = 0, msMax = 0;
+  let msCuadro = 0, msMax = 0, rotX = -1, rotY = -1, rotOn = false, rotW = 0, rotH = 0;
+  function ponerRotulo() {
+    if (!rotulo) return;
+    proy.copy(ancla).project(T3.camera);
+    const W = innerWidth, H = innerHeight, on = proy.z < 1 && proy.x > -1.1 && proy.x < 1.1 && proy.y > -1.1 && proy.y < 1.1 && rotulo.firstChild;
+    if (!!on !== rotOn) { rotOn = !!on; rotulo.style.display = on ? '' : 'none'; }
+    if (!on) return;
+    if (!rotW) { rotW = rotulo.offsetWidth; rotH = rotulo.offsetHeight; } // se mide solo cuando cambia el texto
+    const rw = rotW || 200, rh = rotH || 120; // siempre dentro de la pantalla
+    const mI = W > 1000 ? 300 : 12, mD = W > 1000 ? 330 : 12; // en pantalla ancha, fuera de los paneles laterales
+    const x = Math.round(Math.min(W - rw / 2 - mD, Math.max(rw / 2 + mI, (proy.x * 0.5 + 0.5) * W))), y = Math.round(Math.min(H - 12, Math.max(rh + 20, (-proy.y * 0.5 + 0.5) * H)));
+    if (x !== rotX || y !== rotY) { rotX = x; rotY = y; rotulo.style.transform = `translate(${x}px,${y}px) translate(-50%,calc(-100% - 8px))`; }
+  }
+  const fmt = (n) => Math.round(n).toLocaleString('es-CO');
+  let textoRot = '';
+  function textoRotulo() {
+    if (!rotulo) return;
+    const PB = window.KEN_PLANBAV, años = (est.sem || 0) / 52, av = PB && PB.avance ? PB.avance(años) : null;
+    const veh = est.vehiculosDia != null ? +est.vehiculosDia : 0.5 * 12.6 * 3600 * ratio; // Σ demanda horaria del día ≈ 12,6 h equivalentes de pico
+    const hab = est.habitantes != null ? +est.habitantes : av ? av.viviendas * 3.1 : 0;     // 3,1 personas por hogar (Bogotá)
+    const tala = est.tala != null ? +est.tala : av ? av.arboles : 0;
+    const d = (+est.ruidoDb || 0) - (+est.ruidoDb0 || 0);
+    const t = `<h6>Predio Bavaria · plan parcial</h6><div class="f"><span>Vehículos/día</span><b>${fmt(veh)}</b></div>`
+      + `<div class="f"><span>Ruido</span><b class="${d > 0.05 ? 'r' : ''}">${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(1).replace('.', ',')} dB</b></div>`
+      + `<div class="f"><span>Habitantes</span><b>${fmt(hab)}</b></div><div class="f"><span>Árboles talados</span><b>${fmt(tala)}</b></div>`;
+    if (t !== textoRot) { textoRot = t; rotulo.innerHTML = t; rotW = 0; }
+  }
   RELOJ.alDibujar(cuadro);
 
   const api = {
     poner(o = {}) {
       Object.assign(est, o); armar();
       const t0 = +est.trafico0 > 0 ? +est.trafico0 : 1; ratio = Math.max(0, Math.min(4, (+est.trafico || t0) / t0));
-      const d = (+est.ruidoDb || 0) - (+est.ruidoDb0 || 0); uRuido = Math.max(0, Math.min(1, d / 10));
-      rehacerRed(); ajustar(); if (visible) dibujar();
+      const d = (+est.ruidoDb || 0) - (+est.ruidoDb0 || 0); uRuido = Math.max(ratio > 0 ? 0.22 : 0, Math.min(1, d / 10)); // +10 dB = rojo fuerte; un mínimo tenue mientras haya tráfico
+      puesto = true; rehacerRed(); ajustar(); textoRotulo();
+      if (visible) { if (nAct === 0 && rutasActivas > 0 && !calentado) { calentado = true; calentar(240); } dibujar(); }
     },
     ver(on) {
       on = !!on; if (on === visible) return; visible = on; grupo.visible = on;
-      if (on) { armar(); rehacerRed(); if (nAct === 0) calentar(240); dibujar(); }
-      else if (ruidoM) ruidoM.visible = false;
+      if (on) { armar(); if (puesto) { rehacerRed(); if (nAct === 0) calentar(240); } textoRotulo(); dibujar(); rotOn = false; rotulo.style.display = 'none'; ponerRotulo(); }
+      else { if (ruidoM) ruidoM.visible = false; if (rotulo) { rotulo.style.display = 'none'; rotOn = false; } }
     },
     ruido(on) { ruidoOn = !!on; },
     get visible() { return visible; },
     // carriles con carros detenidos (cola): [{ de, a, carros, parados }] (pruebas y paneles)
     colas() { const o = []; if (!armar.car) return o; armar.car.forEach((c, l) => { let p = 0; for (let k = 0; k < qLen[l]; k++) if (cV[qBuf[qIni[l] + (qHead[l] + k) % qCap[l]]] < 0.6) p++; if (p) o.push({ de: c.a, a: c.b, carros: qLen[l], parados: p }); }); return o.sort((x, y) => y.parados - x.parados); },
-    get nVias() { return TRAMOS.filter(t => t[3] === 'i').length; }, // número de tramos internos (vias = cuántos están abiertos, en orden de año)
+    get nVias() { return VIAS_MODELO.reduce((a, b) => a + b, 0); }, // vias = tramos de calzada abiertos como los cuenta el modelo (80 al final); se pasa a etapas del plan
     estado() { return { ms: +msCuadro.toFixed(3), msMax: +msMax.toFixed(3), carros: nAct, rutas: rutasActivas, ratio, congestion: ajustar.j || 0, demanda: ajustar.dem || 0, hSalida: hOut, ruido: uRuido, parados: (() => { let n = 0; for (let i = 0; i < alto; i++) if (cAct[i] && cV[i] < 0.6) n++; return n; })(), colas:armar.car ? armar.car.map((c, l) => lnTipo[l] >= 2 ? qLen[l] : 0).reduce((a, b) => a + b, 0) : 0 }; },
     grupo
   };
