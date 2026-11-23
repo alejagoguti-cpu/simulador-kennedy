@@ -3,7 +3,7 @@
 Archivo: `instalacion/td/KennedyReacciona.toe` (TouchDesigner 2025.33230). Construido y verificado con TDMCP.
 Red: `/project1/KENNEDY_REACCIONA` (atajo `parent.Kr`).
 
-**Encuadre: TODA la localidad de Kennedy** (límite OSM `data3d/kennedy.json`), 13.960 × 7.852,5 m en 16:9, norte arriba; fuera del límite no se proyecta (máscara). Maqueta a 1:8.000 → la localidad ocupa ~94 × 96 cm.
+**Encuadre (desde el 22-11-2026): zoom Corabastos–Bavaria, 6 × 3,375 km = la maqueta impresa en 3D de 50 × 28,1 cm (ver instalacion/maqueta/zoom_bavaria_corabastos). Antes: TODA la localidad de Kennedy** (límite OSM `data3d/kennedy.json`), 13.960 × 7.852,5 m en 16:9, norte arriba; fuera del límite no se proyecta (máscara). Maqueta a 1:8.000 → la localidad ocupa ~94 × 96 cm.
 
 ## Qué funciona (verificado en TouchDesigner)
 
@@ -23,7 +23,7 @@ Red: `/project1/KENNEDY_REACCIONA` (atajo `parent.Kr`).
 
 ## Origen de cada cosa que se ve (no se inventa nada)
 - **Vehículos (flujo de carros)**: REPRODUCCIÓN de la grabación SUMO del simulador (`data3d/traf`). No se re-simula. Como en el simulador web, solo se reproduce la parte llena de la grabación (segundos 900–1.499: 1.900–2.470 vehículos; antes la red se está llenando) y en hora pico se superponen hasta 3 copias desfasadas de la misma grabación (mismos recorridos reales): 1 de madrugada, 3 en los picos, según el perfil horario. Los carros solo aparecen donde la simulación SUMO tiene red (centro y norte de Kennedy).
-- **Color**: velocidad grabada (<1, 1–5, 5–10, >10 m/s).
+- **Color**: velocidad grabada (<1 rojo detenido, 1–5 naranja lento, 5–10 amarillo, >10 m/s blanco cian rápido). Pensado para proyectar sobre la maqueta de PLA blanco mate: colores claros y saturados, fondo de edificios casi apagado (la maqueta ya tiene los edificios físicos), poco resplandor para que la luz no se derrame.
 - **Cantidad por hora**: perfil horario de demanda del simulador (ESTIMADO, perfil típico de Bogotá; la grabación es de hora pico = 100 %).
 - **Estela**: rastro visual de las posiciones anteriores de cada vehículo (solo sobre su trayectoria grabada); recurso visual, no un dato.
 - **Red vial**: `data3d/net.json` del simulador.
