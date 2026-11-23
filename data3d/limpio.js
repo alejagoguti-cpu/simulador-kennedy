@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=40';
+import { iniciarSimUI } from './sim_ui.js?v=42';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -204,13 +204,14 @@ export function iniciarLimpio({ T3 }) {
     try { const g = ['metro_l1_estaciones', 'metro_l1_catenaria', 'metro_l1_letreros', 'metro_l1_obra'].map(n => T3.scene.getObjectByName(n)).filter(Boolean);
       const antes = g.map(o => o.visible); g.forEach(o => { o.visible = true; }); if (T3.renderer.compile) T3.renderer.compile(T3.scene, T3.camera); g.forEach((o, i) => { o.visible = antes[i]; }); } catch (e) { /* sin precompilar */ }
   }, 2500);  /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=3', './predio_trafico.js?v=3', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=2', './capas_pares.js?v=1', './abasto_contenedor.js?v=5']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=4', './predio_trafico.js?v=3', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=2', './capas_pares.js?v=1', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');
     if ((L && !L.classList.contains('hidden')) || !document.querySelector('#esim .seg button[data-e="A"]') || !document.getElementById('lp-sims')) return void setTimeout(autoUno, 400);
     setTimeout(() => { if (!ESC.activo) escoger(1); }, 900); };
-  autoUno();  function volar(cual) {
+  /* al entrar NO queda escogida ninguna simulación: solo la vista normal (pedido de la autora); se escoge con los botones */
+  function volar(cual) {
     if (!T3.camera || !T3.orbit) return; const V = T3.THREE.Vector3; let c, d;
     if (cual === 'metro') {
       const M = window.KEN_METRO; let cx, cz;

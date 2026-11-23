@@ -65,7 +65,7 @@ async function crearPase() {
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `uniform sampler2D tDiffuse; uniform float uK, uOsc; varying vec2 vUv;
       void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb; float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-        vec3 g = vec3(l * uOsc + 0.012); gl_FragColor = vec4(mix(c, g, uK), 1.0); }`
+        vec3 g = mix(c, vec3(l), 0.4) * 0.42; gl_FragColor = vec4(mix(c, g, uK), 1.0); } /* se baja el brillo de a poco y se apaga un poco el color (no blanco y negro) */`
   });
   pase.enabled = false; pase.foco = true;
 }

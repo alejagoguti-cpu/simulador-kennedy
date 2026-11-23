@@ -64,7 +64,7 @@ export async function iniciarPlanBavaria({ T3 }) {
   for (const k in mats) fachada(mats[k], k);
 
   /* ---------- edificios: un volumen por manzana (anillo con patio o macizo), extruido a su altura ---------- */
-  const raiz = new THREE.Group(); raiz.visible = false; T3.scene.add(raiz);
+  const raiz = new THREE.Group(); raiz.name = 'plan_parcial'; raiz.visible = false; T3.scene.add(raiz);
   const EDIF = P.edificios.map(e => {
     const alto = e.pisos * PISO, g = new THREE.ExtrudeGeometry(e.p.map(forma), { depth: alto, bevelEnabled: false, curveSegments: 1 });
     g.rotateX(-Math.PI / 2); g.computeVertexNormals();

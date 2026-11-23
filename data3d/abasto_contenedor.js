@@ -10,10 +10,10 @@ import { RELOJ } from './reloj.js?v=5';
 export function crearContenedores({ T3 }) {
   if (window.KEN_CONT) return window.KEN_CONT;
   const THREE = T3.THREE, G = new THREE.Group(); G.name = 'abasto_cont'; G.visible = false; T3.scene.add(G);
-  const ALTO = 9;          // el vaso es 5 veces más alto que las bodegas (14 m -> 70 m): se lee desde la vista alta
+  const ALTO = 6;          // el vaso es 5 veces más alto que las bodegas (14 m -> 70 m): se lee desde la vista alta
   const plano = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0); // corta el líquido a la altura del nivel
-  const vidrio = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
-  const liq = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: false, clippingPlanes: [plano], side: THREE.DoubleSide, toneMapped: false }); // color plano y brillante: se lee desde lejos
+  const vidrio = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const liq = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.55, depthWrite: false, clippingPlanes: [plano], side: THREE.DoubleSide, toneMapped: false }); // color plano y brillante: se lee desde lejos
   const bordeTope = new THREE.LineBasicMaterial({ color: 0xff4d4d, transparent: true, opacity: 0.95 });
   let armado = false, y0 = 0, hVaso = 70, cx = 0, cz = 0;
   function armar() {

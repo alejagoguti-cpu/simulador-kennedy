@@ -42,7 +42,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
   const DIF = [[0, [150, 156, 160]], [1.5, [125, 190, 250]], [3.5, [60, 130, 240]], [6, [30, 70, 190]]]; // 0 dB gris · −1,5 azul claro · −3,5 azul · −6 dB o más azul oscuro
   const colDif = (d, o) => { if (d > 0) { const f = Math.min(1, d / 3); o[0] = 150 + (224 - 150) * f; o[1] = 156 + (65 - 156) * f; o[2] = 160 + (47 - 160) * f; return; }
     const a = -d, k = a < DIF[1][0] ? 0 : a < DIF[2][0] ? 1 : 2, A = DIF[k], B = DIF[k + 1], f = Math.min(1, (a - A[0]) / (B[0] - A[0])); for (let c = 0; c < 3; c++) o[c] = A[1][c] + (B[1][c] - A[1][c]) * f; };
-  let pxIdx = null, cov = null, covSig = '', campoH = null, campoP = null, sigH = -1, sigP = '', sigMapa = '';
+  let pxIdx = null, cov = null, covSig = '', campoH = null, campoP = null, sigH = -1, sigP = '', sigMapa = '', tPint = 0;
   const badge = () => { let b = document.getElementById('rui-badge'); if (!b) { b = document.createElement('div'); b.id = 'rui-badge'; b.setAttribute('role', 'status'); document.body.appendChild(b); } return b; };
   const preparar = (RM) => { const G = RM.G;
     if (!pxIdx) { pxIdx = new Int32Array(W * H).fill(-1);
@@ -56,11 +56,15 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
     const RM = T3.ruidoMod; if (!RM || !RM.G) return; const nv = RM.G.L0R ? preparar(RM) : null; const ve = RM.vistaEf();
     if (!nv) { go.clearRect(0, 0, W, H); tex.needsUpdate = true; badge().textContent = 'Calculando el ruido…'; return; }
     const img = go.createImageData(W, H), d = img.data, c3 = [0, 0, 0];
+    /* RUIDO QUE CAMBIA (vista de las simulaciones): T3.ruidoExtraDb sube o baja todo el mapa (más o menos carros, hora del día) y
+       T3.ruidoFoco = {x, z, r, db} suma ruido alrededor de un lugar (Corabastos cuando se llena), con caída suave hasta r metros. */
+    const ex = T3.ruidoExtraDb || 0, RF = T3.ruidoFoco && T3.ruidoFoco.db ? T3.ruidoFoco : null, r2 = RF ? RF.r * RF.r : 0;
     for (let p = 0; p < W * H; p++) { const q = pxIdx[p]; if (q < 0) continue; const c = cov[q]; if (c < 0.9) continue; const o = p * 4, al = Math.min(1, (c - 0.8) / 2.2);
-      const Lh = 10 * Math.log10(campoH[q] / c), Lp = 10 * Math.log10(campoP[q] / c);
+      let Lh = 10 * Math.log10(campoH[q] / c) + ex, Lp = 10 * Math.log10(campoP[q] / c) + ex;
+      if (RF) { const wx = bx0 + ((p % W) + 0.5) / sx - LC.x, wz = LC.y - (by0 + (H - Math.floor(p / W) - 0.5) / sy), dd = (wx - RF.x) * (wx - RF.x) + (wz - RF.z) * (wz - RF.z); if (dd < r2) { const k = 1 - dd / r2; Lh += RF.db * k * k; Lp += RF.db * k * k; } }
       if (ve === 'dif') { const dl = Lp - Lh; colDif(dl, c3); d[o + 3] = 225 * al * (0.3 + 0.7 * Math.min(1, Math.abs(dl) / 3)); } else { const Lv = ve === 'pro' ? Lp : Lh; colNivel(Lv, c3); const rp = suave((Lv - 52) / 20); d[o + 3] = 140 * al * rp * rp; /* como antes: lo tranquilo casi transparente, el ruido brilla sobre las vías (sin manchas en las manzanas) */ }
       d[o] = c3[0]; d[o + 1] = c3[1]; d[o + 2] = c3[2]; }
-    go.putImageData(img, 0, 0); tex.needsUpdate = true; sigMapa = ve + '|' + nv.sig + '|' + RM.ver;
+    go.putImageData(img, 0, 0); tex.needsUpdate = true; sigMapa = ve + '|' + nv.sig + '|' + RM.ver + '|' + (T3.ruidoSig || ''); tPint = performance.now();
     const b = badge(); b.className = 'v-' + ve; b.textContent = ve === 'hoy' ? 'MAPA DE RUIDO · ESTADO ACTUAL' : ve === 'pro' ? 'MAPA DE RUIDO · CON LA PROPUESTA' : 'MAPA DE RUIDO · CUÁNTO BAJA CADA CALLE';
   }
   // ---------------- CIERRE DE VÍA ----------------
@@ -130,7 +134,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
     ruido: { ver: (on) => { plano.visible = on; if (!on) { const b = document.getElementById('rui-badge'); if (b) b.remove(); } else { sigMapa = ''; pintarRuido(); } }, get visible() { return plano.visible; } },
     // el mapa solo se repinta si cambió la vista, un control del panel o el número de árboles (se mira cada 100 ms)
     update() { if (!plano.visible) return; const t = performance.now(); if (t - ultimo < 100) return; ultimo = t; const RM = T3.ruidoMod; if (!RM || !RM.G) return;
-      if (!RM.G.L0R) { if (sigMapa !== 'espera') { sigMapa = 'espera'; pintarRuido(); } return; } const nv = RM.niveles(); if (!nv || sigMapa !== RM.vistaEf() + '|' + nv.sig + '|' + RM.ver) pintarRuido(); },
+      if (!RM.G.L0R) { if (sigMapa !== 'espera') { sigMapa = 'espera'; pintarRuido(); } return; } const nv = RM.niveles(); if (!nv) { pintarRuido(); return; } const base = RM.vistaEf() + '|' + nv.sig + '|' + RM.ver, s2 = base + '|' + (T3.ruidoSig || ''); if (sigMapa === s2) return; if (sigMapa.startsWith(base + '|') && t - tPint < 900) return; pintarRuido(); }, // lo dinámico (hora, carros) se repinta como mucho cada 0,9 s
     cerrar, get cerrada() { return cerrada; },
   };
 }

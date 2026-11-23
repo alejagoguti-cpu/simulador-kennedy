@@ -180,6 +180,17 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     catch (e) { console.warn('base del par:', e); }
   }
   /* avanzar el modelo al paso de la barra de años */
+  /* RUIDO QUE SE MUEVE: el mapa de ruido sigue a los carros de la simulación (KEN_TRAF_F: con propuesta baja, sin propuesta sube),
+     a la hora del día (picos de la mañana y la tarde) y, en el par 01, suma ruido alrededor de Corabastos cuando se llena. */
+  RELOJ.alDibujar(() => {
+    if (!R.sim) { T3.ruidoExtraDb = 0; T3.ruidoFoco = null; T3.ruidoSig = ''; return; }
+    const h = ((RELOJ.minutoDia != null ? RELOJ.minutoDia : (RELOJ.t % 86400) / 60) / 60) % 24, pico = (c, w) => Math.exp(-((h - c) * (h - c)) / (2 * w * w));
+    const fh = 0.35 + 0.75 * Math.max(pico(7.5, 1.3), pico(18, 1.6)) + 0.25 * pico(13, 2.5);
+    const ex = 10 * Math.log10(Math.max(0.2, (window.KEN_TRAF_F || 1) * fh)), L = ultimo(), C = L && L.abasto && L.abasto.cora;
+    T3.ruidoExtraDb = Math.round(ex * 2) / 2;
+    T3.ruidoFoco = C ? { x: C.x, z: C.z, r: 1100, db: Math.round(8 * Math.max(0, (C.carga - 0.7) / 0.3) * 2) / 2 } : null;
+    T3.ruidoSig = T3.ruidoExtraDb + '|' + (T3.ruidoFoco ? T3.ruidoFoco.db : 0);
+  });
   RELOJ.alDibujar(() => {
     if (!R.s || R.go || R.fin) return;
     if (R.previa && !RELOJ.pausaSem) { R.previa = false; pintarPrevia(''); } // al darle play la vista previa se va y los picos siguen la barra
@@ -383,7 +394,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   function ponerCierre(C) {
     if (!C || !(C.fase > 0)) { if (CIE) CIE.quitar(); return; }
-    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=3').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
+    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=4').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
     CIE.poner({ via: C.via, fase: C.fase, ruidoExtraDb: C.ruidoExtraDb, traficoDesvio: C.traficoDesvio });
   }
 
@@ -410,7 +421,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function ponerCapaPar(I) {
     const c = I ? capaPar() : null;
     // par 01: contenedores (Corabastos con su tope y los mercados) en vez de nodos y rutas
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=5').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=6').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -481,7 +492,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      color solo las capas de su historia (y el ruido o las especies si son parte de ella). «Ver» y «Mira en el territorio» lo cambian un
      rato y al cerrar vuelve a este. */
   function focoHistoria(dur = 5) { const H = HISTORIA[R.def && R.def.par]; if (!H || !window.KEN_FOCO) return;
-    window.KEN_FOCO.on([...H.capas, ...(H.ruido ? ['ruido'] : []), ...(H.capas.includes('biotica') ? ['especies'] : []), 'indicadores', 'avisos'], { dur }); }
+    window.KEN_FOCO.on([...H.capas, ...(H.ruido ? ['ruido'] : []), ...(H.capas.includes('biotica') ? ['especies'] : []), 'indicadores', ...(R.def && !R.def.propuesta ? ['plan_parcial', 'bavaria'] : ['bavaria', 'bavaria_distrito'])], { dur }); } // sin propuesta: Bavaria y su plan parcial también en color
 
   /* ---------- MIRA EN EL TERRITORIO: botones que vuelan (Ojo de Dios) a lo que importa en cada simulación y lo dejan en color ---------- */
   const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
