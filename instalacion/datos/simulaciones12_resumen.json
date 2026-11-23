@@ -100,6 +100,7 @@
  "supuestos": {
   "METRO_SEM": 114,
   "METRO_RED": 0.1,
+  "METRO_RED_ALIM": 0.25,
   "METRO_RADIO": 800,
   "SIN_CORA": 52,
   "DESM_LIB": 1,
@@ -142,6 +143,49 @@
   "K_CONT": 0.35,
   "TALA_URB": 0.005
  },
+ "metro_sup": {
+  "EST": [
+   {
+    "n": "Portal Américas",
+    "x": -242,
+    "z": 1269
+   },
+   {
+    "n": "Ciudad Kennedy",
+    "x": 299,
+    "z": 2069
+   },
+   {
+    "n": "Timiza",
+    "x": 982,
+    "z": 2637
+   },
+   {
+    "n": "Hospital de Kennedy",
+    "x": 2128,
+    "z": 2434
+   },
+   {
+    "n": "Avenida Boyacá",
+    "x": 3243,
+    "z": 2400
+   }
+  ],
+  "SEM_EST": 52,
+  "AVANCE": 83.7,
+  "VIAJES_PERS": 2,
+  "PART_METRO": 0.1,
+  "RADIO": 800
+ },
+ "suelo_sup": {
+  "P_METRO": 0.13,
+  "RAMPA": 104,
+  "P_PLAN": 0.25,
+  "RADIO_PLAN": 1000,
+  "ARRIENDO": 0.551,
+  "K_DESP": 1,
+  "PROT_PROP": 30
+ },
  "desvio_sup": {
   "DESV": 0.5,
   "SUBE": 0.3,
@@ -166,7 +210,8 @@
     "pobCrece": 0,
     "mitiga": 0,
     "basuraCrece": 2.7,
-    "recoleccion": 84
+    "recoleccion": 84,
+    "proteccion": 0
    },
    "gameover": {
     "regla": "humedal",
@@ -185,2289 +230,6 @@
    },
    "grupo": "actual",
    "pregunta": "¿Qué pasaría si Kennedy sigue como está, sin ningún cambio, durante 20 años?",
-   "inicio": {
-    "fauna0": 23,
-    "flora0": 54,
-    "red0": 1116,
-    "redTipos0": 207,
-    "poliniz0": 23,
-    "pares0": 122,
-    "ruidoDb0": 60.88858117579581
-   },
-   "indicadores": {
-    "fauna": {
-     "min": 19,
-     "max": 23,
-     "final": 20
-    },
-    "flora": {
-     "min": 54,
-     "max": 54,
-     "final": 54
-    },
-    "red": {
-     "min": 1298,
-     "max": 3477,
-     "final": 3081
-    },
-    "redTipos": {
-     "min": 185,
-     "max": 220,
-     "final": 190
-    },
-    "pares": {
-     "min": 135,
-     "max": 318,
-     "final": 266
-    },
-    "aves": {
-     "min": 13,
-     "max": 14,
-     "final": 13
-    },
-    "poliniz": {
-     "min": 27,
-     "max": 81,
-     "final": 73
-    },
-    "polinizEsp": {
-     "min": 3,
-     "max": 3,
-     "final": 3
-    },
-    "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
-    },
-    "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
-    },
-    "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
-    },
-    "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
-    },
-    "atropellos": {
-     "min": 6.287,
-     "max": 12.497,
-     "final": 6.465
-    },
-    "comidaMin": {
-     "min": 1,
-     "max": 1,
-     "final": 1
-    },
-    "residuos": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "huertas": {
-     "min": 67.887,
-     "max": 120.046,
-     "final": 67.887
-    },
-    "bodegas": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
-    },
-    "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
-    },
-    "presion": {
-     "min": 0,
-     "max": 0.647,
-     "final": 0.647
-    },
-    "recuperacion": {
-     "min": 0,
-     "max": 0.059,
-     "final": 0
-    },
-    "ratas": {
-     "min": 1,
-     "max": 3.171,
-     "final": 3.171
-    },
-    "humedalHa": {
-     "min": 36.349,
-     "max": 38.399,
-     "final": 36.349
-    },
-    "humedalFuncional": {
-     "min": 53.794,
-     "max": 99.997,
-     "final": 53.794
-    },
-    "arboles": {
-     "min": 0.362,
-     "max": 0.4,
-     "final": 0.362
-    },
-    "comidaLocal": {
-     "min": 0.007,
-     "max": 0.012,
-     "final": 0.007
-    }
-   },
-   "extinciones": [
-    {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "tráfico y ruido",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 725,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "burro",
-     "x": 2095.7,
-     "z": -109.1
-    },
-    {
-     "sem": 753,
-     "especie": "comadreja",
-     "nombre": "Comadreja",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "bosqueBav",
-     "x": 4100,
-     "z": 60
-    },
-    {
-     "sem": 850,
-     "especie": "culebra",
-     "nombre": "Serpiente sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq11",
-     "x": 3002.4,
-     "z": -577.7
-    },
-    {
-     "sem": 1025,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "tráfico y ruido",
-     "parche": "pq9",
-     "x": 1522.9,
-     "z": -426.8
-    }
-   ],
-   "avisos": [
-    {
-     "sem": 239,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
-     "sem": 311,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las aves dejan el borde de Corabastos",
-     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 40 % más que hoy, depredan nidos y la basura las espanta."
-    },
-    {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 371,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura invade el borde del Humedal La Vaca",
-     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
-    },
-    {
-     "sem": 460,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: humedales",
-     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 534,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
-     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
-    },
-    {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
-    },
-    {
-     "sem": 565,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana deja Humedal La Vaca",
-     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
-    },
-    {
-     "sem": 628,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
-    },
-    {
-     "sem": 680,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-     "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
-    },
-    {
-     "sem": 680,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se duplican cerca de Corabastos",
-     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.218 t/día en Kennedy y 24 % no se recoge."
-    },
-    {
-     "sem": 725,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Rana sabanera desaparece de Kennedy",
-     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Serpiente sabanera desaparece de Kennedy",
-     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
-    }
-   ],
-   "predio": null
-  },
-  {
-   "id": 2,
-   "n": "Instituto en Bavaria",
-   "base": "B",
-   "sliders": {
-    "P1.capAcopio": 131.6,
-    "P2.cap": 6000,
-    "P1.cupos": 12,
-    "P3.arboles": 0.4,
-    "P1.sup": 98000,
-    "trafCrece": 1.5,
-    "recoleccion": 84
-   },
-   "gameover": null,
-   "semillas30": {
-    "gameover": 3,
-    "de": 30,
-    "mediana_sem": 725,
-    "por_regla": {
-     "fauna": 3
-    }
-   },
-   "grupo": "propuesta",
-   "pregunta": "¿Qué pasaría si un solo instituto en Bavaria (Bavaria Común) concentra el abasto, el compost y la formación de promotores?",
-   "inicio": {
-    "fauna0": 23,
-    "flora0": 54,
-    "red0": 1116,
-    "redTipos0": 207,
-    "poliniz0": 23,
-    "pares0": 122,
-    "ruidoDb0": 60.88858117579581
-   },
-   "indicadores": {
-    "fauna": {
-     "min": 22,
-     "max": 23,
-     "final": 22
-    },
-    "flora": {
-     "min": 54,
-     "max": 54,
-     "final": 54
-    },
-    "red": {
-     "min": 1298,
-     "max": 3705,
-     "final": 3484
-    },
-    "redTipos": {
-     "min": 202,
-     "max": 221,
-     "final": 214
-    },
-    "pares": {
-     "min": 135,
-     "max": 338,
-     "final": 312
-    },
-    "aves": {
-     "min": 13,
-     "max": 14,
-     "final": 14
-    },
-    "poliniz": {
-     "min": 27,
-     "max": 87,
-     "final": 80
-    },
-    "polinizEsp": {
-     "min": 3,
-     "max": 3,
-     "final": 3
-    },
-    "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
-    },
-    "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
-    },
-    "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
-    },
-    "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
-    },
-    "atropellos": {
-     "min": 6.234,
-     "max": 12.071,
-     "final": 8.942
-    },
-    "comidaMin": {
-     "min": 1,
-     "max": 1,
-     "final": 1
-    },
-    "residuos": {
-     "min": 0,
-     "max": 0.034,
-     "final": 0
-    },
-    "huertas": {
-     "min": 116.649,
-     "max": 2582.017,
-     "final": 2540.532
-    },
-    "bodegas": {
-     "min": 0,
-     "max": 7,
-     "final": 7
-    },
-    "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
-    },
-    "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
-    },
-    "presion": {
-     "min": 0,
-     "max": 0.356,
-     "final": 0.356
-    },
-    "recuperacion": {
-     "min": 0,
-     "max": 0.465,
-     "final": 0.432
-    },
-    "ratas": {
-     "min": 0.777,
-     "max": 1.367,
-     "final": 1.367
-    },
-    "humedalHa": {
-     "min": 38.211,
-     "max": 40.826,
-     "final": 40.439
-    },
-    "humedalFuncional": {
-     "min": 92.675,
-     "max": 106.318,
-     "final": 92.675
-    },
-    "arboles": {
-     "min": 0.4,
-     "max": 0.4,
-     "final": 0.4
-    },
-    "comidaLocal": {
-     "min": 0.009,
-     "max": 0.462,
-     "final": 0.454
-    }
-   },
-   "extinciones": [
-    {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 850,
-     "especie": "culebra",
-     "nombre": "Serpiente sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq11",
-     "x": 3002.4,
-     "z": -577.7
-    }
-   ],
-   "avisos": [
-    {
-     "sem": 25,
-     "tipo": "huertas",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Kennedy ya tiene 243 huertas",
-     "texto": "Son el doble de las de hoy (120); producen 73 t de comida al año."
-    },
-    {
-     "sem": 82,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Mirla patiamarilla llega a Huerta central de Bavaria (B)",
-     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
-    },
-    {
-     "sem": 121,
-     "tipo": "huertas",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Kennedy ya tiene 1.211 huertas",
-     "texto": "Son diez veces de las de hoy (120); producen 363 t de comida al año."
-    },
-    {
-     "sem": 150,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmonta la primera bodega junto a La Vaca",
-     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 313,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 323 pares especie–parche frente a 293 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, pato andino, focha común y garza blanca."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 602,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Búho sabanero llega a Huerta central de Bavaria (B)",
-     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Serpiente sabanera desaparece de Kennedy",
-     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: tráfico",
-     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
-    },
-    {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
-    }
-   ],
-   "predio": {
-    "año5": {
-     "trafico": 1.044,
-     "ruidoDb": 72.851,
-     "ruidoDb0": 72.648,
-     "ocupacion": 39,
-     "ocupacion0": 32.923,
-     "habitantes": 0,
-     "vias": 0,
-     "vehiculosDia": 12,
-     "especiesFuera": []
-    },
-    "año10": {
-     "trafico": 1.104,
-     "ruidoDb": 73.119,
-     "ruidoDb0": 72.648,
-     "ocupacion": 35,
-     "ocupacion0": 32.923,
-     "habitantes": 0,
-     "vias": 0,
-     "vehiculosDia": 36,
-     "especiesFuera": []
-    },
-    "año15": {
-     "trafico": 1.166,
-     "ruidoDb": 73.353,
-     "ruidoDb0": 72.648,
-     "ocupacion": 38,
-     "ocupacion0": 32.923,
-     "habitantes": 0,
-     "vias": 0,
-     "vehiculosDia": 36,
-     "especiesFuera": []
-    },
-    "año20": {
-     "trafico": 1.232,
-     "ruidoDb": 73.593,
-     "ruidoDb0": 72.648,
-     "ocupacion": 38,
-     "ocupacion0": 32.923,
-     "habitantes": 0,
-     "vias": 0,
-     "vehiculosDia": 36,
-     "especiesFuera": []
-    }
-   }
-  },
-  {
-   "id": 3,
-   "n": "Red de mercados de barrio",
-   "base": "C",
-   "sliders": {
-    "P1.capAcopio": 131.6,
-    "P2.cap": 6000,
-    "P1.rotacion": 12,
-    "P3.arboles": 0.4,
-    "P1.sup": 98000,
-    "trafCrece": 1.5,
-    "recoleccion": 84
-   },
-   "gameover": null,
-   "semillas30": {
-    "gameover": 6,
-    "de": 30,
-    "mediana_sem": 655,
-    "por_regla": {
-     "fauna": 6
-    }
-   },
-   "grupo": "propuesta",
-   "pregunta": "¿Qué pasaría si los mercados de barrio y las plazoletas forman una red que reparte la comida y el hábitat?",
-   "inicio": {
-    "fauna0": 23,
-    "flora0": 54,
-    "red0": 1116,
-    "redTipos0": 207,
-    "poliniz0": 23,
-    "pares0": 122,
-    "ruidoDb0": 60.88858117579581
-   },
-   "indicadores": {
-    "fauna": {
-     "min": 22,
-     "max": 23,
-     "final": 23
-    },
-    "flora": {
-     "min": 54,
-     "max": 55,
-     "final": 55
-    },
-    "red": {
-     "min": 1298,
-     "max": 6703,
-     "final": 6152
-    },
-    "redTipos": {
-     "min": 206,
-     "max": 224,
-     "final": 218
-    },
-    "pares": {
-     "min": 135,
-     "max": 558,
-     "final": 514
-    },
-    "aves": {
-     "min": 13,
-     "max": 14,
-     "final": 14
-    },
-    "poliniz": {
-     "min": 27,
-     "max": 183,
-     "final": 157
-    },
-    "polinizEsp": {
-     "min": 3,
-     "max": 3,
-     "final": 3
-    },
-    "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
-    },
-    "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
-    },
-    "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
-    },
-    "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
-    },
-    "atropellos": {
-     "min": 6.287,
-     "max": 14.125,
-     "final": 9.505
-    },
-    "comidaMin": {
-     "min": 1,
-     "max": 1,
-     "final": 1
-    },
-    "residuos": {
-     "min": 0,
-     "max": 0.017,
-     "final": 0
-    },
-    "huertas": {
-     "min": 121.736,
-     "max": 5691.593,
-     "final": 5654.151
-    },
-    "bodegas": {
-     "min": 0,
-     "max": 7,
-     "final": 7
-    },
-    "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
-    },
-    "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
-    },
-    "presion": {
-     "min": 0,
-     "max": 0.387,
-     "final": 0.387
-    },
-    "recuperacion": {
-     "min": 0,
-     "max": 0.68,
-     "final": 0.68
-    },
-    "ratas": {
-     "min": 0.776,
-     "max": 1.366,
-     "final": 1.366
-    },
-    "humedalHa": {
-     "min": 38.238,
-     "max": 40.856,
-     "final": 40.443
-    },
-    "humedalFuncional": {
-     "min": 92.685,
-     "max": 106.396,
-     "final": 92.685
-    },
-    "arboles": {
-     "min": 0.4,
-     "max": 0.4,
-     "final": 0.4
-    },
-    "comidaLocal": {
-     "min": 0.01,
-     "max": 1.018,
-     "final": 1.011
-    }
-   },
-   "extinciones": [
-    {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "humedal degradado",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 569,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq15",
-     "x": 3210.9,
-     "z": 2921.6
-    }
-   ],
-   "avisos": [
-    {
-     "sem": 19,
-     "tipo": "huertas",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Kennedy ya tiene 244 huertas",
-     "texto": "Son el doble de las de hoy (122); producen 73 t de comida al año."
-    },
-    {
-     "sem": 75,
-     "tipo": "huertas",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Kennedy ya tiene 1.226 huertas",
-     "texto": "Son diez veces de las de hoy (122); producen 368 t de comida al año."
-    },
-    {
-     "sem": 77,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 368 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): mirla patiamarilla, colibrí chillón, cucarachero y chamón."
-    },
-    {
-     "sem": 80,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Cucarachero llega a Huertas de parque (3)",
-     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
-    },
-    {
-     "sem": 119,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "La fauna ocupa 25 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 418 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, cucarachero y chamón."
-    },
-    {
-     "sem": 119,
-     "tipo": "polinizadores",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Los polinizadores aumentan a la mitad",
-     "texto": "Abejas, colibríes y cucaracheros ocupan 129 pares especie–parche (en el año 1 86), gracias a las huertas y parques con flor."
-    },
-    {
-     "sem": 125,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmonta la primera bodega junto a La Vaca",
-     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
-     "sem": 180,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "La fauna ocupa 50 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 502 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, colibrí chillón y torcaza."
-    },
-    {
-     "sem": 196,
-     "tipo": "polinizadores",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Los polinizadores se duplican",
-     "texto": "Abejas, colibríes y cucaracheros ocupan 172 pares especie–parche (en el año 1 86), gracias a las huertas y parques con flor."
-    },
-    {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: humedal degradado."
-    },
-    {
-     "sem": 600,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Mirla patiamarilla llega a Huertas de parque (3)",
-     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
-    },
-    {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: tráfico",
-     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
-    },
-    {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
-    }
-   ],
-   "predio": null
-  },
-  {
-   "id": 4,
-   "n": "Plan parcial Bavaria",
-   "base": "D",
-   "sliders": {
-    "P3.arboles": 0.4,
-    "P3.rec": 0.02,
-    "planViv": 14002,
-    "planAutos": 0.31,
-    "planAccesos": 2,
-    "trafCrece": 1.5
-   },
-   "gameover": {
-    "regla": "humedal",
-    "sem": 680,
-    "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-    "valor": 69.853
-   },
-   "semillas30": {
-    "gameover": 30,
-    "de": 30,
-    "mediana_sem": 680,
-    "por_regla": {
-     "humedal": 24,
-     "fauna": 6
-    }
-   },
-   "grupo": "actual",
-   "pregunta": "¿Qué pasaría si se construye el Plan Parcial Fábrica Bavaria con sus 14.000 viviendas?",
-   "inicio": {
-    "fauna0": 23,
-    "flora0": 54,
-    "red0": 1116,
-    "redTipos0": 207,
-    "poliniz0": 23,
-    "pares0": 122,
-    "ruidoDb0": 60.88858117579581
-   },
-   "indicadores": {
-    "fauna": {
-     "min": 19,
-     "max": 23,
-     "final": 20
-    },
-    "flora": {
-     "min": 54,
-     "max": 54,
-     "final": 54
-    },
-    "red": {
-     "min": 1298,
-     "max": 3477,
-     "final": 3037
-    },
-    "redTipos": {
-     "min": 185,
-     "max": 220,
-     "final": 190
-    },
-    "pares": {
-     "min": 135,
-     "max": 318,
-     "final": 262
-    },
-    "aves": {
-     "min": 13,
-     "max": 14,
-     "final": 13
-    },
-    "poliniz": {
-     "min": 27,
-     "max": 81,
-     "final": 73
-    },
-    "polinizEsp": {
-     "min": 3,
-     "max": 3,
-     "final": 3
-    },
-    "trafico": {
-     "min": 1,
-     "max": 1.276,
-     "final": 1.276
-    },
-    "ruidoDb": {
-     "min": 60.889,
-     "max": 61.946,
-     "final": 61.946
-    },
-    "callesRuidosas": {
-     "min": 34.089,
-     "max": 37.149,
-     "final": 37.149
-    },
-    "callesOMS": {
-     "min": 75.995,
-     "max": 100,
-     "final": 100
-    },
-    "atropellos": {
-     "min": 6.287,
-     "max": 12.573,
-     "final": 6.486
-    },
-    "comidaMin": {
-     "min": 1,
-     "max": 1,
-     "final": 1
-    },
-    "residuos": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "huertas": {
-     "min": 67.887,
-     "max": 120.046,
-     "final": 67.887
-    },
-    "bodegas": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "congestion": {
-     "min": 69.9,
-     "max": 185.196,
-     "final": 185.196
-    },
-    "tiempo10km": {
-     "min": 31.75,
-     "max": 53.296,
-     "final": 53.296
-    },
-    "presion": {
-     "min": 0,
-     "max": 0.712,
-     "final": 0.712
-    },
-    "recuperacion": {
-     "min": 0,
-     "max": 0.059,
-     "final": 0
-    },
-    "ratas": {
-     "min": 1,
-     "max": 3.171,
-     "final": 3.171
-    },
-    "humedalHa": {
-     "min": 36.349,
-     "max": 38.399,
-     "final": 36.349
-    },
-    "humedalFuncional": {
-     "min": 53.794,
-     "max": 99.997,
-     "final": 53.794
-    },
-    "arboles": {
-     "min": 0.362,
-     "max": 0.4,
-     "final": 0.362
-    },
-    "comidaLocal": {
-     "min": 0.007,
-     "max": 0.012,
-     "final": 0.007
-    }
-   },
-   "extinciones": [
-    {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "tráfico y ruido",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 715,
-     "especie": "comadreja",
-     "nombre": "Comadreja",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "techo",
-     "x": 2997.3,
-     "z": -606
-    },
-    {
-     "sem": 725,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "burro",
-     "x": 2095.7,
-     "z": -109.1
-    },
-    {
-     "sem": 850,
-     "especie": "culebra",
-     "nombre": "Serpiente sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq11",
-     "x": 3002.4,
-     "z": -577.7
-    },
-    {
-     "sem": 1025,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "tráfico y ruido",
-     "parche": "pq9",
-     "x": 1522.9,
-     "z": -426.8
-    }
-   ],
-   "avisos": [
-    {
-     "sem": 1,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 1",
-     "texto": "Se abren 9 tramos de vía nueva y empiezan 1.506 viviendas; 105 viajes de camión de obra al día."
-    },
-    {
-     "sem": 105,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 3",
-     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
-    },
-    {
-     "sem": 145,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Abeja de miel deja Bosque de Bavaria",
-     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tala."
-    },
-    {
-     "sem": 148,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 73,7 dB (+1,0 dB) por los 4.083 vehículos diarios, 195 de ellos camiones."
-    },
-    {
-     "sem": 149,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 1,0 dB por los 4.126 vehículos diarios y el frente de obra."
-    },
-    {
-     "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
-    },
-    {
-     "sem": 184,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.234 al día salen o entran por las vías nuevas del plan."
-    },
-    {
-     "sem": 236,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,9 min (hoy 31,8 min, TomTom 2025); congestión 92 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 239,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
-     "sem": 311,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las aves dejan el borde de Corabastos",
-     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 40 % más que hoy, depredan nidos y la basura las espanta."
-    },
-    {
-     "sem": 365,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 371,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura invade el borde del Humedal La Vaca",
-     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
-    },
-    {
-     "sem": 460,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: humedales",
-     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
-    },
-    {
-     "sem": 521,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Termina la obra del plan parcial",
-     "texto": "14.002 viviendas y 38.646 habitantes nuevos; 80 tramos de vía; 16.785 vehículos entran y salen al día."
-    },
-    {
-     "sem": 534,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
-     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
-    },
-    {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
-    },
-    {
-     "sem": 625,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 75,6 dB (+3,0 dB) por los 16.785 vehículos diarios."
-    },
-    {
-     "sem": 628,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
-    },
-    {
-     "sem": 665,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Pato andino deja Humedal La Vaca",
-     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
-    },
-    {
-     "sem": 677,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min, TomTom 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
-    },
-    {
-     "sem": 677,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 101 % más vehículos que hoy; 16.785 al día salen o entran por las vías nuevas del plan."
-    },
-    {
-     "sem": 680,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-     "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
-    },
-    {
-     "sem": 680,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se duplican cerca de Corabastos",
-     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.257 t/día en Kennedy y 24 % no se recoge."
-    },
-    {
-     "sem": 715,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Comadreja desaparece de Kennedy",
-     "texto": "Comadreja ya no está en ningún parche de Kennedy. El último lugar fue Humedal de Techo; causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Serpiente sabanera desaparece de Kennedy",
-     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 1025,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Rana sabanera desaparece de Kennedy",
-     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Biblioteca El Tintal; causa: tráfico y ruido."
-    }
-   ],
-   "predio": {
-    "año5": {
-     "trafico": 1.668,
-     "ruidoDb": 74.921,
-     "ruidoDb0": 72.648,
-     "ocupacion": 30,
-     "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
-     "especiesFuera": [
-      {
-       "especie": "buho",
-       "nombre": "Búho sabanero",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "lagartija",
-       "nombre": "Lagartija bogotana",
-       "antes": 3,
-       "ahora": 1,
-       "causa": "nidos"
-      },
-      {
-       "especie": "comadreja",
-       "nombre": "Comadreja",
-       "antes": 1,
-       "ahora": 0,
-       "causa": "nidos"
-      },
-      {
-       "especie": "lombriz",
-       "nombre": "Lombriz roja",
-       "antes": 1,
-       "ahora": 0,
-       "causa": "nidos"
-      }
-     ]
-    },
-    "año10": {
-     "trafico": 1.959,
-     "ruidoDb": 75.581,
-     "ruidoDb0": 72.648,
-     "ocupacion": 28,
-     "ocupacion0": 30.077,
-     "habitantes": 38616,
-     "vias": 80,
-     "vehiculosDia": 16816,
-     "especiesFuera": [
-      {
-       "especie": "torcaza",
-       "nombre": "Torcaza",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "buho",
-       "nombre": "Búho sabanero",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "lagartija",
-       "nombre": "Lagartija bogotana",
-       "antes": 3,
-       "ahora": 0,
-       "causa": "nidos"
-      },
-      {
-       "especie": "comadreja",
-       "nombre": "Comadreja",
-       "antes": 1,
-       "ahora": 0,
-       "causa": "nidos"
-      }
-     ]
-    },
-    "año15": {
-     "trafico": 2.022,
-     "ruidoDb": 75.706,
-     "ruidoDb0": 72.648,
-     "ocupacion": 31,
-     "ocupacion0": 30.077,
-     "habitantes": 38646,
-     "vias": 80,
-     "vehiculosDia": 16785,
-     "especiesFuera": [
-      {
-       "especie": "mirla",
-       "nombre": "Mirla patiamarilla",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "chamon",
-       "nombre": "Chamón",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "buho",
-       "nombre": "Búho sabanero",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "comadreja",
-       "nombre": "Comadreja",
-       "antes": 1,
-       "ahora": 0,
-       "causa": "nidos"
-      },
-      {
-       "especie": "abeja",
-       "nombre": "Abeja de miel",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "nidos"
-      },
-      {
-       "especie": "lombriz",
-       "nombre": "Lombriz roja",
-       "antes": 1,
-       "ahora": 0,
-       "causa": "nidos"
-      }
-     ]
-    },
-    "año20": {
-     "trafico": 2.091,
-     "ruidoDb": 75.852,
-     "ruidoDb0": 72.648,
-     "ocupacion": 28,
-     "ocupacion0": 30.077,
-     "habitantes": 38646,
-     "vias": 80,
-     "vehiculosDia": 16785,
-     "especiesFuera": [
-      {
-       "especie": "buho",
-       "nombre": "Búho sabanero",
-       "antes": 3,
-       "ahora": 1,
-       "causa": "ambas"
-      },
-      {
-       "especie": "lagartija",
-       "nombre": "Lagartija bogotana",
-       "antes": 3,
-       "ahora": 0,
-       "causa": "nidos"
-      },
-      {
-       "especie": "lombriz",
-       "nombre": "Lombriz roja",
-       "antes": 1,
-       "ahora": 0,
-       "causa": "nidos"
-      }
-     ]
-    }
-   }
-  },
-  {
-   "id": 5,
-   "n": "Corabastos cierra",
-   "base": "A",
-   "sliders": {
-    "sinCora": 52,
-    "P3.arboles": 0.4,
-    "pobCrece": 0,
-    "trafCrece": 1.5,
-    "mitiga": 0,
-    "basuraCrece": 2.7,
-    "recoleccion": 84
-   },
-   "gameover": {
-    "regla": "abasto",
-    "sem": 56,
-    "motivo": "una zona recibió menos del 80 % de los alimentos",
-    "valor": 0.008
-   },
-   "semillas30": {
-    "gameover": 30,
-    "de": 30,
-    "mediana_sem": 56,
-    "por_regla": {
-     "abasto": 30
-    }
-   },
-   "grupo": "actual",
-   "pregunta": "¿Qué pasaría si Corabastos deja de abastecer y no hay una red que lo reemplace?",
-   "inicio": {
-    "fauna0": 23,
-    "flora0": 54,
-    "red0": 1116,
-    "redTipos0": 207,
-    "poliniz0": 23,
-    "pares0": 122,
-    "ruidoDb0": 60.88858117579581
-   },
-   "indicadores": {
-    "fauna": {
-     "min": 19,
-     "max": 23,
-     "final": 20
-    },
-    "flora": {
-     "min": 54,
-     "max": 54,
-     "final": 54
-    },
-    "red": {
-     "min": 1298,
-     "max": 3438,
-     "final": 3109
-    },
-    "redTipos": {
-     "min": 185,
-     "max": 220,
-     "final": 190
-    },
-    "pares": {
-     "min": 135,
-     "max": 315,
-     "final": 269
-    },
-    "aves": {
-     "min": 13,
-     "max": 14,
-     "final": 13
-    },
-    "poliniz": {
-     "min": 27,
-     "max": 81,
-     "final": 73
-    },
-    "polinizEsp": {
-     "min": 3,
-     "max": 3,
-     "final": 3
-    },
-    "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
-    },
-    "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
-    },
-    "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
-    },
-    "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
-    },
-    "atropellos": {
-     "min": 6.287,
-     "max": 12.361,
-     "final": 6.465
-    },
-    "comidaMin": {
-     "min": 0,
-     "max": 1,
-     "final": 0
-    },
-    "residuos": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "huertas": {
-     "min": 67.887,
-     "max": 120.046,
-     "final": 67.887
-    },
-    "bodegas": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
-    },
-    "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
-    },
-    "presion": {
-     "min": 0,
-     "max": 0.647,
-     "final": 0.647
-    },
-    "recuperacion": {
-     "min": 0,
-     "max": 0.051,
-     "final": 0
-    },
-    "ratas": {
-     "min": 0.837,
-     "max": 2.432,
-     "final": 2.432
-    },
-    "humedalHa": {
-     "min": 37.177,
-     "max": 38.399,
-     "final": 37.177
-    },
-    "humedalFuncional": {
-     "min": 55.019,
-     "max": 99.997,
-     "final": 55.019
-    },
-    "arboles": {
-     "min": 0.362,
-     "max": 0.4,
-     "final": 0.362
-    },
-    "comidaLocal": {
-     "min": 0.007,
-     "max": 0.012,
-     "final": 0.007
-    }
-   },
-   "extinciones": [
-    {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 725,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "burro",
-     "x": 2095.7,
-     "z": -109.1
-    },
-    {
-     "sem": 753,
-     "especie": "comadreja",
-     "nombre": "Comadreja",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "bosqueBav",
-     "x": 4100,
-     "z": 60
-    },
-    {
-     "sem": 850,
-     "especie": "culebra",
-     "nombre": "Serpiente sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq11",
-     "x": 3002.4,
-     "z": -577.7
-    },
-    {
-     "sem": 1025,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "tráfico y ruido",
-     "parche": "pq9",
-     "x": 1522.9,
-     "z": -426.8
-    }
-   ],
-   "avisos": [
-    {
-     "sem": 53,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Corabastos deja de abastecer",
-     "texto": "Más del 94 % de lo que se vende en Bogotá entra por Corabastos; desde esta semana solo queda lo que producen las huertas."
-    },
-    {
-     "sem": 53,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Falta comida en Kennedy",
-     "texto": "La zona peor servida recibe 0 % de lo que necesita; 132 zonas reciben menos del 80 %."
-    },
-    {
-     "sem": 56,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Game over: una zona recibió menos del 80 % de los alimentos",
-     "texto": "Regla «Abastecimiento» cumplida 4 semanas seguidas (valor 0 %)."
-    },
-    {
-     "sem": 244,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 331,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las aves dejan el borde de Corabastos",
-     "texto": "Las aves ocupan 11 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 10 % más que hoy, depredan nidos y la basura las espanta."
-    },
-    {
-     "sem": 371,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura invade el borde del Humedal La Vaca",
-     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,7 ha."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 534,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
-     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
-    },
-    {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 628,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
-    },
-    {
-     "sem": 710,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Búho sabanero deja Humedal La Vaca",
-     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
-    },
-    {
-     "sem": 725,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Rana sabanera desaparece de Kennedy",
-     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Serpiente sabanera desaparece de Kennedy",
-     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 866,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se duplican cerca de Corabastos",
-     "texto": "Hay 8.083 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.178 t/día en Kennedy y 27 % no se recoge."
-    },
-    {
-     "sem": 883,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La fauna ocupa 10 % menos lugares que en el año 1",
-     "texto": "Las especies ocupan 261 pares especie–parche frente a 290 en el año 1. Donde más se nota es en Humedal La Vaca (se fueron tingua moteada, monjita bogotana, rana sabanera y curí; causa principal: azar demográfico (parche pequeño o de baja calidad))."
-    },
-    {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
-    }
-   ],
-   "predio": null
-  },
-  {
-   "id": 6,
-   "n": "Corabastos se reduce y se restaura el borde de La Vaca",
-   "base": "A",
-   "sliders": {
-    "desmLib": 1,
-    "P3.rec": 0.02,
-    "P3.arboles": 0.4,
-    "trafCrece": 1.5,
-    "mitiga": 0,
-    "basuraCrece": 2.7,
-    "recoleccion": 84
-   },
-   "gameover": {
-    "regla": "fauna",
-    "sem": 868,
-    "motivo": "se perdió más del 10 % de las especies de fauna",
-    "valor": 86.957
-   },
-   "semillas30": {
-    "gameover": 30,
-    "de": 30,
-    "mediana_sem": 886,
-    "por_regla": {
-     "fauna": 4,
-     "humedal": 26
-    }
-   },
-   "grupo": "propuesta",
-   "pregunta": "¿Qué pasaría si se desmontan las bodegas de Corabastos junto al humedal La Vaca y se restaura su borde?",
-   "inicio": {
-    "fauna0": 23,
-    "flora0": 54,
-    "red0": 1116,
-    "redTipos0": 207,
-    "poliniz0": 23,
-    "pares0": 122,
-    "ruidoDb0": 60.88858117579581
-   },
-   "indicadores": {
-    "fauna": {
-     "min": 20,
-     "max": 23,
-     "final": 20
-    },
-    "flora": {
-     "min": 54,
-     "max": 54,
-     "final": 54
-    },
-    "red": {
-     "min": 1298,
-     "max": 3700,
-     "final": 3291
-    },
-    "redTipos": {
-     "min": 197,
-     "max": 220,
-     "final": 200
-    },
-    "pares": {
-     "min": 135,
-     "max": 339,
-     "final": 286
-    },
-    "aves": {
-     "min": 13,
-     "max": 14,
-     "final": 13
-    },
-    "poliniz": {
-     "min": 27,
-     "max": 85,
-     "final": 75
-    },
-    "polinizEsp": {
-     "min": 3,
-     "max": 3,
-     "final": 3
-    },
-    "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
-    },
-    "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
-    },
-    "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
-    },
-    "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
-    },
-    "atropellos": {
-     "min": 6.287,
-     "max": 13.608,
-     "final": 7.663
-    },
-    "comidaMin": {
-     "min": 1,
-     "max": 1,
-     "final": 1
-    },
-    "residuos": {
-     "min": 0,
-     "max": 0,
-     "final": 0
-    },
-    "huertas": {
-     "min": 67.887,
-     "max": 120.046,
-     "final": 67.887
-    },
-    "bodegas": {
-     "min": 1,
-     "max": 8,
-     "final": 8
-    },
-    "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
-    },
-    "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
-    },
-    "presion": {
-     "min": 0,
-     "max": 0.647,
-     "final": 0.647
-    },
-    "recuperacion": {
-     "min": 0,
-     "max": 0.248,
-     "final": 0.17
-    },
-    "ratas": {
-     "min": 1,
-     "max": 3.171,
-     "final": 3.171
-    },
-    "humedalHa": {
-     "min": 38.371,
-     "max": 41.641,
-     "final": 39.925
-    },
-    "humedalFuncional": {
-     "min": 63.104,
-     "max": 99.997,
-     "final": 63.104
-    },
-    "arboles": {
-     "min": 0.362,
-     "max": 0.4,
-     "final": 0.362
-    },
-    "comidaLocal": {
-     "min": 0.007,
-     "max": 0.012,
-     "final": 0.007
-    }
-   },
-   "extinciones": [
-    {
-     "sem": 537,
-     "especie": "monjita",
-     "nombre": "Monjita bogotana",
-     "motivo": "tráfico y ruido",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 850,
-     "especie": "culebra",
-     "nombre": "Serpiente sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "pq11",
-     "x": 3002.4,
-     "z": -577.7
-    },
-    {
-     "sem": 865,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "vaca",
-     "x": 760,
-     "z": 1160
-    },
-    {
-     "sem": 1025,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "tráfico y ruido",
-     "parche": "pq9",
-     "x": 1522.9,
-     "z": -426.8
-    }
-   ],
-   "avisos": [
-    {
-     "sem": 1,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmonta la primera bodega junto a La Vaca",
-     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
-     "sem": 92,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmontaron todas las bodegas junto a La Vaca",
-     "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 26.307 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
-     "sem": 194,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 321 pares especie–parche frente a 291 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, pato andino, focha común y garza blanca."
-    },
-    {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 371,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura invade el borde del Humedal La Vaca",
-     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
-    },
-    {
-     "sem": 445,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 534,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
-     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
-    },
-    {
-     "sem": 537,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
-    },
-    {
-     "sem": 565,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana deja Humedal La Vaca",
-     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
-    },
-    {
-     "sem": 628,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
-    },
-    {
-     "sem": 662,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: humedales",
-     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
-    },
-    {
-     "sem": 680,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se duplican cerca de Corabastos",
-     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.218 t/día en Kennedy y 24 % no se recoge."
-    },
-    {
-     "sem": 804,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Humedal La Vaca pierde 1 ha",
-     "texto": "La basura arrojada en su borde rellenó 1,0 ha: quedan 6,9 de 7,9 ha y su fauna tiene menos hábitat."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: fauna",
-     "texto": "Fauna: 91 % (game over si quedan menos del 90 % de las especies de fauna presentes al inicio)."
-    },
-    {
-     "sem": 850,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Serpiente sabanera desaparece de Kennedy",
-     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
-    },
-    {
-     "sem": 868,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Game over: se perdió más del 10 % de las especies de fauna",
-     "texto": "Regla «Fauna» cumplida 4 semanas seguidas (valor 87 %)."
-    },
-    {
-     "sem": 1025,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Rana sabanera desaparece de Kennedy",
-     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Biblioteca El Tintal; causa: tráfico y ruido."
-    }
-   ],
-   "predio": null
-  },
-  {
-   "id": 7,
-   "n": "Metro Línea 1",
-   "base": "A",
-   "sliders": {
-    "metroRed": 10,
-    "metroSem": 114,
-    "P3.arboles": 0.4,
-    "trafCrece": 1.5,
-    "mitiga": 0,
-    "recoleccion": 84
-   },
-   "gameover": {
-    "regla": "humedal",
-    "sem": 680,
-    "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-    "valor": 69.853
-   },
-   "semillas30": {
-    "gameover": 30,
-    "de": 30,
-    "mediana_sem": 680,
-    "por_regla": {
-     "humedal": 25,
-     "fauna": 5
-    }
-   },
-   "grupo": "actual",
-   "pregunta": "¿Qué pasaría si la Línea 1 del metro saca carros de las calles cercanas?",
    "inicio": {
     "fauna0": 23,
     "flora0": 54,
@@ -2607,6 +369,26 @@
      "min": 0.007,
      "max": 0.012,
      "final": 0.007
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.02,
+     "final": 0.02
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.034,
+     "final": 1.034
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1779,
+     "final": 1779
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
     }
    },
    "extinciones": [
@@ -2658,12 +440,60 @@
    ],
    "avisos": [
     {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
      "sem": 115,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
-     "titulo": "Empieza a operar el metro",
-     "texto": "A 800 m del eje circulan 10 % menos vehículos; el índice de tráfico queda en 0,99."
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 174,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.009 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 226,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "El suelo junto a la estación Portal Américas sube más de 10 %",
+     "texto": "Los predios más cercanos valen 11 % más que hoy; los arriendos suben con ellos."
     },
     {
      "sem": 239,
@@ -2695,7 +525,7 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min, TomTom 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
     },
     {
      "sem": 460,
@@ -2743,7 +573,2690 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min, TomTom 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
+     "sem": 680,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
+     "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
+    },
+    {
+     "sem": 680,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las ratas se duplican cerca de Corabastos",
+     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.218 t/día en Kennedy y 24 % no se recoge."
+    },
+    {
+     "sem": 725,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Rana sabanera desaparece de Kennedy",
+     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 850,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Serpiente sabanera desaparece de Kennedy",
+     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
+    }
+   ],
+   "predio": null
+  },
+  {
+   "id": 2,
+   "n": "Instituto en Bavaria",
+   "base": "B",
+   "sliders": {
+    "P1.capAcopio": 131.6,
+    "P2.cap": 6000,
+    "P1.cupos": 12,
+    "P3.arboles": 0.4,
+    "P1.sup": 98000,
+    "trafCrece": 1.5,
+    "recoleccion": 84,
+    "P2.frac": 0.4,
+    "proteccion": 30
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 3,
+    "de": 30,
+    "mediana_sem": 725,
+    "por_regla": {
+     "fauna": 3
+    }
+   },
+   "grupo": "propuesta",
+   "pregunta": "¿Qué pasaría si un solo instituto en Bavaria (Bavaria Común) concentra el abasto, el compost y la formación de promotores?",
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 22,
+     "max": 23,
+     "final": 22
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 1298,
+     "max": 3737,
+     "final": 3472
+    },
+    "redTipos": {
+     "min": 202,
+     "max": 221,
+     "final": 214
+    },
+    "pares": {
+     "min": 135,
+     "max": 341,
+     "final": 311
+    },
+    "aves": {
+     "min": 13,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 27,
+     "max": 87,
+     "final": 80
+    },
+    "polinizEsp": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
+    },
+    "ruidoDb": {
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
+    },
+    "callesRuidosas": {
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
+    },
+    "callesOMS": {
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
+    },
+    "atropellos": {
+     "min": 6.103,
+     "max": 12.02,
+     "final": 8.792
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.034,
+     "final": 0
+    },
+    "huertas": {
+     "min": 116.649,
+     "max": 2582.017,
+     "final": 2540.532
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 7,
+     "final": 7
+    },
+    "congestion": {
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
+    },
+    "tiempo10km": {
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
+    },
+    "presion": {
+     "min": 0,
+     "max": 0.327,
+     "final": 0.327
+    },
+    "recuperacion": {
+     "min": 0,
+     "max": 0.462,
+     "final": 0.43
+    },
+    "ratas": {
+     "min": 0.777,
+     "max": 1.367,
+     "final": 1.367
+    },
+    "humedalHa": {
+     "min": 38.211,
+     "max": 40.826,
+     "final": 40.439
+    },
+    "humedalFuncional": {
+     "min": 92.675,
+     "max": 106.318,
+     "final": 92.675
+    },
+    "arboles": {
+     "min": 0.4,
+     "max": 0.4,
+     "final": 0.4
+    },
+    "comidaLocal": {
+     "min": 0.009,
+     "max": 0.462,
+     "final": 0.454
+    },
+    "circularIndice": {
+     "min": 0,
+     "max": 0.064,
+     "final": 0.064
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
+    }
+   },
+   "extinciones": [
+    {
+     "sem": 537,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 850,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq11",
+     "x": 3002.4,
+     "z": -577.7
+    }
+   ],
+   "avisos": [
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 25,
+     "tipo": "huertas",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Kennedy ya tiene 243 huertas",
+     "texto": "Son el doble de las de hoy (120); producen 73 t de comida al año."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 82,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Mirla patiamarilla llega a Huerta central de Bavaria (B)",
+     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 121,
+     "tipo": "huertas",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Kennedy ya tiene 1.211 huertas",
+     "texto": "Son diez veces de las de hoy (120); producen 363 t de comida al año."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 150,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmonta la primera bodega junto a La Vaca",
+     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 214,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 313,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
+     "texto": "Las especies ocupan 323 pares especie–parche frente a 293 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, pato andino, focha común y garza blanca."
+    },
+    {
+     "sem": 417,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
+    },
+    {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 602,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Búho sabanero llega a Huerta central de Bavaria (B)",
+     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
+    },
+    {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
+     "sem": 850,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Serpiente sabanera desaparece de Kennedy",
+     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 989,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión se duplica",
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
+    }
+   ],
+   "predio": {
+    "año5": {
+     "trafico": 1.015,
+     "ruidoDb": 72.726,
+     "ruidoDb0": 72.648,
+     "ocupacion": 39,
+     "ocupacion0": 32.923,
+     "habitantes": 0,
+     "vias": 0,
+     "vehiculosDia": 12,
+     "especiesFuera": []
+    },
+    "año10": {
+     "trafico": 1.073,
+     "ruidoDb": 72.995,
+     "ruidoDb0": 72.648,
+     "ocupacion": 35,
+     "ocupacion0": 32.923,
+     "habitantes": 0,
+     "vias": 0,
+     "vehiculosDia": 36,
+     "especiesFuera": []
+    },
+    "año15": {
+     "trafico": 1.133,
+     "ruidoDb": 73.23,
+     "ruidoDb0": 72.648,
+     "ocupacion": 38,
+     "ocupacion0": 32.923,
+     "habitantes": 0,
+     "vias": 0,
+     "vehiculosDia": 36,
+     "especiesFuera": []
+    },
+    "año20": {
+     "trafico": 1.198,
+     "ruidoDb": 73.469,
+     "ruidoDb0": 72.648,
+     "ocupacion": 38,
+     "ocupacion0": 32.923,
+     "habitantes": 0,
+     "vias": 0,
+     "vehiculosDia": 36,
+     "especiesFuera": []
+    }
+   }
+  },
+  {
+   "id": 3,
+   "n": "Red de mercados de barrio",
+   "base": "C",
+   "sliders": {
+    "P1.capAcopio": 131.6,
+    "P2.cap": 6000,
+    "P1.rotacion": 12,
+    "P3.arboles": 0.4,
+    "P1.sup": 98000,
+    "trafCrece": 1.5,
+    "recoleccion": 84,
+    "P2.frac": 0.4,
+    "proteccion": 30
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 6,
+    "de": 30,
+    "mediana_sem": 655,
+    "por_regla": {
+     "fauna": 6
+    }
+   },
+   "grupo": "propuesta",
+   "pregunta": "¿Qué pasaría si los mercados de barrio y las plazoletas forman una red que reparte la comida y el hábitat?",
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 22,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 55,
+     "final": 55
+    },
+    "red": {
+     "min": 1298,
+     "max": 6703,
+     "final": 6152
+    },
+    "redTipos": {
+     "min": 206,
+     "max": 224,
+     "final": 218
+    },
+    "pares": {
+     "min": 135,
+     "max": 559,
+     "final": 514
+    },
+    "aves": {
+     "min": 13,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 27,
+     "max": 183,
+     "final": 157
+    },
+    "polinizEsp": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
+    },
+    "ruidoDb": {
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
+    },
+    "callesRuidosas": {
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
+    },
+    "callesOMS": {
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 14.147,
+     "final": 9.473
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.017,
+     "final": 0
+    },
+    "huertas": {
+     "min": 121.736,
+     "max": 5691.593,
+     "final": 5654.151
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 7,
+     "final": 7
+    },
+    "congestion": {
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
+    },
+    "tiempo10km": {
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
+    },
+    "presion": {
+     "min": 0,
+     "max": 0.358,
+     "final": 0.358
+    },
+    "recuperacion": {
+     "min": 0,
+     "max": 0.68,
+     "final": 0.68
+    },
+    "ratas": {
+     "min": 0.776,
+     "max": 1.366,
+     "final": 1.366
+    },
+    "humedalHa": {
+     "min": 38.238,
+     "max": 40.856,
+     "final": 40.443
+    },
+    "humedalFuncional": {
+     "min": 92.685,
+     "max": 106.396,
+     "final": 92.685
+    },
+    "arboles": {
+     "min": 0.4,
+     "max": 0.4,
+     "final": 0.4
+    },
+    "comidaLocal": {
+     "min": 0.01,
+     "max": 1.018,
+     "final": 1.011
+    },
+    "circularIndice": {
+     "min": 0,
+     "max": 0.064,
+     "final": 0.064
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
+    }
+   },
+   "extinciones": [
+    {
+     "sem": 537,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "humedal degradado",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 569,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq15",
+     "x": 3210.9,
+     "z": 2921.6
+    }
+   ],
+   "avisos": [
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 19,
+     "tipo": "huertas",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Kennedy ya tiene 244 huertas",
+     "texto": "Son el doble de las de hoy (122); producen 73 t de comida al año."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 75,
+     "tipo": "huertas",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Kennedy ya tiene 1.226 huertas",
+     "texto": "Son diez veces de las de hoy (122); producen 368 t de comida al año."
+    },
+    {
+     "sem": 77,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
+     "texto": "Las especies ocupan 368 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): mirla patiamarilla, colibrí chillón, cucarachero y chamón."
+    },
+    {
+     "sem": 80,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Cucarachero llega a Huertas de parque (3)",
+     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 119,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "La fauna ocupa 25 % más lugares que en el año 1",
+     "texto": "Las especies ocupan 418 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, cucarachero y chamón."
+    },
+    {
+     "sem": 119,
+     "tipo": "polinizadores",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Los polinizadores aumentan a la mitad",
+     "texto": "Abejas, colibríes y cucaracheros ocupan 129 pares especie–parche (en el año 1 86), gracias a las huertas y parques con flor."
+    },
+    {
+     "sem": 125,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmonta la primera bodega junto a La Vaca",
+     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 180,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "La fauna ocupa 50 % más lugares que en el año 1",
+     "texto": "Las especies ocupan 502 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, colibrí chillón y torcaza."
+    },
+    {
+     "sem": 196,
+     "tipo": "polinizadores",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Los polinizadores se duplican",
+     "texto": "Abejas, colibríes y cucaracheros ocupan 172 pares especie–parche (en el año 1 86), gracias a las huertas y parques con flor."
+    },
+    {
+     "sem": 214,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 417,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
+    },
+    {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: humedal degradado."
+    },
+    {
+     "sem": 600,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Mirla patiamarilla llega a Huertas de parque (3)",
+     "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
+    },
+    {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
+     "sem": 989,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión se duplica",
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
+    }
+   ],
+   "predio": null
+  },
+  {
+   "id": 4,
+   "n": "Plan parcial Bavaria",
+   "base": "D",
+   "sliders": {
+    "P3.arboles": 0.4,
+    "P3.rec": 0.02,
+    "planViv": 14002,
+    "planAutos": 0.31,
+    "planAccesos": 2,
+    "trafCrece": 1.5,
+    "proteccion": 0
+   },
+   "gameover": {
+    "regla": "humedal",
+    "sem": 680,
+    "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
+    "valor": 69.853
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 680,
+    "por_regla": {
+     "humedal": 24,
+     "fauna": 6
+    }
+   },
+   "grupo": "actual",
+   "pregunta": "¿Qué pasaría si se construye el Plan Parcial Fábrica Bavaria con sus 14.000 viviendas?",
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 19,
+     "max": 23,
+     "final": 20
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 1298,
+     "max": 3477,
+     "final": 3037
+    },
+    "redTipos": {
+     "min": 185,
+     "max": 220,
+     "final": 190
+    },
+    "pares": {
+     "min": 135,
+     "max": 318,
+     "final": 262
+    },
+    "aves": {
+     "min": 13,
+     "max": 14,
+     "final": 13
+    },
+    "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 73
+    },
+    "polinizEsp": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.24,
+     "final": 1.24
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.821,
+     "final": 61.821
+    },
+    "callesRuidosas": {
+     "min": 30.232,
+     "max": 36.678,
+     "final": 36.678
+    },
+    "callesOMS": {
+     "min": 75.651,
+     "max": 95.891,
+     "final": 95.891
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.525,
+     "final": 6.457
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 67.887,
+     "max": 120.046,
+     "final": 67.887
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "congestion": {
+     "min": 69.9,
+     "max": 165.045,
+     "final": 165.045
+    },
+    "tiempo10km": {
+     "min": 31.75,
+     "max": 49.53,
+     "final": 49.53
+    },
+    "presion": {
+     "min": 0,
+     "max": 0.681,
+     "final": 0.681
+    },
+    "recuperacion": {
+     "min": 0,
+     "max": 0.059,
+     "final": 0
+    },
+    "ratas": {
+     "min": 1,
+     "max": 3.171,
+     "final": 3.171
+    },
+    "humedalHa": {
+     "min": 36.349,
+     "max": 38.399,
+     "final": 36.349
+    },
+    "humedalFuncional": {
+     "min": 53.794,
+     "max": 99.997,
+     "final": 53.794
+    },
+    "arboles": {
+     "min": 0.362,
+     "max": 0.4,
+     "final": 0.362
+    },
+    "comidaLocal": {
+     "min": 0.007,
+     "max": 0.012,
+     "final": 0.007
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.02,
+     "final": 0.02
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.056,
+     "final": 1.056
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 2986,
+     "final": 2986
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
+    }
+   },
+   "extinciones": [
+    {
+     "sem": 537,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "tráfico y ruido",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 715,
+     "especie": "comadreja",
+     "nombre": "Comadreja",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "techo",
+     "x": 2997.3,
+     "z": -606
+    },
+    {
+     "sem": 725,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "burro",
+     "x": 2095.7,
+     "z": -109.1
+    },
+    {
+     "sem": 850,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq11",
+     "x": 3002.4,
+     "z": -577.7
+    },
+    {
+     "sem": 1025,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "tráfico y ruido",
+     "parche": "pq9",
+     "x": 1522.9,
+     "z": -426.8
+    }
+   ],
+   "avisos": [
+    {
+     "sem": 1,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 1",
+     "texto": "Se abren 9 tramos de vía nueva y empiezan 1.506 viviendas; 105 viajes de camión de obra al día."
+    },
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 105,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 3",
+     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 1,00 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 145,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Abeja de miel deja Bosque de Bavaria",
+     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tala."
+    },
+    {
+     "sem": 149,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.002 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 149,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las aves dejan el predio de Bavaria",
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 0,9 dB por los 4.126 vehículos diarios y el frente de obra."
+    },
+    {
+     "sem": 157,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 4",
+     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
+    },
+    {
+     "sem": 157,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 193,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.802 al día salen o entran por las vías nuevas del plan."
+    },
+    {
+     "sem": 210,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "El suelo junto a la estación Portal Américas sube más de 10 %",
+     "texto": "Los predios más cercanos valen 10 % más que hoy; los arriendos suben con ellos."
+    },
+    {
+     "sem": 239,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 311,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las aves dejan el borde de Corabastos",
+     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 40 % más que hoy, depredan nidos y la basura las espanta."
+    },
+    {
+     "sem": 313,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,7 min (hoy 31,8 min en 2025); congestión 91 %. Circulan 7 % más vehículos que hoy."
+    },
+    {
+     "sem": 371,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura invade el borde del Humedal La Vaca",
+     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
+    },
+    {
+     "sem": 460,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: humedales",
+     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
+    },
+    {
+     "sem": 469,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 38,4 min (hoy 31,8 min en 2025); congestión 105 %. Circulan 11 % más vehículos que hoy."
+    },
+    {
+     "sem": 521,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Termina la obra del plan parcial",
+     "texto": "14.002 viviendas y 38.646 habitantes nuevos; 80 tramos de vía; 16.785 vehículos entran y salen al día."
+    },
+    {
+     "sem": 534,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
+     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
+    },
+    {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
+    },
+    {
+     "sem": 628,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura en los bordes de los humedales se duplica",
+     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
+    },
+    {
+     "sem": 665,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Pato andino deja Humedal La Vaca",
+     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
+    },
+    {
+     "sem": 680,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
+     "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
+    },
+    {
+     "sem": 680,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las ratas se duplican cerca de Corabastos",
+     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.257 t/día en Kennedy y 24 % no se recoge."
+    },
+    {
+     "sem": 715,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Comadreja desaparece de Kennedy",
+     "texto": "Comadreja ya no está en ningún parche de Kennedy. El último lugar fue Humedal de Techo; causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 850,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Serpiente sabanera desaparece de Kennedy",
+     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 1025,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Rana sabanera desaparece de Kennedy",
+     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Biblioteca El Tintal; causa: tráfico y ruido."
+    }
+   ],
+   "predio": {
+    "año5": {
+     "trafico": 1.637,
+     "ruidoDb": 74.842,
+     "ruidoDb0": 72.648,
+     "ocupacion": 30,
+     "ocupacion0": 30.077,
+     "habitantes": 31167,
+     "vias": 54,
+     "vehiculosDia": 12206,
+     "especiesFuera": [
+      {
+       "especie": "buho",
+       "nombre": "Búho sabanero",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "lagartija",
+       "nombre": "Lagartija bogotana",
+       "antes": 3,
+       "ahora": 1,
+       "causa": "nidos"
+      },
+      {
+       "especie": "comadreja",
+       "nombre": "Comadreja",
+       "antes": 1,
+       "ahora": 0,
+       "causa": "nidos"
+      },
+      {
+       "especie": "lombriz",
+       "nombre": "Lombriz roja",
+       "antes": 1,
+       "ahora": 0,
+       "causa": "nidos"
+      }
+     ]
+    },
+    "año10": {
+     "trafico": 1.926,
+     "ruidoDb": 75.508,
+     "ruidoDb0": 72.648,
+     "ocupacion": 28,
+     "ocupacion0": 30.077,
+     "habitantes": 38616,
+     "vias": 80,
+     "vehiculosDia": 16816,
+     "especiesFuera": [
+      {
+       "especie": "torcaza",
+       "nombre": "Torcaza",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "buho",
+       "nombre": "Búho sabanero",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "lagartija",
+       "nombre": "Lagartija bogotana",
+       "antes": 3,
+       "ahora": 0,
+       "causa": "nidos"
+      },
+      {
+       "especie": "comadreja",
+       "nombre": "Comadreja",
+       "antes": 1,
+       "ahora": 0,
+       "causa": "nidos"
+      }
+     ]
+    },
+    "año15": {
+     "trafico": 1.988,
+     "ruidoDb": 75.632,
+     "ruidoDb0": 72.648,
+     "ocupacion": 31,
+     "ocupacion0": 30.077,
+     "habitantes": 38646,
+     "vias": 80,
+     "vehiculosDia": 16785,
+     "especiesFuera": [
+      {
+       "especie": "mirla",
+       "nombre": "Mirla patiamarilla",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "chamon",
+       "nombre": "Chamón",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "buho",
+       "nombre": "Búho sabanero",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "comadreja",
+       "nombre": "Comadreja",
+       "antes": 1,
+       "ahora": 0,
+       "causa": "nidos"
+      },
+      {
+       "especie": "abeja",
+       "nombre": "Abeja de miel",
+       "antes": 3,
+       "ahora": 2,
+       "causa": "nidos"
+      },
+      {
+       "especie": "lombriz",
+       "nombre": "Lombriz roja",
+       "antes": 1,
+       "ahora": 0,
+       "causa": "nidos"
+      }
+     ]
+    },
+    "año20": {
+     "trafico": 2.055,
+     "ruidoDb": 75.777,
+     "ruidoDb0": 72.648,
+     "ocupacion": 28,
+     "ocupacion0": 30.077,
+     "habitantes": 38646,
+     "vias": 80,
+     "vehiculosDia": 16785,
+     "especiesFuera": [
+      {
+       "especie": "buho",
+       "nombre": "Búho sabanero",
+       "antes": 3,
+       "ahora": 1,
+       "causa": "ambas"
+      },
+      {
+       "especie": "lagartija",
+       "nombre": "Lagartija bogotana",
+       "antes": 3,
+       "ahora": 0,
+       "causa": "nidos"
+      },
+      {
+       "especie": "lombriz",
+       "nombre": "Lombriz roja",
+       "antes": 1,
+       "ahora": 0,
+       "causa": "nidos"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": 5,
+   "n": "Corabastos cierra",
+   "base": "A",
+   "sliders": {
+    "sinCora": 52,
+    "P3.arboles": 0.4,
+    "pobCrece": 0,
+    "trafCrece": 1.5,
+    "mitiga": 0,
+    "basuraCrece": 2.7,
+    "recoleccion": 84,
+    "proteccion": 0
+   },
+   "gameover": {
+    "regla": "abasto",
+    "sem": 56,
+    "motivo": "una zona recibió menos del 80 % de los alimentos",
+    "valor": 0.008
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 56,
+    "por_regla": {
+     "abasto": 30
+    }
+   },
+   "grupo": "actual",
+   "pregunta": "¿Qué pasaría si Corabastos deja de abastecer y no hay una red que lo reemplace?",
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 19,
+     "max": 23,
+     "final": 20
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 1298,
+     "max": 3450,
+     "final": 3109
+    },
+    "redTipos": {
+     "min": 185,
+     "max": 220,
+     "final": 190
+    },
+    "pares": {
+     "min": 135,
+     "max": 316,
+     "final": 269
+    },
+    "aves": {
+     "min": 13,
+     "max": 14,
+     "final": 13
+    },
+    "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 73
+    },
+    "polinizEsp": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
+    },
+    "ruidoDb": {
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
+    },
+    "callesRuidosas": {
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
+    },
+    "callesOMS": {
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.312,
+     "final": 6.434
+    },
+    "comidaMin": {
+     "min": 0,
+     "max": 1,
+     "final": 0
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 67.887,
+     "max": 120.046,
+     "final": 67.887
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "congestion": {
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
+    },
+    "tiempo10km": {
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
+    },
+    "presion": {
+     "min": 0,
+     "max": 0.618,
+     "final": 0.618
+    },
+    "recuperacion": {
+     "min": 0,
+     "max": 0.053,
+     "final": 0
+    },
+    "ratas": {
+     "min": 0.837,
+     "max": 2.432,
+     "final": 2.432
+    },
+    "humedalHa": {
+     "min": 37.177,
+     "max": 38.399,
+     "final": 37.177
+    },
+    "humedalFuncional": {
+     "min": 55.019,
+     "max": 99.997,
+     "final": 55.019
+    },
+    "arboles": {
+     "min": 0.362,
+     "max": 0.4,
+     "final": 0.362
+    },
+    "comidaLocal": {
+     "min": 0.007,
+     "max": 0.012,
+     "final": 0.007
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.02,
+     "final": 0.02
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.034,
+     "final": 1.034
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1779,
+     "final": 1779
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
+    }
+   },
+   "extinciones": [
+    {
+     "sem": 537,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 725,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "burro",
+     "x": 2095.7,
+     "z": -109.1
+    },
+    {
+     "sem": 753,
+     "especie": "comadreja",
+     "nombre": "Comadreja",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "bosqueBav",
+     "x": 4100,
+     "z": 60
+    },
+    {
+     "sem": 850,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq11",
+     "x": 3002.4,
+     "z": -577.7
+    },
+    {
+     "sem": 1025,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "tráfico y ruido",
+     "parche": "pq9",
+     "x": 1522.9,
+     "z": -426.8
+    }
+   ],
+   "avisos": [
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 53,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Corabastos deja de abastecer",
+     "texto": "Más del 94 % de lo que se vende en Bogotá entra por Corabastos; desde esta semana solo queda lo que producen las huertas."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 54,
+     "tipo": "comida",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Falta comida en Kennedy",
+     "texto": "La zona peor servida recibe 0 % de lo que necesita; 132 zonas reciben menos del 80 %."
+    },
+    {
+     "sem": 56,
+     "tipo": "comida",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Game over: una zona recibió menos del 80 % de los alimentos",
+     "texto": "Regla «Abastecimiento» cumplida 4 semanas seguidas (valor 0 %)."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 174,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.009 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 226,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "El suelo junto a la estación Portal Américas sube más de 10 %",
+     "texto": "Los predios más cercanos valen 11 % más que hoy; los arriendos suben con ellos."
+    },
+    {
+     "sem": 244,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 331,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las aves dejan el borde de Corabastos",
+     "texto": "Las aves ocupan 11 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 10 % más que hoy, depredan nidos y la basura las espanta."
+    },
+    {
+     "sem": 371,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura invade el borde del Humedal La Vaca",
+     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,7 ha."
+    },
+    {
+     "sem": 417,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
+    },
+    {
+     "sem": 534,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
+     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
+    },
+    {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 628,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura en los bordes de los humedales se duplica",
+     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
+    },
+    {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
+     "sem": 710,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Búho sabanero deja Humedal La Vaca",
+     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
+    },
+    {
+     "sem": 725,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Rana sabanera desaparece de Kennedy",
+     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 850,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Serpiente sabanera desaparece de Kennedy",
+     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 866,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las ratas se duplican cerca de Corabastos",
+     "texto": "Hay 8.083 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.178 t/día en Kennedy y 27 % no se recoge."
+    },
+    {
+     "sem": 883,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La fauna ocupa 10 % menos lugares que en el año 1",
+     "texto": "Las especies ocupan 261 pares especie–parche frente a 290 en el año 1. Donde más se nota es en Humedal La Vaca (se fueron tingua moteada, monjita bogotana, rana sabanera y curí; causa principal: azar demográfico (parche pequeño o de baja calidad))."
+    },
+    {
+     "sem": 989,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión se duplica",
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
+    }
+   ],
+   "predio": null
+  },
+  {
+   "id": 6,
+   "n": "Corabastos se reduce y se restaura el borde de La Vaca",
+   "base": "A",
+   "sliders": {
+    "desmLib": 1,
+    "P3.rec": 0.02,
+    "P3.arboles": 0.4,
+    "trafCrece": 1.5,
+    "mitiga": 0,
+    "basuraCrece": 2.7,
+    "recoleccion": 84,
+    "proteccion": 30
+   },
+   "gameover": {
+    "regla": "fauna",
+    "sem": 868,
+    "motivo": "se perdió más del 10 % de las especies de fauna",
+    "valor": 86.957
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 886,
+    "por_regla": {
+     "fauna": 4,
+     "humedal": 26
+    }
+   },
+   "grupo": "propuesta",
+   "pregunta": "¿Qué pasaría si se desmontan las bodegas de Corabastos junto al humedal La Vaca y se restaura su borde?",
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 20,
+     "max": 23,
+     "final": 20
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 1298,
+     "max": 3700,
+     "final": 3291
+    },
+    "redTipos": {
+     "min": 197,
+     "max": 220,
+     "final": 200
+    },
+    "pares": {
+     "min": 135,
+     "max": 339,
+     "final": 286
+    },
+    "aves": {
+     "min": 13,
+     "max": 14,
+     "final": 13
+    },
+    "poliniz": {
+     "min": 27,
+     "max": 85,
+     "final": 75
+    },
+    "polinizEsp": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
+    },
+    "ruidoDb": {
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
+    },
+    "callesRuidosas": {
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
+    },
+    "callesOMS": {
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 13.558,
+     "final": 7.632
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 67.887,
+     "max": 120.046,
+     "final": 67.887
+    },
+    "bodegas": {
+     "min": 1,
+     "max": 8,
+     "final": 8
+    },
+    "congestion": {
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
+    },
+    "tiempo10km": {
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
+    },
+    "presion": {
+     "min": 0,
+     "max": 0.618,
+     "final": 0.618
+    },
+    "recuperacion": {
+     "min": 0,
+     "max": 0.248,
+     "final": 0.17
+    },
+    "ratas": {
+     "min": 1,
+     "max": 3.171,
+     "final": 3.171
+    },
+    "humedalHa": {
+     "min": 38.371,
+     "max": 41.641,
+     "final": 39.925
+    },
+    "humedalFuncional": {
+     "min": 63.104,
+     "max": 99.997,
+     "final": 63.104
+    },
+    "arboles": {
+     "min": 0.362,
+     "max": 0.4,
+     "final": 0.362
+    },
+    "comidaLocal": {
+     "min": 0.007,
+     "max": 0.012,
+     "final": 0.007
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.02,
+     "final": 0.02
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
+    }
+   },
+   "extinciones": [
+    {
+     "sem": 537,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "tráfico y ruido",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 850,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq11",
+     "x": 3002.4,
+     "z": -577.7
+    },
+    {
+     "sem": 865,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 1025,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "tráfico y ruido",
+     "parche": "pq9",
+     "x": 1522.9,
+     "z": -426.8
+    }
+   ],
+   "avisos": [
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 1,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmonta la primera bodega junto a La Vaca",
+     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 92,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmontaron todas las bodegas junto a La Vaca",
+     "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 26.307 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 194,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
+     "texto": "Las especies ocupan 321 pares especie–parche frente a 291 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, pato andino, focha común y garza blanca."
+    },
+    {
+     "sem": 214,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 371,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura invade el borde del Humedal La Vaca",
+     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
+    },
+    {
+     "sem": 417,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
+    },
+    {
+     "sem": 445,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 534,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
+     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
+    },
+    {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
+    },
+    {
+     "sem": 565,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana deja Humedal La Vaca",
+     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
+    },
+    {
+     "sem": 628,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura en los bordes de los humedales se duplica",
+     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
+    },
+    {
+     "sem": 662,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: humedales",
+     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
+    },
+    {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
+     "sem": 680,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las ratas se duplican cerca de Corabastos",
+     "texto": "Hay 8.560 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.218 t/día en Kennedy y 24 % no se recoge."
+    },
+    {
+     "sem": 804,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Humedal La Vaca pierde 1 ha",
+     "texto": "La basura arrojada en su borde rellenó 1,0 ha: quedan 6,9 de 7,9 ha y su fauna tiene menos hábitat."
+    },
+    {
+     "sem": 850,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: fauna",
+     "texto": "Fauna: 91 % (game over si quedan menos del 90 % de las especies de fauna presentes al inicio)."
+    },
+    {
+     "sem": 850,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Serpiente sabanera desaparece de Kennedy",
+     "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 868,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Game over: se perdió más del 10 % de las especies de fauna",
+     "texto": "Regla «Fauna» cumplida 4 semanas seguidas (valor 87 %)."
+    },
+    {
+     "sem": 1025,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Rana sabanera desaparece de Kennedy",
+     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Biblioteca El Tintal; causa: tráfico y ruido."
+    }
+   ],
+   "predio": null
+  },
+  {
+   "id": 7,
+   "n": "Metro + alimentadores y ciclorrutas",
+   "base": "A",
+   "sliders": {
+    "metroRed": 25,
+    "metroSem": 114,
+    "P3.arboles": 0.4,
+    "trafCrece": 1.5,
+    "mitiga": 0,
+    "recoleccion": 84,
+    "proteccion": 0
+   },
+   "gameover": {
+    "regla": "humedal",
+    "sem": 680,
+    "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
+    "valor": 69.853
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 680,
+    "por_regla": {
+     "humedal": 25,
+     "fauna": 5
+    }
+   },
+   "grupo": "actual",
+   "pregunta": "¿Qué pasaría si, además del metro, se reorganizan los buses alimentadores y se hacen ciclorrutas hasta las estaciones?",
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 1116,
+    "redTipos0": 207,
+    "poliniz0": 23,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 19,
+     "max": 23,
+     "final": 20
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 1298,
+     "max": 3486,
+     "final": 3081
+    },
+    "redTipos": {
+     "min": 185,
+     "max": 220,
+     "final": 190
+    },
+    "pares": {
+     "min": 135,
+     "max": 319,
+     "final": 266
+    },
+    "aves": {
+     "min": 13,
+     "max": 14,
+     "final": 13
+    },
+    "poliniz": {
+     "min": 27,
+     "max": 81,
+     "final": 73
+    },
+    "polinizEsp": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 0.949,
+     "max": 1.142,
+     "final": 1.142
+    },
+    "ruidoDb": {
+     "min": 60.636,
+     "max": 61.441,
+     "final": 61.441
+    },
+    "callesRuidosas": {
+     "min": 29.42,
+     "max": 34.089,
+     "final": 31.554
+    },
+    "callesOMS": {
+     "min": 75.339,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.409,
+     "final": 6.374
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 67.887,
+     "max": 120.046,
+     "final": 67.887
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "congestion": {
+     "min": 56.619,
+     "max": 118.744,
+     "final": 118.744
+    },
+    "tiempo10km": {
+     "min": 29.268,
+     "max": 40.878,
+     "final": 40.878
+    },
+    "presion": {
+     "min": 0,
+     "max": 0.572,
+     "final": 0.572
+    },
+    "recuperacion": {
+     "min": 0,
+     "max": 0.06,
+     "final": 0
+    },
+    "ratas": {
+     "min": 1,
+     "max": 3.171,
+     "final": 3.171
+    },
+    "humedalHa": {
+     "min": 36.349,
+     "max": 38.399,
+     "final": 36.349
+    },
+    "humedalFuncional": {
+     "min": 53.794,
+     "max": 99.997,
+     "final": 53.794
+    },
+    "arboles": {
+     "min": 0.362,
+     "max": 0.4,
+     "final": 0.362
+    },
+    "comidaLocal": {
+     "min": 0.007,
+     "max": 0.012,
+     "final": 0.007
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.02,
+     "final": 0.02
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.034,
+     "final": 1.034
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1779,
+     "final": 1779
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.25,
+     "final": 0.25
+    }
+   },
+   "extinciones": [
+    {
+     "sem": 537,
+     "especie": "monjita",
+     "nombre": "Monjita bogotana",
+     "motivo": "tráfico y ruido",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
+    },
+    {
+     "sem": 725,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "burro",
+     "x": 2095.7,
+     "z": -109.1
+    },
+    {
+     "sem": 753,
+     "especie": "comadreja",
+     "nombre": "Comadreja",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "bosqueBav",
+     "x": 4100,
+     "z": 60
+    },
+    {
+     "sem": 850,
+     "especie": "culebra",
+     "nombre": "Serpiente sabanera",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
+     "parche": "pq11",
+     "x": 3002.4,
+     "z": -577.7
+    },
+    {
+     "sem": 1025,
+     "especie": "rana",
+     "nombre": "Rana sabanera",
+     "motivo": "tráfico y ruido",
+     "parche": "pq9",
+     "x": 1522.9,
+     "z": -426.8
+    }
+   ],
+   "avisos": [
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy, con buses alimentadores reorganizados y ciclorrutas a las estaciones; a 800 m del eje circularán 25 % menos vehículos."
+    },
+    {
+     "sem": 115,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "La congestión baja 10 %",
+     "texto": "Recorrer 10 km toma 29,3 min (hoy 31,8 min)."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 25 % menos vehículos: el índice de tráfico de Kennedy queda en 0,95 y el ruido promedio en 60,6 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 174,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.009 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 226,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "El suelo junto a la estación Portal Américas sube más de 10 %",
+     "texto": "Los predios más cercanos valen 11 % más que hoy; los arriendos suben con ellos."
+    },
+    {
+     "sem": 239,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 311,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las aves dejan el borde de Corabastos",
+     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 40 % más que hoy, depredan nidos y la basura las espanta."
+    },
+    {
+     "sem": 371,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura invade el borde del Humedal La Vaca",
+     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
+    },
+    {
+     "sem": 460,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: humedales",
+     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
+    },
+    {
+     "sem": 534,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
+     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
+    },
+    {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
+    },
+    {
+     "sem": 565,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana deja Humedal La Vaca",
+     "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tráfico y ruido."
+    },
+    {
+     "sem": 628,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "La basura en los bordes de los humedales se duplica",
+     "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
+    },
+    {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,7 min (hoy 31,8 min en 2025); congestión 91 %. Circulan 7 % más vehículos que hoy."
     },
     {
      "sem": 680,
@@ -2790,7 +3303,8 @@
     "trafCrece": 1.5,
     "pobCrece": 0,
     "P3.arboles": 0.4,
-    "recoleccion": 84
+    "recoleccion": 84,
+    "proteccion": 0
    },
    "gameover": {
     "regla": "abasto",
@@ -2859,29 +3373,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
     },
     "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
     },
     "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
     },
     "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
     },
     "atropellos": {
      "min": 6.287,
-     "max": 12.497,
-     "final": 6.465
+     "max": 12.447,
+     "final": 6.434
     },
     "comidaMin": {
      "min": 0.24,
@@ -2904,19 +3418,19 @@
      "final": 0
     },
     "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
     },
     "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
     },
     "presion": {
      "min": 0,
-     "max": 0.647,
-     "final": 0.647
+     "max": 0.618,
+     "final": 0.618
     },
     "recuperacion": {
      "min": 0,
@@ -2947,6 +3461,26 @@
      "min": 0.007,
      "max": 0.012,
      "final": 0.007
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.02,
+     "final": 0.02
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.034,
+     "final": 1.034
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1779,
+     "final": 1779
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
     }
    },
    "extinciones": [
@@ -2998,6 +3532,22 @@
    ],
    "avisos": [
     {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
      "sem": 105,
      "tipo": "trafico",
      "capa": "trafico",
@@ -3030,6 +3580,46 @@
      "texto": "Con la Av. de las Américas cerrada del todo, por las vías de desvío pasan 50 % más vehículos (+1,8 dB); las aves de los parches junto a ellas (copetón, mirla patiamarilla, colibrí chillón y torcaza) pierden hasta 12 % de la calidad de su hábitat por el ruido."
     },
     {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 174,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.009 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 226,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "El suelo junto a la estación Portal Américas sube más de 10 %",
+     "texto": "Los predios más cercanos valen 11 % más que hoy; los arriendos suben con ellos."
+    },
+    {
      "sem": 239,
      "tipo": "especies",
      "capa": "especies",
@@ -3046,14 +3636,6 @@
      "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 40 % más que hoy, depredan nidos y la basura las espanta."
     },
     {
-     "sem": 313,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
      "sem": 371,
      "tipo": "residuos",
      "capa": "especies",
@@ -3062,12 +3644,12 @@
      "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
     },
     {
-     "sem": 521,
+     "sem": 417,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
     },
     {
      "sem": 534,
@@ -3100,6 +3682,14 @@
      "signo": -1,
      "titulo": "La basura en los bordes de los humedales se duplica",
      "texto": "Hay 784 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 5,8 t/día y el humedal queda con 74 % de su calidad y 18,6 ha."
+    },
+    {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
     },
     {
      "sem": 680,
@@ -3142,12 +3732,12 @@
      "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
-     "sem": 885,
+     "sem": 989,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
     },
     {
      "sem": 991,
@@ -3170,7 +3760,8 @@
     "P1.capAcopio": 131.6,
     "trafCrece": 1.5,
     "P1.sup": 98000,
-    "recoleccion": 84
+    "recoleccion": 84,
+    "proteccion": 30
    },
    "gameover": {
     "regla": "abasto",
@@ -3239,29 +3830,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
     },
     "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
     },
     "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
     },
     "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
     },
     "atropellos": {
-     "min": 6.115,
-     "max": 12.311,
-     "final": 8.824
+     "min": 6.103,
+     "max": 12.26,
+     "final": 8.792
     },
     "comidaMin": {
      "min": 0.252,
@@ -3284,19 +3875,19 @@
      "final": 7
     },
     "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
     },
     "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
     },
     "presion": {
      "min": 0,
-     "max": 0.356,
-     "final": 0.356
+     "max": 0.327,
+     "final": 0.327
     },
     "recuperacion": {
      "min": 0,
@@ -3327,6 +3918,26 @@
      "min": 0.009,
      "max": 0.462,
      "final": 0.455
+    },
+    "circularIndice": {
+     "min": 0,
+     "max": 0.064,
+     "final": 0.064
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
     }
    },
    "extinciones": [
@@ -3351,12 +3962,28 @@
    ],
    "avisos": [
     {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
      "sem": 25,
      "tipo": "huertas",
      "capa": "especies",
      "signo": 1,
      "titulo": "Kennedy ya tiene 243 huertas",
      "texto": "Son el doble de las de hoy (120); producen 73 t de comida al año."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
     },
     {
      "sem": 82,
@@ -3415,12 +4042,28 @@
      "texto": "Con la Av. de las Américas cerrada del todo, por las vías de desvío pasan 50 % más vehículos (+1,8 dB); las aves de los parches junto a ellas (copetón, mirla patiamarilla, colibrí chillón y torcaza) pierden hasta 12 % de la calidad de su hábitat por el ruido."
     },
     {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
      "sem": 123,
      "tipo": "huertas",
      "capa": "especies",
      "signo": 1,
      "titulo": "Kennedy ya tiene 1.209 huertas",
      "texto": "Son diez veces de las de hoy (120); producen 363 t de comida al año."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
     },
     {
      "sem": 149,
@@ -3431,6 +4074,22 @@
      "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 214,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
      "sem": 312,
      "tipo": "especies",
      "capa": "especies",
@@ -3439,20 +4098,12 @@
      "texto": "Las especies ocupan 323 pares especie–parche frente a 293 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, pato andino, focha común y garza blanca."
     },
     {
-     "sem": 313,
+     "sem": 417,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
     },
     {
      "sem": 537,
@@ -3471,6 +4122,14 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
      "sem": 850,
      "tipo": "especies",
      "capa": "especies",
@@ -3479,18 +4138,18 @@
      "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
-     "sem": 885,
+     "sem": 989,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
     }
    ],
    "predio": {
     "año5": {
-     "trafico": 1.044,
-     "ruidoDb": 72.851,
+     "trafico": 1.015,
+     "ruidoDb": 72.726,
      "ruidoDb0": 72.648,
      "ocupacion": 39,
      "ocupacion0": 32.923,
@@ -3500,8 +4159,8 @@
      "especiesFuera": []
     },
     "año10": {
-     "trafico": 1.104,
-     "ruidoDb": 73.119,
+     "trafico": 1.073,
+     "ruidoDb": 72.995,
      "ruidoDb0": 72.648,
      "ocupacion": 35,
      "ocupacion0": 32.923,
@@ -3511,8 +4170,8 @@
      "especiesFuera": []
     },
     "año15": {
-     "trafico": 1.166,
-     "ruidoDb": 73.353,
+     "trafico": 1.133,
+     "ruidoDb": 73.23,
      "ruidoDb0": 72.648,
      "ocupacion": 38,
      "ocupacion0": 32.923,
@@ -3522,8 +4181,8 @@
      "especiesFuera": []
     },
     "año20": {
-     "trafico": 1.232,
-     "ruidoDb": 73.593,
+     "trafico": 1.198,
+     "ruidoDb": 73.469,
      "ruidoDb0": 72.648,
      "ocupacion": 38,
      "ocupacion0": 32.923,
@@ -3544,7 +4203,9 @@
     "P3.arboles": 0.4,
     "P1.sup": 98000,
     "trafCrece": 1.5,
-    "recoleccion": 84
+    "recoleccion": 84,
+    "P2.frac": 0.4,
+    "proteccion": 30
    },
    "gameover": null,
    "semillas30": {
@@ -3580,7 +4241,7 @@
     "red": {
      "min": 1298,
      "max": 3715,
-     "final": 3484
+     "final": 3472
     },
     "redTipos": {
      "min": 202,
@@ -3590,7 +4251,7 @@
     "pares": {
      "min": 135,
      "max": 340,
-     "final": 312
+     "final": 311
     },
     "aves": {
      "min": 13,
@@ -3608,29 +4269,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
     },
     "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
     },
     "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
     },
     "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
     },
     "atropellos": {
      "min": 6.287,
-     "max": 12.071,
-     "final": 8.942
+     "max": 12.02,
+     "final": 8.792
     },
     "comidaMin": {
      "min": 1,
@@ -3653,24 +4314,24 @@
      "final": 8
     },
     "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
     },
     "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
     },
     "presion": {
      "min": 0,
-     "max": 0.343,
-     "final": 0.343
+     "max": 0.314,
+     "final": 0.314
     },
     "recuperacion": {
      "min": 0,
      "max": 0.482,
-     "final": 0.452
+     "final": 0.45
     },
     "ratas": {
      "min": 0.767,
@@ -3696,6 +4357,26 @@
      "min": 0.009,
      "max": 0.462,
      "final": 0.454
+    },
+    "circularIndice": {
+     "min": 0,
+     "max": 0.064,
+     "final": 0.064
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
     }
    },
    "extinciones": [
@@ -3720,6 +4401,14 @@
    ],
    "avisos": [
     {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
      "sem": 25,
      "tipo": "huertas",
      "capa": "especies",
@@ -3728,12 +4417,28 @@
      "texto": "Son el doble de las de hoy (120); producen 73 t de comida al año."
     },
     {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
      "sem": 82,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "Mirla patiamarilla llega a Huerta central de Bavaria (B)",
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
+    },
+    {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
     },
     {
      "sem": 121,
@@ -3752,12 +4457,28 @@
      "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
-     "sem": 313,
-     "tipo": "trafico",
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 214,
+     "tipo": "suelo",
      "capa": "trafico",
      "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
      "sem": 314,
@@ -3768,20 +4489,20 @@
      "texto": "Las especies ocupan 323 pares especie–parche frente a 293 en el año 1. Donde más llegan es a Borde restaurado de La Vaca (antes bodegas de Corabastos): tingua moteada, pato andino, focha común y garza blanca."
     },
     {
+     "sem": 417,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
+    },
+    {
      "sem": 503,
      "tipo": "corabastos",
      "capa": "especies",
      "signo": 1,
      "titulo": "Se desmontaron todas las bodegas junto a La Vaca",
      "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 26.307 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
     },
     {
      "sem": 537,
@@ -3800,6 +4521,14 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
      "sem": 850,
      "tipo": "especies",
      "capa": "especies",
@@ -3808,26 +4537,18 @@
      "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: tráfico",
-     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
-    },
-    {
-     "sem": 885,
+     "sem": 989,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
     }
    ],
    "predio": {
     "año5": {
-     "trafico": 1.044,
-     "ruidoDb": 72.85,
+     "trafico": 1.015,
+     "ruidoDb": 72.726,
      "ruidoDb0": 72.648,
      "ocupacion": 39,
      "ocupacion0": 32.923,
@@ -3837,8 +4558,8 @@
      "especiesFuera": []
     },
     "año10": {
-     "trafico": 1.104,
-     "ruidoDb": 73.118,
+     "trafico": 1.073,
+     "ruidoDb": 72.995,
      "ruidoDb0": 72.648,
      "ocupacion": 35,
      "ocupacion0": 32.923,
@@ -3848,8 +4569,8 @@
      "especiesFuera": []
     },
     "año15": {
-     "trafico": 1.166,
-     "ruidoDb": 73.353,
+     "trafico": 1.133,
+     "ruidoDb": 73.23,
      "ruidoDb0": 72.648,
      "ocupacion": 37,
      "ocupacion0": 32.923,
@@ -3859,8 +4580,8 @@
      "especiesFuera": []
     },
     "año20": {
-     "trafico": 1.232,
-     "ruidoDb": 73.592,
+     "trafico": 1.197,
+     "ruidoDb": 73.469,
      "ruidoDb0": 72.648,
      "ocupacion": 38,
      "ocupacion0": 32.923,
@@ -3881,7 +4602,9 @@
     "P3.arboles": 0.4,
     "P1.sup": 98000,
     "trafCrece": 1.5,
-    "recoleccion": 84
+    "recoleccion": 84,
+    "P2.frac": 0.4,
+    "proteccion": 30
    },
    "gameover": null,
    "semillas30": {
@@ -3926,7 +4649,7 @@
     },
     "pares": {
      "min": 135,
-     "max": 568,
+     "max": 569,
      "final": 526
     },
     "aves": {
@@ -3945,29 +4668,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
     },
     "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
     },
     "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
     },
     "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
     },
     "atropellos": {
      "min": 6.287,
-     "max": 14.125,
-     "final": 9.561
+     "max": 14.147,
+     "final": 9.53
     },
     "comidaMin": {
      "min": 1,
@@ -3990,19 +4713,19 @@
      "final": 7
     },
     "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
     },
     "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
     },
     "presion": {
      "min": 0,
-     "max": 0.388,
-     "final": 0.388
+     "max": 0.358,
+     "final": 0.358
     },
     "recuperacion": {
      "min": 0,
@@ -4033,10 +4756,38 @@
      "min": 0.009,
      "max": 0.602,
      "final": 0.595
+    },
+    "circularIndice": {
+     "min": 0,
+     "max": 0.064,
+     "final": 0.064
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
     }
    },
    "extinciones": [],
    "avisos": [
+    {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
     {
      "sem": 21,
      "tipo": "huertas",
@@ -4044,6 +4795,14 @@
      "signo": 1,
      "titulo": "Kennedy ya tiene 249 huertas",
      "texto": "Son el doble de las de hoy (120); producen 75 t de comida al año."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
     },
     {
      "sem": 76,
@@ -4078,6 +4837,14 @@
      "texto": "Las especies ocupan 421 pares especie–parche frente a 337 en el año 1. Donde más llegan es a Huertas de parque (3): copetón, mirla patiamarilla, colibrí chillón y torcaza."
     },
     {
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
      "sem": 119,
      "tipo": "polinizadores",
      "capa": "especies",
@@ -4086,12 +4853,28 @@
      "texto": "Abejas, colibríes y cucaracheros ocupan 131 pares especie–parche (en el año 1 87), gracias a las huertas y parques con flor."
     },
     {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
+    },
+    {
      "sem": 148,
      "tipo": "corabastos",
      "capa": "especies",
      "signo": 1,
      "titulo": "Se desmonta la primera bodega junto a La Vaca",
      "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
      "sem": 177,
@@ -4110,20 +4893,20 @@
      "texto": "Abejas, colibríes y cucaracheros ocupan 176 pares especie–parche (en el año 1 87), gracias a las huertas y parques con flor."
     },
     {
-     "sem": 313,
+     "sem": 214,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 417,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
     },
     {
      "sem": 600,
@@ -4134,26 +4917,26 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
-     "sem": 885,
+     "sem": 677,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
-     "titulo": "Kennedy se acerca al game over: tráfico",
-     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
     },
     {
-     "sem": 885,
+     "sem": 989,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
     }
    ],
    "predio": {
     "año5": {
-     "trafico": 1.044,
-     "ruidoDb": 72.851,
+     "trafico": 1.015,
+     "ruidoDb": 72.726,
      "ruidoDb0": 72.648,
      "ocupacion": 57,
      "ocupacion0": 49.385,
@@ -4163,8 +4946,8 @@
      "especiesFuera": []
     },
     "año10": {
-     "trafico": 1.104,
-     "ruidoDb": 73.119,
+     "trafico": 1.073,
+     "ruidoDb": 72.995,
      "ruidoDb0": 72.648,
      "ocupacion": 51,
      "ocupacion0": 49.385,
@@ -4174,8 +4957,8 @@
      "especiesFuera": []
     },
     "año15": {
-     "trafico": 1.166,
-     "ruidoDb": 73.354,
+     "trafico": 1.133,
+     "ruidoDb": 73.23,
      "ruidoDb0": 72.648,
      "ocupacion": 52,
      "ocupacion0": 49.385,
@@ -4185,8 +4968,8 @@
      "especiesFuera": []
     },
     "año20": {
-     "trafico": 1.232,
-     "ruidoDb": 73.593,
+     "trafico": 1.198,
+     "ruidoDb": 73.469,
      "ruidoDb0": 72.648,
      "ocupacion": 54,
      "ocupacion0": 49.385,
@@ -4207,7 +4990,8 @@
     "P1.rend": 6,
     "P3.arboles": 0.4,
     "mitiga": 0,
-    "recoleccion": 84
+    "recoleccion": 84,
+    "proteccion": 30
    },
    "gameover": null,
    "semillas30": {
@@ -4271,29 +5055,29 @@
      "final": 3
     },
     "trafico": {
-     "min": 1,
-     "max": 1.229,
-     "final": 1.229
+     "min": 0.992,
+     "max": 1.194,
+     "final": 1.194
     },
     "ruidoDb": {
-     "min": 60.889,
-     "max": 61.784,
-     "final": 61.784
+     "min": 60.854,
+     "max": 61.658,
+     "final": 61.658
     },
     "callesRuidosas": {
-     "min": 34.089,
-     "max": 36.445,
-     "final": 36.445
+     "min": 30.011,
+     "max": 36.041,
+     "final": 36.041
     },
     "callesOMS": {
-     "min": 75.995,
-     "max": 78.535,
-     "final": 78.535
+     "min": 75.651,
+     "max": 78.199,
+     "final": 78.199
     },
     "atropellos": {
-     "min": 5.899,
-     "max": 10.478,
-     "final": 7.536
+     "min": 6.039,
+     "max": 10.431,
+     "final": 7.505
     },
     "comidaMin": {
      "min": 1,
@@ -4316,19 +5100,19 @@
      "final": 0
     },
     "congestion": {
-     "min": 69.9,
-     "max": 159.402,
-     "final": 159.402
+     "min": 67.736,
+     "max": 142.058,
+     "final": 142.058
     },
     "tiempo10km": {
-     "min": 31.75,
-     "max": 48.476,
-     "final": 48.476
+     "min": 31.346,
+     "max": 45.234,
+     "final": 45.234
     },
     "presion": {
      "min": 0,
-     "max": 0.423,
-     "final": 0.423
+     "max": 0.394,
+     "final": 0.394
     },
     "recuperacion": {
      "min": 0,
@@ -4359,6 +5143,26 @@
      "min": 0.012,
      "max": 0.106,
      "final": 0.103
+    },
+    "circularIndice": {
+     "min": 0.003,
+     "max": 0.084,
+     "final": 0.084
+    },
+    "sueloIndice": {
+     "min": 1,
+     "max": 1.029,
+     "final": 1.029
+    },
+    "hogaresRiesgo": {
+     "min": 0,
+     "max": 1059,
+     "final": 1059
+    },
+    "metroReduccion": {
+     "min": 0,
+     "max": 0.1,
+     "final": 0.1
     }
    },
    "extinciones": [
@@ -4383,12 +5187,28 @@
    ],
    "avisos": [
     {
+     "sem": 1,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro sigue en obra en Kennedy",
+     "texto": "La Línea 1 va en 83,7 % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana 114."
+    },
+    {
      "sem": 22,
      "tipo": "huertas",
      "capa": "especies",
      "signo": 1,
      "titulo": "Kennedy ya tiene 255 huertas",
      "texto": "Son el doble de las de hoy (126); producen 42 t de comida al año."
+    },
+    {
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
     },
     {
      "sem": 85,
@@ -4407,12 +5227,28 @@
      "texto": "La basura acumulada alrededor de Corabastos baja a 3.023 t (hoy 4.038 t)."
     },
     {
-     "sem": 129,
+     "sem": 115,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "El metro empieza a operar",
+     "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
+    },
+    {
+     "sem": 128,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 10 % más lugares que en el año 1",
      "texto": "Las especies ocupan 340 pares especie–parche frente a 309 en el año 1. Donde más llegan es a Cubiertas compartidas 5: copetón, colibrí chillón, torcaza y cucarachero."
+    },
+    {
+     "sem": 141,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Menos carros junto al metro",
+     "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 0,99 y el ruido promedio en 60,9 dB."
     },
     {
      "sem": 157,
@@ -4423,20 +5259,28 @@
      "texto": "49.000 m² de cubiertas y balcones producen y son hábitat para polinizadores y aves."
     },
     {
-     "sem": 313,
+     "sem": 167,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Más gente camina alrededor de la estación Portal Américas",
+     "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+    },
+    {
+     "sem": 214,
+     "tipo": "suelo",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "1.000 hogares en riesgo de desplazamiento",
+     "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 417,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 521,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,7 min (hoy 31,8 min, TomTom 2025); congestión 107 %. Circulan 11 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 35,0 min (hoy 31,8 min en 2025); congestión 87 %. Circulan 6 % más vehículos que hoy."
     },
     {
      "sem": 537,
@@ -4455,6 +5299,14 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
+     "sem": 677,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 39,0 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
+    },
+    {
      "sem": 850,
      "tipo": "especies",
      "capa": "especies",
@@ -4463,32 +5315,24 @@
      "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: tráfico",
-     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
-    },
-    {
-     "sem": 885,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
-    },
-    {
      "sem": 923,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
      "titulo": "Los humedales pierden 10 % de su área funcional",
      "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+    },
+    {
+     "sem": 989,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión se duplica",
+     "texto": "Recorrer 10 km toma 45,2 min (hoy 31,8 min en 2025); congestión 142 %. Circulan 19 % más vehículos que hoy."
     }
    ],
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.367
+ "ms_por_paso_node": 0.851
 }

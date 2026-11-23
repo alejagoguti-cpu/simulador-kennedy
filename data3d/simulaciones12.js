@@ -30,6 +30,9 @@
    · humedalFuncional (% del área funcional de hoy), humedales [{id, nombre, x, z, ha, ha0, calidad}], arboles / arbolesPerdidos, basura.puntos con fuente 'humedal'
      (bordes de El Burro, La Vaca y Techo) y acumulada por punto, basura.fraccionSinRecoger, basura.captura; regla de game over nueva «humedal»; la regla «habitat»
      se compara con el año 1 (ver REGLAS y ESTADO ACTUAL QUE SE DEGRADA).
+   · metro {fase 'obra'|'opera', desde, avance, reduccion, estaciones[{n,x,z,terminada,peatonesDia}]} (Línea 1 en TODAS las simulaciones; sim. 7 = metro +
+     alimentadores y ciclorrutas), circular {organicos_t_dia, compostado_t_dia, indice, comidaLocal_t_dia, flujos[{de,a,t_dia,tipo}]}, especulacion {indice, hogaresRiesgo,
+     proteccion, zonas[{x,z,indice}]}: ver METRO_SUP, ECONOMÍA CIRCULAR y SUELO_SUP. Deslizadores nuevos: proteccion (todas), P2.frac (2, 3, 10, 11).
    · SIMS[i].grupo ('actual' | 'propuesta') y preguntas «¿Qué pasaría si …?»; 5 a 7 deslizadores por simulación (EXTRA_SL).
 
    ÍNDICES QUE NO ESTÁN EN sim_vida.js (cómo se calculan aquí):
@@ -201,10 +204,41 @@ const DESVIOS = { americas: { n: 'Av. de las Américas', desvio: ['mayo', 'calle
     calle6: { n: 'Av. Calle 6', dist: [1026, 1572, 1543, 988, 3839, 3293, 823, 1686, 3113, 223, 4647, 293, 1558, 3417, 1515, 338, 4344, 1379, 1901, 3347, 1536, 2412, 526, 1077, 2931, 3484, 1073, 2478, 665, 1464, 693, 135, 1556, 685, 2289, 1138, 2186, 889, 764, 955, 433, 1687, 2294, 642, 1606, 1876, 1848, 1149, 1961, 2123, 1945, 2884, 1535, 2582, 2817, 2244, 2082, 2483, 3228, 2530, 2919, 3340, 3615, 3295, 3232, 3199, 3234, 3597, 3876, 1025, 1435] } } };
 if (DESVIOS.vias.mayo.dist.length !== NP) throw new Error('DESVIOS no corresponde a los parches de sim_red_datos.js (correr tools/cierre_desvios_datos.mjs)');
 
+/* ---------- METRO LÍNEA 1 EN TODAS LAS SIMULACIONES (proyecto real en obra) ----------
+   Estaciones en Kennedy (data3d/metro_l1.js, posiciones sobre el eje real de OpenStreetMap; tools/metro_eje.mjs): obra con 83,7 % de avance en sep-2026,
+   estaciones terminadas en la semana 52 (2027) y operación comercial desde la semana 114 (15-mar-2028) [SUP de metro_l1.js]. Efecto: METRO_RED menos
+   vehículos a 800 m o menos del eje (SUP_SIMS). La sim. 7 pasa a «Metro + alimentadores y ciclorrutas» con una reducción mayor (deslizador metroRed).
+   PEATONES alrededor de cada estación: personas a 800 m × VIAJES_PERS × PART_METRO [SUP: 2 viajes por persona y día y 10 % en metro; Encuesta de
+   Movilidad 2023: ~2 viajes por persona; la participación del metro es supuesta]. */
+export const METRO_SUP = { EST: [{ n: 'Portal Américas', x: -242, z: 1269 }, { n: 'Ciudad Kennedy', x: 299, z: 2069 }, { n: 'Timiza', x: 982, z: 2637 },
+  { n: 'Hospital de Kennedy', x: 2128, z: 2434 }, { n: 'Avenida Boyacá', x: 3243, z: 2400 }], SEM_EST: 52, AVANCE: 83.7, VIAJES_PERS: 2, PART_METRO: 0.10, RADIO: 800 };
+
+/* ---------- ECONOMÍA CIRCULAR ----------
+   indice = fracción de los orgánicos de Kennedy que vuelve como abono a huertas = (tratado en las plantas de compost de la red + compost casero) / orgánicos
+   generados (sim_vida.js: desv, gen; en A el 2 % × adopción se composta en casa). Flujos: orgánicos de los hogares al relleno Doña Juana (A) o a Bavaria
+   Común / los mercados nodo (B, C); compost de vuelta a las huertas; alimentos de las huertas a los mercados y de los mercados/Corabastos a los hogares. */
+
+/* ---------- ESPECULACIÓN DEL SUELO ----------
+   Índice de precio del suelo por zona (1 = hoy, en términos reales frente al resto de Bogotá):
+   · metro: los predios a menos de 800 m de las estaciones de la Línea 1 ya subieron 11,7 % en la fase de anuncio (2019) y 8,8 % en la de construcción
+     (2023) (BogoTank, U. de los Andes y ProBogotá, con catastro; https://www.infobae.com/colombia/2026/02/21/el-metro-de-bogota-aun-no-arranca-y-ya-disparo-la-valorizacion-inmobiliaria-en-zonas-aledanas-estas-son-las-cifras/):
+     eso ya está en el «hoy». Al operar se suma P_METRO = 13 % (la extensión de TransMilenio subió 13–14 % los precios de oferta en su zona de influencia:
+     Rodríguez y Mojica, Lincoln Institute, https://www.lincolninst.edu/es/publications/articles/efecto-del-sistema-autobus-transporte-rapido-sobre-el-valor-del-suelo/),
+     en 2 años desde la apertura [SUP], con peso 1 − d/800 m.
+   · plan parcial (sim. 4): P_PLAN = 25 % a 1 km o menos del predio, en proporción a las viviendas terminadas [SUP: renovación urbana con 14.000 viviendas y
+     comercio; no se encontró una cifra medida para Bogotá].
+   · hogaresRiesgo = hogares de la zona × 55,1 % en arriendo (Encuesta Multipropósito 2025, Bogotá urbana; https://www.valoraanalitik.com/?p=623882) ×
+     mín(1, K_DESP·(índice − 1)) × (1 − protección) [SUP K_DESP = 1: cada 10 % de alza deja al 10 % de los arrendatarios con riesgo de no poder pagar].
+   · protección (deslizador «Vivienda protegida y captura de plusvalías»): parte del alza que no llega a los arriendos (captura de plusvalías del Distrito,
+     vivienda de interés social protegida, suelo comunitario). Por defecto 0 en las simulaciones del estado actual y 30 % en las de la propuesta (Bavaria
+     Común como instituto y suelo comunitario, mercados comunitarios) [SUP]. El alza del índice se reduce a la mitad de la protección (la plusvalía capturada). */
+export const SUELO_SUP = { P_METRO: 0.13, RAMPA: 104, P_PLAN: 0.25, RADIO_PLAN: 1000, ARRIENDO: 0.551, K_DESP: 1, PROT_PROP: 30 };
+
 /* ---------- supuestos de este módulo ---------- */
 export const SUP_SIMS = {
   METRO_SEM: 114,      // [SUP] la Línea 1 opera desde la semana 114 (la que usa data3d/metro_l1.js y el Escenario 1 de index.html)
-  METRO_RED: 0.10,     // [SUP] 10 % menos vehículos cerca del corredor desde que opera (el mismo de index.html, commit bb69d22). No hay cifra oficial.
+  METRO_RED: 0.10,     // [SUP] 10 % menos vehículos cerca del corredor desde que opera (el mismo de index.html, commit bb69d22). No hay cifra oficial. Vale para TODAS las simulaciones.
+  METRO_RED_ALIM: 0.25, // [SUP] sim. 7: metro + buses alimentadores reorganizados + ciclorrutas a las estaciones: 25 % (el doble y medio; sin cifra oficial)
   METRO_RADIO: 800,    // [SUP] «cerca del corredor» = 800 m o menos del eje (caminata típica a una estación; el de tools/escenarios_instalacion.mjs)
   SIN_CORA: 52,        // [SUP] e5: Corabastos deja de abastecer en la semana 52 (hipotético; no hay plan oficial de cierre)
   DESM_LIB: 1,         // [SUP] e6: la carga liberada de Corabastos tiende a 1 (el desmonte sigue el calendario de B y C)
@@ -243,7 +277,7 @@ export const SIMS = [
     sliders: [{ k: 'desmLib', n: 'Carga liberada de Corabastos', min: 0, max: 1, paso: 0.05, val: SUP_SIMS.DESM_LIB, unidad: '0–1', ayuda: 'Fracción del espacio de bodega que deja de usarse; decide cuántas bodegas se desmontan.' }, sRec, sArb] },
   { id: 7, n: 'Metro Línea 1', corto: 'Metro', base: 'A', pregunta: '¿Menos carros cerca del metro alivian el ruido y la fauna?',
     desc: 'Hoy más la Línea 1 del metro en operación desde la semana 114. Cerca del corredor (800 m) circulan menos vehículos [SUP 10 %, sin cifra oficial].',
-    sliders: [{ k: 'metroRed', n: 'Menos vehículos cerca del metro', min: 0, max: 50, paso: 1, val: SUP_SIMS.METRO_RED * 100, unidad: '%', ayuda: '[SUP] No hay cifra oficial; por defecto 10 %, como en el simulador.' },
+    sliders: [{ k: 'metroRed', n: 'Menos vehículos cerca del metro', min: 0, max: 50, paso: 1, val: SUP_SIMS.METRO_RED_ALIM * 100, unidad: '%', ayuda: '[SUP] No hay cifra oficial; por defecto 10 %, como en el simulador.' },
       { k: 'metroSem', n: 'Semana en que empieza a operar', min: 1, max: 1040, paso: 1, val: SUP_SIMS.METRO_SEM, unidad: 'semana', ayuda: 'Semana 114 en data3d/metro_l1.js; la Empresa Metro anuncia 2028.' }, sArb] },
   { id: 8, n: 'Cierre de vía, hoy', corto: 'Cierre', base: 'A', pregunta: '¿Aguanta el abastecimiento de hoy medio año sin la Av. de las Américas?',
     desc: 'Hoy, con la Av. de las Américas cerrada 26 semanas desde la semana 104: las rutas desde Corabastos se alargan.', sliders: [sT0, sDur] },
@@ -289,6 +323,8 @@ const sBas = { k: 'basuraCrece', n: 'Crecimiento anual de la basura', min: 0, ma
 const sRecol = { k: 'recoleccion', n: 'Recolección de la basura', min: 50, max: 100, paso: 1, val: 84, unidad: '%', ayuda: 'UAESP 2026: 5.680 t/día recogidas por el servicio y 1.089 t/día en puntos críticos y arrojo clandestino (16 % sin recoger).' };
 for (const id of [1, 5, 6]) EXTRA_SL[id].push(sBas, sRecol);
 for (const id of [2, 3, 7, 8, 9, 10, 11, 12]) EXTRA_SL[id].push(sRecol);
+const sFrac = { k: 'P2.frac', n: 'Hogares que separan los orgánicos', min: 0, max: 1, paso: 0.05, val: 0.4, unidad: '0–1', ayuda: 'Fracción de los hogares cubiertos que separa sus orgánicos para el compost de la red (sim_modelos.js: 0,4). Más separación, más abono de vuelta a las huertas.' };
+for (const id of [2, 3, 10, 11]) EXTRA_SL[id].push(sFrac);
 for (const S of SIMS) S.sliders.push(...(EXTRA_SL[S.id] || []));
 /* grupo: 'actual' = Kennedy sin la propuesta de la tesis (incluye el plan parcial, que no es la propuesta); 'propuesta' = instituto / Bavaria Común,
    red de mercados, borde de La Vaca, huertas y techos. Preguntas en forma «¿Qué pasaría si …?». */
@@ -299,13 +335,17 @@ const GRUPO_PREG = {
   4: ['actual', '¿Qué pasaría si se construye el Plan Parcial Fábrica Bavaria con sus 14.000 viviendas?'],
   5: ['actual', '¿Qué pasaría si Corabastos deja de abastecer y no hay una red que lo reemplace?'],
   6: ['propuesta', '¿Qué pasaría si se desmontan las bodegas de Corabastos junto al humedal La Vaca y se restaura su borde?'],
-  7: ['actual', '¿Qué pasaría si la Línea 1 del metro saca carros de las calles cercanas?'],
+  7: ['actual', '¿Qué pasaría si, además del metro, se reorganizan los buses alimentadores y se hacen ciclorrutas hasta las estaciones?'],
   8: ['actual', '¿Qué pasaría si la Av. de las Américas se cierra medio año por obras, como está hoy Kennedy?'],
   9: ['propuesta', '¿Qué pasaría si la Av. de las Américas se cierra medio año pero ya funciona el instituto en Bavaria?'],
   10: ['propuesta', '¿Qué pasaría si, además del instituto, las plazoletas de mercado en los parques también reparten comida?'],
   11: ['propuesta', '¿Qué pasaría si el instituto se suma a los módulos de huertas en cubiertas, colegios y parques?'],
   12: ['propuesta', '¿Qué pasaría si los hogares montan huertas hidropónicas en sus techos y balcones?'] };
-for (const S of SIMS) { S.grupo = GRUPO_PREG[S.id][0]; S.pregunta = GRUPO_PREG[S.id][1]; }
+for (const S of SIMS) { S.grupo = GRUPO_PREG[S.id][0]; S.pregunta = GRUPO_PREG[S.id][1];
+  S.sliders.push({ k: 'proteccion', n: 'Vivienda protegida y captura de plusvalías', min: 0, max: 100, paso: 5, val: S.grupo === 'propuesta' ? SUELO_SUP.PROT_PROP : 0, unidad: '%', ayuda: 'Parte del alza del suelo que no llega a los arriendos: captura de plusvalías, vivienda protegida y suelo comunitario. Menos hogares en riesgo de desplazamiento.' }); }
+{ const S7 = SIMS.find(S => S.id === 7); S7.n = 'Metro + alimentadores y ciclorrutas'; S7.corto = 'Metro + alimentadores';
+  S7.desc = 'La Línea 1 del metro opera desde la semana 114 en todas las simulaciones; aquí además se reorganizan los buses alimentadores y se hacen ciclorrutas a las estaciones: menos carros cerca del corredor [SUP 25 %, sin cifra oficial; 10 % solo con el metro].';
+  GRUPO_PREG[7][1] = S7.pregunta = '¿Qué pasaría si, además del metro, se reorganizan los buses alimentadores y se hacen ciclorrutas hasta las estaciones?'; }
 SIMS.find(S => S.id === 4).desc = 'Kennedy como hoy más las 14.000 viviendas del Plan Parcial Fábrica Bavaria (Decreto 448 de 2023) por etapas en 10 años: más gente, más carros por las vías nuevas, más ruido y se talan árboles del bosque de Bavaria.';
 SIMS.find(S => S.id === 8).desc = 'Hoy, con la Av. de las Américas cerrándose por obra en fases desde la semana 104 durante 26 semanas: las rutas desde Corabastos se alargan y el tráfico se desvía por la Av. Primero de Mayo y la Av. Calle 6.';
 export const MITIGA_DB = 3; // dB menos en las calles pacificadas (ver mitiga arriba) [SUP]
@@ -382,7 +422,7 @@ export function crear(id, semilla = 1, valores = {}) {
   const mod = { red: RED }; let metro = null;
   if (id === 5) mod.sinCora = Math.round(val.sinCora);
   if (id === 6) mod.desmonte = { lib: val.desmLib };
-  if (id === 7) { const r = val.metroRed / 100; metro = { red: r, desde: Math.round(val.metroSem), F: PRE.metroF(r) }; }
+  { const r = id === 7 ? val.metroRed / 100 : SUP_SIMS.METRO_RED, desde = id === 7 ? Math.round(val.metroSem) : SUP_SIMS.METRO_SEM; metro = { red: r, desde, F: PRE.metroF(r) }; } // metro en TODAS (proyecto real); sim. 7 con alimentadores y ciclorrutas
   if (id === 8 || id === 9) mod.cierre = { via: SUP_SIMS.CIERRE_VIA, t0: Math.round(val.cierreT0), dur: Math.round(val.cierreDur) };
   if (id === 10) mod.plazasNodo = true;
   if (id === 11) mod.huertasC = true;
@@ -403,7 +443,7 @@ export function crear(id, semilla = 1, valores = {}) {
   // factores por parche que se pasan a la red trófica: aves (predio × basura × desvíos) y hábitat de todas las especies (área de humedal)
   E.xAve = new Float32Array(NP).fill(1); E.xH = new Float32Array(NP).fill(1); E.xBas = new Float32Array(NP).fill(1); E.xDes = new Float32Array(NP).fill(1);
   s.red.xAve = E.xAve; s.red.xH = E.xH; s.red.fRata = 1;
-  E.bas = basuraIni(E); E.cie = mod.cierre ? { t0: mod.cierre.t0, dur: mod.cierre.dur, via: mod.cierre.via, fase: 0, faseMax: 0 } : null;
+  E.bas = basuraIni(E); E.suelo = sueloIni(E); E.cie = mod.cierre ? { t0: mod.cierre.t0, dur: mod.cierre.dur, via: mod.cierre.via, fase: 0, faseMax: 0 } : null;
   return E;
 }
 const bits = (v) => { v = v - ((v >>> 1) & 0x55555555); v = (v & 0x33333333) + ((v >>> 2) & 0x33333333); return (((v + (v >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; };
@@ -472,12 +512,12 @@ function basuraPaso(E, t) {
   // la fracción sin recoger crece con el arrojo clandestino; la red de la propuesta recoge la parte orgánica según sus nodos abiertos; los techos compostan en casa
   const prop = s.e === 'B' || s.e === 'C', fSin = Math.pow(1 + B.ARROJO_EXTRA, a) * (1 - b.rec) / (1 - B.RECOLECCION);
   const capt = prop ? B.ORGANICO * Math.min(1, (o.nodos || 0) / MERCADOS.length) : E.techos ? B.ORGANICO * Math.max(Math.min(1, E.techos.m2 * s.supF / SUP_SIMS.M2_HUERTA * PLAN_BAV.PERS_HOG / s.pob), Math.min(1, a / (SUP_SIMS.TECHOS_SEM / 52))) : 0; // techos (sim. 12): los hogares con huerta compostan en casa y, además, Bavaria Común (instituto de tecnologías convergentes) enseña compostaje y abre puntos de compostaje y gestión de residuos al mismo ritmo que se montan los techos [SUP]: recoge la parte orgánica como la red
-  b.captura = capt; let acum = 0;
+  b.captura = capt; let acum = 0, capturado = 0;
   for (const P of b.pts) {
-    if (P.fuente === 'humedal') { P.t = P.g0 * g * fPob * fSin * (1 - capt); P.u = P.t; }
-    else { P.t = P.g0 * g * (P.fuente === 'corabastos' || P.fuente === 'flores' ? fCora : fPob); P.u = Math.min(P.t, P.t * (1 - B.RECOLECCION) * fSin * (P.fuente === 'vivienda' ? 1 - Math.max(org, capt) : 1 - capt)); }
+    if (P.fuente === 'humedal') { const g1 = P.g0 * g * fPob * fSin; P.t = g1 * (1 - capt); P.u = P.t; capturado += g1 * capt; }
+    else { P.t = P.g0 * g * (P.fuente === 'corabastos' || P.fuente === 'flores' ? fCora : fPob); const u0 = Math.min(P.t, P.t * (1 - B.RECOLECCION) * fSin); P.u = u0 * (P.fuente === 'vivienda' ? 1 - Math.max(org, capt) : 1 - capt); capturado += u0 * (P.fuente === 'vivienda' ? Math.max(0, capt - org) : capt); }
     P.acum += P.u * 7 - P.acum * B.LIMPIEZA; acum += P.acum; }
-  b.acum = acum; b.ratas = acum / b.acum0; s.red.fRata = Math.max(0.2, b.ratas);
+  b.capturado = capturado; b.acum = acum; b.ratas = acum / b.acum0; s.red.fRata = Math.max(0.2, b.ratas);
   b.total = (V.POB_K * fPob + (o.plan ? o.plan.personas : 0)) * B.KG_HAB / 1000 * g + (B.CORA_T + B.FLORES_T) * g * fCora + b.pts.reduce((x, P) => x + (P.fuente === 'humedal' ? P.t : 0), 0);
   let fun = 0;
   for (let k = 0; k < HUM_P.length; k++) { let e = 0; for (const P of b.pts) e += P.u * P.w[k]; b.ha[k] = Math.max(0.2 * b.ha0[k], b.ha[k] - B.HA_T * e);
@@ -487,6 +527,41 @@ function basuraPaso(E, t) {
   const ex = Math.max(0, b.ratas - 1); for (const [p, d] of b.cerca) E.xBas[p] = 1 / (1 + B.AVE_RATA * ex * Math.exp(-d / B.D_EXP));
   // árboles de los parques: tala neta del estado actual (A y D); la propuesta la compensa dentro de Kennedy
   if (!prop && !E.techos) { const a0 = E.arb0 != null ? E.arb0 : (E.arb0 = E.PAR.P3.arboles); E.PAR.P3.arboles = a0 * Math.pow(1 - B.TALA_URB, a); } }
+/* ---------- metro: estaciones y peatones (ver METRO_SUP) ---------- */
+const EST_W = METRO_SUP.EST.map(S => ZONAS.map(Z => Math.max(0, 1 - Math.hypot(Z[0] - S.x, Z[1] - S.z) / METRO_SUP.RADIO))); // peso de cada zona para cada estación
+const EST_POB = METRO_SUP.EST.map(S => ZONAS.reduce((a, Z) => a + (Math.hypot(Z[0] - S.x, Z[1] - S.z) <= METRO_SUP.RADIO ? Z[2] / POB_Z * V.POB_K : 0), 0));
+function indMetro(E, s) { const M = E.metro, t = s.t, op = t >= M.desde, fP = s.pob / V.POB_K, ramp = op ? Math.min(1, (t - M.desde + 1) / 26) : 0; // la gente se acostumbra en ~medio año [SUP]
+  return { fase: op ? 'opera' : 'obra', desde: M.desde, avance: op ? 100 : Math.min(100, METRO_SUP.AVANCE + (100 - METRO_SUP.AVANCE) * t / Math.max(1, M.desde)), reduccion: op ? M.red : 0,
+    estaciones: METRO_SUP.EST.map((S, k) => ({ n: S.n, x: S.x, z: S.z, terminada: t >= METRO_SUP.SEM_EST, peatonesDia: Math.round(EST_POB[k] * fP * METRO_SUP.VIAJES_PERS * METRO_SUP.PART_METRO * ramp) })) }; }
+
+/* ---------- especulación del suelo (ver SUELO_SUP) ---------- */
+const Z_EST = ZONAS.map((Z, z) => Math.max(...EST_W.map(W => W[z]))), Z_PLAN = ZONAS.map(Z => Math.max(0, 1 - Math.hypot(Z[0] - PLAN_BAV.CENTRO[0], Z[1] - PLAN_BAV.CENTRO[1]) / SUELO_SUP.RADIO_PLAN));
+const Z_SUELO = ZONAS.map((Z, z) => z).filter(z => Z_EST[z] > 0 || Z_PLAN[z] > 0);
+function sueloIni(E) { return { prot: (E.val.proteccion != null ? E.val.proteccion : 0) / 100, idx: new Float32Array(NZ).fill(1), indice: 1, riesgo: 0 }; }
+function sueloPaso(E) {
+  const S = SUELO_SUP, U = E.suelo, s = E.s, t = s.t, M = E.metro, fP = s.pob / V.POB_K;
+  const fM = t >= M.desde ? Math.min(1, (t - M.desde) / S.RAMPA) : 0, fPl = E.plan ? (E.o.plan ? E.o.plan.viviendas : 0) / 14002 : 0, cap = 1 - 0.5 * U.prot;
+  let riesgo = 0, num = 0, den = 0;
+  for (let z = 0; z < NZ; z++) { const sube = (S.P_METRO * fM * Z_EST[z] + S.P_PLAN * fPl * Z_PLAN[z]) * cap; U.idx[z] = 1 + sube;
+    const hog = ZONAS[z][2] / POB_Z * V.POB_K * fP / PLAN_BAV.PERS_HOG; riesgo += hog * S.ARRIENDO * Math.min(1, S.K_DESP * sube) * (1 - U.prot);
+    if (Z_EST[z] > 0 || Z_PLAN[z] > 0) { num += U.idx[z] * hog; den += hog; } }
+  U.indice = den > 0 ? num / den : 1; U.riesgo = riesgo; }
+
+/* ---------- economía circular (ver arriba) ---------- */
+const DJ_XZ = [5200, 2900], BAV_XZ = (() => { const p = PARCHES.find(q => q.id === 'huertaBav'); return p ? [p.x, p.z] : PLAN_BAV.CENTRO; })();
+function indCircular(E) {
+  const o = E.o, s = E.s, e = s.e, casa = e === 'A' || e === 'D' ? o.gen * 0.02 * s.adopc : 0, capCo = e === 'B' || e === 'C' ? (o.capComp || 0) : E.techos ? MERCADOS.length * E.PAR.P2.cap * Math.min(1, (s.t / V.AÑO) / (SUP_SIMS.TECHOS_SEM / 52)) : 0, capt = Math.min((E.bas.capturado || 0) * 7000 * BASURA_SUP.ORGANICO / Math.max(1e-6, E.bas.captura || 1), Math.max(0, capCo - (o.desv || 0))), comp = (o.desv || 0) + casa + capt, kg = (v) => v / 7000; // + orgánicos que la red recoge de la calle y composta (ver BASURA_SUP)
+  const H = { x: Math.round(KEN_XZ[0]), z: Math.round(KEN_XZ[1]), n: 'Hogares de Kennedy' }, HU = { x: Math.round(KEN_XZ[0]) + 150, z: Math.round(KEN_XZ[1]) + 150, n: 'Huertas de Kennedy' };
+  const DJ = { x: DJ_XZ[0], z: DJ_XZ[1], n: 'Relleno Doña Juana' }, CO = { x: Math.round(CORA_XZ[0]), z: Math.round(CORA_XZ[1]), n: 'Corabastos' }, BV = { x: Math.round(BAV_XZ[0]), z: Math.round(BAV_XZ[1]), n: 'Bavaria Común' };
+  const fl = [{ de: H, a: DJ, t_dia: kg(o.relleno || 0), tipo: 'organicos' }, { de: CO, a: H, t_dia: kg(o.coraKg || 0), tipo: 'alimentos' }];
+  if (e === 'B') fl.push({ de: H, a: BV, t_dia: kg(o.sep || 0), tipo: 'organicos' }, { de: BV, a: HU, t_dia: kg(o.vuelve || 0), tipo: 'compost' }, { de: HU, a: BV, t_dia: kg(Math.max(0, o.exc - o.perdido)), tipo: 'alimentos' }, { de: BV, a: H, t_dia: kg(o.bavKg || 0), tipo: 'alimentos' });
+  if (o.merc) { const top = [...o.merc].map((v, k) => [v, k]).filter(a => a[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, 4), tot = o.merc.reduce((a, v) => a + v, 0) || 1;
+    for (const [v, k] of top) { const Mk = MERCADOS[k], N = { x: Math.round(Mk.x), z: Math.round(Mk.z), n: Mk.n }, f = v / tot;
+      if (e === 'C') fl.push({ de: H, a: N, t_dia: kg((o.sep || 0) * f), tipo: 'organicos' }, { de: N, a: HU, t_dia: kg((o.vuelve || 0) * f), tipo: 'compost' });
+      fl.push({ de: HU, a: N, t_dia: kg(Math.max(0, o.exc - o.perdido) * f), tipo: 'alimentos' }, { de: N, a: H, t_dia: kg(v), tipo: 'alimentos' }); } }
+  if (e !== 'B' && e !== 'C' && casa > 0) fl.push({ de: H, a: HU, t_dia: kg(casa), tipo: 'compost' });
+  return { organicos_t_dia: kg(o.gen), compostado_t_dia: kg(comp), indice: o.gen > 0 ? Math.min(1, comp / o.gen) : 0, comidaLocal_t_dia: kg(o.prod || 0), flujos: fl.filter(f => f.t_dia > 0.01) }; }
+
 /* ---------- cierre gradual y desvíos (ver DESVIO_SUP) ---------- */
 function faseCierre(C, t) { if (t < C.t0 || t >= C.t0 + C.dur) return 0; const S = DESVIO_SUP, u = (t - C.t0) / C.dur;
   if (u < S.SUBE) return Math.min(3, Math.floor(u / S.SUBE * 3) + 1) / 3; if (u > 1 - S.BAJA) return Math.max(1, Math.ceil((1 - u) / S.BAJA * 3)) / 3; return 1; }
@@ -508,7 +583,7 @@ export function paso(E) {
   if (E.plan) { if (E.plan.esc !== 1 || E.plan.autos !== PLAN_BAV.AUTOS_HOG) { sv = [PLAN_BAV.VIV_ETAPA, PLAN_BAV.AUTOS_HOG]; PLAN_BAV.VIV_ETAPA = E.plan.viv; PLAN_BAV.AUTOS_HOG = E.plan.autos; } }
   try { E.o = V.paso(s, E.PAR); } finally { if (sv) { PLAN_BAV.VIV_ETAPA = sv[0]; PLAN_BAV.AUTOS_HOG = sv[1]; } } // las viviendas y autos del deslizador solo para esta simulación
   E.ind = null;
-  basuraPaso(E, t);
+  basuraPaso(E, t); sueloPaso(E);
   // extinciones en toda Kennedy esta semana
   const NFA = RED.NFA, occ = s.occ, P = E.prev, ev = []; E.ev = ev;
   for (let i = 0; i < NFA; i++) { let antes = 0, ahora = 0; const b = i * NP; for (let p = 0; p < NP; p++) { antes |= P[b + p]; ahora |= occ[b + p]; }
@@ -597,7 +672,8 @@ export function ind(E) {
     ref: E.ref.listo ? { pares: E.ref.pares, red: E.ref.red, poliniz: E.ref.poli, semanas: REF } : null,
     basura: { total_t_dia: Bs.total, puntos: Bs.pts.map(P => ({ x: Math.round(P.x), z: Math.round(P.z), t_dia: P.t, fuente: P.fuente, acumulada: P.acum, acumulada0: P.acum0, sinRecoger_t_dia: P.u, nombre: P.nombre || null })), captura: Bs.captura, fraccionSinRecoger: (() => { let u = 0, g = 0; for (const P of Bs.pts) if (P.fuente !== 'humedal') { u += P.u; g += P.t; } return g > 0 ? u / g : 0; })(), acumulada: Bs.acum, acumulada0: Bs.acum0, sinRecoger_t_dia: Bs.pts.reduce((a, P) => a + P.u, 0) },
     ratas: Bs.ratas, ratas0: 1, humedalHa, humedalHa0: Bs.ha0Tot, humedalFuncional, humedales: HUM_P.map((h, k) => ({ id: PARCHES[h].id, nombre: PARCHES[h].n, x: PARCHES[h].x, z: PARCHES[h].z, ha: Bs.ha[k], ha0: Bs.ha0[k], calidad: Bs.cal[k] })),
-    arboles: E.PAR.P3.arboles, arbolesPerdidos: arbPerdida, comidaLocal };
+    arboles: E.PAR.P3.arboles, arbolesPerdidos: arbPerdida, comidaLocal, metro: indMetro(E, s), circular: indCircular(E),
+    especulacion: { indice: E.suelo.indice, hogaresRiesgo: Math.round(E.suelo.riesgo), proteccion: E.suelo.prot, zonas: Z_SUELO.map(z => ({ x: Math.round(ZONAS[z][0]), z: Math.round(ZONAS[z][1]), indice: E.suelo.idx[z] })) } };
 }
 function indCierre(E, o) { const C = E.cie, f = C ? C.fase : 0; if (!o.cierre && !f) return null;
   const D = C ? DESVIOS[C.via] : null, base = o.cierre || { via: D ? D.n : '', sem: null, dur: C ? C.dur : null, on: true };
@@ -627,7 +703,7 @@ function indPredio(E, trafico, mitDb) {
    cierre de vía, etapas del plan) esperan su turno hasta 26 semanas. Todo sale del estado del modelo: es determinista con la semilla.
    capa = lo que la interfaz resalta: 'especies' | 'ruido' | 'trafico'. signo +1 bueno, −1 malo. */
 export const AVISOS_SUP = { ENFRIA: 52, ENFRIA_ESP: 520, ENFRIA_EXT: 104, POR_SEM: 2 };
-const CAPA = { especies: 'especies', polinizadores: 'especies', huertas: 'especies', residuos: 'especies', corabastos: 'especies', ruido: 'ruido', obra: 'ruido', trafico: 'trafico', metro: 'trafico', comida: 'trafico' };
+const CAPA = { especies: 'especies', polinizadores: 'especies', huertas: 'especies', residuos: 'especies', corabastos: 'especies', ruido: 'ruido', obra: 'ruido', trafico: 'trafico', metro: 'trafico', comida: 'trafico', suelo: 'trafico', circular: 'especies' };
 const nf = (v, d = 0) => { const a = Math.abs(v).toFixed(d).split('.'); return (v < 0 ? '−' : '') + a[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (a[1] ? ',' + a[1] : ''); };
 const yLista = (a) => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1];
 const min1 = (n) => n.charAt(0).toLowerCase() + n.slice(1);
@@ -685,8 +761,25 @@ function avisos(E, x) {
       `Recorrer 10 km toma ${nf(x.tiempo10km, 1)} min (hoy ${nf(TOMTOM.min10km, 1)} min en 2025); congestión ${nf(x.congestion)} %. Circulan ${nf((x.trafico - 1) * 100)} % más vehículos que hoy.`, KEN_XZ, -1, []);
     const kd = umbral(1 / rc, [1 / 0.9]); if (kd) add('cong-', kd, 'trafico', 'La congestión baja 10 %', `Recorrer 10 km toma ${nf(x.tiempo10km, 1)} min (hoy ${nf(TOMTOM.min10km, 1)} min).`, KEN_XZ, 1, []); }
   // 9 · calendario: metro, Corabastos, cierre de vía, desmonte de bodegas
-  if (E.metro && s.t === E.metro.desde) { const m = PRE.metro.cerca, xz = m.length ? [m.reduce((a, i) => a + PARCHES[i].x, 0) / m.length, m.reduce((a, i) => a + PARCHES[i].z, 0) / m.length] : KEN_XZ;
-    add('metro', 1, 'metro', 'Empieza a operar el metro', `A 800 m del eje circulan ${nf(E.metro.red * 100)} % menos vehículos; el índice de tráfico queda en ${nf(x.trafico, 2)}.`, xz, 1, [], true); }
+  // metro (en todas las simulaciones): obra, estaciones, apertura, menos carros, peatones
+  { const ES = METRO_SUP.EST, CK = [ES[1].x, ES[1].z], MX = x.metro;
+    if (s.t === 0) add('metro-obra', 1, 'metro', 'El metro sigue en obra en Kennedy', `La Línea 1 va en ${nf(METRO_SUP.AVANCE, 1)} % de avance: el viaducto ya está levantado y faltan las estaciones; empieza a operar en la semana ${E.metro.desde}.`, CK, 1, [], true);
+    if (s.t === METRO_SUP.SEM_EST && E.metro.desde > METRO_SUP.SEM_EST) add('metro-est', 1, 'metro', 'Quedan terminadas las estaciones del metro', `${ES.map(e => e.n).join(', ')}: cinco estaciones en Kennedy listas para las pruebas.`, [ES[2].x, ES[2].z], 1, [], true);
+    if (s.t === E.metro.desde) add('metro', 1, 'metro', 'El metro empieza a operar', `Desde esta semana la Línea 1 lleva pasajeros por Kennedy${E.id === 7 ? ', con buses alimentadores reorganizados y ciclorrutas a las estaciones' : ''}; a 800 m del eje circularán ${nf(E.metro.red * 100)} % menos vehículos.`, CK, 1, [], true);
+    if (s.t === E.metro.desde + 26) add('metro-carros', 1, 'metro', 'Menos carros junto al metro', `A 800 m del eje circulan ${nf(E.metro.red * 100)} % menos vehículos: el índice de tráfico de Kennedy queda en ${nf(x.trafico, 2)} y el ruido promedio en ${nf(x.ruidoDb, 1)} dB.`, CK, 1, [], true);
+    if (s.t === E.metro.desde + 52) { let k = 0; MX.estaciones.forEach((e, i) => { if (e.peatonesDia > MX.estaciones[k].peatonesDia) k = i; }); const e = MX.estaciones[k];
+      add('metro-peatones', 1, 'metro', `Más gente camina alrededor de la estación ${e.n}`, `Unas ${nf(e.peatonesDia)} personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor.`, [e.x, e.z], 1, [], true); } }
+  // economía circular
+  { const C = x.circular, kc = umbral(C.indice, [0.1, 0.25, 0.5]);
+    if (kc) add('circular', kc, 'circular', `Se cierra el ciclo: ${nf(C.indice * 100)} % de los orgánicos vuelve como abono`, `De ${nf(C.organicos_t_dia)} t/día de orgánicos de Kennedy, ${nf(C.compostado_t_dia, 1)} t/día se compostan y vuelven a las huertas; las huertas producen ${nf(C.comidaLocal_t_dia, 1)} t/día de comida.`, s.e === 'B' ? BAV_XZ : KEN_XZ, 1, []); }
+  // especulación del suelo
+  { const U = x.especulacion; let zb = -1; for (const z of Z_SUELO) if (zb < 0 || E.suelo.idx[z] > E.suelo.idx[zb]) zb = z;
+    const im = zb >= 0 ? E.suelo.idx[zb] : 1, ks = umbral(im, [1.1, 1.2]);
+    if (ks && zb >= 0) { const xz = [ZONAS[zb][0], ZONAS[zb][1]]; let en = null, dm = Infinity; for (const e of METRO_SUP.EST) { const d = Math.hypot(e.x - xz[0], e.z - xz[1]); if (d < dm) { dm = d; en = e; } }
+      const junto = E.plan && Z_PLAN[zb] >= Z_EST[zb] ? 'el predio de Bavaria' : 'la estación ' + en.n;
+      add('suelo', ks, 'suelo', `El suelo junto a ${junto} sube más de ${ks === 1 ? 10 : 20} %`, `Los predios más cercanos valen ${nf((im - 1) * 100)} % más que hoy${E.suelo.prot > 0 ? ` (la protección y la captura de plusvalías frenan ${nf(E.suelo.prot * 50)} % del alza)` : ''}; los arriendos suben con ellos.`, xz, -1, []); }
+    const kr = umbral(U.hogaresRiesgo, [1000, 5000, 10000]);
+    if (kr) add('desplaza', kr, 'suelo', `${nf([1000, 5000, 10000][kr - 1])} hogares en riesgo de desplazamiento`, `Con el alza del suelo cerca del metro${E.plan ? ' y del plan parcial' : ''}, ${nf(U.hogaresRiesgo)} hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy.`, zb >= 0 ? [ZONAS[zb][0], ZONAS[zb][1]] : KEN_XZ, -1, []); }
   if (E.mod.sinCora != null && s.t === E.mod.sinCora) add('cora-cierra', 1, 'corabastos', 'Corabastos deja de abastecer', 'Más del 94 % de lo que se vende en Bogotá entra por Corabastos; desde esta semana solo queda lo que producen las huertas.', CORA_XZ, -1, [], true);
   if (o.cierre && o.cierre.sem === 1 && o.cierre.on) add('cierre-' + sem, 1, 'trafico', `Se cierra la ${o.cierre.via}`, `Cierre de ${o.cierre.dur} semanas: las rutas desde Corabastos se alargan y llega menos comida.`, KEN_XZ, -1, [], true);
   if (o.cora && o.cora.desm > 0) { const nd = o.cora.desm, tot = o.cora.total || BODEGAS.length, k = nd >= tot ? 2 : 1, b = BODEGAS[nd - 1] || {};
