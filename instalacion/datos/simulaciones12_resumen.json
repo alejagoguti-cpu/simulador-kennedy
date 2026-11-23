@@ -278,7 +278,7 @@
     "corte": 40,
     "corteT0": 104,
     "corteDur": 12,
-    "P1.capAcopio": 131.6,
+    "P1.capAcopio": 200,
     "pobCrece": 0
    },
    "gameover": {
@@ -728,21 +728,16 @@
     "corte": 40,
     "corteT0": 104,
     "corteDur": 12,
-    "P1.capAcopio": 131.6,
+    "P1.capAcopio": 200,
     "pobCrece": 0
    },
-   "gameover": {
-    "regla": "abasto",
-    "sem": 108,
-    "motivo": "una zona recibió menos del 80 % de los alimentos",
-    "valor": 13.837
-   },
+   "gameover": null,
    "semillas30": {
-    "gameover": 30,
+    "gameover": 6,
     "de": 30,
-    "mediana_sem": 108,
+    "mediana_sem": 655,
     "por_regla": {
-     "abasto": 30
+     "fauna": 6
     }
    },
    "grupo": "propuesta",
@@ -769,7 +764,7 @@
     },
     "red": {
      "min": 1298,
-     "max": 6723,
+     "max": 6725,
      "final": 6152
     },
     "redTipos": {
@@ -779,8 +774,8 @@
     },
     "pares": {
      "min": 135,
-     "max": 559,
-     "final": 514
+     "max": 560,
+     "final": 512
     },
     "aves": {
      "min": 13,
@@ -819,28 +814,28 @@
     },
     "atropellos": {
      "min": 6.287,
-     "max": 14.147,
-     "final": 9.473
+     "max": 14.071,
+     "final": 9.242
     },
     "comidaMin": {
-     "min": 0.138,
+     "min": 1,
      "max": 1,
      "final": 1
     },
     "residuos": {
      "min": 0,
-     "max": 0.06,
+     "max": 0.017,
      "final": 0
     },
     "huertas": {
      "min": 121.736,
-     "max": 5656.807,
-     "final": 5642.471
+     "max": 5691.593,
+     "final": 5654.151
     },
     "bodegas": {
      "min": 0,
-     "max": 7,
-     "final": 7
+     "max": 8,
+     "final": 8
     },
     "congestion": {
      "min": 67.736,
@@ -854,28 +849,28 @@
     },
     "presion": {
      "min": 0,
-     "max": 0.358,
-     "final": 0.358
+     "max": 0.344,
+     "final": 0.344
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.68,
-     "final": 0.68
+     "max": 0.7,
+     "final": 0.7
     },
     "ratas": {
-     "min": 0.776,
-     "max": 1.366,
-     "final": 1.366
+     "min": 0.763,
+     "max": 1.343,
+     "final": 1.343
     },
     "humedalHa": {
-     "min": 38.249,
-     "max": 40.856,
-     "final": 40.443
+     "min": 38.259,
+     "max": 41.405,
+     "final": 40.937
     },
     "humedalFuncional": {
-     "min": 92.685,
-     "max": 106.396,
-     "final": 92.685
+     "min": 93.963,
+     "max": 107.826,
+     "final": 93.963
     },
     "arboles": {
      "min": 0.4,
@@ -884,8 +879,8 @@
     },
     "comidaLocal": {
      "min": 0.01,
-     "max": 1.012,
-     "final": 1.009
+     "max": 1.018,
+     "final": 1.011
     },
     "circularIndice": {
      "min": 0,
@@ -983,15 +978,15 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "Se corta 40 % del suministro externo de alimentos",
-     "texto": "Durante 12 semanas Corabastos solo puede traer 60 % de lo que traía; los mercados de barrio, las huertas y el acopio de Bavaria Común intentan cubrir el resto. Hoy llega 67 % de lo que necesita Kennedy."
+     "texto": "Durante 12 semanas Corabastos solo puede traer 60 % de lo que traía; los mercados de barrio, las huertas y el acopio de Bavaria Común intentan cubrir el resto. Hoy llega 100 % de lo que necesita Kennedy."
     },
     {
-     "sem": 108,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Game over: una zona recibió menos del 80 % de los alimentos",
-     "texto": "Regla «Abastecimiento» cumplida 4 semanas seguidas (valor 14 %)."
+     "sem": 106,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmonta la primera bodega junto a La Vaca",
+     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
      "sem": 115,
@@ -1002,20 +997,12 @@
      "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
     },
     {
-     "sem": 115,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmonta la primera bodega junto a La Vaca",
-     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
-    },
-    {
      "sem": 117,
      "tipo": "comida",
      "capa": "trafico",
      "signo": 1,
      "titulo": "Termina el corte del suministro",
-     "texto": "Corabastos vuelve a traer lo de antes; la zona peor servida recibe 14 % de lo que necesita (la red tarda en reacomodarse: decide por asambleas)."
+     "texto": "Corabastos vuelve a traer lo de antes; la zona peor servida recibe 100 % de lo que necesita (la red tarda en reacomodarse: decide por asambleas)."
     },
     {
      "sem": 119,
@@ -1075,6 +1062,14 @@
     },
     {
      "sem": 417,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmontaron todas las bodegas junto a La Vaca",
+     "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 31.050 m² de borde del humedal en restauración (madura en 3 años)."
+    },
+    {
+     "sem": 417,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
@@ -1128,7 +1123,7 @@
     "cierreDur": 26,
     "trafCrece": 1.5,
     "mitiga": 0,
-    "P1.capAcopio": 131.6
+    "P1.capAcopio": 200
    },
    "gameover": {
     "regla": "abasto",
@@ -1602,20 +1597,15 @@
     "cierreDur": 26,
     "trafCrece": 1.5,
     "mitiga": 0,
-    "P1.capAcopio": 131.6
+    "P1.capAcopio": 200
    },
-   "gameover": {
-    "regla": "abasto",
-    "sem": 108,
-    "motivo": "una zona recibió menos del 80 % de los alimentos",
-    "valor": 42.282
-   },
+   "gameover": null,
    "semillas30": {
-    "gameover": 30,
+    "gameover": 6,
     "de": 30,
-    "mediana_sem": 108,
+    "mediana_sem": 655,
     "por_regla": {
-     "abasto": 30
+     "fauna": 6
     }
    },
    "grupo": "propuesta",
@@ -1642,8 +1632,8 @@
     },
     "red": {
      "min": 1298,
-     "max": 6382,
-     "final": 5859
+     "max": 6355,
+     "final": 5886
     },
     "redTipos": {
      "min": 206,
@@ -1652,7 +1642,7 @@
     },
     "pares": {
      "min": 135,
-     "max": 537,
+     "max": 539,
      "final": 489
     },
     "aves": {
@@ -1692,8 +1682,8 @@
     },
     "atropellos": {
      "min": 6.287,
-     "max": 14.268,
-     "final": 9.473
+     "max": 14.071,
+     "final": 9.242
     },
     "comidaMin": {
      "min": 0.242,
@@ -1702,18 +1692,18 @@
     },
     "residuos": {
      "min": 0,
-     "max": 1.032,
+     "max": 0.266,
      "final": 0
     },
     "huertas": {
      "min": 121.736,
-     "max": 5648.885,
-     "final": 5639.108
+     "max": 5692.476,
+     "final": 5653.769
     },
     "bodegas": {
      "min": 0,
-     "max": 7,
-     "final": 7
+     "max": 8,
+     "final": 8
     },
     "congestion": {
      "min": 67.736,
@@ -1727,28 +1717,28 @@
     },
     "presion": {
      "min": 0,
-     "max": 0.358,
-     "final": 0.358
+     "max": 0.344,
+     "final": 0.344
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.68,
-     "final": 0.68
+     "max": 0.7,
+     "final": 0.7
     },
     "ratas": {
-     "min": 0.776,
-     "max": 1.366,
-     "final": 1.366
+     "min": 0.763,
+     "max": 1.343,
+     "final": 1.343
     },
     "humedalHa": {
-     "min": 38.24,
-     "max": 40.856,
-     "final": 40.443
+     "min": 38.259,
+     "max": 41.405,
+     "final": 40.937
     },
     "humedalFuncional": {
-     "min": 92.685,
-     "max": 106.396,
-     "final": 92.685
+     "min": 93.963,
+     "max": 107.826,
+     "final": 93.963
     },
     "arboles": {
      "min": 0.4,
@@ -1757,8 +1747,8 @@
     },
     "comidaLocal": {
      "min": 0.01,
-     "max": 1.01,
-     "final": 1.009
+     "max": 1.018,
+     "final": 1.011
     },
     "circularIndice": {
      "min": 0,
@@ -1855,23 +1845,15 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "Falta comida en Kennedy",
-     "texto": "La zona peor servida recibe 24 % de lo que necesita (Av. de las Américas cerrada); 54 zonas reciben menos del 80 %."
+     "texto": "La zona peor servida recibe 24 % de lo que necesita (Av. de las Américas cerrada); 50 zonas reciben menos del 80 %."
     },
     {
-     "sem": 108,
-     "tipo": "comida",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Game over: una zona recibió menos del 80 % de los alimentos",
-     "texto": "Regla «Abastecimiento» cumplida 4 semanas seguidas (valor 42 %)."
-    },
-    {
-     "sem": 109,
-     "tipo": "residuos",
+     "sem": 106,
+     "tipo": "corabastos",
      "capa": "especies",
-     "signo": -1,
-     "titulo": "Se acumulan los orgánicos",
-     "texto": "Los orgánicos sin tratar llegan al 79 % de la capacidad; con más basura aumentan las ratas."
+     "signo": 1,
+     "titulo": "Se desmonta la primera bodega junto a La Vaca",
+     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
      "sem": 111,
@@ -1882,14 +1864,6 @@
      "texto": "Con la Av. de las Américas cerrada del todo, por las vías de desvío pasan 33 % más vehículos (+1,2 dB); las aves de los parches junto a ellas (copetón, mirla patiamarilla, colibrí chillón y torcaza) pierden hasta 55 % de la calidad de su hábitat por el ruido."
     },
     {
-     "sem": 113,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los orgánicos desbordan el almacenamiento",
-     "texto": "Los orgánicos sin tratar llegan al 101 % de la capacidad; con más basura aumentan las ratas."
-    },
-    {
      "sem": 115,
      "tipo": "metro",
      "capa": "trafico",
@@ -1898,7 +1872,7 @@
      "texto": "Desde esta semana la Línea 1 lleva pasajeros por Kennedy; a 800 m del eje circularán 10 % menos vehículos."
     },
     {
-     "sem": 118,
+     "sem": 120,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
@@ -1912,14 +1886,6 @@
      "signo": 1,
      "titulo": "Los polinizadores aumentan a la mitad",
      "texto": "Abejas, colibríes y cucaracheros ocupan 131 pares especie–parche (en el año 1 86), gracias a las huertas y parques con flor."
-    },
-    {
-     "sem": 123,
-     "tipo": "corabastos",
-     "capa": "especies",
-     "signo": 1,
-     "titulo": "Se desmonta la primera bodega junto a La Vaca",
-     "texto": "1 de 8 bodegas desmontadas: 1.985 m² liberados; 0 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
      "sem": 141,
@@ -1938,12 +1904,12 @@
      "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
-     "sem": 194,
+     "sem": 196,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
      "titulo": "La fauna ocupa 50 % más lugares que en el año 1",
-     "texto": "Las especies ocupan 503 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huerta del colegio · Urbanización Tintal: copetón, mirla patiamarilla, colibrí chillón y torcaza."
+     "texto": "Las especies ocupan 502 pares especie–parche frente a 334 en el año 1. Donde más llegan es a Huerta del colegio · Urbanización Tintal: copetón, mirla patiamarilla, colibrí chillón y torcaza."
     },
     {
      "sem": 198,
@@ -1960,6 +1926,14 @@
      "signo": -1,
      "titulo": "1.000 hogares en riesgo de desplazamiento",
      "texto": "Con el alza del suelo cerca del metro, 1.008 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+    },
+    {
+     "sem": 417,
+     "tipo": "corabastos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Se desmontaron todas las bodegas junto a La Vaca",
+     "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 31.050 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
      "sem": 417,
@@ -5267,5 +5241,5 @@
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.551
+ "ms_por_paso_node": 0.614
 }

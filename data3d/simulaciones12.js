@@ -304,6 +304,7 @@ const capAc = Math.round(V.CAP_RED_TDIA * 10) / 10;
 const sArb = { k: 'P3.arboles', n: 'Densidad de árboles en parques', min: 0, max: 1, paso: 0.05, val: 0.4, unidad: '0–1', ayuda: 'Sube la calidad de los parques como hábitat (sim_vida.js: 0,3 + 0,3·tamaño + 0,2·árboles).' };
 const sRec = { k: 'P3.rec', n: 'Recuperación del humedal', min: 0, max: 0.1, paso: 0.005, val: 0.02, unidad: '/semana', ayuda: 'Qué tan rápido se recupera la calidad de los humedales frente a la presión urbana.' };
 const sCap = { k: 'P1.capAcopio', n: 'Capacidad de acopio de los mercados', min: 20, max: 300, paso: 5, val: capAc, unidad: 't/día', ayuda: 'Frutas y verduras que pueden mover los mercados de barrio de la propuesta (los 35 de mercados_red.js). Sin propuesta no hay red.' };
+const sCapRed = { ...sCap, val: 200, ayuda: 'Frutas y verduras que pueden mover los mercados de barrio y puntos de acopio de la propuesta; en un corte compran directo a productores de la región hasta esta capacidad [SUP: 200 t/día, ampliada desde 132 t/día de mercados_red.js]. Sin propuesta no hay red.' };
 const sComp = { k: 'P2.cap', n: 'Capacidad de cada Estación Circular', min: 1000, max: 15000, paso: 500, val: 6000, unidad: 'kg/semana', ayuda: 'Orgánicos que trata cada Estación Circular de la propuesta. Sin propuesta todo va al relleno.' };
 const sT0 = { k: 'cierreT0', n: 'Semana en que se cierra la vía', min: 1, max: 1000, paso: 1, val: SUP_SIMS.CIERRE_T0, unidad: 'semana', ayuda: 'Cierre forzado de la Av. de las Américas.' };
 const sDur = { k: 'cierreDur', n: 'Duración del cierre', min: 1, max: 104, paso: 1, val: SUP_SIMS.CIERRE_DUR, unidad: 'semanas', ayuda: 'Las rutas que pasan por la vía se alargan: llega menos comida y se recogen menos orgánicos.' };
@@ -318,8 +319,8 @@ const sFrac = { k: 'P2.frac', n: 'Hogares que separan los orgánicos', min: 0, m
 const PAR_SL = {
   1: [{ k: 'corte', n: 'Parte del suministro externo que se corta', min: 0, max: 100, paso: 5, val: 40, unidad: '%', ayuda: 'Corabastos solo puede traer esta fracción menos de lo que traía (paro, derrumbe en una vía nacional, inundación) [SUP: la prueba].' },
     { k: 'corteT0', n: 'Semana en que empieza el corte', min: 1, max: 1000, paso: 1, val: 104, unidad: 'semana', ayuda: 'Semana del modelo en que empieza la interrupción.' },
-    { k: 'corteDur', n: 'Duración del corte', min: 1, max: 52, paso: 1, val: 12, unidad: 'semanas', ayuda: 'Semanas que dura la interrupción.' }, sCap, sPob()],
-  2: [sT0, sDur, sTraf, sRuido, sCap],
+    { k: 'corteDur', n: 'Duración del corte', min: 1, max: 52, paso: 1, val: 12, unidad: 'semanas', ayuda: 'Semanas que dura la interrupción.' }, sCapRed, sPob()],
+  2: [sT0, sDur, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
   4: [{ k: 'parche', n: 'Parche que se pierde', min: 1, max: 4, paso: 1, val: 1, unidad: '1 El Burro · 2 Techo · 3 La Vaca · 4 Bosque de Bavaria', ayuda: 'Parche ecológico que pierde parte de su área.' },
@@ -586,7 +587,18 @@ function pruebaIni(E) {
 function fOrgDe(E, t) { return E.org ? 1 + E.org.f * cl01((t - E.org.t0) / V.AÑO) : 1; }
 function pruebaAntes(E, t) { // antes de V.paso
   const s = E.s;
-  if (E.corte) { const C = E.corte; C.activo = t >= C.t0 && t < C.t0 + C.dur; if (C.activo) { if (C.ref == null) C.ref = s.Kc; s.Kc = Math.min(s.Kc, C.ref * (1 - C.f)); } }
+  if (E.corte) { const C = E.corte; C.activo = t >= C.t0 && t < C.t0 + C.dur;
+    if (C.activo) { if (C.ref == null) C.ref = s.Kc;
+      /* [SUP] CON PROPUESTA: durante el corte los puntos de acopio de la red compran directo a productores de la región (circuitos cortos)
+         lo que Corabastos no alcanza a traer, hasta la capacidad de acopio de los mercados (deslizador P1.capAcopio, t/día). Fracción
+         compensada = capacidad de acopio (kg/semana) / faltante de Corabastos (kg/semana), con tope 95 %. Sin propuesta no hay red. */
+      const vv = E.val || {}, capT = E.prop ? (vv['P1.capAcopio'] != null ? vv['P1.capAcopio'] : V.CAP_RED_TDIA) : 0, falta = C.ref * C.f;
+      C.compensa = falta > 0 ? Math.min(0.95, capT * 1000 * 7 / falta) : 0;
+      s.Kc = Math.min(s.Kc, C.ref * (1 - C.f * (1 - C.compensa))); } }
+  /* [SUP] CON PROPUESTA en el cierre de vía (par 02): los mercados distribuidos y los puntos de acopio tienen rutas alternas ya acordadas
+     en las asambleas: la distribución se reacomoda en ~1 semana (τ = 1) en vez de esperar la resolución de solicitudes; sin propuesta la
+     logística se reacomoda sola en ~6 semanas (τ de sim_vida.js). */
+  if (E.prop && E.par === 2 && s.cierre && s.cierre.on) s.resolPrev = -2;
   E.fOrg = fOrgDe(E, t);
   if (E.frag) { const F = E.frag; E.xFrag.fill(1); if (t >= F.t0 && F.p >= 0) E.xFrag[F.p] = Math.sqrt(Math.max(0, 1 - F.f));
     if (E.prop) E.PAR.P3.arboles = Math.min(1, F.arb0 + 0.2 * Math.min(1, t / 260)); } } // conexiones vegetales de la propuesta [SUP]
