@@ -1,0 +1,1338 @@
+{
+ "generado": "2026-11-23",
+ "fuente": "data3d/simulaciones12.js (tools/simulaciones_resumen.mjs)",
+ "semanas": 520,
+ "reglas": [
+  {
+   "k": "fauna",
+   "n": "Fauna",
+   "txt": "quedan menos del 90 % de las especies de fauna presentes al inicio",
+   "umbral": 90,
+   "unidad": "% de las especies del inicio",
+   "semanas": 4,
+   "fuente": "Steffen et al. 2015, Planetary boundaries (Science 347, doi 10.1126/science.1259855): límite de integridad de la biosfera = mantener el Biodiversity Intactness Index en 90 % o más (https://www.stockholmresilience.org/research/planetary-boundaries/quantitative-evolution-of-boundaries.html). [SUP] se aplica a la riqueza local de las 23 especies de la red: perder 3 = salir del límite."
+  },
+  {
+   "k": "habitat",
+   "n": "Hábitat",
+   "txt": "los parches ocupados (especie × parche) caen 30 % o más frente al inicio",
+   "umbral": 70,
+   "unidad": "% de la ocupación del inicio",
+   "semanas": 4,
+   "fuente": "La regla de hábitat de data3d/sim_vida.js (caída de 30 %), aplicada a la ocupación de la metapoblación de Levins en vez de a la riqueza (que ya mide la regla de fauna). [SUP heredado de sim_vida.js]"
+  },
+  {
+   "k": "abasto",
+   "n": "Abastecimiento",
+   "txt": "alguna zona recibe menos del 80 % de los alimentos que necesita",
+   "umbral": 80,
+   "unidad": "% de lo que necesita la zona peor servida",
+   "semanas": 4,
+   "fuente": "Regla de data3d/sim_vida.js (0,4 kg/día de frescos por persona, OMS)."
+  },
+  {
+   "k": "residuos",
+   "n": "Residuos",
+   "txt": "los orgánicos pendientes de tratamiento superan la capacidad de almacenamiento",
+   "umbral": 100,
+   "unidad": "% del almacenamiento",
+   "semanas": 4,
+   "fuente": "Regla de data3d/sim_vida.js (3 días de contenedores y calle + 2 semanas de planta)."
+  },
+  {
+   "k": "ruido",
+   "n": "Ruido",
+   "txt": "el ruido promedio de las calles sube 3 dB o más frente al inicio (el doble de energía sonora: el doble de tráfico)",
+   "umbral": 3,
+   "unidad": "dB sobre el inicio",
+   "semanas": 4,
+   "fuente": "OMS 2018, Environmental Noise Guidelines for the European Region: tráfico vial < 53 dB Lden (https://www.who.int/europe/publications/i/item/9789289053563). En el modelo HOY ya el 76 % de las celdas de vía supera 53 dB, así que ese nivel absoluto no puede ser game over (se reporta en callesOMS). Se usa el cambio: +3 dB = el doble de energía, el menor cambio perceptible en ruido ambiental (FHWA, Highway Traffic Noise: Analysis and Abatement Guidance 2011, https://www.fhwa.dot.gov/environment/noise/regulations_and_guidance/analysis_and_abatement_guidance/). [SUP] umbral de cambio y no de nivel."
+  },
+  {
+   "k": "trafico",
+   "n": "Tráfico",
+   "txt": "circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más)",
+   "umbral": 1.3,
+   "unidad": "índice (1 = hoy)",
+   "semanas": 4,
+   "fuente": "Plan de Movilidad Sostenible y Segura de Bogotá (2023): 77 % de los viajes en modos sostenibles en 2035; hoy ~70 % (Encuesta de Movilidad 2023, https://bogota.gov.co/mi-ciudad/movilidad/movilidad-en-bogota-asi-se-movilizan-los-capitalinos-segun-encuesta ; https://www.larepublica.co/economia/claudia-lopez-presento-el-nuevo-plan-de-movilidad-para-bogota-con-metas-a-2035-3741556). Los viajes no sostenibles deben pasar de 30 % a 23 % (× 0,77). [SUP] game over cuando el tráfico se aleja de hoy tanto como la meta pide bajar, en sentido contrario: 1 / 0,77 ≈ 1,30."
+  }
+ ],
+ "supuestos": {
+  "METRO_SEM": 114,
+  "METRO_RED": 0.1,
+  "METRO_RADIO": 800,
+  "SIN_CORA": 52,
+  "DESM_LIB": 1,
+  "CIERRE_VIA": "americas",
+  "CIERRE_T0": 104,
+  "CIERRE_DUR": 26,
+  "TECHOS_M2": 49000,
+  "TECHOS_SEM": 156,
+  "M2_HUERTA": 50,
+  "RADIO_ECO": 300,
+  "CIERRES_AL_AZAR": false
+ },
+ "simulaciones": [
+  {
+   "id": 1,
+   "n": "Hoy, sin proyecto",
+   "base": "A",
+   "sliders": {
+    "P3.arboles": 0.4,
+    "P3.rec": 0.02
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 412,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 315,
+     "final": 287
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 11.682,
+     "final": 8.071
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 79.433,
+     "max": 120.046,
+     "final": 79.433
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 2,
+   "n": "Instituto en Bavaria",
+   "base": "B",
+   "sliders": {
+    "P1.capAcopio": 131.6,
+    "P2.cap": 6000,
+    "P1.cupos": 12,
+    "P3.arboles": 0.4
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 482,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 341,
+     "final": 317
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.404,
+     "final": 9.859
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.034,
+     "final": 0.007
+    },
+    "huertas": {
+     "min": 116.649,
+     "max": 1215.855,
+     "final": 1214.834
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 6,
+     "final": 6
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 3,
+   "n": "Red de mercados de barrio",
+   "base": "C",
+   "sliders": {
+    "P1.capAcopio": 131.6,
+    "P2.cap": 6000,
+    "P1.rotacion": 12,
+    "P3.arboles": 0.4
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 410,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 55,
+     "final": 55
+    },
+    "red": {
+     "min": 207,
+     "max": 223,
+     "final": 216
+    },
+    "pares": {
+     "min": 135,
+     "max": 560,
+     "final": 527
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 14.125,
+     "final": 9.885
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.017,
+     "final": 0.007
+    },
+    "huertas": {
+     "min": 121.736,
+     "max": 3265.546,
+     "final": 3265.546
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 7,
+     "final": 7
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 4,
+   "n": "Plan parcial Bavaria",
+   "base": "D",
+   "sliders": {
+    "P3.arboles": 0.4,
+    "P3.rec": 0.02
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 412,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 314,
+     "final": 285
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.142,
+     "final": 1.142
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.464,
+     "final": 61.464
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.586,
+     "final": 35.586
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 11.54,
+     "final": 7.987
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 79.433,
+     "max": 120.046,
+     "final": 79.433
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 5,
+   "n": "Corabastos cierra",
+   "base": "A",
+   "sliders": {
+    "sinCora": 52,
+    "P3.arboles": 0.4
+   },
+   "gameover": {
+    "regla": "abasto",
+    "sem": 56,
+    "motivo": "una zona recibió menos del 80 % de los alimentos",
+    "valor": 0.008
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 56,
+    "por_regla": {
+     "abasto": 30
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 315,
+     "final": 287
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 11.682,
+     "final": 8.071
+    },
+    "comidaMin": {
+     "min": 0,
+     "max": 1,
+     "final": 0
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 79.433,
+     "max": 120.046,
+     "final": 79.433
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 6,
+   "n": "Corabastos se reduce y se restaura el borde de La Vaca",
+   "base": "A",
+   "sliders": {
+    "desmLib": 1,
+    "P3.rec": 0.02,
+    "P3.arboles": 0.4
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 0,
+    "de": 30,
+    "mediana_sem": null,
+    "por_regla": {}
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 212
+    },
+    "pares": {
+     "min": 135,
+     "max": 338,
+     "final": 312
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.587,
+     "final": 9.735
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 79.433,
+     "max": 120.046,
+     "final": 79.433
+    },
+    "bodegas": {
+     "min": 1,
+     "max": 8,
+     "final": 8
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 7,
+   "n": "Metro Línea 1",
+   "base": "A",
+   "sliders": {
+    "metroRed": 10,
+    "metroSem": 114,
+    "P3.arboles": 0.4
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 412,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 315,
+     "final": 287
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 0.992,
+     "max": 1.069,
+     "final": 1.069
+    },
+    "ruidoDb": {
+     "min": 60.854,
+     "max": 61.178,
+     "final": 61.178
+    },
+    "callesRuidosas": {
+     "min": 30.011,
+     "max": 34.089,
+     "final": 30.898
+    },
+    "callesOMS": {
+     "min": 75.651,
+     "max": 77.036,
+     "final": 77.036
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 11.632,
+     "final": 8.05
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 79.433,
+     "max": 120.046,
+     "final": 79.433
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 8,
+   "n": "Cierre de vía, hoy",
+   "base": "A",
+   "sliders": {
+    "cierreT0": 104,
+    "cierreDur": 26
+   },
+   "gameover": {
+    "regla": "abasto",
+    "sem": 108,
+    "motivo": "una zona recibió menos del 80 % de los alimentos",
+    "valor": 53.907
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 108,
+    "por_regla": {
+     "abasto": 30
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 315,
+     "final": 287
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 11.682,
+     "final": 8.071
+    },
+    "comidaMin": {
+     "min": 0.24,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.582,
+     "final": 0
+    },
+    "huertas": {
+     "min": 79.433,
+     "max": 120.046,
+     "final": 79.433
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 9,
+   "n": "Cierre de vía con instituto",
+   "base": "B",
+   "sliders": {
+    "cierreT0": 104,
+    "cierreDur": 26,
+    "P1.capAcopio": 131.6
+   },
+   "gameover": {
+    "regla": "abasto",
+    "sem": 108,
+    "motivo": "una zona recibió menos del 80 % de los alimentos",
+    "valor": 37.014
+   },
+   "semillas30": {
+    "gameover": 30,
+    "de": 30,
+    "mediana_sem": 108,
+    "por_regla": {
+     "abasto": 30
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 340,
+     "final": 318
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.281,
+     "final": 9.981
+    },
+    "comidaMin": {
+     "min": 0.252,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 1.242,
+     "final": 0.007
+    },
+    "huertas": {
+     "min": 116.649,
+     "max": 1177.734,
+     "final": 1176.654
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 6,
+     "final": 6
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 10,
+   "n": "Instituto + plazas de mercado en parques",
+   "base": "B",
+   "sliders": {
+    "P1.capAcopio": 131.6,
+    "P2.cap": 6000,
+    "P3.arboles": 0.4
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 482,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 54,
+     "final": 54
+    },
+    "red": {
+     "min": 207,
+     "max": 220,
+     "final": 209
+    },
+    "pares": {
+     "min": 135,
+     "max": 344,
+     "final": 319
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.918,
+     "final": 10.078
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.034,
+     "final": 0.007
+    },
+    "huertas": {
+     "min": 116.649,
+     "max": 1215.855,
+     "final": 1214.834
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 8,
+     "final": 8
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 11,
+   "n": "Instituto + huertas",
+   "base": "B",
+   "sliders": {
+    "P1.rend": 6,
+    "P3.borde": 20,
+    "P3.arboles": 0.4
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 410,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 55,
+     "final": 55
+    },
+    "red": {
+     "min": 207,
+     "max": 223,
+     "final": 216
+    },
+    "pares": {
+     "min": 135,
+     "max": 573,
+     "final": 537
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 14.125,
+     "final": 10.349
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0.034,
+     "final": 0.007
+    },
+    "huertas": {
+     "min": 116.649,
+     "max": 1215.855,
+     "final": 1214.834
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 6,
+     "final": 6
+    }
+   },
+   "extinciones": []
+  },
+  {
+   "id": 12,
+   "n": "Huertas en techos y balcones",
+   "base": "A",
+   "sliders": {
+    "techosM2": 49000,
+    "techosAnios": 3,
+    "P1.rend": 6
+   },
+   "gameover": null,
+   "semillas30": {
+    "gameover": 1,
+    "de": 30,
+    "mediana_sem": 412,
+    "por_regla": {
+     "fauna": 1
+    }
+   },
+   "inicio": {
+    "fauna0": 23,
+    "flora0": 54,
+    "red0": 207,
+    "pares0": 122,
+    "ruidoDb0": 60.88858117579581
+   },
+   "indicadores": {
+    "fauna": {
+     "min": 23,
+     "max": 23,
+     "final": 23
+    },
+    "flora": {
+     "min": 54,
+     "max": 55,
+     "final": 55
+    },
+    "red": {
+     "min": 207,
+     "max": 222,
+     "final": 211
+    },
+    "pares": {
+     "min": 135,
+     "max": 369,
+     "final": 337
+    },
+    "aves": {
+     "min": 14,
+     "max": 14,
+     "final": 14
+    },
+    "poliniz": {
+     "min": 3,
+     "max": 3,
+     "final": 3
+    },
+    "trafico": {
+     "min": 1,
+     "max": 1.1,
+     "final": 1.1
+    },
+    "ruidoDb": {
+     "min": 60.889,
+     "max": 61.304,
+     "final": 61.304
+    },
+    "callesRuidosas": {
+     "min": 34.089,
+     "max": 35.331,
+     "final": 35.331
+    },
+    "callesOMS": {
+     "min": 75.995,
+     "max": 77.445,
+     "final": 77.445
+    },
+    "atropellos": {
+     "min": 6.287,
+     "max": 12.263,
+     "final": 8.071
+    },
+    "comidaMin": {
+     "min": 1,
+     "max": 1,
+     "final": 1
+    },
+    "residuos": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    },
+    "huertas": {
+     "min": 126.328,
+     "max": 1081.967,
+     "final": 1059.433
+    },
+    "bodegas": {
+     "min": 0,
+     "max": 0,
+     "final": 0
+    }
+   },
+   "extinciones": []
+  }
+ ],
+ "ms_por_paso_node": 0.363
+}

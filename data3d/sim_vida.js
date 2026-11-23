@@ -164,7 +164,7 @@ function calidad(e, s, P3, out) { // calidad de cada parche esta semana (0 = no 
   for (let p = 0; p < NP; p++) { const P = PARCHES[p];
     out[p] = P.dyn ? (s.cora.ha > 0 ? DESMONTE.Q_BORDE * s.cora.mad : 0)
       : P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55 * (p === IV ? 1 + DESMONTE.MEJORA_VACA * (s.cora.ha * 1e4 / BORDE_TOT) * s.cora.mad : 1)) : P.t === 'bosque' ? 0.6 * (P.id === 'bosqueBav' && s.planArb ? 1 - s.planArb / PLAN_BAV.ARB_TOT : 1) : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
-      : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : ((e === 'C' || (e === 'B' && s.mod && s.mod.huertasC)) && s.supF >= P.cuota ? 0.4 : 0); } } // huertasC: e11 (módulos de C también en B)
+      : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : ((e === 'C' || (e === 'B' && s.mod && s.mod.huertasC) || (s.mod && s.mod.techos && P.t === 'modCubierta')) && s.supF >= P.cuota ? 0.4 : 0); } } // huertasC: e11 (módulos de C también en B) · techos: simulación 12 (solo las cubiertas)
 export const INTERNO = Object.freeze({ TIPO, SQA, IB, RESCATE, ES_TERR }); // solo lectura, para la red trófica de tools/escenarios_instalacion.mjs
 function apto(i, p, q) { const g = ESPECIES[i][2]; return (GRUPOS[g].hab[TIPO[p]] || 0) * q[p]; }
 
@@ -184,7 +184,8 @@ const A0 = 120, W0 = 0.55; // mismas condiciones iniciales para A, B y C
 
 /* mod (opcional): modificadores de los escenarios de la instalación (tools/escenarios_instalacion.mjs). Sin mod (la web) A, B, C y D son
    exactamente los de siempre. Claves: sinCora (semana desde la que Corabastos no abastece), desmonte {lib}, metro {k, f, desde},
-   cierre {via, t0, dur} (cierre forzado), plazasNodo (B: plazoletas como nodos de C), huertasC (B: módulos y superficie de C). */
+   cierre {via, t0, dur} (cierre forzado), plazasNodo (B: plazoletas como nodos de C), huertasC (B: módulos y superficie de C),
+   techos {m2, sem} (data3d/simulaciones12.js, sim. 12, sobre A: huertas hidropónicas en cubiertas; m2 de cubiertas que producen al final y semanas de montaje). */
 export function crear(e, seed, mod) {
   const s = { e, seed, t: -1, mod: mod || null, mundo: prng(mezcla(seed, 1)), loc: prng(mezcla(seed, 11 + (e === 'D' ? 0 : 'ABC'.indexOf(e)))), hab: prng(mezcla(seed, 7)),
     A: A0, prom: 0, pipe: [], pob: POB_K, Nef: BASE[e].N, supF: 0, adopc: 0.15, buf: new Float64Array(64), W: W0, B: 900, muertes: 0,
@@ -249,7 +250,8 @@ export function paso(s, PAR) {
   const retiro = s.A * 0.0018 * (1 + 3 * Math.max(0, carga - 1)) * alivio * fEsp * ruido(L, 0.3);
   s.A = cl(s.A + adop - retiro, 0, Nef);
   if (prop) s.supF = s.prom >= 1 ? Math.min(1, s.supF + 1 / 156) : Math.max(0, s.supF - 1 / 104); // [SUP] superficies en 3 años; sin promotores se abandonan en 2
-  const sup = prop ? P1.sup * s.supF * (e === 'B' && !(MF && MF.huertasC) ? 0.6 : 1) : 0; // e11 [SUP]: con los módulos de C, B usa la superficie completa de C
+  else if (MF && MF.techos) s.supF = Math.min(1, s.supF + 1 / MF.techos.sem); // techos (data3d/simulaciones12.js, sim. 12): las cubiertas se montan en MF.techos.sem semanas (sin azar)
+  const sup = prop ? P1.sup * s.supF * (e === 'B' && !(MF && MF.huertasC) ? 0.6 : 1) : MF && MF.techos ? MF.techos.m2 * s.supF : 0; // e11 [SUP]: con los módulos de C, B usa la superficie completa de C
   const prod = (s.A * 50 + sup) * P1.rend / AÑO * cal, auto = prod * P1.auto, merma = prod * P1.merma, exc = prod - auto - merma;
   const pers = prod * AÑO * 0.9 / (0.4 * 365);
 
