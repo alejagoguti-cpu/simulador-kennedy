@@ -182,11 +182,12 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
       for (const o of objs) o.traverse(x => { if (!x.visible) { ocultos.push(x); x.visible = true; } });
       try { r.compileAsync(T3.scene, T3.camera).catch(() => {}); } catch (e) {} for (const x of ocultos) x.visible = false; };
     (async () => {
+      if (document.documentElement.classList.contains('limpio')) return; // vista limpia: no hay escenarios B y C que precargar
       await libre(2500);
       for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
     })();
   }
-  import('./escenarios_sim.js?v=48').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  import('./escenarios_sim.js?v=49').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   import('./cambio_50.js?v=5').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=6').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
   import('./trafico_plan.js?v=2').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio

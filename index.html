@@ -19,7 +19,7 @@
 <link rel="icon" href="logo_kennedy.png" type="image/png"><link rel="apple-touch-icon" href="logo_kennedy_180.png">
 <!-- MODO SIMPLE por defecto (data3d/modo_simple.js): esconde los paneles de detalle; «Ver todo» lo quita. Con ?modo=completo o ?reloj=quieto (pruebas) arranca en modo completo -->
 <link id="ms-css" rel="stylesheet" href="data3d/modo_simple.css?v=8">
-<script>if (!/[?&](modo=completo|reloj=quieto)/.test(location.search)) document.documentElement.classList.add('ms-simple');</script>
+<script>/* VISTA LIMPIA por defecto (data3d/limpio.js): solo el territorio y el panel del reloj. ?modo=simple: modo simple anterior · ?modo=completo: todo */ if (/[?&]modo=simple/.test(location.search)) document.documentElement.classList.add('ms-simple'); else if (!/[?&](modo=completo|reloj=quieto)/.test(location.search)) document.documentElement.classList.add('limpio');</script>
 <script type="importmap">
 { "imports": {
   "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -1376,7 +1376,7 @@ async function initTodoReal() {
     try { suelo = (await import('./data3d/materiales.js')).crearMaterialesSuelo(renderer); } catch (e) { console.warn('materiales:', e); }
     T3 = { THREE, renderer, scene, camera, orbit, hemi, sun, skyU, liviano: LIVIANO, movil: MOVIL, night: false, anim: null, last: 0, counts: {},
       waterU: { value: 0 }, sunOff: new THREE.Vector3(0.42, 0.62, 0.35).normalize().multiplyScalar(2600), suelo, reloj: vistaT3(RELOJ) /* vista del reloj universal (minuto del día, día, play, vel) para cielo, biótica, tablero, orígenes */ };
-    window.KEN_T3 = T3; // depuración y pruebas de rendimiento
+    window.KEN_T3 = T3; T3.lw = lw; T3.LC = LC; // depuración · lw (modelo -> mundo) desde el principio: el metro y otros módulos lo usan antes de que cargue el tráfico
     if (GPU_DEBIL) { T3.gpuDebil = true; T3.aoLento = true; T3.nivelBajo = 1; console.info('[rendimiento] tarjeta gráfica integrada: calidad liviana desde el inicio (?calidad=alta para la completa)'); }
     { let ok; T3.pArboles = new Promise(r => ok = r); T3.arbolesOk = ok; }
     T3.esperaArboles = () => Promise.race([T3.pArboles, new Promise(r => setTimeout(r, KEN ? 1500 : 15000))]); // Kennedy: los edificios y el tráfico no esperan a los árboles
@@ -2635,7 +2635,7 @@ function rumboCarro(id, x, z, dx, dz, prev, dt) {
 }
 function updateTraffic(dt) {
   if (!TRAF) return;
-  const pDem = demandaHora(); TRAF.demanda = pDem; TRAF.cuadro = ((TRAF.cuadro | 0) + 1) % 3000;
+  const pDem = demandaHora() * (window.KEN_LIMPIO ? window.KEN_LIMPIO.factorCarros() : 1); TRAF.demanda = pDem; /* escenario 1 (data3d/limpio.js): con el metro funcionando bajan los carros */ TRAF.cuadro = ((TRAF.cuadro | 0) + 1) % 3000;
   TRAF.t = tGrabacion(RELOJ.tVis); // solo LEE el reloj: la posición de cada carro es función del tiempo (misma hora = mismos carros en el mismo sitio)
   const k0 = Math.floor(TRAF.t) % TRAF.NS, k1 = (k0 + 1) % TRAF.NS;
   if (TRAF.pedirTrozo && !TRAF.steps[(k0 + 25) % TRAF.NS]) TRAF.pedirTrozo(Math.floor(((k0 + 25) % TRAF.NS) / TRAF.chunk)); /* pide con 25 s de anticipación */
@@ -3736,7 +3736,8 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=104').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=106').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=9').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
