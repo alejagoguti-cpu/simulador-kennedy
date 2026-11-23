@@ -4209,19 +4209,13 @@
     "mitiga": 0,
     "recoleccion": 84
    },
-   "gameover": {
-    "regla": "humedal",
-    "sem": 682,
-    "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-    "valor": 69.818
-   },
+   "gameover": null,
    "semillas30": {
-    "gameover": 30,
+    "gameover": 7,
     "de": 30,
-    "mediana_sem": 682,
+    "mediana_sem": 715,
     "por_regla": {
-     "humedal": 25,
-     "fauna": 5
+     "fauna": 7
     }
    },
    "grupo": "propuesta",
@@ -4237,9 +4231,9 @@
    },
    "indicadores": {
     "fauna": {
-     "min": 20,
+     "min": 22,
      "max": 23,
-     "final": 21
+     "final": 22
     },
     "flora": {
      "min": 54,
@@ -4248,18 +4242,18 @@
     },
     "red": {
      "min": 1298,
-     "max": 4232,
-     "final": 3831
+     "max": 4198,
+     "final": 3845
     },
     "redTipos": {
-     "min": 196,
-     "max": 222,
-     "final": 204
+     "min": 204,
+     "max": 223,
+     "final": 216
     },
     "pares": {
      "min": 135,
-     "max": 370,
-     "final": 321
+     "max": 362,
+     "final": 328
     },
     "aves": {
      "min": 13,
@@ -4297,9 +4291,9 @@
      "final": 78.535
     },
     "atropellos": {
-     "min": 6.287,
-     "max": 12.846,
-     "final": 7.322
+     "min": 5.899,
+     "max": 10.478,
+     "final": 7.536
     },
     "comidaMin": {
      "min": 1,
@@ -4333,28 +4327,28 @@
     },
     "presion": {
      "min": 0,
-     "max": 0.647,
-     "final": 0.647
+     "max": 0.423,
+     "final": 0.423
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.382,
-     "final": 0.312
+     "max": 0.376,
+     "final": 0.315
     },
     "ratas": {
-     "min": 1,
-     "max": 3.166,
-     "final": 3.166
+     "min": 0.544,
+     "max": 1.427,
+     "final": 1.427
     },
     "humedalHa": {
-     "min": 36.353,
+     "min": 37.43,
      "max": 38.399,
-     "final": 36.353
+     "final": 37.43
     },
     "humedalFuncional": {
-     "min": 53.847,
+     "min": 84.807,
      "max": 99.997,
-     "final": 53.847
+     "final": 84.807
     },
     "arboles": {
      "min": 0.4,
@@ -4372,28 +4366,10 @@
      "sem": 537,
      "especie": "monjita",
      "nombre": "Monjita bogotana",
-     "motivo": "tráfico y ruido",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
      "parche": "vaca",
      "x": 760,
      "z": 1160
-    },
-    {
-     "sem": 725,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "burro",
-     "x": 2095.7,
-     "z": -109.1
-    },
-    {
-     "sem": 753,
-     "especie": "comadreja",
-     "nombre": "Comadreja",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "bosqueBav",
-     "x": 4100,
-     "z": 60
     },
     {
      "sem": 850,
@@ -4403,15 +4379,6 @@
      "parche": "pq11",
      "x": 3002.4,
      "z": -577.7
-    },
-    {
-     "sem": 1025,
-     "especie": "rana",
-     "nombre": "Rana sabanera",
-     "motivo": "tráfico y ruido",
-     "parche": "pq9",
-     "x": 1522.9,
-     "z": -426.8
     }
    ],
    "avisos": [
@@ -4432,7 +4399,15 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
-     "sem": 127,
+     "sem": 100,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": 1,
+     "titulo": "Bajan las ratas cerca de Corabastos",
+     "texto": "La basura acumulada alrededor de Corabastos baja a 3.023 t (hoy 4.038 t)."
+    },
+    {
+     "sem": 129,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
@@ -4448,36 +4423,12 @@
      "texto": "49.000 m² de cubiertas y balcones producen y son hábitat para polinizadores y aves."
     },
     {
-     "sem": 240,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
-    },
-    {
      "sem": 313,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 25 %",
      "texto": "Recorrer 10 km toma 35,5 min (hoy 31,8 min, TomTom 2025); congestión 90 %. Circulan 7 % más vehículos que hoy."
-    },
-    {
-     "sem": 372,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura invade el borde del Humedal de Techo",
-     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal de Techo llegan 3,4 t/día y el humedal queda con 85 % de su calidad y 11,7 ha."
-    },
-    {
-     "sem": 461,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy se acerca al game over: humedales",
-     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
     },
     {
      "sem": 521,
@@ -4493,47 +4444,15 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
      "sem": 605,
      "tipo": "especies",
      "capa": "especies",
      "signo": 1,
-     "titulo": "Mirla patiamarilla llega a Cubiertas compartidas 7",
+     "titulo": "Mirla patiamarilla llega a Cubiertas compartidas 5",
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
-    },
-    {
-     "sem": 630,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 785 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 3,8 t/día y el humedal queda con 74 % de su calidad y 7,2 ha."
-    },
-    {
-     "sem": 682,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-     "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
-    },
-    {
-     "sem": 682,
-     "tipo": "residuos",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Las ratas se duplican cerca de Corabastos",
-     "texto": "Hay 8.565 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.219 t/día en Kennedy y 24 % no se recoge."
-    },
-    {
-     "sem": 725,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Rana sabanera desaparece de Kennedy",
-     "texto": "Rana sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
      "sem": 850,
@@ -4542,10 +4461,34 @@
      "signo": -1,
      "titulo": "Serpiente sabanera desaparece de Kennedy",
      "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 885,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: tráfico",
+     "texto": "Tráfico: índice 1,20 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
+    },
+    {
+     "sem": 885,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión se duplica",
+     "texto": "Recorrer 10 km toma 45,9 min (hoy 31,8 min, TomTom 2025); congestión 146 %. Circulan 20 % más vehículos que hoy."
+    },
+    {
+     "sem": 923,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Los humedales pierden 10 % de su área funcional",
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
     }
    ],
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.448
+ "ms_por_paso_node": 0.367
 }

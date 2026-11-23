@@ -255,8 +255,8 @@ export const SIMS = [
     desc: 'Instituto en Bavaria con los módulos de huertas de la red (cubiertas, colegios y parques) que se incorporan con su calendario y son hábitat.',
     sliders: [{ k: 'P1.rend', n: 'Rendimiento de las huertas', min: 1, max: 20, paso: 0.5, val: 6, unidad: 'kg/m²·año', ayuda: 'Producción por metro cuadrado de huerta.' },
       { k: 'P3.borde', n: 'Huertas junto al humedal', min: 0, max: 60, paso: 1, val: 20, unidad: 'huertas', ayuda: 'Presión de las huertas de parque sobre el humedal.' }, sArb] },
-  { id: 12, n: 'Huertas en techos y balcones', corto: 'Techos', base: 'A', pregunta: '¿Los hogares que montan huertas hidropónicas en sus techos cambian la comida y la fauna?',
-    desc: 'Hoy, más las huertas hidropónicas en cubiertas y balcones de la estrategia E8: se montan poco a poco (3 años) y las cubiertas se vuelven hábitat para polinizadores y aves.',
+  { id: 12, n: 'Huertas en techos y balcones', corto: 'Techos', base: 'A', pregunta: '¿Qué pasaría si los hogares montan huertas en sus techos y balcones, con Bavaria Común enseñando compostaje y gestión de residuos?',
+    desc: 'Huertas hidropónicas en cubiertas y balcones (estrategia E8) que se montan poco a poco (3 años) y se vuelven hábitat para polinizadores y aves, con Bavaria Común como instituto de tecnologías convergentes: enseña compostaje y abre puntos de compostaje y gestión de residuos que recogen los orgánicos.',
     sliders: [{ k: 'techosM2', n: 'Techos y balcones con huerta', min: 0, max: 150000, paso: 1000, val: SUP_SIMS.TECHOS_M2, unidad: 'm²', ayuda: '4,9 ha de techos y balcones en el modelo (P1.sup).' },
       { k: 'techosAnios', n: 'Años para montarlas', min: 1, max: 20, paso: 0.5, val: SUP_SIMS.TECHOS_SEM / 52, unidad: 'años', ayuda: 'Las cubiertas se abren de a poco; cada una es hábitat cuando le llega su turno (cuota).' },
       { k: 'P1.rend', n: 'Rendimiento de las huertas', min: 1, max: 20, paso: 0.5, val: 6, unidad: 'kg/m²·año', ayuda: 'Producción por metro cuadrado.' }] }
@@ -471,7 +471,7 @@ function basuraPaso(E, t) {
   const fCora = o.dep / b.dep0, fPob = s.pob / V.POB_K, org = o.gen > 0 ? Math.min(1, (o.desv || 0) / o.gen) * B.ORGANICO : 0; // orgánicos que la red alcanza a tratar (sube con la capacidad de compost)
   // la fracción sin recoger crece con el arrojo clandestino; la red de la propuesta recoge la parte orgánica según sus nodos abiertos; los techos compostan en casa
   const prop = s.e === 'B' || s.e === 'C', fSin = Math.pow(1 + B.ARROJO_EXTRA, a) * (1 - b.rec) / (1 - B.RECOLECCION);
-  const capt = prop ? B.ORGANICO * Math.min(1, (o.nodos || 0) / MERCADOS.length) : E.techos ? B.ORGANICO * Math.min(1, E.techos.m2 * s.supF / SUP_SIMS.M2_HUERTA * PLAN_BAV.PERS_HOG / s.pob) : 0; // techos: solo los hogares con huerta compostan sus orgánicos
+  const capt = prop ? B.ORGANICO * Math.min(1, (o.nodos || 0) / MERCADOS.length) : E.techos ? B.ORGANICO * Math.max(Math.min(1, E.techos.m2 * s.supF / SUP_SIMS.M2_HUERTA * PLAN_BAV.PERS_HOG / s.pob), Math.min(1, a / (SUP_SIMS.TECHOS_SEM / 52))) : 0; // techos (sim. 12): los hogares con huerta compostan en casa y, además, Bavaria Común (instituto de tecnologías convergentes) enseña compostaje y abre puntos de compostaje y gestión de residuos al mismo ritmo que se montan los techos [SUP]: recoge la parte orgánica como la red
   b.captura = capt; let acum = 0;
   for (const P of b.pts) {
     if (P.fuente === 'humedal') { P.t = P.g0 * g * fPob * fSin * (1 - capt); P.u = P.t; }
