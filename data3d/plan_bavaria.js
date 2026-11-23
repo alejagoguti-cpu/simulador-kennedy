@@ -121,7 +121,7 @@ export async function iniciarPlanBavaria({ T3 }) {
 
   let visible = false, ultimo = '', maskOk = false;
   const pintar = () => {
-    const años = RELOJ.sem / 52; // años transcurridos del modelo
+    const años = RELOJ.sem / 52 * 2; // el plan se construye al doble de ritmo (10 etapas en 5 años): pedido de la autora para verlo terminado
     const clave = visible + '|' + Math.round(años * 52); if (clave === ultimo) return; ultimo = clave;
     raiz.visible = visible; uY0.value = y0();
     if (visible) {

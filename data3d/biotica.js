@@ -309,7 +309,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   }
   const largo = (k) => { const e = ESP[k]; if (e.ave) return e.ave.len * 1.4 + (e.ave.alto || 0); return { curi: 0.25, comadreja: 0.45, rata: 0.4, rana: 0.05, culebra: 0.45, lagartija: 0.17, caracol: 0.04, abeja: 0.015, lombriz: 0.08 }[e.cuerpo]; };
   // escala de maqueta: los animales se agrandan para verse desde la vista general (los pequeños más), sin pasar de ~1,2 m
-  const escala = (k) => ESP[k].esc || Math.min(16, Math.max(3.2, 1.4 / largo(k)));
+  const escala = (k) => 1.8 * (ESP[k].esc || Math.min(16, Math.max(3.2, 1.4 / largo(k)))); // ×1,8: más grandes en la vista general
 
   /* ---------- agentes ---------- */
   const AG = [], POR = {}; let id = 0;
@@ -559,7 +559,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const o = new LineSegments2(g, m); o.frustumCulled = false; o.renderOrder = 8; grupo.add(o);
     return { g, m, o, p: g.attributes.instanceStart.data, c: g.attributes.instanceColorStart.data, n: 0 };
   };
-  const FUERTE = capa(movil ? 1.5 : 1.9, 0.95), TENUE = capa(movil ? 0.9 : 1.1, 0.6); // líneas delgadas: encuentro / conexión a distancia
+  const FUERTE = capa(movil ? 2.6 : 3.6, 0.95), TENUE = capa(movil ? 1.6 : 2.1, 0.65); // líneas delgadas: encuentro / conexión a distancia
   const resol = () => { const v = new THREE.Vector2(); T3.renderer.getSize ? T3.renderer.getSize(v) : v.set(innerWidth, innerHeight); FUERTE.m.resolution.copy(v); TENUE.m.resolution.copy(v); };
   resol(); addEventListener('resize', resol);
   const disco = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.beginPath(); g.arc(32, 32, 26, 0, 6.283); g.fill(); g.lineWidth = 6; g.strokeStyle = 'rgba(8,16,26,.85)'; g.stroke(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();

@@ -186,7 +186,7 @@ function recorrer(o, cat) { // cat: categoría de la propuesta o null (blanco)
   if (o.isMesh && !o.isSkinnedMesh) {
     const m = Array.isArray(o.material) ? o.material[0] : o.material;
     if (conLuz(m)) {
-      if (cat === 'plan' && !o.castShadow) prestar(o, verde(m) ? C.parque : C.acera); // suelo del plan parcial (calzadas, andenes, lotes, patios): suelo de la maqueta
+      if (cat === 'plan' && !o.castShadow) prestar(o, C.acera); // suelo del plan parcial en concreto (no verde) // suelo del plan parcial (calzadas, andenes, lotes, patios): suelo de la maqueta
       else if (cat) { prestar(o, MAT.catHex[cat]); presentes.add(cat); }
       else if (!verde(m) && !FOTO) prestar(o, C.edif);
     }

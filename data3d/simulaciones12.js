@@ -317,8 +317,8 @@ const sRuido = { k: 'mitiga', n: 'Calles pacificadas y con barreras verdes', min
 const sRecol = { k: 'recoleccion', n: 'Recolección de la basura', min: 50, max: 100, paso: 1, val: 84, unidad: '%', ayuda: 'UAESP 2026: 5.680 t/día recogidas por el servicio y 1.089 t/día en puntos críticos y arrojo clandestino (16 % sin recoger).' };
 const sFrac = { k: 'P2.frac', n: 'Hogares que separan los orgánicos', min: 0, max: 1, paso: 0.05, val: 0.4, unidad: '0–1', ayuda: 'Fracción de los hogares cubiertos que separa sus orgánicos para las Estaciones Circulares (sim_modelos.js: 0,4).' };
 const PAR_SL = {
-  1: [{ k: 'coraTope', n: 'Tope de Corabastos', min: 0, max: 60, paso: 1, val: 15, unidad: '% sobre la demanda de hoy', ayuda: 'Lo máximo que Corabastos puede recibir y despachar para Kennedy, por encima de lo que se pide hoy [SUP: 15 %: ya trabaja con 10 % de holgura y sus bodegas no crecen].' },
-    { ...sPob(1.5), n: 'Crecimiento de la demanda de alimentos', ayuda: 'Crecimiento anual de la población de Kennedy (y con ella la comida que necesita, los residuos y los carros).' }, { ...sCapRed, max: 900, val: 600 }],
+  1: [{ k: 'coraTope', n: 'Tope de Corabastos', min: 0, max: 60, paso: 1, val: 22, unidad: '% sobre la demanda de hoy', ayuda: 'Lo máximo que Corabastos puede recibir y despachar para Kennedy, por encima de lo que se pide hoy [SUP: 22 %: ya trabaja con 10 % de holgura y sus bodegas no crecen].' },
+    { ...sPob(1.6), n: 'Crecimiento de la demanda de alimentos', ayuda: 'Crecimiento anual de la población de Kennedy (y con ella la comida que necesita, los residuos y los carros).' }, { ...sCapRed, max: 900, val: 600 }],
   2: [sT0, sDur, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
@@ -461,7 +461,7 @@ function ganchoTraf(E, t) {
   E.mod.metro = { k: 'g' + k, f, desde: 0 }; }
 
 /* ---------- predio: viajes, ruido y zona de efecto de las vías nuevas ---------- */
-function planEn(E, t) { const a = t / V.AÑO, VE = E.plan.viv; let viv = 0, com = 0, vias = 0;
+function planEn(E, t) { const a = 2 * t / V.AÑO, VE = E.plan.viv; /* 10 etapas en 5 años (igual que el 3D de plan_bavaria.js) */ let viv = 0, com = 0, vias = 0;
   for (let k = 0; k < VE.length; k++) { viv += VE[k] * cl01(a - k); if (a >= k) { vias += PREDIO_PLAN.vias[k]; if (a >= k + 1) com += PREDIO_PLAN.com[k] * Math.min(1, E.plan.esc); } }
   const k = Math.floor(a), obra = k >= 0 && k < VE.length ? VE[k] : 0;
   return { viv, obra, com, vias, k: Math.min(VE.length - 1, Math.max(0, k)), etapa: k + 1 }; }
@@ -506,7 +506,7 @@ function basuraPaso(E, t) {
   for (const P of b.pts) {
     if (P.fuente === 'humedal') { const g1 = P.g0 * g * fPob * fSin; P.t = g1 * (1 - capt); P.u = P.t; capturado += g1 * capt; }
     else { P.t = P.g0 * g * (P.fuente === 'corabastos' || P.fuente === 'flores' ? fCora : fPob * (1 + B.ORGANICO * (E.fOrg - 1))); const u0 = Math.min(P.t, P.t * (1 - B.RECOLECCION) * fSin); P.u = u0 * (P.fuente === 'vivienda' ? 1 - Math.max(org, capt) : 1 - capt); capturado += u0 * (P.fuente === 'vivienda' ? Math.max(0, capt - org) : capt); }
-    if (sat > 0 && (P.fuente === 'corabastos' || P.fuente === 'humedal')) { const k = 1 + (P.fuente === 'humedal' ? 0.45 : 2) * sat; P.t *= k; P.u *= k; }
+    if (sat > 0 && (P.fuente === 'corabastos' || P.fuente === 'humedal')) { const k = 1 + (P.fuente === 'humedal' ? 0.3 : 2) * sat; P.t *= k; P.u *= k; }
     P.acum += P.u * 7 - P.acum * B.LIMPIEZA; acum += P.acum; }
   b.capturado = capturado; b.acum = acum; b.ratas = acum / b.acum0; s.red.fRata = Math.max(0.2, b.ratas);
   b.total = (V.POB_K * fPob + (o.plan ? o.plan.personas : 0)) * B.KG_HAB / 1000 * g + (B.CORA_T + B.FLORES_T) * g * fCora + b.pts.reduce((x, P) => x + (P.fuente === 'humedal' ? P.t : 0), 0);

@@ -275,22 +275,23 @@
    "n": "Abastecimiento · sin propuesta",
    "base": "A",
    "sliders": {
-    "coraTope": 15,
-    "pobCrece": 1.5,
+    "coraTope": 22,
+    "pobCrece": 1.6,
     "P1.capAcopio": 600
    },
    "gameover": {
     "regla": "humedal",
-    "sem": 347,
+    "sem": 440,
     "motivo": "los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
-    "valor": 69.637
+    "valor": 69.727
    },
    "semillas30": {
     "gameover": 30,
     "de": 30,
-    "mediana_sem": 347,
+    "mediana_sem": 440,
     "por_regla": {
-     "humedal": 30
+     "humedal": 29,
+     "fauna": 1
     }
    },
    "grupo": "actual",
@@ -318,17 +319,17 @@
     "red": {
      "min": 1298,
      "max": 3453,
-     "final": 2827
+     "final": 2911
     },
     "redTipos": {
      "min": 165,
      "max": 220,
-     "final": 165
+     "final": 166
     },
     "pares": {
      "min": 135,
-     "max": 315,
-     "final": 243
+     "max": 316,
+     "final": 249
     },
     "aves": {
      "min": 11,
@@ -338,7 +339,7 @@
     "poliniz": {
      "min": 27,
      "max": 81,
-     "final": 70
+     "final": 71
     },
     "polinizEsp": {
      "min": 3,
@@ -347,18 +348,18 @@
     },
     "trafico": {
      "min": 1,
-     "max": 1.67,
-     "final": 1.67
+     "max": 1.703,
+     "final": 1.703
     },
     "ruidoDb": {
      "min": 60.89,
-     "max": 63.114,
-     "final": 63.114
+     "max": 63.2,
+     "final": 63.2
     },
     "callesRuidosas": {
      "min": 30.497,
-     "max": 41.055,
-     "final": 41.055
+     "max": 41.456,
+     "final": 41.456
     },
     "callesOMS": {
      "min": 75.995,
@@ -367,13 +368,13 @@
     },
     "atropellos": {
      "min": 6.289,
-     "max": 12.323,
-     "final": 6.838
+     "max": 12.386,
+     "final": 6.849
     },
     "comidaMin": {
-     "min": 0.206,
+     "min": 0.226,
      "max": 1,
-     "final": 0.206
+     "final": 0.226
     },
     "residuos": {
      "min": 0,
@@ -391,19 +392,19 @@
      "final": 0
     },
     "congestion": {
-     "min": 69.98,
-     "max": 543.109,
-     "final": 543.109
+     "min": 69.985,
+     "max": 587.625,
+     "final": 587.625
     },
     "tiempo10km": {
-     "min": 31.765,
-     "max": 120.181,
-     "final": 120.181
+     "min": 31.766,
+     "max": 128.5,
+     "final": 128.5
     },
     "presion": {
      "min": 0.001,
-     "max": 0.961,
-     "final": 0.961
+     "max": 0.966,
+     "final": 0.966
     },
     "recuperacion": {
      "min": 0,
@@ -412,18 +413,18 @@
     },
     "ratas": {
      "min": 1,
-     "max": 5.601,
-     "final": 5.601
+     "max": 5.606,
+     "final": 5.606
     },
     "humedalHa": {
-     "min": 34.496,
+     "min": 34.757,
      "max": 38.399,
-     "final": 34.496
+     "final": 34.757
     },
     "humedalFuncional": {
-     "min": 31.936,
+     "min": 34.45,
      "max": 99.996,
-     "final": 31.936
+     "final": 34.45
     },
     "arboles": {
      "min": 0.362,
@@ -447,8 +448,8 @@
     },
     "hogaresRiesgo": {
      "min": 0,
-     "max": 4021,
-     "final": 4021
+     "max": 4101,
+     "final": 4101
     },
     "metroReduccion": {
      "min": 0,
@@ -458,13 +459,13 @@
    },
    "extinciones": [
     {
-     "sem": 448,
+     "sem": 537,
      "especie": "monjita",
      "nombre": "Monjita bogotana",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "techo",
-     "x": 2997.3,
-     "z": -606
+     "motivo": "tráfico y ruido",
+     "parche": "vaca",
+     "x": 760,
+     "z": 1160
     },
     {
      "sem": 713,
@@ -485,28 +486,28 @@
      "z": -606
     },
     {
-     "sem": 737,
+     "sem": 725,
      "especie": "rana",
      "nombre": "Rana sabanera",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "techo",
-     "x": 2997.3,
-     "z": -606
-    },
-    {
-     "sem": 757,
-     "especie": "focha",
-     "nombre": "Focha común",
-     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
-     "parche": "techo",
-     "x": 2997.3,
-     "z": -606
+     "motivo": "tráfico y ruido",
+     "parche": "burro",
+     "x": 2095.7,
+     "z": -109.1
     },
     {
      "sem": 764,
      "especie": "culebra",
      "nombre": "Serpiente sabanera",
      "motivo": "sin recursos de la red",
+     "parche": "burro",
+     "x": 2095.7,
+     "z": -109.1
+    },
+    {
+     "sem": 880,
+     "especie": "focha",
+     "nombre": "Focha común",
+     "motivo": "azar demográfico (parche pequeño o de baja calidad)",
      "parche": "burro",
      "x": 2095.7,
      "z": -109.1
@@ -558,14 +559,6 @@
     },
     {
      "sem": 53,
-     "tipo": "metro",
-     "capa": "trafico",
-     "signo": 1,
-     "titulo": "Quedan terminadas las estaciones del metro",
-     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
-    },
-    {
-     "sem": 105,
      "tipo": "obra",
      "capa": "ruido",
      "signo": -1,
@@ -573,12 +566,28 @@
      "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
     },
     {
-     "sem": 105,
+     "sem": 53,
+     "tipo": "metro",
+     "capa": "trafico",
+     "signo": 1,
+     "titulo": "Quedan terminadas las estaciones del metro",
+     "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 73,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 73,6 dB (+1,0 dB) por los 3.953 vehículos diarios, 195 de ellos camiones."
+    },
+    {
+     "sem": 94,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
-     "titulo": "La congestión sube 25 %",
-     "texto": "Recorrer 10 km toma 35,2 min (hoy 31,8 min en 2025); congestión 88 %. Circulan 6 % más vehículos que hoy."
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.423 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 115,
@@ -597,14 +606,6 @@
      "texto": "A 800 m del eje circulan 10 % menos vehículos: el índice de tráfico de Kennedy queda en 1,05 y el ruido promedio en 61,1 dB."
     },
     {
-     "sem": 142,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 73,7 dB (+1,0 dB) por los 3.824 vehículos diarios, 195 de ellos camiones."
-    },
-    {
      "sem": 145,
      "tipo": "especies",
      "capa": "especies",
@@ -618,7 +619,7 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "1.000 hogares en riesgo de desplazamiento",
-     "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.000 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+     "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.003 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
      "sem": 149,
@@ -626,15 +627,15 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 1,1 dB por los 4.126 vehículos diarios y el frente de obra."
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 2,2 dB por los 12.270 vehículos diarios y el frente de obra."
     },
     {
      "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
+     "tipo": "trafico",
+     "capa": "trafico",
      "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
+     "titulo": "La congestión sube 25 %",
+     "texto": "Recorrer 10 km toma 35,6 min (hoy 31,8 min en 2025); congestión 91 %. Circulan 7 % más vehículos que hoy."
     },
     {
      "sem": 167,
@@ -642,15 +643,7 @@
      "capa": "trafico",
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
-     "texto": "Unas 24.320 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
-    },
-    {
-     "sem": 177,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 8.792 al día salen o entran por las vías nuevas del plan."
+     "texto": "Unas 24.397 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
      "sem": 201,
@@ -658,15 +651,15 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Los humedales pierden 10 % de su área funcional",
-     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 85 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
+     "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 89 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
     },
     {
-     "sem": 202,
-     "tipo": "residuos",
-     "capa": "especies",
+     "sem": 209,
+     "tipo": "trafico",
+     "capa": "trafico",
      "signo": -1,
-     "titulo": "La basura invade el borde del Humedal La Vaca",
-     "texto": "Hay 590 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,9 t/día y el humedal queda con 85 % de su calidad y 7,7 ha."
+     "titulo": "La congestión sube 50 %",
+     "texto": "Recorrer 10 km toma 38,4 min (hoy 31,8 min en 2025); congestión 105 %. Circulan 11 % más vehículos que hoy."
     },
     {
      "sem": 210,
@@ -677,20 +670,12 @@
      "texto": "Los predios más cercanos valen 10 % más que hoy; los arriendos suben con ellos."
     },
     {
-     "sem": 218,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,3 min (hoy 31,8 min en 2025); congestión 105 %. Circulan 11 % más vehículos que hoy."
-    },
-    {
-     "sem": 242,
-     "tipo": "especies",
+     "sem": 276,
+     "tipo": "residuos",
      "capa": "especies",
      "signo": -1,
-     "titulo": "Kennedy se acerca al game over: humedales",
-     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
+     "titulo": "La basura invade el borde del Humedal El Burro",
+     "texto": "Hay 589 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 4,4 t/día y el humedal queda con 85 % de su calidad y 18,7 ha."
     },
     {
      "sem": 310,
@@ -698,31 +683,71 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el borde de Corabastos",
-     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 97 % más que hoy, depredan nidos y la basura las espanta."
+     "texto": "Las aves ocupan 10 % menos lugares a 1 km de Corabastos (se fueron garza nocturna): las ratas, 63 % más que hoy, depredan nidos y la basura las espanta."
     },
     {
-     "sem": 311,
+     "sem": 325,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: humedales",
+     "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
+    },
+    {
+     "sem": 326,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 75,6 dB (+3,0 dB) por los 16.785 vehículos diarios."
+    },
+    {
+     "sem": 338,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 100 % más vehículos que hoy; 16.785 al día salen o entran por las vías nuevas del plan."
+    },
+    {
+     "sem": 351,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "La congestión se duplica",
+     "texto": "Recorrer 10 km toma 44,8 min (hoy 31,8 min en 2025); congestión 140 %. Circulan 19 % más vehículos que hoy."
+    },
+    {
+     "sem": 365,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Kennedy se acerca al game over: tráfico",
+     "texto": "Tráfico: índice 1,21 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
+    },
+    {
+     "sem": 394,
+     "tipo": "residuos",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las ratas se duplican cerca de Corabastos",
+     "texto": "Hay 8.077 t de basura sin recoger alrededor de Corabastos (hoy 4.038 t): se generan 1.199 t/día en Kennedy y 20 % no se recoge."
+    },
+    {
+     "sem": 405,
      "tipo": "residuos",
      "capa": "especies",
      "signo": -1,
      "titulo": "La basura en los bordes de los humedales se duplica",
-     "texto": "Hay 786 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 3,8 t/día y el humedal queda con 74 % de su calidad y 7,5 ha."
+     "texto": "Hay 785 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 3,8 t/día y el humedal queda con 74 % de su calidad y 7,4 ha."
     },
     {
-     "sem": 347,
+     "sem": 440,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
      "titulo": "Game over: los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes",
      "texto": "Regla «Humedales» cumplida 4 semanas seguidas (valor 70 %)."
-    },
-    {
-     "sem": 448,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Monjita bogotana desaparece de Kennedy",
-     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal de Techo; causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
      "sem": 521,
@@ -733,6 +758,14 @@
      "texto": "14.002 viviendas y 38.646 habitantes nuevos; 80 tramos de vía; 16.785 vehículos entran y salen al día."
     },
     {
+     "sem": 537,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Monjita bogotana desaparece de Kennedy",
+     "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
+    },
+    {
      "sem": 713,
      "tipo": "especies",
      "capa": "especies",
@@ -741,24 +774,32 @@
      "texto": "Caracol de jardín ya no está en ningún parche de Kennedy. El último lugar fue Cayetano Cañizares; causa: azar demográfico (parche pequeño o de baja calidad)."
     },
     {
-     "sem": 954,
+     "sem": 880,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
-     "titulo": "Tingua moteada desaparece de Kennedy",
-     "texto": "Tingua moteada ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
+     "titulo": "Focha común desaparece de Kennedy",
+     "texto": "Focha común ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: azar demográfico (parche pequeño o de baja calidad)."
+    },
+    {
+     "sem": 999,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Lagartija bogotana desaparece de Kennedy",
+     "texto": "Lagartija bogotana ya no está en ningún parche de Kennedy. El último lugar fue Ciudad Urbisa I y II Sector - Castilla Real (2 Sector); causa: azar demográfico (parche pequeño o de baja calidad)."
     }
    ],
    "predio": {
     "año5": {
-     "trafico": 1.718,
-     "ruidoDb": 75.049,
+     "trafico": 1.947,
+     "ruidoDb": 75.556,
      "ruidoDb0": 72.648,
-     "ocupacion": 29,
+     "ocupacion": 30,
      "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
+     "habitantes": 38586,
+     "vias": 80,
+     "vehiculosDia": 16807,
      "especiesFuera": [
       {
        "especie": "buho",
@@ -791,14 +832,14 @@
      ]
     },
     "año10": {
-     "trafico": 2.105,
-     "ruidoDb": 75.893,
+     "trafico": 2.116,
+     "ruidoDb": 75.904,
      "ruidoDb0": 72.648,
-     "ocupacion": 26,
+     "ocupacion": 29,
      "ocupacion0": 30.077,
-     "habitantes": 38616,
+     "habitantes": 38646,
      "vias": 80,
-     "vehiculosDia": 16816,
+     "vehiculosDia": 16785,
      "especiesFuera": [
       {
        "especie": "torcaza",
@@ -838,8 +879,8 @@
      ]
     },
     "año15": {
-     "trafico": 2.281,
-     "ruidoDb": 76.23,
+     "trafico": 2.303,
+     "ruidoDb": 76.271,
      "ruidoDb0": 72.648,
      "ocupacion": 28,
      "ocupacion0": 30.077,
@@ -906,8 +947,8 @@
      ]
     },
     "año20": {
-     "trafico": 2.485,
-     "ruidoDb": 76.602,
+     "trafico": 2.518,
+     "ruidoDb": 76.659,
      "ruidoDb0": 72.648,
      "ocupacion": 27,
      "ocupacion0": 30.077,
@@ -948,8 +989,8 @@
    "n": "Abastecimiento · con propuesta",
    "base": "C",
    "sliders": {
-    "coraTope": 15,
-    "pobCrece": 1.5,
+    "coraTope": 22,
+    "pobCrece": 1.6,
     "P1.capAcopio": 600
    },
    "gameover": null,
@@ -985,8 +1026,8 @@
     },
     "red": {
      "min": 1298,
-     "max": 6750,
-     "final": 6164
+     "max": 6758,
+     "final": 6135
     },
     "redTipos": {
      "min": 207,
@@ -995,8 +1036,8 @@
     },
     "pares": {
      "min": 135,
-     "max": 562,
-     "final": 516
+     "max": 563,
+     "final": 514
     },
     "aves": {
      "min": 14,
@@ -1015,18 +1056,18 @@
     },
     "trafico": {
      "min": 0.999,
-     "max": 1.277,
-     "final": 1.277
+     "max": 1.283,
+     "final": 1.283
     },
     "ruidoDb": {
-     "min": 60.883,
-     "max": 61.949,
-     "final": 61.949
+     "min": 60.885,
+     "max": 61.971,
+     "final": 61.971
     },
     "callesRuidosas": {
      "min": 30.232,
-     "max": 37.049,
-     "final": 37.049
+     "max": 37.26,
+     "final": 37.26
     },
     "callesOMS": {
      "min": 75.651,
@@ -1035,8 +1076,8 @@
     },
     "atropellos": {
      "min": 6.287,
-     "max": 15.542,
-     "final": 11.518
+     "max": 15.77,
+     "final": 11.944
     },
     "comidaMin": {
      "min": 1,
@@ -1046,7 +1087,7 @@
     "residuos": {
      "min": 0,
      "max": 0.193,
-     "final": 0.187
+     "final": 0.185
     },
     "huertas": {
      "min": 121.736,
@@ -1059,19 +1100,19 @@
      "final": 8
     },
     "congestion": {
-     "min": 69.568,
-     "max": 185.771,
-     "final": 185.771
+     "min": 69.693,
+     "max": 189.523,
+     "final": 189.523
     },
     "tiempo10km": {
-     "min": 31.688,
-     "max": 53.403,
-     "final": 53.403
+     "min": 31.711,
+     "max": 54.104,
+     "final": 54.104
     },
     "presion": {
      "min": 0,
-     "max": 0.767,
-     "final": 0.767
+     "max": 0.785,
+     "final": 0.785
     },
     "recuperacion": {
      "min": 0,
@@ -1079,19 +1120,19 @@
      "final": 0.7
     },
     "ratas": {
-     "min": 0.823,
-     "max": 1.662,
-     "final": 1.662
+     "min": 0.831,
+     "max": 1.693,
+     "final": 1.693
     },
     "humedalHa": {
      "min": 38.298,
-     "max": 41.55,
-     "final": 40.893
+     "max": 41.548,
+     "final": 40.884
     },
     "humedalFuncional": {
-     "min": 82.865,
-     "max": 108.102,
-     "final": 82.865
+     "min": 82.116,
+     "max": 108.073,
+     "final": 82.116
     },
     "arboles": {
      "min": 0.4,
@@ -1100,13 +1141,13 @@
     },
     "comidaLocal": {
      "min": 0.01,
-     "max": 0.813,
-     "final": 0.751
+     "max": 0.804,
+     "final": 0.736
     },
     "circularIndice": {
      "min": 0,
-     "max": 0.056,
-     "final": 0.048
+     "max": 0.055,
+     "final": 0.047
     },
     "sueloIndice": {
      "min": 1,
@@ -1115,8 +1156,8 @@
     },
     "hogaresRiesgo": {
      "min": 0,
-     "max": 1426,
-     "final": 1426
+     "max": 1454,
+     "final": 1454
     },
     "metroReduccion": {
      "min": 0,
@@ -1230,7 +1271,7 @@
      "capa": "trafico",
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
-     "texto": "Unas 24.320 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
+     "texto": "Unas 24.397 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
     },
     {
      "sem": 178,
@@ -1254,7 +1295,7 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "1.000 hogares en riesgo de desplazamiento",
-     "texto": "Con el alza del suelo cerca del metro, 1.005 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
+     "texto": "Con el alza del suelo cerca del metro, 1.009 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
      "sem": 238,
@@ -1265,7 +1306,7 @@
      "texto": "8 de 8 bodegas desmontadas: 15.072 m² liberados; 31.050 m² de borde del humedal en restauración (madura en 3 años)."
     },
     {
-     "sem": 356,
+     "sem": 334,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
@@ -1278,7 +1319,7 @@
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión sube 50 %",
-     "texto": "Recorrer 10 km toma 38,9 min (hoy 31,8 min en 2025); congestión 108 %. Circulan 12 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 39,1 min (hoy 31,8 min en 2025); congestión 109 %. Circulan 12 % más vehículos que hoy."
     },
     {
      "sem": 600,
@@ -1289,15 +1330,15 @@
      "texto": "No estaba en el año 1 y ya vive ahí de forma estable: el módulo de huertas se volvió hábitat."
     },
     {
-     "sem": 781,
+     "sem": 772,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "La congestión se duplica",
-     "texto": "Recorrer 10 km toma 45,7 min (hoy 31,8 min en 2025); congestión 144 %. Circulan 20 % más vehículos que hoy."
+     "texto": "Recorrer 10 km toma 44,8 min (hoy 31,8 min en 2025); congestión 140 %. Circulan 19 % más vehículos que hoy."
     },
     {
-     "sem": 793,
+     "sem": 781,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
@@ -1313,15 +1354,15 @@
      "texto": "Serpiente sabanera ya no está en ningún parche de Kennedy. El último lugar fue Humedal El Burro; causa: sin recursos de la red."
     },
     {
-     "sem": 866,
+     "sem": 854,
      "tipo": "residuos",
      "capa": "especies",
      "signo": -1,
-     "titulo": "La basura invade el borde del Humedal El Burro",
-     "texto": "Hay 589 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal El Burro llegan 4,4 t/día y el humedal queda con 85 % de su calidad y 18,6 ha."
+     "titulo": "La basura invade el borde del Humedal de Techo",
+     "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal de Techo llegan 3,4 t/día y el humedal queda con 85 % de su calidad y 11,6 ha."
     },
     {
-     "sem": 912,
+     "sem": 900,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
@@ -1329,7 +1370,7 @@
      "texto": "Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como 90 % de lo que funcionan hoy; sus aves y anfibios tienen menos hábitat."
     },
     {
-     "sem": 989,
+     "sem": 940,
      "tipo": "ruido",
      "capa": "ruido",
      "signo": -1,
@@ -1596,11 +1637,35 @@
     },
     {
      "sem": 53,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 3",
+     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+    },
+    {
+     "sem": 53,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
      "titulo": "Quedan terminadas las estaciones del metro",
      "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 79,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
+    },
+    {
+     "sem": 99,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 51 % más vehículos que hoy; 10.055 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 105,
@@ -1612,19 +1677,11 @@
     },
     {
      "sem": 105,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 3",
-     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
-    },
-    {
-     "sem": 106,
      "tipo": "comida",
      "capa": "trafico",
      "signo": -1,
      "titulo": "Falta comida en Kennedy",
-     "texto": "La zona peor servida recibe 36 % de lo que necesita (Av. de las Américas cerrada); 50 zonas reciben menos del 80 %."
+     "texto": "La zona peor servida recibe 24 % de lo que necesita (Av. de las Américas cerrada); 59 zonas reciben menos del 80 %."
     },
     {
      "sem": 108,
@@ -1656,7 +1713,7 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van colibrí chillón, cucarachero y búho sabanero: el ruido subió 0,8 dB por los 3.566 vehículos diarios y el frente de obra."
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van colibrí chillón, cucarachero y búho sabanero: el ruido subió 2,0 dB por los 12.161 vehículos diarios y el frente de obra."
     },
     {
      "sem": 141,
@@ -1683,36 +1740,12 @@
      "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.002 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
-     "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
-    },
-    {
-     "sem": 157,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
-    },
-    {
      "sem": 167,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
      "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
-    },
-    {
-     "sem": 193,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.802 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 210,
@@ -1755,6 +1788,14 @@
      "texto": "Hay 588 t de basura arrojada en los bordes de El Burro, La Vaca y Techo; en el Humedal La Vaca llegan 2,8 t/día y el humedal queda con 85 % de su calidad y 7,5 ha."
     },
     {
+     "sem": 387,
+     "tipo": "especies",
+     "capa": "especies",
+     "signo": -1,
+     "titulo": "Las aves siguen sigue dejandondo el predio de Bavaria",
+     "texto": "La ocupación de los parches del predio y junto a él cae 25 %. Se van colibrí chillón, torcaza, cucarachero y chamón: el ruido subió 2,8 dB por los 16.785 vehículos diarios y se taló 35 % de los árboles del bosque (lugares de anidación)."
+    },
+    {
      "sem": 469,
      "tipo": "trafico",
      "capa": "trafico",
@@ -1771,12 +1812,12 @@
      "texto": "14.002 viviendas y 38.646 habitantes nuevos; 80 tramos de vía; 16.785 vehículos entran y salen al día."
     },
     {
-     "sem": 529,
+     "sem": 534,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
-     "titulo": "La fauna ocupa 10 % menos lugares que en el año 1",
-     "texto": "Las especies ocupan 261 pares especie–parche frente a 290 en el año 1. Donde más se nota es en Urbanización Casablanca II Etapa, Urbanización Casablanca Primera Etapa (se fueron copetón, colibrí chillón, torcaza y cucarachero; causa principal: tráfico y ruido)."
+     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
+     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
     },
     {
      "sem": 537,
@@ -1787,20 +1828,12 @@
      "texto": "Monjita bogotana ya no está en ningún parche de Kennedy. El último lugar fue Humedal La Vaca; causa: tráfico y ruido."
     },
     {
-     "sem": 554,
+     "sem": 586,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
-     "titulo": "Las aves siguen sigue dejandondo el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 25 %. Se van copetón, cucarachero, chamón y cernícalo: el ruido subió 2,9 dB por los 16.785 vehículos diarios y se taló 50 % de los árboles del bosque (lugares de anidación)."
-    },
-    {
-     "sem": 606,
-     "tipo": "especies",
-     "capa": "especies",
-     "signo": -1,
-     "titulo": "Kennedy pierde 5 % de los árboles de sus parques",
-     "texto": "Talas por riesgo y por obras (metro, Av. 68, Primero de Mayo) que se compensan fuera de la localidad: la densidad de árboles de los parques baja de 0,40 a 0,38 y los parques pierden calidad como hábitat."
+     "titulo": "La fauna ocupa 10 % menos lugares que en el año 1",
+     "texto": "Las especies ocupan 260 pares especie–parche frente a 290 en el año 1. Donde más se nota es en Urbanización El Carmelo \"Favidi\" Sectores A y B, Urbanización Gran Britalia (se fueron copetón, torcaza, cucarachero y chamón; causa principal: tráfico y ruido)."
     },
     {
      "sem": 628,
@@ -1901,14 +1934,14 @@
    ],
    "predio": {
     "año5": {
-     "trafico": 1.637,
-     "ruidoDb": 74.842,
+     "trafico": 1.861,
+     "ruidoDb": 75.359,
      "ruidoDb0": 72.648,
      "ocupacion": 26,
      "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
+     "habitantes": 38586,
+     "vias": 80,
+     "vehiculosDia": 16807,
      "especiesFuera": [
       {
        "especie": "mirla",
@@ -1962,14 +1995,14 @@
      ]
     },
     "año10": {
-     "trafico": 1.926,
-     "ruidoDb": 75.508,
+     "trafico": 1.925,
+     "ruidoDb": 75.492,
      "ruidoDb0": 72.648,
-     "ocupacion": 23,
+     "ocupacion": 25,
      "ocupacion0": 30.077,
-     "habitantes": 38616,
+     "habitantes": 38646,
      "vias": 80,
-     "vehiculosDia": 16816,
+     "vehiculosDia": 16785,
      "especiesFuera": [
       {
        "especie": "copeton",
@@ -1997,6 +2030,13 @@
        "nombre": "Chamón",
        "antes": 3,
        "ahora": 2,
+       "causa": "ambas"
+      },
+      {
+       "especie": "cernicalo",
+       "nombre": "Cernícalo",
+       "antes": 2,
+       "ahora": 1,
        "causa": "ambas"
       },
       {
@@ -2592,7 +2632,7 @@
     },
     "red": {
      "min": 1298,
-     "max": 3486,
+     "max": 3475,
      "final": 3017
     },
     "redTipos": {
@@ -2602,7 +2642,7 @@
     },
     "pares": {
      "min": 135,
-     "max": 319,
+     "max": 318,
      "final": 261
     },
     "aves": {
@@ -2682,7 +2722,7 @@
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.061,
+     "max": 0.059,
      "final": 0
     },
     "ratas": {
@@ -2797,6 +2837,14 @@
     },
     {
      "sem": 53,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 3",
+     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+    },
+    {
+     "sem": 53,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
@@ -2804,7 +2852,7 @@
      "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
     },
     {
-     "sem": 53,
+     "sem": 54,
      "tipo": "residuos",
      "capa": "especies",
      "signo": -1,
@@ -2812,12 +2860,20 @@
      "texto": "Todo sigue yendo al relleno Doña Juana con la recolección de siempre."
     },
     {
-     "sem": 105,
-     "tipo": "obra",
+     "sem": 79,
+     "tipo": "ruido",
      "capa": "ruido",
      "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 3",
-     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
+    },
+    {
+     "sem": 99,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 51 % más vehículos que hoy; 10.055 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 115,
@@ -2857,23 +2913,7 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 0,9 dB por los 4.126 vehículos diarios y el frente de obra."
-    },
-    {
-     "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
-    },
-    {
-     "sem": 157,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 2,1 dB por los 12.270 vehículos diarios y el frente de obra."
     },
     {
      "sem": 167,
@@ -2882,14 +2922,6 @@
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
      "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
-    },
-    {
-     "sem": 193,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.802 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 210,
@@ -3030,14 +3062,14 @@
    ],
    "predio": {
     "año5": {
-     "trafico": 1.637,
-     "ruidoDb": 74.842,
+     "trafico": 1.861,
+     "ruidoDb": 75.359,
      "ruidoDb0": 72.648,
      "ocupacion": 30,
      "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
+     "habitantes": 38586,
+     "vias": 80,
+     "vehiculosDia": 16807,
      "especiesFuera": [
       {
        "especie": "buho",
@@ -3070,14 +3102,14 @@
      ]
     },
     "año10": {
-     "trafico": 1.926,
-     "ruidoDb": 75.508,
+     "trafico": 1.925,
+     "ruidoDb": 75.492,
      "ruidoDb0": 72.648,
-     "ocupacion": 27,
+     "ocupacion": 28,
      "ocupacion0": 30.077,
-     "habitantes": 38616,
+     "habitantes": 38646,
      "vias": 80,
-     "vehiculosDia": 16816,
+     "vehiculosDia": 16785,
      "especiesFuera": [
       {
        "especie": "torcaza",
@@ -3629,7 +3661,7 @@
     },
     "red": {
      "min": 1298,
-     "max": 3453,
+     "max": 3440,
      "final": 3000
     },
     "redTipos": {
@@ -3639,7 +3671,7 @@
     },
     "pares": {
      "min": 135,
-     "max": 315,
+     "max": 314,
      "final": 259
     },
     "aves": {
@@ -3719,7 +3751,7 @@
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.055,
+     "max": 0.052,
      "final": 0
     },
     "ratas": {
@@ -3825,6 +3857,14 @@
     },
     {
      "sem": 53,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 3",
+     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+    },
+    {
+     "sem": 53,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
@@ -3832,12 +3872,20 @@
      "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
     },
     {
-     "sem": 105,
-     "tipo": "obra",
+     "sem": 79,
+     "tipo": "ruido",
      "capa": "ruido",
      "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 3",
-     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
+    },
+    {
+     "sem": 99,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 51 % más vehículos que hoy; 10.055 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 105,
@@ -3881,27 +3929,11 @@
     },
     {
      "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
-    },
-    {
-     "sem": 157,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 11 %. Se van búho sabanero: el ruido subió 1,5 dB por los 7.528 vehículos diarios y el frente de obra."
-    },
-    {
-     "sem": 158,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.592 vehículos diarios, 285 de ellos camiones."
+     "texto": "La ocupación de los parches del predio y junto a él cae 11 %. Se van búho sabanero: el ruido subió 2,4 dB por los 14.875 vehículos diarios y el frente de obra."
     },
     {
      "sem": 167,
@@ -3910,14 +3942,6 @@
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
      "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
-    },
-    {
-     "sem": 193,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.802 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 210,
@@ -4050,14 +4074,14 @@
    ],
    "predio": {
     "año5": {
-     "trafico": 1.637,
-     "ruidoDb": 74.842,
+     "trafico": 1.861,
+     "ruidoDb": 75.359,
      "ruidoDb0": 72.648,
      "ocupacion": 29,
      "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
+     "habitantes": 38586,
+     "vias": 80,
+     "vehiculosDia": 16807,
      "especiesFuera": [
       {
        "especie": "buho",
@@ -4090,14 +4114,14 @@
      ]
     },
     "año10": {
-     "trafico": 1.926,
-     "ruidoDb": 75.508,
+     "trafico": 1.925,
+     "ruidoDb": 75.492,
      "ruidoDb0": 72.648,
-     "ocupacion": 27,
+     "ocupacion": 28,
      "ocupacion0": 30.077,
-     "habitantes": 38616,
+     "habitantes": 38646,
      "vias": 80,
-     "vehiculosDia": 16816,
+     "vehiculosDia": 16785,
      "especiesFuera": [
       {
        "especie": "torcaza",
@@ -4851,11 +4875,27 @@
     },
     {
      "sem": 53,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 3",
+     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+    },
+    {
+     "sem": 53,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
      "titulo": "Quedan terminadas las estaciones del metro",
      "texto": "Portal Américas, Ciudad Kennedy, Timiza, Hospital de Kennedy, Avenida Boyacá: cinco estaciones en Kennedy listas para las pruebas."
+    },
+    {
+     "sem": 75,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 73,6 dB (+1,0 dB) por los 4.126 vehículos diarios, 195 de ellos camiones."
     },
     {
      "sem": 78,
@@ -4866,12 +4906,12 @@
      "texto": "Con el alza del suelo cerca del metro y del plan parcial, 1.009 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
-     "sem": 105,
-     "tipo": "obra",
-     "capa": "ruido",
+     "sem": 96,
+     "tipo": "trafico",
+     "capa": "trafico",
      "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 3",
-     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 51 % más vehículos que hoy; 9.676 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 115,
@@ -4906,28 +4946,12 @@
      "texto": "Vivía ahí en el año 1 y lleva varios meses sin aparecer; causa: tala."
     },
     {
-     "sem": 148,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 73,7 dB (+1,0 dB) por los 4.083 vehículos diarios, 195 de ellos camiones."
-    },
-    {
      "sem": 149,
      "tipo": "especies",
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 1,0 dB por los 4.126 vehículos diarios y el frente de obra."
-    },
-    {
-     "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 2,1 dB por los 12.270 vehículos diarios y el frente de obra."
     },
     {
      "sem": 167,
@@ -4970,14 +4994,6 @@
      "texto": "Con el alza del suelo cerca del metro y del plan parcial, 5.027 hogares que pagan arriendo podrían no alcanzar a pagarlo y tener que irse de Kennedy."
     },
     {
-     "sem": 232,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 64 % más vehículos que hoy; 11.359 al día salen o entran por las vías nuevas del plan."
-    },
-    {
      "sem": 261,
      "tipo": "trafico",
      "capa": "trafico",
@@ -5010,6 +5026,22 @@
      "texto": "Humedales: 80 % (game over si el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy)."
     },
     {
+     "sem": 417,
+     "tipo": "ruido",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 75,7 dB (+3,0 dB) por los 16.785 vehículos diarios."
+    },
+    {
+     "sem": 417,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 100 % más vehículos que hoy; 16.785 al día salen o entran por las vías nuevas del plan."
+    },
+    {
      "sem": 434,
      "tipo": "trafico",
      "capa": "trafico",
@@ -5018,28 +5050,12 @@
      "texto": "Recorrer 10 km toma 44,8 min (hoy 31,8 min en 2025); congestión 140 %. Circulan 19 % más vehículos que hoy."
     },
     {
-     "sem": 459,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 75,6 dB (+3,0 dB) por los 16.249 vehículos diarios, 66 de ellos camiones."
-    },
-    {
      "sem": 469,
      "tipo": "trafico",
      "capa": "trafico",
      "signo": -1,
      "titulo": "Kennedy se acerca al game over: tráfico",
      "texto": "Tráfico: índice 1,21 (game over si circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más))."
-    },
-    {
-     "sem": 469,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 101 % más vehículos que hoy; 16.370 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 521,
@@ -5124,14 +5140,14 @@
    ],
    "predio": {
     "año5": {
-     "trafico": 1.691,
-     "ruidoDb": 74.98,
+     "trafico": 1.914,
+     "ruidoDb": 75.481,
      "ruidoDb0": 72.648,
      "ocupacion": 30,
      "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
+     "habitantes": 38586,
+     "vias": 80,
+     "vehiculosDia": 16807,
      "especiesFuera": [
       {
        "especie": "buho",
@@ -5164,14 +5180,14 @@
      ]
     },
     "año10": {
-     "trafico": 2.043,
-     "ruidoDb": 75.763,
+     "trafico": 2.042,
+     "ruidoDb": 75.748,
      "ruidoDb0": 72.648,
-     "ocupacion": 27,
+     "ocupacion": 28,
      "ocupacion0": 30.077,
-     "habitantes": 38616,
+     "habitantes": 38646,
      "vias": 80,
-     "vehiculosDia": 16816,
+     "vehiculosDia": 16785,
      "especiesFuera": [
       {
        "especie": "torcaza",
@@ -5760,7 +5776,7 @@
     },
     "red": {
      "min": 1298,
-     "max": 3477,
+     "max": 3466,
      "final": 3037
     },
     "redTipos": {
@@ -5770,7 +5786,7 @@
     },
     "pares": {
      "min": 135,
-     "max": 318,
+     "max": 317,
      "final": 262
     },
     "aves": {
@@ -5850,7 +5866,7 @@
     },
     "recuperacion": {
      "min": 0,
-     "max": 0.059,
+     "max": 0.057,
      "final": 0
     },
     "ratas": {
@@ -5989,6 +6005,14 @@
     },
     {
      "sem": 53,
+     "tipo": "obra",
+     "capa": "ruido",
+     "signo": -1,
+     "titulo": "Plan parcial: empieza la etapa 3",
+     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+    },
+    {
+     "sem": 53,
      "tipo": "metro",
      "capa": "trafico",
      "signo": 1,
@@ -6012,12 +6036,20 @@
      "texto": "La equidad del reparto baja a 89 %: algunos sectores reciben mucho menos de lo que necesitan."
     },
     {
-     "sem": 105,
-     "tipo": "obra",
+     "sem": 80,
+     "tipo": "ruido",
      "capa": "ruido",
      "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 3",
-     "texto": "Se abren 14 tramos de vía nueva y empiezan 2.779 viviendas; 195 viajes de camión de obra al día."
+     "titulo": "Sube el ruido en el predio de Bavaria",
+     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,6 dB) por los 7.655 vehículos diarios, 285 de ellos camiones."
+    },
+    {
+     "sem": 99,
+     "tipo": "trafico",
+     "capa": "trafico",
+     "signo": -1,
+     "titulo": "Trancón en las entradas de Bavaria",
+     "texto": "Por la entrada más cargada del predio pasan 51 % más vehículos que hoy; 10.055 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 115,
@@ -6057,23 +6089,7 @@
      "capa": "especies",
      "signo": -1,
      "titulo": "Las aves dejan el predio de Bavaria",
-     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 0,9 dB por los 4.126 vehículos diarios y el frente de obra."
-    },
-    {
-     "sem": 157,
-     "tipo": "obra",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Plan parcial: empieza la etapa 4",
-     "texto": "Se abren 15 tramos de vía nueva y empiezan 4.075 viviendas; 285 viajes de camión de obra al día."
-    },
-    {
-     "sem": 157,
-     "tipo": "ruido",
-     "capa": "ruido",
-     "signo": -1,
-     "titulo": "Sube el ruido en el predio de Bavaria",
-     "texto": "En las entradas del predio el ruido pasa de 72,6 a 74,2 dB (+1,5 dB) por los 7.528 vehículos diarios, 285 de ellos camiones."
+     "texto": "La ocupación de los parches del predio y junto a él cae 10 %. Se van torcaza, cucarachero y búho sabanero: el ruido subió 2,1 dB por los 12.270 vehículos diarios y el frente de obra."
     },
     {
      "sem": 167,
@@ -6082,14 +6098,6 @@
      "signo": 1,
      "titulo": "Más gente camina alrededor de la estación Portal Américas",
      "texto": "Unas 23.185 personas al día llegan a pie a la estación: más comercio de barrio y más vida en la calle a su alrededor."
-    },
-    {
-     "sem": 193,
-     "tipo": "trafico",
-     "capa": "trafico",
-     "signo": -1,
-     "titulo": "Trancón en las entradas de Bavaria",
-     "texto": "Por la entrada más cargada del predio pasan 50 % más vehículos que hoy; 9.802 al día salen o entran por las vías nuevas del plan."
     },
     {
      "sem": 210,
@@ -6230,14 +6238,14 @@
    ],
    "predio": {
     "año5": {
-     "trafico": 1.637,
-     "ruidoDb": 74.842,
+     "trafico": 1.861,
+     "ruidoDb": 75.359,
      "ruidoDb0": 72.648,
      "ocupacion": 30,
      "ocupacion0": 30.077,
-     "habitantes": 31167,
-     "vias": 54,
-     "vehiculosDia": 12206,
+     "habitantes": 38586,
+     "vias": 80,
+     "vehiculosDia": 16807,
      "especiesFuera": [
       {
        "especie": "buho",
@@ -6270,25 +6278,18 @@
      ]
     },
     "año10": {
-     "trafico": 1.926,
-     "ruidoDb": 75.508,
+     "trafico": 1.925,
+     "ruidoDb": 75.492,
      "ruidoDb0": 72.648,
-     "ocupacion": 28,
+     "ocupacion": 29,
      "ocupacion0": 30.077,
-     "habitantes": 38616,
+     "habitantes": 38646,
      "vias": 80,
-     "vehiculosDia": 16816,
+     "vehiculosDia": 16785,
      "especiesFuera": [
       {
        "especie": "torcaza",
        "nombre": "Torcaza",
-       "antes": 3,
-       "ahora": 2,
-       "causa": "ambas"
-      },
-      {
-       "especie": "buho",
-       "nombre": "Búho sabanero",
        "antes": 3,
        "ahora": 2,
        "causa": "ambas"
@@ -6793,5 +6794,5 @@
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.743
+ "ms_por_paso_node": 0.645
 }
