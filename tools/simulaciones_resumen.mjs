@@ -10,7 +10,7 @@ const N = S.SEMANAS_FIN, SEMS = 30;
 const CLAVES = ['fauna', 'flora', 'red', 'redTipos', 'pares', 'aves', 'poliniz', 'polinizEsp', 'trafico', 'ruidoDb', 'callesRuidosas', 'callesOMS', 'atropellos', 'comidaMin', 'residuos', 'huertas', 'bodegas', 'congestion', 'tiempo10km', 'presion', 'recuperacion', 'ratas', 'humedalHa', 'humedalFuncional', 'arboles', 'comidaLocal', 'circularIndice', 'sueloIndice', 'hogaresRiesgo', 'metroReduccion'];
 const r3 = (v) => v == null ? null : Math.round(v * 1000) / 1000;
 const out = { generado: new Date().toISOString().slice(0, 10), fuente: 'data3d/simulaciones12.js (tools/simulaciones_resumen.mjs)', semanas: N,
-  fases: S.FASES, tomtom: S.TOMTOM, reglas: S.REGLAS, supuestos: S.SUP_SIMS, predio_sup: S.PREDIO_SUP, basura_sup: S.BASURA_SUP, metro_sup: S.METRO_SUP, suelo_sup: S.SUELO_SUP, desvio_sup: S.DESVIO_SUP, avisos_sup: S.AVISOS_SUP, simulaciones: [] };
+  pares: S.PARES, fases: S.FASES, tomtom: S.TOMTOM, reglas: S.REGLAS, supuestos: S.SUP_SIMS, predio_sup: S.PREDIO_SUP, basura_sup: S.BASURA_SUP, metro_sup: S.METRO_SUP, suelo_sup: S.SUELO_SUP, desvio_sup: S.DESVIO_SUP, avisos_sup: S.AVISOS_SUP, simulaciones: [] };
 let msTot = 0, pasos = 0;
 for (const sim of S.SIMS) {
   const E = S.crear(sim.id, 1), st = Object.fromEntries(CLAVES.map(k => [k, { min: Infinity, max: -Infinity, final: null }])), ext = [], avisos = [], predio = {};
@@ -26,7 +26,7 @@ for (const sim of S.SIMS) {
   for (let sd = 1; sd <= SEMS; sd++) { const g = sd === 1 ? go1 : (() => { const e = S.crear(sim.id, sd); for (let w = 0; w < N; w++) S.paso(e); return S.gameOver(e); })();
     if (g) { g30.push(g.sem); por[g.regla] = (por[g.regla] || 0) + 1; } }
   g30.sort((a, b) => a - b); const med = g30.length ? g30[(g30.length - 1) >> 1] : null;
-  out.simulaciones.push({ id: sim.id, n: sim.n, base: sim.base, sliders: Object.fromEntries(sim.sliders.map(s => [s.k, s.val])),
+  out.simulaciones.push({ id: sim.id, par: sim.par, propuesta: sim.propuesta, prueba: sim.prueba, n: sim.n, base: sim.base, sliders: Object.fromEntries(sim.sliders.map(s => [s.k, s.val])),
     gameover: go1, semillas30: { gameover: g30.length, de: SEMS, mediana_sem: med, por_regla: por }, grupo: sim.grupo, pregunta: sim.pregunta, inicio: x0, indicadores: st, extinciones: ext, avisos, predio: Object.keys(predio).length ? predio : null });
   console.log(String(sim.id).padStart(2), sim.base, sim.corto.padEnd(20), go1 ? `GO sem ${go1.sem} ${go1.regla} (${go1.valor})` : 'sin game over', `| ${g30.length}/${SEMS}`, JSON.stringify(por),
     `| red ${x0.red0}->${st.red.final} poli ${x0.poliniz0}->${st.poliniz.final} (esp ${st.polinizEsp.final}) | fauna ${st.fauna.min}-${st.fauna.final}/${x0.fauna0} pares ${x0.pares0}->${st.pares.final} traf ${st.trafico.final} ruido ${x0.ruidoDb0.toFixed(2)}->${st.ruidoDb.final} calles65 ${st.callesRuidosas.final}% atrop ${st.atropellos.final} comidaMin ${st.comidaMin.min} res ${st.residuos.max} huertas ${st.huertas.final} bod ${st.bodegas.final} ext ${ext.length}`);
