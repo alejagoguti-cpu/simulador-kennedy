@@ -1,7 +1,7 @@
 # Maqueta RECTANGULAR (16:9, como el proyector) con zoom sobre Corabastos y Bavaria, para impresión 3D (STL en mm).
 # Uso: python tools/maqueta_zoom.py [largo_mm=500] [exageración=2] [piezas_x=3] [piezas_y=2] [tope_mm=10] [ancho_real_m=6000]
 # Encuadre (marco MODELO del simulador): Corabastos (data3d/corabastos.json, x 5.895–6.796, y 1.826–2.522) y Bavaria (data3d/bavaria.json,
-# x 8.831–9.866, y 2.389–3.553) con margen, en 16:9 norte arriba: 6.000 x 3.375 m centrado en (7.400 ; 2.500) -> 1:12.000 a 50 cm.
+# x 8.831–9.866, y 2.389–3.553) con margen, en 16:9 norte arriba: 6.800 x 3.825 m centrado en (7.200 ; 2.700) -> 1:13.600 a 50 cm.
 # Terreno: placa rectangular de 3 mm; humedales y canales hundidos 1,8 mm (capa_agua.png de la instalación).
 # Edificios: data3d/buildings.json (huella y altura reales; incluye las naves de Corabastos y las bodegas de Bavaria), altura × exageración,
 # con tope (torres de 20 pisos = 1 cm). Casas pegadas de la misma altura se funden; formas que no cierran -> rectángulo o cuadritos de 2 mm.
@@ -17,8 +17,8 @@ RAIZ = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(RAIZ, 'in
 OUT = os.path.join(RAIZ, 'instalacion', 'maqueta', 'zoom_bavaria_corabastos'); os.makedirs(OUT, exist_ok=True)
 CFG = json.load(open(os.path.join(RAIZ, 'instalacion', 'config.json'), encoding='utf-8'))
 a = sys.argv[1:] + [None] * 6
-LARGO = float(a[0] or 500); EXAG = float(a[1] or 2.0); NX = int(a[2] or 3); NY = int(a[3] or 2); H_MAX = float(a[4] or 10)
-ANm = float(a[5] or 6000); ALm = ANm * 9 / 16; CXm, CYm = 7400.0, 2500.0   # encuadre en metros (16:9), marco MODELO; corrido al oeste para quedar 97,6 % dentro de Kennedy (Bavaria con >500 m de margen)
+LARGO = float(a[0] or 500); EXAG = float(a[1] or 2.27); NX = int(a[2] or 2); NY = int(a[3] or 2); H_MAX = float(a[4] or 10)
+ANm = float(a[5] or 6800); ALm = ANm * 9 / 16; CXm, CYm = 7200.0, 2700.0   # encuadre en metros (16:9), marco MODELO; ~90 % dentro de Kennedy, con más del norte (Bavaria >700 m de margen, Corabastos >1 km)
 ESC = ANm * 1000 / LARGO                                 # 1:9.600 con 50 cm
 TW, TH = LARGO, ALm * 1000 / ESC
 PLACA, AGUA_FONDO, H_MIN, BANDA = 3.0, 1.2, 1.0, 0.5

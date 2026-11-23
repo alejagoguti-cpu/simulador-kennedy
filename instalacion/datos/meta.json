@@ -1,23 +1,23 @@
 {
   "NS": 1500,
-  "M": 2415,
+  "M": 2516,
   "dur": 1499,
-  "tramos": 22155,
+  "tramos": 27138,
   "encuadre": {
     "centro_m": [
-      2058.67,
-      661.9
+      1858.67,
+      461.9
     ],
-    "ancho_m": 6000,
-    "alto_m": 3375,
+    "ancho_m": 6800,
+    "alto_m": 3825,
     "rotacion_grados": 0,
-    "nota": "Zoom Corabastos - Bavaria (marco MODELO x 4400-10400, y 812.5-4187.5 = 6 x 3,375 km, 16:9, norte arriba; 97,6 % dentro de Kennedy), igual que la maqueta impresa instalacion/maqueta/zoom_bavaria_corabastos. El encuadre de toda Kennedy queda en rectangulo_kennedy_completa."
+    "nota": "Corabastos - Bavaria (marco MODELO x 3800-10600, y 787.5-4612.5 = 6,8 x 3,8 km, 16:9, norte arriba; ~90 % dentro de Kennedy), igual que la maqueta impresa instalacion/maqueta/zoom_bavaria_corabastos. El encuadre de toda Kennedy queda en rectangulo_kennedy_completa."
   },
   "maqueta_mm": [
     500,
     281.25
   ],
-  "escala": 12000,
+  "escala": 13600,
   "capas_png": {
     "ancho": 2560,
     "alto": 1440,
@@ -58,7 +58,7 @@
         "nota": "NAIN n (integración) y NACH (elección), hoy (a) vs con la propuesta (b); misma escala de color"
       },
       "edificios3d": {
-        "n": 164888,
+        "n": 198158,
         "nota": "cajas orientadas aproximadas a la huella (arista más larga); altura h de data3d/buildings.json"
       }
     },
