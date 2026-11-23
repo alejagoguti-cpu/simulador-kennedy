@@ -61,7 +61,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
       if (ve === 'dif') { const dl = Lp - Lh; colDif(dl, c3); d[o + 3] = 225 * al * (0.3 + 0.7 * Math.min(1, Math.abs(dl) / 3)); } else { const Lv = ve === 'pro' ? Lp : Lh; colNivel(Lv, c3); const rp = suave((Lv - 52) / 20); d[o + 3] = 140 * al * rp * rp; /* como antes: lo tranquilo casi transparente, el ruido brilla sobre las vías (sin manchas en las manzanas) */ }
       d[o] = c3[0]; d[o + 1] = c3[1]; d[o + 2] = c3[2]; }
     go.putImageData(img, 0, 0); tex.needsUpdate = true; sigMapa = ve + '|' + nv.sig + '|' + RM.ver;
-    const b = badge(); b.className = 'v-' + ve; b.textContent = ve === 'hoy' ? 'MAPA DE RUIDO · KENNEDY HOY' : ve === 'pro' ? 'MAPA DE RUIDO · CON LA PROPUESTA' : 'MAPA DE RUIDO · CUÁNTO BAJA CADA CALLE';
+    const b = badge(); b.className = 'v-' + ve; b.textContent = ve === 'hoy' ? 'MAPA DE RUIDO · ESTADO ACTUAL' : ve === 'pro' ? 'MAPA DE RUIDO · CON LA PROPUESTA' : 'MAPA DE RUIDO · CUÁNTO BAJA CADA CALLE';
   }
   // ---------------- CIERRE DE VÍA ----------------
   let cerrada = null, desvios = new Map(), marca = null;

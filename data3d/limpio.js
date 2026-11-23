@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=5';
+import { iniciarSimUI } from './sim_ui.js?v=6';
 
 export const METRO_SEM_OP = 114;
 export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
@@ -17,7 +17,7 @@ const VELS = [4, 8, 16];                  // semanas por segundo (1×, 2×, 4×)
 
 // las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
 export const SIMS = [
-  { id: 1, n: 'Hoy, sin proyecto', base: 'A', cam: 'inicio' },
+  { id: 1, n: 'Estado actual', base: 'A', cam: 'inicio' },
   { id: 2, n: 'Instituto en Bavaria', base: 'B', cam: 'bavaria' },
   { id: 3, n: 'Red de mercados de barrio', base: 'C', cam: 'general' },
   { id: 4, n: 'Plan parcial Bavaria', base: 'D', cam: 'bavaria' },
@@ -69,7 +69,7 @@ export function iniciarLimpio({ T3 }) {
     for (const s of g.querySelectorAll('.gs-sub')) {
       const t = (s.textContent || '').trim().toUpperCase();
       if (t.startsWith('ÁNGULO') || t.startsWith('FLUJO DE AGENTES')) off(s);
-      if (t.startsWith('CORABASTOS')) { off(s); if (s.parentElement !== g && s.parentElement.children.length < 8) off(s.parentElement); for (let k = s.nextElementSibling; k && !k.classList.contains('gs-sub') && !k.classList.contains('ui-capas-h'); k = k.nextElementSibling) off(k); } // «Kennedy hoy / Con la propuesta»: lo deciden las simulaciones
+      if (t.startsWith('CORABASTOS')) { off(s); if (s.parentElement !== g && s.parentElement.children.length < 8) off(s.parentElement); for (let k = s.nextElementSibling; k && !k.classList.contains('gs-sub') && !k.classList.contains('ui-capas-h'); k = k.nextElementSibling) off(k); } // «Estado actual / Con la propuesta»: lo deciden las simulaciones
     }
     const ang = document.getElementById('gs-ang'); off(ang); if (ang && ang.nextElementSibling && /⟲|＋/.test(ang.nextElementSibling.textContent)) off(ang.nextElementSibling);
     g.querySelectorAll(':scope > h3, :scope > p').forEach(off); off(document.getElementById('gs-dia')); off(document.getElementById('gs-jor'));
@@ -151,7 +151,11 @@ export function iniciarLimpio({ T3 }) {
     for (const ms of [400, 1500, 3500]) setTimeout(() => { const vm = document.getElementById('vm-panel'); if (vm) vm.querySelectorAll('button').forEach(b => { if (/^Apagar$/.test(b.textContent.trim()) && !b.classList.contains('on')) b.click(); }); }, ms);
     volar(S.cam);
   }
-  function volar(cual) {
+  /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
+  const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');
+    if ((L && !L.classList.contains('hidden')) || !document.querySelector('#esim .seg button[data-e="A"]') || !document.getElementById('lp-sims')) return void setTimeout(autoUno, 400);
+    setTimeout(() => { if (!ESC.activo) escoger(1); }, 900); };
+  autoUno();  function volar(cual) {
     if (!T3.camera || !T3.orbit) return; const V = T3.THREE.Vector3; let c, d;
     if (cual === 'metro') {
       const M = window.KEN_METRO; let cx, cz;

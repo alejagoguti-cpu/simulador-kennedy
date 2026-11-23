@@ -20,7 +20,7 @@
       las rutas calculadas hacia los mercados abiertos y Bavaria, 1 por PAR.ESC_VIS viajes reales; capa «Rutas de abastecimiento».
    Todos los parámetros marcados [SUP] son supuestos declarados para discutir con el grupo. Sin azar sin semilla ni relojes propios (todo sale del reloj universal). */
 import { RELOJ, hashNum } from './reloj.js?v=5';
-import { PAR as PARSIM, SIMST } from './sim_modelos.js?v=6';
+import { PAR as PARSIM, SIMST } from './sim_modelos.js?v=7';
 
 export const CORA = [1132.1, 948.6], BAVC = [4136, 96];
 export const PAR = {

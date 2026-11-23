@@ -11,7 +11,7 @@
              con partículas proporcionales a los kilos y la ocupación de cada estación
    · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
              trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
-import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=6';
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=7';
 /* TIEMPO: un solo reloj (data3d/reloj.js) con dos escalas. Este modelo va en la escala del MODELO: una semana entera por tic
    (RELOJ.pasoSemana → onSemana), a la velocidad de años del control «Años» (pausa, 1…52 semanas por segundo). No corre los segundos
    de la semana: carros, fauna y aves muestran un día típico de la semana en que va y leen lo que aquí se aplica (aplicar()).
@@ -20,7 +20,7 @@ import { RELOJ } from './reloj.js?v=5';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con un solo evento al azar, el cierre de una vía (semilla = SIMST.semilla), y reglas de game over fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
 import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=7';
-import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=3'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
+import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=4'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
@@ -113,7 +113,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
     via = new THREE.Points(gv, new THREE.PointsMaterial({ size: 9, sizeAttenuation: false, color: '#e15759', transparent: true, opacity: 0.9, depthTest: false, depthWrite: false, toneMapped: false }));
     via.renderOrder = 12; via.frustumCulled = false; grupo.add(via); };
   /* ---------- FRANJA DE TRÁFICO de la Av. Ciudad de Cali: color y grosor = cuántos vehículos van hacia Corabastos ----------
-     roja y gruesa = tráfico alto (A, Kennedy hoy) · naranja = medio · verde y delgada = bajo. Ancho en pantalla casi constante: se ve desde lejos. */
+     roja y gruesa = tráfico alto (A, Estado actual) · naranja = medio · verde y delgada = bajo. Ancho en pantalla casi constante: se ve desde lejos. */
   const DC = await cj('data3d/alivio_cali.json?v=1').catch(() => null);
   const UB = { uW: { value: 12 }, uC: { value: new THREE.Color('#e15759') }, uA: { value: 0 } };
   let banda = null;
@@ -510,7 +510,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.ir) { LUGAR[b.dataset.ir].ir(); return; }
-    if (b.dataset.guia !== undefined) { import('./guia.js?v=2').then(m => m.abrirGuia(true)); return; }
+    if (b.dataset.guia !== undefined) { import('./guia.js?v=3').then(m => m.abrirGuia(true)); return; }
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; pintarPanel(); return; }
     if (b.dataset.sd) { ponerSemilla(VIDA.seed + +b.dataset.sd); return; }
     if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
@@ -525,7 +525,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   });
   el.addEventListener('input', (ev) => { const i = ev.target;
     if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value; RELOJ.entrada('param', { g: i.dataset.g, k: i.dataset.k, v: +i.value });
-      if (esc() === 'A') { SIMST.esc = SIMST.esc && SIMST.esc !== 'A' ? SIMST.esc : 'C'; document.querySelector('.sw button[data-e="proyecto"]')?.click(); } // en «Kennedy hoy» los sliders no cambian nada: se pasa a la propuesta
+      if (esc() === 'A') { SIMST.esc = SIMST.esc && SIMST.esc !== 'A' ? SIMST.esc : 'C'; document.querySelector('.sw button[data-e="proyecto"]')?.click(); } // en «Estado actual» los sliders no cambian nada: se pasa a la propuesta
       // sin saltos ni rehacer: el parámetro rige desde la semana actual del reloj y la corrida sigue desde donde va
       setTimeout(() => dispatchEvent(new Event('cora-cambio')), 30); // los indicadores en 3D se recalculan con la nueva dependencia de Corabastos
       if (i.dataset.k === 'arboles' && window.KEN_PARCHES && window.KEN_PARCHES.densidad) window.KEN_PARCHES.densidad(Math.max(0.15, +i.value)); /* densidad de árboles: más o menos árboles en los parches */
@@ -577,9 +577,9 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   // MODO SIMPLE (por defecto, data3d/modo_simple.js): tarjeta de escenario + «Año X de 50» y panel «¿Qué está pasando?»; el resto de los paneles se esconde hasta «Ver todo»
   import('./modo_simple.js?v=7').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
     .catch(er => { console.warn('modo simple:', er); document.documentElement.classList.remove('ms-simple'); });
-  setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple') && !document.documentElement.classList.contains('limpio')) import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
-  import('./mejora_tour.js?v=10').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=12').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple') && !document.documentElement.classList.contains('limpio')) import('./guia.js?v=3').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
+  import('./mejora_tour.js?v=11').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./capas_escenario.js?v=14').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, get esc() { return esc(); }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }

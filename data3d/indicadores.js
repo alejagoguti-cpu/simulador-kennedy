@@ -32,7 +32,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   }
 
   /* ---------- CON LA PROPUESTA: cada indicador cambia donde actúa la propuesta ----------
-     [SUP] modelo espacial para discutir con el grupo (no viene de las láminas): las láminas son «Kennedy hoy»; con la propuesta el valor de cada punto
+     [SUP] modelo espacial para discutir con el grupo (no viene de las láminas): las láminas son «Estado actual»; con la propuesta el valor de cada punto
      se corrige según su cercanía a lo que cambia:
        · Corabastos descentralizado (los mismos % de carros y camiones de los sliders del flujo de carros, data3d/alivio_cali.js): baja PM, PA, EPO, CV y CCL
        · Bavaria Común (logística y conocimiento nuevos): sube CCL y CO
@@ -207,7 +207,7 @@ export function panelIndicadores(api, on) {
     if (['SE', 'IC', 'PA', 'EPO'].includes(c) && (r.arboles || r.techos)) return `<div style="margin-top:3px;color:#c9cdd0">Cuenta ${fmtN(r.arboles)} árboles nuevos${r.techos && c !== 'EPO' ? ` y ${fmtN(r.techos)} techos verdes` : ''}.</div>`;
     if (c === 'CCL' && r.mercados) return `<div style="margin-top:3px;color:#c9cdd0">${r.mercados} mercados de barrio reciben parte de la carga.</div>`; return ''; };
   const escBox = () => { const pro = (window.KEN_ESC && window.KEN_ESC.e) === 'proyecto', r = api.resumen(), b = (on, t, e) => `<button data-e="${e}" style="flex:1;padding:5px;border:0;font:inherit;cursor:pointer;background:${on ? (e === 'hoy' ? '#e9ebec' : '#34d399') : 'transparent'};color:${on ? '#0d0f12' : '#c9cdd0'}">${t}</button>`;
-    return `<div style="display:flex;border:1px solid rgba(255,255,255,.12);border-radius:7px;overflow:hidden;margin-top:9px">${b(!pro, 'Kennedy hoy', 'hoy')}${b(pro, 'Con la propuesta', 'proyecto')}</div>
+    return `<div style="display:flex;border:1px solid rgba(255,255,255,.12);border-radius:7px;overflow:hidden;margin-top:9px">${b(!pro, 'Estado actual', 'hoy')}${b(pro, 'Con la propuesta', 'proyecto')}</div>
       <div style="margin-top:6px;color:#9aa2a7;font-size:10px;line-height:1.4">${pro ? `${QUE[api.sel] || ''}${cuenta(api.sel, r)}${r ? `<div style="margin-top:4px;color:#e9ebec;font:500 10.5px 'JetBrains Mono',monospace">Promedio en Kennedy ${r.prom >= 0 ? '+' : '−'}${Math.abs(r.prom).toFixed(1)} % · donde más cambia ${r.max >= 0 ? '+' : '−'}${Math.abs(r.max * 0.01).toFixed(2)}</div>` : ''}<div style="margin-top:3px;color:#646c71;font-size:9px">Supuesto del simulador sobre la lámina; los % de Corabastos salen de los sliders del flujo de carros.</div>`
         : 'Así está hoy, según las láminas. Pasa a <b style="color:#6ee7b7">Con la propuesta</b> para ver cómo cambia.'}</div>`; };
   api.onCambio = () => { if (document.getElementById('ind-panel')) pintar(); };

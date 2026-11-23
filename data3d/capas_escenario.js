@@ -6,7 +6,7 @@
      (huertas de barrio, techos, Bavaria) con su área; el panel muestra hoy -> propuesta.
    · Indicadores: tabla HOY -> CON LA PROPUESTA en el panel de la derecha, con la razón de cada cambio (escenarios_sim.js).
    Al cambiar a la propuesta sale una tarjeta corta que resume qué cambió en cada capa. */
-import { SEM, AÑO, SIMST } from './sim_modelos.js?v=6';
+import { SEM, AÑO, SIMST } from './sim_modelos.js?v=7';
 export function iniciarCapasEscenario({ T3, ES }) {
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const pro = () => T3.escenario === 'proyecto';
@@ -158,7 +158,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
     const nv = RM.niveles(); if (nv) { const d = nv.dif; p.tot = d; p.pct = (1 - Math.pow(10, d / 10)) * 100; c.tot = pro() ? d : 0; c.pct = pro() ? p.pct : 0; } // el número total viene del modelo en dB absolutos (el mismo del panel de ruido)
     return { ahora: c, pleno: p }; };
 
-  /* ---------- panel de ruido: calles de Kennedy hoy vs. propuesta, con controles que cambian el mapa ---------- */
+  /* ---------- panel de ruido: calles de Estado actual vs. propuesta, con controles que cambian el mapa ---------- */
   const mas = (v, d = 1) => { const u = d > 1 ? 0.004 : 0.049; return (v < -u ? '−' : v > u ? '+' : '') + fmt(Math.abs(v), d); };
   const traduce = (d) => { const a = Math.abs(d); if (a < 0.05) return 'Sin cambio: las calles suenan igual que hoy.';
     const pct = (1 - Math.pow(10, -a / 10)) * 100, fuerte = Math.pow(2, -a / 10) * 100, que = a < 1 ? 'un cambio casi imperceptible para el oído' : a < 3 ? 'un cambio que se nota poco' : a < 6 ? 'un cambio que se nota con claridad' : 'un cambio muy notorio';

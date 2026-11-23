@@ -141,12 +141,12 @@ body.tb-abierto #dock{display:none}
 
   const tb = document.createElement('section'); tb.id = 'tb'; tb.setAttribute('aria-label', 'Tablero de interacciones bióticas');
   tb.innerHTML = `
-  <div class="cab"><div class="big" id="tb-n">0</div><div class="lbl"><b>interacciones ocurriendo</b><span id="tb-h">00:00</span><span class="escb" id="tb-escb">Kennedy hoy</span></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="cab"><div class="big" id="tb-n">0</div><div class="lbl"><b>interacciones ocurriendo</b><span id="tb-h">00:00</span><span class="escb" id="tb-escb">Estado actual</span></div><button class="x" aria-label="Cerrar">×</button></div>
   <div class="cuerpo">
     <div class="tabs" id="tb-tabs" role="tablist"><button data-k="bio" class="on">Relaciones bióticas</button><button data-k="esc">Hoy vs. proyecto</button><button data-k="tra">Tráfico y sintaxis</button></div>
-    <div class="esc" id="tb-esc" role="tablist" aria-label="Escenario"><button data-e="hoy" class="on"><i style="background:${CHOY}"></i>Kennedy hoy</button><button data-e="proyecto"><i style="background:${CPRO}"></i>Con el proyecto</button></div>
+    <div class="esc" id="tb-esc" role="tablist" aria-label="Escenario"><button data-e="hoy" class="on"><i style="background:${CHOY}"></i>Estado actual</button><button data-e="proyecto"><i style="background:${CPRO}"></i>Con el proyecto</button></div>
     <div class="gr" data-tab="esc"><h3>Hoy vs. proyecto<span id="tb-per">mismos lugares, misma hora</span></h3>
-      <div class="ley2"><span><i style="background:${CHOY}"></i>Kennedy hoy</span><span><i style="background:${CPRO}"></i>Con el proyecto</span></div>
+      <div class="ley2"><span><i style="background:${CHOY}"></i>Estado actual</span><span><i style="background:${CPRO}"></i>Con el proyecto</span></div>
       <div class="vss" id="tb-cmp"><div class="vacio">Cargando indicadores…</div></div>
       <div class="nota2" id="tb-nota2"></div>
       <button class="tour" id="tb-tour">Ver cómo se implanta el proyecto, paso a paso</button></div>
@@ -199,7 +199,7 @@ body.tb-abierto #dock{display:none}
   });
   const activo = (t) => ESTADO.tipos.has(t);
 
-  /* ---------- ESCENARIOS: Kennedy hoy / con el proyecto ----------
+  /* ---------- ESCENARIOS: Estado actual / con el proyecto ----------
      El selector cambia el territorio (estrategias E1–E9, Bavaria Común, Corabastos reducido) y la fauna en vivo (sin huertas en "hoy").
      Indicadores (mismos lugares, mismo periodo): tráfico y ruido en el borde de Corabastos, sintaxis espacial de Bavaria y hábitat de
      polinizadores (data3d/escenarios.json, tools/escenarios_build.js), e interacciones bióticas medidas en vivo en cada escenario
@@ -216,7 +216,7 @@ body.tb-abierto #dock{display:none}
     const gc = $('tb-calles') && $('tb-calles').closest('.gr'); if (gc) gc.style.display = T3.PROP && !T3.PROP.carga ? 'none' : ''; // la carga desplazada a mercados era de la propuesta anterior
     if (viejo && pest === 'esc') verPestana('bio');
     tb.querySelectorAll('#tb-esc button').forEach(b => b.classList.toggle('on', b.dataset.e === e));
-    tb.dataset.esc = e; const eb = $('tb-escb'); if (eb) eb.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
+    tb.dataset.esc = e; const eb = $('tb-escb'); if (eb) eb.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Estado actual';
     if (CAPA) CAPA.ver(e === 'proyecto' && verCarga && !(T3.PROP && !T3.PROP.carga)); // capa de carga desplazada (data3d/carga.js)
     pintarComparacion();
   }
@@ -253,7 +253,7 @@ body.tb-abierto #dock{display:none}
         else { const c = (I.pro - I.hoy) / Math.abs(I.hoy) * 100, mejor = I.menos ? c < 0 : c > 0, igual = Math.abs(c) < 0.05;
           chip = igual ? '<em class="igual">igual</em>' : `<em class="${mejor ? 'bien' : 'mal'}">${c > 0 ? '+' : '−'}${Math.abs(c).toLocaleString('es-CO', { maximumFractionDigits: Math.abs(c) < 10 ? 1 : 0 })} % · ${mejor ? 'mejor' : 'peor'}</em>`; } }
       return `<div class="vs"><div class="vs-n"><span>${esc(I.n)}<small>${esc(I.s)}${I.menos ? ' · menos es mejor' : ''}</small></span>${chip}</div>
-        <div class="vs-b"><span>Kennedy hoy</span><i><b style="width:${w(I.hoy)}%;background:${CHOY}"></b></i><strong>${fmt(I.hoy, I)}</strong></div>
+        <div class="vs-b"><span>Estado actual</span><i><b style="width:${w(I.hoy)}%;background:${CHOY}"></b></i><strong>${fmt(I.hoy, I)}</strong></div>
         <div class="vs-b"><span>Con el proyecto</span><i><b style="width:${w(I.pro)}%;background:${CPRO}"></b></i><strong style="color:${CPRO}">${fmt(I.pro, I)}</strong></div></div>`;
     }).join('');
     $('tb-nota2').innerHTML = `${esc(ESC.periodo)}. Tráfico: grabación SUMO; camión = 8 % de los vehículos, como en el 3D. Proyecto [SUP]: Corabastos reducido retira el ${ESC.corabastos.retiroNaves.toLocaleString('es-CO')} % del área de naves y los viajes de camión bajan en esa proporción (la carga pasa a los mercados de barrio). Ruido: CoRTN a 30 km/h. Sintaxis: integración angular antes y después de los ${(ESC.sintaxis.pasajes_m / 1000).toLocaleString('es-CO', { maximumFractionDigits: 1 })} km de pasajes de Bavaria Común.`;
@@ -584,7 +584,7 @@ body.tb-abierto #dock{display:none}
   // la interfaz (textos y paneles) se repinta dos veces por segundo; solo lee
   let nT = 0; tick(); setInterval(() => { pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
-  // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Kennedy hoy / Con la propuesta
-  import('./simulaciones.js?v=14').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
+  // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Estado actual / Con la propuesta
+  import('./simulaciones.js?v=15').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

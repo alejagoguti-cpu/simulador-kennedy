@@ -1,9 +1,9 @@
 /* ============ RECORRIDO «¿CÓMO MEJORA KENNEDY?» ============
-   Seis paradas. En cada una la cámara vuela al lugar, el mapa muestra primero KENNEDY HOY y a los 3 s cambia solo a CON LA PROPUESTA,
+   Seis paradas. En cada una la cámara vuela al lugar, el mapa muestra primero ESTADO ACTUAL y a los 3 s cambia solo a CON LA PROPUESTA,
    para ver el antes y el después en el mismo sitio. La tarjeta dice el número de hoy y el de la propuesta (en la semana en que va el reloj universal),
    qué mirar en el mapa y por qué mejora. Los números salen del mismo modelo del tablero (data3d/sim_modelos.js) y del
    panel de escenarios (window.KEN_ESIM). Se puede pasar de hoy a propuesta a mano y repetir el cambio. */
-import { SEM, SIMST } from './sim_modelos.js?v=6';
+import { SEM, SIMST } from './sim_modelos.js?v=7';
 export function iniciarMejoraTour({ T3 }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -47,7 +47,7 @@ export function iniciarMejoraTour({ T3 }) {
       mira: 'Hay más pájaros volando entre los árboles y las huertas alrededor del humedal.',
       por: 'Las huertas con corredores verdes unen los parches de árboles: las aves encuentran comida y refugio para moverse.' },
     { tag: 'Resumen', t: 'Kennedy en 10 años con la propuesta', lugar: () => [(CORA[0] + BAV[0]) / 2 + (MOV ? 0 : 250), (BURRO[1] + CORA[1]) / 2], alto: 2250, resumen: true,
-      mira: 'Pasa de <b>Kennedy hoy</b> a <b>Con la propuesta</b> con los botones de abajo y compara todo el sector.', por: '' }
+      mira: 'Pasa de <b>Estado actual</b> a <b>Con la propuesta</b> con los botones de abajo y compara todo el sector.', por: '' }
   ];
 
   /* ---------- medición en vivo de dónde ocurren las relaciones bióticas (data3d/biotica.js) ---------- */
@@ -131,7 +131,7 @@ body.mt-on #mt{display:block}
   function pintar() {
     const P = PASOS[paso], n = N(), K = window.KEN_ESC, pro = K ? K.e === 'proyecto' : vista === 'pro';
     const e = n ? n.e : 'C', cab = `<div class="tp"><span>Paso ${paso + 1} de ${PASOS.length} · ${P.tag}</span><button type="button" class="x" data-x aria-label="Salir del recorrido">×</button></div><h3>${P.t}</h3>`;
-    const caja = (on, c, et, v) => `<button type="button" class="cj${on ? ' on' : ''}" style="--c:${c}" data-v="${et === 'hoy' ? 'hoy' : 'pro'}" aria-pressed="${on}"><small><i></i>${et === 'hoy' ? 'Kennedy hoy' : 'Con la propuesta'}</small><b>${v[0]}</b><span>${v[1]}</span></button>`;
+    const caja = (on, c, et, v) => `<button type="button" class="cj${on ? ' on' : ''}" style="--c:${c}" data-v="${et === 'hoy' ? 'hoy' : 'pro'}" aria-pressed="${on}"><small><i></i>${et === 'hoy' ? 'Estado actual' : 'Con la propuesta'}</small><b>${v[0]}</b><span>${v[1]}</span></button>`;
     let cuerpo = '';
     if (P.resumen) {
       cuerpo = n ? `<div class="res">${[
@@ -141,7 +141,7 @@ body.mt-on #mt{display:block}
       cuerpo += `<div class="vs">${caja(!pro, CHOY, 'hoy', ['Hoy', 'el territorio como es'])}<div class="fl" aria-hidden="true">→</div>${caja(pro, CPRO, 'pro', ['Propuesta', `escenario ${e} · ${NE[e]}, año ${Math.floor(SIMST.t / 52) + 1}`])}</div>`;
     } else if (n) cuerpo = `<div class="vs">${caja(!pro, CHOY, 'hoy', P.hoy(n))}<div class="fl" aria-hidden="true">→</div>${caja(pro, CPRO, 'pro', P.pro(n))}</div>`;
     const año = Math.floor(SIMST.t / 52) + 1, sem = Math.floor(SIMST.t) % 52 + 1;
-    const ahora = `<div class="ahora" style="--c:${pro ? CPRO : CHOY}"><i></i>El mapa muestra: <b>${pro ? 'Con la propuesta' : 'Kennedy hoy'}</b>${pro ? `<em>año ${año} · semana ${sem} · ${2026 + año}</em>` : `<em>en ${P.medir ? 6 : 3} s cambia a la propuesta</em>`}</div>`;
+    const ahora = `<div class="ahora" style="--c:${pro ? CPRO : CHOY}"><i></i>El mapa muestra: <b>${pro ? 'Con la propuesta' : 'Estado actual'}</b>${pro ? `<em>año ${año} · semana ${sem} · ${2026 + año}</em>` : `<em>en ${P.medir ? 6 : 3} s cambia a la propuesta</em>`}</div>`;
     const tx = `<dl class="tx"><dt>Qué mirar</dt><dd>${typeof P.mira === 'function' ? P.mira() : P.mira}</dd>${P.por ? `<dt>Por qué</dt><dd>${P.por}</dd>` : ''}</dl>`;
     const nav = `<div class="nav"><button type="button" data-ant ${paso ? '' : 'disabled'}>Anterior</button><span class="pts" aria-hidden="true">${PASOS.map((_, i) => `<i class="${i === paso ? 'on' : ''}"></i>`).join('')}</span>${P.resumen ? '' : '<button type="button" data-rep title="Ver otra vez el antes y el después">↺ Repetir</button>'}<button type="button" class="pri" data-sig>${paso === PASOS.length - 1 ? 'Terminar' : 'Siguiente'}</button></div>`;
     card.innerHTML = cab + cuerpo + (P.resumen ? '' : ahora) + tx + nav;

@@ -1,4 +1,4 @@
-/* ============ ESCENARIO: KENNEDY HOY / CON LA PROPUESTA ============
+/* ============ ESCENARIO: ESTADO ACTUAL / CON LA PROPUESTA ============
    Un solo selector arriba al centro (abajo en celular).
    - Hoy: Kennedy como es.
    - Con la propuesta (en revisión): por ahora SOLO un punto por cada lugar de las 5 estrategias, sin polígonos ni redes:
@@ -70,7 +70,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
   el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
-      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span><kbd>H</kbd></button>
+      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Estado actual<small>el territorio actual</small></span><kbd>H</kbd></button>
       <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span><kbd>P</kbd></button></div>
     <div class="ley" id="esc-ley"></div><div class="nom" id="esc-nom" aria-live="polite"></div>`;
   document.body.appendChild(el);
@@ -187,8 +187,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
       for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
     })();
   }
-  import('./escenarios_sim.js?v=49').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
-  import('./cambio_50.js?v=5').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
+  import('./escenarios_sim.js?v=50').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  import('./cambio_50.js?v=6').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=6').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
   import('./trafico_plan.js?v=2').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio
   import('./metro_l1.js?v=2').then(m => m.iniciarMetro({ T3 })).catch(e => console.warn('Metro de Bogotá, Línea 1:', e)); // viaducto, estaciones 2-6 y trenes de la Línea 1 (proyecto real, en todos los escenarios)
@@ -272,14 +272,14 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   }
   function aplicar(e) {
     if (T3.escenario !== e) RELOJ.entrada('escenario', e); // bitácora de entradas del usuario que cambian la corrida (fase 2: reproducirla)
-    T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
+    T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Estado actual';
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
     limpiarAnterior(); verPuntos(e === 'proyecto'); resaltarColegios();
     const re = document.getElementById('ruido-esc'); if (re) re.textContent = nombre();
     window.dispatchEvent(new CustomEvent('escenario', { detail: e }));
   }
-  const nombre = () => T3.escenario === 'proyecto' ? 'CON LA PROPUESTA' : 'KENNEDY HOY';
-  function cambiar(e) { if (e === T3.escenario) return; el.classList.remove('barre'); void el.offsetWidth; el.classList.add('barre'); aplicar(e); say(e === 'proyecto' ? 'Con la propuesta: las 5 estrategias' : 'Kennedy hoy: el territorio como es', 3000); }
+  const nombre = () => T3.escenario === 'proyecto' ? 'CON LA PROPUESTA' : 'ESTADO ACTUAL';
+  function cambiar(e) { if (e === T3.escenario) return; el.classList.remove('barre'); void el.offsetWidth; el.classList.add('barre'); aplicar(e); say(e === 'proyecto' ? 'Con la propuesta: las 5 estrategias' : 'Estado actual: el territorio como es', 3000); }
   el.querySelectorAll('.sw button').forEach(b => b.onclick = () => cambiar(b.dataset.e));
   addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName || '')) return; const k = ev.key.toLowerCase(); if (k === 'h') cambiar('hoy'); else if (k === 'p') cambiar('proyecto'); }); // atajos: H = hoy, P = propuesta
   window.KEN_ESC = { poner: cambiar, nombre, get e() { return T3.escenario; } };

@@ -262,7 +262,7 @@ export async function iniciarSimulacion(cfg = {}) {
   if (SINP && M3) {
     const FA = [['copeton', 'Copetón'], ['mirla', 'Mirla patiamarilla'], ['colibri', 'Colibrí chillón'], ['torcaza', 'Torcaza'], ['cucarachero', 'Cucarachero'], ['chamon', 'Chamón'], ['abeja', 'Abejas'], ['lombriz', 'Lombriz roja'], ['lagartija', 'Lagartija bogotana'], ['caracol', 'Caracol de jardín']];
     const VH = [['carro', 'Carros', '#f8fafc'], ['moto', 'Motos', '#fde047'], ['camion', 'Camiones', '#fb923c'], ['van', 'Furgonetas de reparto', '#e2e8f0']];
-    der.innerHTML = `<h3>AGENTES <em id="gs-ag-esc">Kennedy hoy</em></h3>
+    der.innerHTML = `<h3>AGENTES <em id="gs-ag-esc">Estado actual</em></h3>
       <p class="gs-agp">Lo que se mueve y vive en la simulación. Con la propuesta van menos vehículos a Corabastos y llegan más fauna y árboles nativos.</p>
       <div class="gs-sub">VEHÍCULOS <span>en la calle ahora</span></div>
       <table class="gs-t gs-agt">${VH.map(([k, n, c]) => `<tr data-vh="${k}"><td><i style="background:${c}"></i></td><td>${n}</td><td data-n="${k}">–</td></tr>`).join('')}</table>
@@ -279,7 +279,7 @@ export async function iniciarSimulacion(cfg = {}) {
     const q = (s) => der.querySelector(s), fmt = (v) => Math.round(v).toLocaleString('es-CO');
     let faunaHecha = false;
     setInterval(() => {
-      const pro = T3.escenario === 'proyecto', e = q('#gs-ag-esc'); e.textContent = pro ? 'Con la propuesta' : 'Kennedy hoy'; e.classList.toggle('pro', pro);
+      const pro = T3.escenario === 'proyecto', e = q('#gs-ag-esc'); e.textContent = pro ? 'Con la propuesta' : 'Estado actual'; e.classList.toggle('pro', pro);
       // vehículos en la calle (mismo sorteo de tipo que index.html: 70 % carros, 22 % motos, 8 % camiones; V.cam = 0 en un camión = furgoneta)
       const V = T3.TRAF && T3.TRAF.vis, n = { carro: 0, moto: 0, camion: 0, van: 0 };
       if (V) for (let i = 0; i < V.n; i++) { const r = ((V.id[i] * 2654435761) >>> 0) / 4294967296; if (r < 0.70) n.carro++; else if (r < 0.92) n.moto++; else if (V.cam && !V.cam[i] && pro) n.van++; else n.camion++; }
@@ -742,7 +742,7 @@ export async function iniciarSimulacion(cfg = {}) {
         return { car, cam }; };
       izq.querySelector('#gs-fc').nextElementSibling.insertAdjacentHTML('afterend', `<div id="gs-cora" hidden>
         <div class="gs-sub">CORABASTOS <span>descentralizar el abastecimiento</span></div>
-        <div class="gs-fila" style="grid-template-columns:1fr 1fr" id="gs-cesc"><button data-e="hoy">Kennedy hoy</button><button data-e="proyecto">Con la propuesta</button></div>
+        <div class="gs-fila" style="grid-template-columns:1fr 1fr" id="gs-cesc"><button data-e="hoy">Estado actual</button><button data-e="proyecto">Con la propuesta</button></div>
         <div id="gs-cmsg" style="font-size:10.5px;line-height:1.45;color:#94a3b8;margin:6px 0 2px"></div>
         <div id="gs-csl">
           <label class="gs-cl"><span>Corabastos reducido <b data-o="cora"></b></span><input type="range" min="0" max="60" step="1" data-k="cora" aria-label="Porcentaje de naves de Corabastos retiradas"></label>
@@ -770,7 +770,7 @@ export async function iniciarSimulacion(cfg = {}) {
         caja.querySelector('[data-o="cora"]').textContent = CS.cora + ' % de naves'; caja.querySelector('[data-o="merc"]').textContent = CS.merc + ' mercados'; caja.querySelector('[data-o="huer"]').textContent = CS.huer + ' % de hogares';
         const kC = AL ? AL.KEEP : 1, kK = AL ? AL.KEEP_CAM : 1, tC = 1 - (1 - r.car) * kC, tK = 1 - (1 - r.cam) * kK; /* + la dependencia del escenario (sliders de SIM-01) */ caja.querySelector('[data-r="car"]').textContent = pro ? '−' + Math.round(tC * 100) + ' %' : '0 %'; caja.querySelector('[data-r="cam"]').textContent = pro ? '−' + Math.round(tK * 100) + ' %' : '0 %';
         caja.querySelector('#gs-cmsg').innerHTML = pro ? '<b style="color:#6ee7b7">Con la propuesta:</b> Corabastos se reduce y el barrio compra en mercados y huertas cercanas. Mueve los sliders y mira cómo cambian las vías.'
-          : '<b style="color:#fca5a5">Kennedy hoy:</b> todo el abastecimiento pasa por Corabastos y sus vías se ven en rojo. Pasa a <b>Con la propuesta</b> para usar los sliders.';
+          : '<b style="color:#fca5a5">Estado actual:</b> todo el abastecimiento pasa por Corabastos y sus vías se ven en rojo. Pasa a <b>Con la propuesta</b> para usar los sliders.';
       }
       addEventListener('escenario', () => setTimeout(pintarCora, 80)); setInterval(() => { if (T3.alivio && !T3.alivio.manual) pintarCora(); }, 1000);
       pintarCora();

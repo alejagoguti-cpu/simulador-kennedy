@@ -1,6 +1,6 @@
 /* ============ SIMULACIONES · SIM-01, SIM-02 y SIM-03 (documento «Modelamiento dinámico y simulación») ============
    Se corren semana a semana durante 10 años (520 semanas) en los escenarios del documento y se dibujan en el tablero.
-   «Kennedy hoy» = escenario A (sin intervención). «Con la propuesta» = B o C (por defecto C).
+   «Estado actual» = escenario A (sin intervención). «Con la propuesta» = B o C (por defecto C).
    SIM-01 Red de huertas, abastecimiento, conocimiento y decisión
      A sin intervención · B nodo único con decisión central · C clúster con decisión rotativa
      G1 Producción = Huertas activas × Rendimiento ÷ 52 × Clima × Calidad de manejo; Autoconsumo = P × PAR02; Merma = P × PAR04; Excedente = resto
@@ -13,13 +13,13 @@
    SIM-02 Orgánicos y compostaje: A ruta actual · B estación de compostaje barrial · C compostaje en Bavaria Común
    SIM-03 Hábitat y fauna: A sin huertas · B huertas sin criterio de ubicación · C huertas con corredores; con y sin medida antitrampa
    Los valores de partida que no da el documento están marcados [SUP] (supuestos para discutir con el grupo). */
-import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=6';
+import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=7';
 import { RELOJ } from './reloj.js?v=5';
 export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const { P1, P2, P3 } = PAR; // los mismos parámetros que el panel de escenarios del mapa (data3d/sim_modelos.js)
   // colores fijos de los escenarios (los mismos en el mapa): A hoy azul grisáceo, B morado, C ámbar (la propuesta)
-  const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOMBRE = { A: 'A · Kennedy hoy', B: 'B · Nodo central', C: 'C · Clúster rotativo' };
-  const CORTO = { A: 'Kennedy hoy', B: 'Nodo central', C: 'Clúster rotativo' };
+  const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOMBRE = { A: 'A · Estado actual', B: 'B · Nodo central', C: 'C · Clúster rotativo' };
+  const CORTO = { A: 'Estado actual', B: 'Nodo central', C: 'Clúster rotativo' };
   // qué significa cada escenario en cada simulación, en una frase
   const ESCD = {
     S1: { A: 'Nada cambia: unas pocas huertas caseras, sin apoyo.', B: 'Bavaria forma promotores y una sola oficina central decide todo.', C: 'Bavaria forma promotores y los barrios, agrupados en clústeres, se turnan las decisiones.' },
@@ -288,7 +288,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     const gana = A.reduce((s, I, j) => s + ((I.menos ? P[j].v < I.v : P[j].v > I.v) ? 1 : 0), 0);
     return `<div class="sim-res"><p class="sim-q">${q}</p><div class="sim-frase">${frase}</div>
       <div class="sim-play"><output>${año}<br><small style="color:#8e979d">año ${a2} · semana ${t % AÑO + 1} del reloj</small></output><small style="color:#8e979d;flex:1;margin-left:10px">El tiempo lo lleva el reloj de la simulación (control de abajo): aquí se ve cómo va en esta semana.</small></div>
-      <div class="sim-h">1 · Kennedy hoy vs. la propuesta</div>
+      <div class="sim-h">1 · Estado actual vs. la propuesta</div>
       <p class="sim-lead"><i style="background:${COL.A}"></i><b>Hoy</b>: Kennedy sigue igual 10 años. <i style="background:${COL[p]}"></i><b>Propuesta ${p}</b>: (${CORTO[p].toLowerCase()}) ${esc(ESCD[sim][p])} La propuesta mejora <b>${gana} de ${A.length}</b> indicadores.</p>
       <div class="vss">${A.map((I, j) => filaVs(I, I.v, P[j].v, p)).join('')}</div>
       <div class="sim-g sim-gp"><h4>${esc(gtit)}<span>la franja de color es lo que gana la propuesta</span></h4><canvas data-c="res"></canvas></div>

@@ -9,7 +9,7 @@
    reloj universal) y la zona late cuando cruza el umbral de 80 %. Responde al instante a play / pausa / velocidad (lee la semana actual). */
 import { RELOJ } from './reloj.js?v=5';
 import { ZONAS } from './sim_red_datos.js?v=2';
-import { SIMST } from './sim_modelos.js?v=6';
+import { SIMST } from './sim_modelos.js?v=7';
 
 const IND = {
   comida: { t: 'Comida que recibe cada zona', max: 1.2, val: (o, z) => o.zRec ? o.zRec[z] : null, ley: 'altura = % de lo que necesita · rojo < 80 % (game over) · ámbar 80–95 % · cian ≥ 95 %' },

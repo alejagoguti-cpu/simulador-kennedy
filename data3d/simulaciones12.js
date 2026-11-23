@@ -71,7 +71,7 @@ const sCupos = { k: 'P1.cupos', n: 'Promotores por cohorte', min: 0, max: 40, pa
 const sT0 = { k: 'cierreT0', n: 'Semana en que se cierra la vía', min: 1, max: 500, paso: 1, val: SUP_SIMS.CIERRE_T0, unidad: 'semana', ayuda: 'Cierre forzado de la Av. de las Américas.' };
 const sDur = { k: 'cierreDur', n: 'Duración del cierre', min: 1, max: 104, paso: 1, val: SUP_SIMS.CIERRE_DUR, unidad: 'semanas', ayuda: 'Las rutas que pasan por la vía se alargan: llega menos comida y se recogen menos orgánicos.' };
 export const SIMS = [
-  { id: 1, n: 'Hoy, sin proyecto', corto: 'Hoy', base: 'A', pregunta: '¿Aguanta Kennedy diez años si todo sigue como hoy?',
+  { id: 1, n: 'Estado actual', corto: 'Estado actual', base: 'A', pregunta: '¿Aguanta Kennedy diez años si todo sigue como hoy?',
     desc: 'Todo llega por Corabastos y los orgánicos van al relleno Doña Juana. El tráfico crece como viene creciendo. Es el punto de comparación de las demás.', sliders: [sArb, sRec] },
   { id: 2, n: 'Instituto en Bavaria', corto: 'Instituto', base: 'B', pregunta: '¿Un solo nodo en Bavaria sostiene el abasto, el compost y la fauna?',
     desc: 'Bavaria Común concentra acopio, reparto, compost, formación de promotores y decisiones. Los mercados de barrio solo venden lo que sale de Bavaria.', sliders: [sCap, sComp, sCupos, sArb] },

@@ -188,7 +188,7 @@ export async function iniciarTintal({ THREE, T3, OX, OZ, Y0 = 0, movil = false }
     setInterval(() => { const k = T3.tilesLuz != null ? T3.tilesLuz : 1; if (Math.abs(mat.color.r - k) > 0.005) mat.color.setScalar(k); }, 400);
   }
 
-  // ---------- HUERTA DEL PRADO CIRCULAR (data3d/huerta_circular.js): es de la propuesta, no existe en «Kennedy hoy» ----------
+  // ---------- HUERTA DEL PRADO CIRCULAR (data3d/huerta_circular.js): es de la propuesta, no existe en «Estado actual» ----------
   if (D.huerta) {
     const { crearHuertaCircular } = await import('./huerta_circular.js?v=1');
     const hu = await crearHuertaCircular({ THREE, T3, c: [D.huerta.c[0] + OX, D.huerta.c[1] + OZ], r: D.huerta.r, Y0, movil, semilla: 31 });

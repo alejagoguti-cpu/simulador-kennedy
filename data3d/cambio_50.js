@@ -23,7 +23,7 @@
    pero este módulo no las dibuja: no hay manzana por manzana que lo respalde.
    Animaciones solo cosméticas (RELOJ.tAnim); la lógica solo mira RELOJ.sem. Sin azar. */
 import { RELOJ } from './reloj.js?v=5';
-import { SIMST } from './sim_modelos.js?v=6';
+import { SIMST } from './sim_modelos.js?v=7';
 import { crecimiento } from './sim_vida.js?v=7';
 import { añoActual } from './tope_anos.js?v=2';
 
@@ -31,7 +31,7 @@ const TAU = 6, ADULTO = 20; // [SUP] años: tiempo característico de crecimient
 const AÑO = 52, W0_HUM = 55, AVES0 = 900, ACT0 = 120; // valores iniciales del modelo (sim_vida.js: W0 = 0,55 · s.B = 900 · A0 = 120)
 const fmt = (n, d = 0) => Number(n).toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const NOM = { A: 'A · Kennedy hoy', B: 'B · Bavaria central', C: 'C · red de mercados' };
+const NOM = { A: 'A · Estado actual', B: 'B · Bavaria central', C: 'C · red de mercados' };
 
 export async function iniciarCambio50({ T3 }) {
   const THREE = T3.THREE;

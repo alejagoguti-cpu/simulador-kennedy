@@ -1,5 +1,5 @@
 /* ============ ESCENARIO A · EL TRÁFICO CRECE CON LOS AÑOS ============
-   Lo usa data3d/escenarios_sim.js. En A (Kennedy hoy, sin la propuesta) los vehículos de la grabación SUMO que dibuja index.html se
+   Lo usa data3d/escenarios_sim.js. En A (Estado actual, sin la propuesta) los vehículos de la grabación SUMO que dibuja index.html se
    complementan con RÉPLICAS DESFASADAS de la misma grabación (mismas rutas reales, otro segundo del bucle: copias 4, 5 y 6, desfase de
    487 s como las copias de index.html), en la proporción que da la proyección del parque (data3d/sim_vida.js · TRAFICO, crecimiento):
    carros +1,5 %/año, motos 0 %/año, camiones 0 %/año. Año a año desde la semana del modelo (RELOJ.semana): año 1 = hoy.

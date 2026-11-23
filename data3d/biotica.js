@@ -152,7 +152,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
   // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
   if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
-  /* KENNEDY HOY: más ratas donde se acumulan basura y residuos de alimentos (Corabastos, bordes de humedales y canales). Con la propuesta no existen:
+  /* ESTADO ACTUAL: más ratas donde se acumulan basura y residuos de alimentos (Corabastos, bordes de humedales y canales). Con la propuesta no existen:
      el centro de aprovechamiento de orgánicos y la recolección por barrio les quitan la comida (soloHoy: el bucle las esconde en «proyecto") [SUP] */
   if (CO && CO.poly) { const h = habitat('Basuras y residuos de Corabastos', CO.poly, { rata: 34 }); h.soloHoy = true; EXTRA.push(h); }
   for (const hu of HUM) EXTRA.push({ ...hu, n: hu.n + ' · basuras del borde', ag: {}, cnt: { rata: 8 }, soloHoy: true });

@@ -24,7 +24,7 @@ const fmt = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString(
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=2'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=3'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
 
   /* ---------- estilos (vidrio, como los paneles del simulador) ---------- */
@@ -178,7 +178,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     OC: ['Juntas, colectivos y organizaciones que cuidan el barrio.', true], CO: ['Colegios, bibliotecas y lugares donde se aprende.', true],
     CCL: ['Dónde se concentra el comercio y la logística (Corabastos).', null], PM: ['Presión de carros y camiones sobre las vías.', false], CV: ['Choque entre vivienda y bodegas o carga.', false] };
   let pInd = null; R.ind = 'SE'; R.alto = 0.12; // altura más baja que en la vista completa: se lee la ciudad debajo
-  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=8').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
+  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=9').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
   async function pintarPicos() {
     const box = document.getElementById('su-picos'); if (!box) return;
     let A; try { A = await indApi(); } catch (e) { box.innerHTML = '<p class="pre">No se pudieron cargar los indicadores.</p>'; return; }
@@ -245,9 +245,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       : `<div class="ver ok">Kennedy aguanta los 10 años en esta simulación: no se cumplió ninguna regla de game over.</div>`;
     inf.querySelector('.caja').innerHTML = `<header><div><h2>Simulación ${R.sim} · ${nombre}</h2><p class="sub">${d.pregunta || d.desc || ''} · ${(H.length - 1)} semanas (${((H.length - 1) / 52).toFixed(1)} años) · semilla ${SEMILLA}</p></div>
       <div class="bot"><button data-imp>Imprimir / PDF</button><button class="pri" data-x>Cerrar</button></div></header>${ver}
-      <h3>Indicadores · inicio → final${R.sim !== 1 && B ? ' · comparado con «Hoy»' : ''}</h3>
-      <table><thead><tr><th>Indicador</th><th>Inicio</th><th>Final</th><th>Cambio</th><th>vs. Hoy</th></tr></thead><tbody>${filas}</tbody></table>
-      <h3>Cómo cambió${R.sim !== 1 && B ? ' (línea punteada: Hoy)' : ''}</h3><div class="graf">${graf}</div>
+      <h3>Indicadores · inicio → final${R.sim !== 1 && B ? ' · comparado con el estado actual' : ''}</h3>
+      <table><thead><tr><th>Indicador</th><th>Inicio</th><th>Final</th><th>Cambio</th><th>vs. estado actual</th></tr></thead><tbody>${filas}</tbody></table>
+      <h3>Cómo cambió${R.sim !== 1 && B ? ' (línea punteada: estado actual)' : ''}</h3><div class="graf">${graf}</div>
       <h3>Especies que desaparecieron</h3>${ext}
       <h3>Reglas de game over (iguales para las 12)</h3>${reglas}`;
     inf.querySelector('[data-x]').onclick = cerrarInforme; inf.querySelector('[data-imp]').onclick = () => window.print();
