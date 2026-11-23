@@ -28,7 +28,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
   const tex = new THREE.CanvasTexture(out); tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearFilter;
   const [wx0, wz0] = lw(bx0, by1), [wx1, wz1] = lw(bx1, by0);
   const plano = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0, wz1 - wz0).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6, toneMapped: false }));
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.62, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6, toneMapped: false }));
   plano.position.set((wx0 + wx1) / 2, 1.4, (wz0 + wz1) / 2); plano.renderOrder = 4; plano.visible = false; plano.name = 'ruido-carros'; T3.scene.add(plano);
   let ultimo = 0;
   /* El mapa se pinta con el MODELO de ruido en dB (data3d/capas_escenario.js: T3.ruidoMod, rejilla de 16 m sobre la red vial), no con los carros de cada cuadro:

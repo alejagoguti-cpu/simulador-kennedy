@@ -216,7 +216,7 @@ export function crearCierre({ T3, RELOJ }) {
   /* ---------- carros grabados (data3d/ruido_cierre.js, como rcApi() de index.html) ---------- */
   async function rcApi() {
     if (T3.rc) return T3.rc;
-    const m = await import('./ruido_cierre.js?v=10');
+    const m = await import('./ruido_cierre.js?v=12');
     if (!T3.rc) { T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE, T3, LC: T3.LC }); }
     return T3.rc;
   }

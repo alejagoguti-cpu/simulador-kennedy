@@ -350,8 +350,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let PRE = null, pPre = null;
   function ponerPredio(P) {
     if (!P) { if (PRE) { PRE.ver(false); } return; }
-    if (!PRE) { if (!pPre) pPre = import('./predio_trafico.js?v=2').then(m => { PRE = m.crearPredio({ T3, RELOJ }); return PRE; }).catch(() => null); pPre.then(x => { if (x && R.sim) ponerPredio(R.hist.length ? R.hist[R.hist.length - 1].predio : null); }); return; }
-    PRE.ver(true); PRE.poner({ trafico: P.trafico, trafico0: P.trafico0, ruidoDb: P.ruidoDb, ruidoDb0: P.ruidoDb0, vias: P.vias, sem: R.hist.length });
+    if (!PRE) { if (!pPre) pPre = import('./predio_trafico.js?v=3').then(m => { PRE = m.crearPredio({ T3, RELOJ }); return PRE; }).catch(() => null); pPre.then(x => { if (x && R.sim) ponerPredio(R.hist.length ? R.hist[R.hist.length - 1].predio : null); }); return; }
+    PRE.ver(true); PRE.poner({ trafico: P.trafico, trafico0: P.trafico0, ruidoDb: P.ruidoDb, ruidoDb0: P.ruidoDb0, vias: P.vias, sem: R.hist.length, vehiculosDia: P.vehiculosDia });
   }
   /* ---------- BASURA Y RATAS (data3d/basura.js) y CIERRE GRADUAL DE VÍA (data3d/cierre_gradual.js), si están ---------- */
   let BAS = null, pBas = null, CIE = null, pCie = null;
@@ -362,7 +362,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   function ponerCierre(C) {
     if (!C || !(C.fase > 0)) { if (CIE) CIE.quitar(); return; }
-    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=1').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
+    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=3').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
     CIE.poner({ via: C.via, fase: C.fase, ruidoExtraDb: C.ruidoExtraDb, traficoDesvio: C.traficoDesvio });
   }
 
