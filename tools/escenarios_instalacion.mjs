@@ -17,7 +17,11 @@ const leer = (f) => readFileSync(join(REPO, f), 'utf8'), json = (f) => JSON.pars
 /* ---------- parámetros por defecto de la web ---------- */
 const PAR = (() => { const t = leer('data3d/sim_modelos.js'), i0 = t.indexOf('export const PAR = {'), i1 = t.indexOf('\n};', i0);
   return Function('return ' + t.slice(i0 + 'export const PAR = '.length, i1 + 2))(); })();
-PAR.P1.cierres = true; // interruptor «Cierre de vía» encendido por defecto (escenarios_sim.js)
+/* [SUP] cierres de vía AL AZAR APAGADOS (el mismo interruptor P1.cierres de escenarios_sim.js / vida_evaluar.js: se sortean igual pero no tienen efecto),
+   para que los proyectos se distingan: con ellos encendidos un cierre al azar hace colapsar los 11 en la misma semana. El cierre FORZADO de e8 y e9
+   sí tiene efecto (sim_vida.js lo crea con on: true). El resto del azar (adopción, promotores, especies) sigue igual. */
+const CIERRES_AL_AZAR = false;
+PAR.P1.cierres = CIERRES_AL_AZAR;
 
 /* ---------- marcos de coordenadas ---------- */
 const LC = [5341.33, 3161.9], mundo = (x, y) => [x - LC[0], LC[1] - y]; // MODELO → MUNDO (x este, z sur), igual que lw() de index.html
@@ -127,12 +131,13 @@ function correr(E, seed, detalle) {
   if (detalle) for (let i = 0; i < NS * NP; i++) if (abierto[i] >= 0) guardar(i, abierto[i], N - 1);
   return { s, esp, zmin, res, occ };
 }
-const out = { fuente: 'Modelo semanal data3d/sim_vida.js (metapoblación de Levins, 19 especies × 71 parches; abastecimiento por zona; residuos orgánicos) con los modificadores de tools/escenarios_instalacion.mjs; parámetros por defecto de la web (data3d/sim_modelos.js), cierre de vía al azar encendido. Semana t = 0 es hoy (nov-2026). Semilla 1 = la corrida que se muestra; semillas 1..30 = cuántas terminan en game over. Coordenadas uv en el encuadre de instalacion/config.json (rectangulo).',
+const out = { fuente: 'Modelo semanal data3d/sim_vida.js (metapoblación de Levins, 19 especies × 71 parches; abastecimiento por zona; residuos orgánicos) con los modificadores de tools/escenarios_instalacion.mjs; parámetros por defecto de la web (data3d/sim_modelos.js), cierres de vía al azar apagados (solo el cierre forzado de e8 y e9). Semana t = 0 es hoy (nov-2026). Semilla 1 = la corrida que se muestra; semillas 1..30 = cuántas terminan en game over. Coordenadas uv en el encuadre de instalacion/config.json (rectangulo).',
   generado: new Date().toISOString().slice(0, 10), semanas: N, encuadre: { centro_m: CFG.centro_m, ancho_m: AW, alto_m: AH },
   reglas: V.REGLAS.map(R => ({ k: R.k, n: R.n, txt: R.txt })),
   especies: V.ESPECIES.map(([id, n, grupo]) => ({ id, n, grupo })),
   parches: PARCHES.map(p => { const q = uv(p.x, p.z); return { id: p.id, n: p.n, t: p.t, x: p.x, z: p.z, ha: p.ha, u: q[0], v: q[1], dentro: dentro(q) }; }),
-  supuestos_generales: Object.entries(INST).map(([k, v]) => `${k} = ${v}`), escenarios: [] };
+  cierres_al_azar: CIERRES_AL_AZAR,
+  supuestos_generales: [`cierres_al_azar = ${CIERRES_AL_AZAR} [SUP] cierres de vía al azar apagados (P1.cierres = false) en los 11 escenarios; solo e8 y e9 tienen el cierre forzado`, ...Object.entries(INST).map(([k, v]) => `${k} = ${v}`)], escenarios: [] };
 for (const E of ESC) {
   const r = correr(E, 1, true), c = r.s.colapso;
   const g30 = []; for (let sd = 1; sd <= SEMS; sd++) { const x = sd === 1 ? r.s : correr(E, sd, false).s; if (x.colapso) g30.push(x.colapso); }
@@ -145,7 +150,8 @@ for (const E of ESC) {
     cierres: r.s.log.filter(x => x.k === 'cierre').map(x => ({ t: x.t, via: x.extra.via, dur: x.extra.dur, forzado: !!x.extra.forzado })),
     corabastos: { desmontadas: r.s.cora.ap.length, aprobadas_sem: r.s.cora.ap.slice(), borde_m2: Math.round(r.s.cora.ha * 1e4) },
     ocupacion: r.occ, dibujo: E.dibujo });
-  console.log(E.k.padEnd(4), E.base, c ? `GO sem ${c.semana} ${c.causas.join('+')}` : 'sin game over', `| ${g30.length}/${SEMS} med ${med}`, JSON.stringify(por));
+  console.log(E.k.padEnd(4), E.base, c ? `GO sem ${c.semana} ${c.causas.join('+')}` : 'sin game over', `| ${g30.length}/${SEMS} med ${med}`, JSON.stringify(por),
+    `| espMin ${Math.min(...r.esp)} zMin ${Math.min(...r.zmin)} resMax ${Math.max(...r.res)} sem<0.8 ${r.zmin.filter(v => v < 0.8).length} bod ${r.s.cora.ap.length}`);
 }
 mkdirSync(join(REPO, 'instalacion', 'datos'), { recursive: true });
 const txt = JSON.stringify(out); writeFileSync(join(REPO, 'instalacion', 'datos', 'escenarios12.json'), txt);
