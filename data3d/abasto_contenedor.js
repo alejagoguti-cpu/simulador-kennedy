@@ -29,9 +29,9 @@ export function crearContenedores({ T3 }) {
       const l = new THREE.Mesh(g, liq); l.matrixAutoUpdate = false; l.matrix.copy(S); l.renderOrder = 12; G.add(l); });
     // línea roja del tope: el contorno de la planta (caja) arriba del vaso
     const s = box.getSize(new THREE.Vector3()), r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(s.x, s.z).rotateX(-Math.PI / 2)), bordeTope);
-    r.position.set(cx, y0 + hVaso + 0.5, cz); G.add(r); G.userData.tope = r;
+    r.position.set(cx, y0 + hVaso + 0.5, cz); /* sin contorno: la autora no lo entendía (G.add(r) quitado) */
     // contorno blanco del vaso completo (las 12 aristas de la caja) para leer el tope desde la vista alta
-    const caja = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s.x, hVaso, s.z)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })); caja.position.set(cx, y0 + hVaso / 2, cz); G.add(caja);
+    const caja = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s.x, hVaso, s.z)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })); caja.position.set(cx, y0 + hVaso / 2, cz); /* sin caja blanca */
     armado = true; return true;
   }
   const et = document.createElement('div'); et.id = 'cont-et';
