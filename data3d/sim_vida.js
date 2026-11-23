@@ -165,6 +165,7 @@ function calidad(e, s, P3, out) { // calidad de cada parche esta semana (0 = no 
     out[p] = P.dyn ? (s.cora.ha > 0 ? DESMONTE.Q_BORDE * s.cora.mad : 0)
       : P.t === 'humedal' ? Math.min(1, P.k * s.W / 0.55 * (p === IV ? 1 + DESMONTE.MEJORA_VACA * (s.cora.ha * 1e4 / BORDE_TOT) * s.cora.mad : 1)) : P.t === 'bosque' ? 0.6 * (P.id === 'bosqueBav' && s.planArb ? 1 - s.planArb / PLAN_BAV.ARB_TOT : 1) : P.t === 'parque' ? 0.3 + 0.3 * Math.min(1, P.ha / 10) + 0.2 * P3.arboles
       : P.t === 'modBavaria' ? (e === 'B' && s.supF > 0.2 ? 0.5 : 0) : ((e === 'C' || (e === 'B' && s.mod && s.mod.huertasC)) && s.supF >= P.cuota ? 0.4 : 0); } } // huertasC: e11 (módulos de C también en B)
+export const INTERNO = Object.freeze({ TIPO, SQA, IB, RESCATE, ES_TERR }); // solo lectura, para la red trófica de tools/escenarios_instalacion.mjs
 function apto(i, p, q) { const g = ESPECIES[i][2]; return (GRUPOS[g].hab[TIPO[p]] || 0) * q[p]; }
 
 /* ---------- REGLAS DE GAME OVER (fijas, iguales para A, B y C; 4 semanas seguidas) ---------- */
@@ -192,6 +193,7 @@ export function crear(e, seed, mod) {
     cora: { lib: 0, ap: [], ult: -999, m2: 0, ha: 0, mad: 0, rest: 0 }, rec: { pend: null, n: 0, suma: 0, ult: null, fallidas: 0 }, occ: new Uint8Array(NS * NP), q: new Float32Array(NP),
     H: { paso: 13, t: [], act: [], dep: [], zmin: [], esp: [], pend: [], res: [] } };
   calidad(e, s, { arboles: 0.4 }, s.q); // estado inicial igual para todos (sin módulos; árboles por defecto)
+  if (s.mod && s.mod.red) { s.mod.red.iniciar(s); return s; } // red trófica de la instalación (tools/escenarios_instalacion.mjs): pone s.occ y s.esp0
   for (let i = 0; i < NS; i++) for (let p = 0; p < NP; p++) s.occ[i * NP + p] = apto(i, p, s.q) >= 0.45 ? 1 : 0;
   s.esp0 = 0; for (let i = 0; i < NS; i++) { let a = 0; for (let p = 0; p < NP; p++) a |= s.occ[i * NP + p]; s.esp0 += a; }
   return s;
@@ -326,7 +328,8 @@ export function paso(s, PAR) {
   const H_ = s.hab, q = s.q, occ = s.occ, raizB = Math.sqrt(Math.max(0.05, s.cora.ha)); let esp = 0; // el borde restaurado pesa según su área de esta semana
   const ET = efectoTrafico(t, e === 'D' ? planAutos / PLAN_BAV.AUTOS_KEN : 0, MF && MF.metro && t >= MF.metro.desde ? MF.metro : null), MQ = ET.mq, XQ = ET.xq; // tráfico que crece: ruido para las aves (MQ por parche) y atropellos al cruzar para la fauna terrestre (XQ por par)
   let ocAve = 0, ocTer = 0;
-  for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP), ave = ES_AVE[i], ter = ES_TERR[i]; let hay = 0;
+  if (MF && MF.red) { const R = MF.red.paso(s, { t, q, MQ, XQ, raizB, trampa, pend, alm }); esp = R.esp; ocAve = R.ocAve; ocTer = R.ocTer; } // red trófica de la instalación (23 especies)
+  else for (let i = 0; i < NS; i++) { const g = ESPECIES[i][2], G = GRUPOS[g], K = KER[g], base = i * NP, nuevo = new Uint8Array(NP), ave = ES_AVE[i], ter = ES_TERR[i]; let hay = 0;
     for (let pp = 0; pp < NP; pp++) { const u = H_(), h = apto(i, pp, q) * (ave ? MQ[pp] : 1); if (h <= 0) { nuevo[pp] = 0; continue; }
       if (occ[base + pp]) { const ext = Math.min(1, G.e / (h * (pp === IB ? raizB : SQA[pp])) * (g === 'arbol' && TIPO[pp] !== 'parque' && TIPO[pp] !== 'humedal' && TIPO[pp] !== 'bosque' ? trampa : 1)); nuevo[pp] = u < ext ? 0 : 1; }
       else { let S = 0; for (let qq = 0; qq < NP; qq++) if (occ[base + qq]) S += K[pp * NP + qq] * apto(i, qq, q) * (ave ? MQ[qq] : 1) * (ter ? XQ[pp * NP + qq] : 1) * (qq === IB ? raizB : 1); const col = 1 - Math.exp(-G.c * h * S) + RESCATE * h; nuevo[pp] = u < col ? 1 : 0; }
