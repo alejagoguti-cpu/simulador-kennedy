@@ -119,7 +119,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (M && !R.base) setTimeout(calcularBase, 300); // «Hoy» completo para comparar en el informe
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null);
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -321,12 +321,12 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let BAS = null, pBas = null, CIE = null, pCie = null;
   function ponerBasura(I) {
     if (!I || !I.basura) { if (BAS) BAS.ver(false); return; }
-    if (!BAS) { if (!pBas) pBas = import('./basura.js?v=1').then(m => (BAS = m.crearBasura({ T3, RELOJ }))).catch(() => null); return; }
+    if (!BAS) { if (!pBas) pBas = import('./basura.js?v=1').then(m => { BAS = m.crearBasura({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.basura) ponerBasura(L); }).catch(() => null); return; }
     BAS.ver(true); BAS.poner({ puntos: I.basura.puntos, total_t_dia: I.basura.total_t_dia, acumulada: I.basura.acumulada, ratas: I.ratas, ratas0: I.ratas0 });
   }
   function ponerCierre(C) {
     if (!C || !(C.fase > 0)) { if (CIE) CIE.quitar(); return; }
-    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=1').then(m => (CIE = m.crearCierre({ T3, RELOJ }))).catch(() => null); return; }
+    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=1').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
     CIE.poner({ via: C.via, fase: C.fase, ruidoExtraDb: C.ruidoExtraDb, traficoDesvio: C.traficoDesvio });
   }
 
@@ -334,7 +334,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function gameOver(g) {
     R.go = g; RELOJ.pausarAños(true);
     go.querySelector('p').textContent = `Año ${(g.sem / 52 + 1).toFixed(1)} · ${g.motivo || g.regla}`;
-    go.classList.add('on'); if (window.KEN_FOCO) window.KEN_FOCO.on(g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' ? 'trafico' : 'especies');
+    go.classList.add('on'); if (window.KEN_FOCO) window.KEN_FOCO.on([g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' ? 'trafico' : 'especies', 'cierre', 'predio', 'basura']); // la causa queda en color: el cierre, el predio o la basura
     setTimeout(() => { go.classList.remove('on'); abrirInforme(); }, 4200);
   }
 
