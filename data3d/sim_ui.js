@@ -567,7 +567,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=2');
+    try { const { abrirInforme2 } = await import('./informe.js?v=3');
       abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: (M && M.REGLAS) || [], go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, onCerrar: cerrarInforme });
       inf.classList.add('on'); return;
     } catch (e) { console.warn('informe nuevo:', e); }
