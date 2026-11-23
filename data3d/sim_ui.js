@@ -55,8 +55,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-sl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #ffb347; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer; }
   .su-sl input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #ffb347; cursor: pointer; }
   #su-inds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .su-ind { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'n n' 'v c' 's s'; gap: 2px 6px; align-items: end; padding: 7px 8px 5px; border-radius: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.07); border-left: 2px solid transparent; }
+  .su-ind { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'n n' 'v c' 'x x' 's s'; gap: 2px 6px; align-items: end; padding: 7px 8px 5px; border-radius: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.07); border-left: 2px solid transparent; }
   .su-ind.mueve.bien { border-left-color: #8ee6a8; } .su-ind.mueve.mal { border-left-color: #ff8a80; }
+  .su-ind i.vs { grid-area: x; font: 500 10.5px system-ui, sans-serif; font-style: normal; opacity: .65; } .su-ind i.vs.bien::before { content: '▲ mejor · '; color: #8ee6a8; } .su-ind i.vs.mal::before { content: '▼ peor · '; color: #ff8a80; }
   .su-ind i.ch { grid-area: c; font: 600 10.5px system-ui, sans-serif; font-style: normal; opacity: .8; white-space: nowrap; } .su-ind i.ch.bien { color: #8ee6a8; opacity: 1; } .su-ind i.ch.mal { color: #ff8a80; opacity: 1; }
   .su-ind span { grid-area: n; font: 500 10.5px/1.25 system-ui, sans-serif; opacity: .75; min-height: 2.5em; }
   .su-ind b { grid-area: v; font: 600 19px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; }
@@ -67,6 +68,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-que { margin: 9px 0 2px; font: 400 12px/1.4 system-ui, sans-serif; opacity: .9; } .su-que b { font-weight: 600; } .su-que span { opacity: .6; font-size: 11px; }
   #ojo-t { right: auto !important; left: 296px !important; transform: none; top: auto !important; bottom: 92px !important; z-index: 46 !important; } @media (max-width: 760px) { #ojo-t { left: 50% !important; transform: translateX(-50%); } } /* abajo a la izquierda: a la derecha va la leyenda de la maqueta */ /* la tarjeta del Ojo de Dios abajo al centro: arriba a la derecha la tapaba el panel */
   .su-lug { display: flex; flex-wrap: wrap; gap: 5px; } .su-lug button { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; border-radius: 8px; font: 500 11.5px system-ui, sans-serif; padding: 5px 9px; cursor: pointer; } .su-lug button:hover { background: rgba(255,207,122,.18); border-color: rgba(255,207,122,.5); }
+  #su-graf { position: fixed; left: 50%; transform: translateX(-50%); bottom: 88px; z-index: 42; display: none; gap: 8px; padding: 8px 10px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  #su-graf.on { display: flex; } #su-graf figure { margin: 0; width: 220px; } #su-graf figcaption { display: flex; align-items: baseline; gap: 6px; font: 500 10.5px system-ui, sans-serif; color: #e9ecef; margin-bottom: 2px; }
+  #su-graf figcaption span { flex: 1; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #su-graf figcaption b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; } #su-graf figcaption i { font: 500 11px system-ui, sans-serif; font-style: normal; opacity: .55; }
+  #su-graf svg { width: 220px; height: 74px; display: block; } @media (max-width: 1100px) { #su-graf { display: none !important; } }
   #su-hist { position: fixed; left: 296px; top: 16px; z-index: 43; width: 330px; max-width: calc(100vw - 640px); padding: 11px 13px 9px; border-radius: 14px; color: #f2f3f5; background: linear-gradient(180deg, rgba(40,44,52,.74), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,.35); display: none; font: 400 11.5px/1.35 system-ui, sans-serif; }
   #su-hist.on { display: block; } #su-hist h5 { margin: 0 0 2px; font: 600 10.5px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #ffd28a; } #su-hist p { margin: 0 0 7px; opacity: .75; }
   #su-hist .cab, #su-hist li { display: grid; grid-template-columns: 1fr 86px 78px; gap: 6px; align-items: baseline; } #su-hist .cab { font: 600 9.5px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .6; padding-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,.1); }
@@ -148,7 +153,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -166,7 +171,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (H.length < hasta) return void setTimeout(lote, 0);
       R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
-      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
+      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); pintarGraficas(); pintarHistoria(); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
     };
     lote();
   }
@@ -209,7 +214,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.cierre || CIE) ponerCierre(I.cierre);
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       ponerCapaPar(I);
-      if (I.sem % 4 === 0 || R.hist.length === 1) pintarHistoria();
+      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
@@ -260,7 +265,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const v = I[x.k], v0 = I0[x.k], d = v - v0, rel = Math.abs(v0) > 1e-9 ? d / Math.abs(v0) : (Math.abs(d) > 1e-9 ? 1 : 0);
       const clase = Math.abs(rel) < 0.005 ? '' : ((d > 0) === x.sube ? 'bien' : 'mal');
       const chip = H.length <= 52 ? '<i class="ch">año 1</i>' : `<i class="ch ${clase}">${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${x.pts ? (Math.abs(d * x.pts)).toFixed(1) + ' pts' : (Math.abs(rel * 100) < 10 ? Math.abs(rel * 100).toFixed(1) : Math.round(Math.abs(rel * 100))) + ' %'}</i>`;
-      return `<div class="su-ind ${Math.abs(rel) >= 0.05 ? 'mueve ' + clase : ''}" title="${x.ayuda || ''}"><span>${x.n}</span><b>${x.f(v, I)}</b>${chip}${chispa(H.map(h => h[x.k]), clase, iR)}</div>`;
+      // comparativa: en «con propuesta», la misma cifra de la pareja «sin propuesta» en la misma semana
+      const Bk = R.def && R.def.propuesta && R.base ? R.base[Math.min(R.base.length - 1, H.length - 1)] : null, vb = Bk ? Bk[x.k] : null;
+      const vs = vb != null && isFinite(vb) ? `<i class="vs ${Math.abs(v - vb) < 1e-9 ? '' : ((v > vb) === x.sube ? 'bien' : 'mal')}">sin propuesta: ${x.f(vb, Bk)}</i>` : '';
+      return `<div class="su-ind ${Math.abs(rel) >= 0.05 ? 'mueve ' + clase : ''}" title="${x.ayuda || ''}"><span>${x.n}</span><b>${x.f(v, I)}</b>${chip}${vs}${chispa(H.map(h => h[x.k]), clase, iR)}</div>`;
     }).join('');
   }  const chispa = (vals, clase, iR = 0) => { // curva con área y la línea punteada del año 1
     const v = vals.map(x => (x != null && isFinite(x) ? x : null)); const ok = v.filter(x => x != null); if (ok.length < 2) return '<svg></svg>';
@@ -485,6 +493,36 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
         ['Equipamientos habilitados', (I) => I.gobernanza ? fmt(I.gobernanza.equipamientos.length) : '—']]
   };
   const hist = document.createElement('div'); hist.id = 'su-hist'; document.body.appendChild(hist);
+  /* GRÁFICAS EN VIVO (sobre la barra de años): 3 curvas por par, la corrida actual (ámbar) y, en «con propuesta», la pareja «sin
+     propuesta» (gris punteada) hasta la misma semana; eje x = los 20 años; valor actual rotulado */
+  const SERIES = {
+    1: [['Corabastos frente a su tope', I => I.abasto && I.abasto.cora ? I.abasto.cora.carga * 100 : null, '%', 100], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70], ['Interacciones entre especies', I => I.red, '', null]],
+    2: [['Comida en la zona peor', I => (I.comidaMin || 0) * 100, '%', 80], ['Tráfico (100 = hoy)', I => (I.trafico || 1) * 100, '', 130], ['Interacciones entre especies', I => I.red, '', null]],
+    3: [['Basura sin recoger (t)', I => I.basura ? I.basura.acumulada : null, '', null], ['Economía circular', I => (I.circularIdx || 0) * 100, '%', null], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70]],
+    4: [['Territorio con fauna', I => I.pares, '', null], ['Interacciones entre especies', I => I.red, '', null], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70]],
+    5: [['Hogares en riesgo', I => I.hogaresRiesgo, '', null], ['Precio del suelo (1 = hoy)', I => I.sueloIdx, '', null], ['Tráfico (100 = hoy)', I => (I.trafico || 1) * 100, '', 130]],
+    6: [['Equidad entre barrios', I => I.gobernanza ? I.gobernanza.equidad : null, '', null], ['Recursos que alcanzan', I => I.gobernanza ? I.gobernanza.coberturaMedia * 100 : null, '%', null], ['Decisiones tomadas', I => I.gobernanza ? I.gobernanza.decisiones : null, '', null]]
+  };
+  const graf = document.createElement('div'); graf.id = 'su-graf'; document.body.appendChild(graf);
+  function serie(H, f, paso) { const out = []; for (let i = 0; i < H.length; i += paso) { let v = null; try { v = f(H[i]); } catch (e) { /* */ } out.push(v == null || !isFinite(v) ? null : v); } return out; }
+  function pintarGraficas() {
+    const d = R.def || {}, S = SERIES[d.par], H = R.hist; if (!S || !H.length) { graf.classList.remove('on'); return; }
+    const B = d.propuesta && R.base ? R.base.slice(0, H.length) : null, W = 220, Hh = 74, paso = 4, nTot = Math.ceil(FIN / paso);
+    graf.innerHTML = S.map(([nom, f, u, lim]) => {
+      const a = serie(H, f, paso), bb = B ? serie(B, f, paso) : [], todos = a.concat(bb, lim != null ? [lim] : []).filter(v => v != null);
+      if (!todos.length) return '';
+      let mn = Math.min(...todos), mx = Math.max(...todos); if (mx - mn < 1e-6) { mx += 1; mn -= 1; } const pad = (mx - mn) * 0.12; mn -= pad; mx += pad;
+      const X = i => (i / Math.max(1, nTot - 1) * W).toFixed(1), Y = v => (Hh - 4 - (v - mn) / (mx - mn) * (Hh - 8)).toFixed(1);
+      const pts = (arr) => arr.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ');
+      const ult = a.filter(v => v != null).pop(), ultB = bb.filter(v => v != null).pop();
+      const fmtv = v => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u === '%' ? ' %' : '');
+      const xs = [5, 10, 15].map(an => `<line x1="${X(an * 52 / paso)}" x2="${X(an * 52 / paso)}" y1="0" y2="${Hh}" stroke="rgba(255,255,255,.07)"/>`).join('');
+      return `<figure><figcaption><span>${nom}</span><b>${fmtv(ult)}</b>${B && ultB != null ? `<i>sin: ${fmtv(ultB)}</i>` : ''}</figcaption>
+        <svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none">${xs}${lim != null ? `<line x1="0" x2="${W}" y1="${Y(lim)}" y2="${Y(lim)}" stroke="#ff8a80" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>` : ''}
+        ${B ? `<polyline points="${pts(bb)}" fill="none" stroke="rgba(220,224,230,.6)" stroke-width="1.6" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>` : ''}
+        <polyline points="${pts(a)}" fill="none" stroke="${d.propuesta ? '#8ee6a8' : '#ffcf7a'}" stroke-width="2.4" vector-effect="non-scaling-stroke"/></svg></figure>`; }).join('');
+    graf.classList.add('on');
+  }
   function pintarHistoria() {
     const d = R.def || {}, P = d.par, C = CADENA[P], I = ultimo(); if (!C || !I) { hist.classList.remove('on'); return; }
     const I1 = R.hist[Math.min(R.hist.length - 1, 51)] || I, B = R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, B1 = R.base ? R.base[51] || R.base[0] : null;
