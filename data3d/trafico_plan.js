@@ -1,6 +1,6 @@
 /* ============ CARROS DEL PLAN PARCIAL FÁBRICA BAVARIA (escenario D) ============
    Cuántos: los autos nuevos que calcula el modelo semanal (data3d/sim_vida.js, o.plan.autos = viviendas terminadas × 0,31 autos/hogar,
-   Encuesta de Movilidad 2023). En el mapa se dibuja 1 carro por cada 20 autos nuevos (escala declarada), la mitad saliendo del predio y la
+   Encuesta de Movilidad 2023). En el mapa se dibuja 1 carro por cada 60 autos nuevos (escala declarada), la mitad saliendo del predio y la
    mitad llegando. Por dónde: el camino más corto por la red vial del simulador (data3d/net.json, construirRed/arbol de viajes_mercados.js)
    entre el predio y 16 destinos repartidos por Kennedy (centros de las zonas de 500 m más pobladas de cada sector). Movimiento cosmético
    (reloj universal, RELOJ.tAnim); carros como los del tráfico SUMO grabado pero pintados de violeta para distinguirlos. Solo en el escenario D. */
@@ -8,7 +8,7 @@ import { RELOJ } from './reloj.js?v=5';
 import { construirRed, arbol } from './viajes_mercados.js?v=9';
 import { ZONAS } from './sim_red_datos.js?v=2';
 
-const POR_CARRO = 20, VEL = 14, MAXC = 1500, POR_VEH = 12; /* POR_VEH: con el modelo semanal (ind().predio.vehiculosDia) se dibuja 1 carro por cada 12 vehículos/día que entran y salen del predio: ~1.400 carros con el plan terminado */ // autos por carro dibujado · m/s en pantalla · tope de carros dibujados
+const POR_CARRO = 60, VEL = 14, MAXC = 500, POR_VEH = 36; /* Escala visual: 1 carro por cada 36 vehículos/día (~470 con el plan terminado). Menos carros en pantalla para dejar más espacio; los viajes del modelo no cambian. */ // autos por carro dibujado · m/s en pantalla · tope de carros dibujados
 function ruta(R, T, u) { // nodo u -> raíz del árbol (el predio), con largo acumulado
   if (!isFinite(T.dist[u])) return null; const out = [[R.X[u], R.Z[u]]];
   while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) return null; const v = R.ea[e] === u ? R.eb[e] : R.ea[e]; out.push([R.X[v], R.Z[v]]); u = v; }
