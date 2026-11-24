@@ -159,7 +159,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -215,6 +215,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       M.paso(R.s); const I = M.ind(R.s); derivar(I); R.hist.push(I);
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       for (const ev of I.eventos || []) avisar(ev);
+      if (I.hechos && I.sem % 4 === 0) clavar(I.hechos);
       if (I.predio || PRE) ponerPredio(I.predio);
       if (I.basura || BAS) ponerBasura(I);
       if (I.cierre || CIE) ponerCierre(I.cierre);
@@ -364,8 +365,18 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      vez cada año simulado para no interrumpir todo el tiempo */
   let semAuto = -999;
   const esMuerte = (ev) => ev.tipo === 'especies' && ev.signo < 0 && ev.x != null && /desapareci|deja |dejan |se van|se fue/i.test(ev.titulo || '');
+  /* HECHOS EN EL TERRITORIO (data3d/hechos.js): todo lo que pasa en un lugar concreto queda clavado en el mapa con su causa; arriba solo
+     salen como tarjeta las especies que se pierden (con «Ver») y lo que no tiene un lugar (toda Kennedy) */
+  let HEC = null, pHec = null;
+  const generico = (ev) => { const K = M && M.KEN_XZ; return ev.x == null || (K && Math.abs(ev.x - K[0]) < 2 && Math.abs(ev.z - K[1]) < 2); };
+  function clavar(lista) {
+    const L = (lista || []).filter(ev => ev && !generico(ev)); if (!L.length) return;
+    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=2').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
+    HEC.poner(L);
+  }
   function avisar(ev) {
     if (!ev || !ev.titulo) return; R.eventos.push(ev);
+    if (!generico(ev)) { clavar([ev]); if (!(esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo)) return; }
     if (esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo) { semAuto = ev.sem || 0; ev.auto = true; cola.unshift(ev); tUlt = 0; return; }
     cola.push(ev); while (cola.length > 3) { const k = cola.findIndex(e => !(e.tipo === 'especies' && e.signo < 0)); cola.splice(k >= 0 ? k : 0, 1); }
   }
@@ -450,7 +461,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let LUG = null, pLug = null;
   function ponerLugares(I) {
     if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=4').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
-    LUG.ver(!!R.sim); LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
+    LUG.ver(!!R.sim && !!R.def && (R.def.par === 1 || R.def.par === 2)); /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
   let CONT = null, pCont = null;
   function ponerCapaPar(I) {
