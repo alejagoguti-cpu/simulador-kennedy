@@ -7,7 +7,7 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const S = await import(pathToFileURL(join(REPO, 'data3d/simulaciones12.js')).href);
 await S.cargarDatos((u) => JSON.parse(readFileSync(fileURLToPath(u), 'utf8')));
 const N = S.SEMANAS_FIN, SEMS = 30;
-const CLAVES = ['fauna', 'flora', 'red', 'redTipos', 'pares', 'aves', 'poliniz', 'polinizEsp', 'trafico', 'ruidoDb', 'callesRuidosas', 'callesOMS', 'atropellos', 'comidaMin', 'residuos', 'huertas', 'bodegas', 'congestion', 'tiempo10km', 'presion', 'recuperacion', 'ratas', 'humedalHa', 'humedalFuncional', 'arboles', 'comidaLocal', 'circularIndice', 'sueloIndice', 'hogaresRiesgo', 'metroReduccion'];
+const CLAVES = ['fauna', 'flora', 'red', 'redTipos', 'pares', 'aves', 'poliniz', 'polinizEsp', 'trafico', 'ruidoDb', 'callesRuidosas', 'callesOMS', 'atropellos', 'comidaMin', 'residuos', 'huertas', 'bodegas', 'congestion', 'tiempo10km', 'presion', 'recuperacion', 'ratas', 'humedalHa', 'humedalFuncional', 'arboles', 'comidaLocal', 'circularIndice', 'sueloIndice', 'hogaresRiesgo', 'metroReduccion', 'ecoIndice', 'ecoIntegridad', 'ecoBiodiversidad', 'ecoAbioticos', 'ecoLimites', 'ecoGobernanza'];
 const r3 = (v) => v == null ? null : Math.round(v * 1000) / 1000;
 const out = { generado: new Date().toISOString().slice(0, 10), fuente: 'data3d/simulaciones12.js (tools/simulaciones_resumen.mjs)', semanas: N,
   pares: S.PARES, fases: S.FASES, tomtom: S.TOMTOM, reglas: S.REGLAS, supuestos: S.SUP_SIMS, predio_sup: S.PREDIO_SUP, basura_sup: S.BASURA_SUP, metro_sup: S.METRO_SUP, suelo_sup: S.SUELO_SUP, desvio_sup: S.DESVIO_SUP, avisos_sup: S.AVISOS_SUP, simulaciones: [] };
@@ -15,7 +15,7 @@ let msTot = 0, pasos = 0;
 for (const sim of S.SIMS) {
   const E = S.crear(sim.id, 1), st = Object.fromEntries(CLAVES.map(k => [k, { min: Infinity, max: -Infinity, final: null }])), ext = [], avisos = [], predio = {};
   let x0 = null; const t0 = performance.now();
-  for (let w = 0; w < N; w++) { S.paso(E); const x = S.ind(E); x.circularIndice = x.circular.indice; x.sueloIndice = x.especulacion.indice; x.hogaresRiesgo = x.especulacion.hogaresRiesgo; x.metroReduccion = x.metro.reduccion; if (!x0) x0 = { fauna0: x.fauna0, flora0: x.flora0, red0: x.red0, redTipos0: x.redTipos0, poliniz0: x.poliniz0, pares0: x.pares0, ruidoDb0: x.ruidoDb0 };
+  for (let w = 0; w < N; w++) { S.paso(E); const x = S.ind(E); x.circularIndice = x.circular.indice; x.sueloIndice = x.especulacion.indice; x.hogaresRiesgo = x.especulacion.hogaresRiesgo; x.metroReduccion = x.metro.reduccion; x.ecoIndice = x.eco.indice; x.ecoIntegridad = x.eco.integridad; x.ecoBiodiversidad = x.eco.biodiversidad; x.ecoAbioticos = x.eco.abioticos; x.ecoLimites = x.eco.limites; x.ecoGobernanza = x.eco.gobernanza; if (!x0) x0 = { fauna0: x.fauna0, flora0: x.flora0, red0: x.red0, redTipos0: x.redTipos0, poliniz0: x.poliniz0, pares0: x.pares0, ruidoDb0: x.ruidoDb0 };
     for (const k of CLAVES) { const v = x[k]; if (v < st[k].min) st[k].min = v; if (v > st[k].max) st[k].max = v; st[k].final = v; }
     if (x.extinciones.length) ext.push(...x.extinciones);
     for (const a of x.eventos) avisos.push({ sem: a.sem, tipo: a.tipo, capa: a.capa, signo: a.signo, titulo: a.titulo, texto: a.texto });

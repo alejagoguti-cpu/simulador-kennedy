@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-23",
+ "generado": "2026-11-24",
  "fuente": "data3d/simulaciones12.js (tools/simulaciones_resumen.mjs)",
  "semanas": 1040,
  "pares": [
@@ -455,6 +455,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.623,
+     "max": 0.8,
+     "final": 0.623
+    },
+    "ecoIntegridad": {
+     "min": 0.461,
+     "max": 0.669,
+     "final": 0.461
+    },
+    "ecoBiodiversidad": {
+     "min": 0.684,
+     "max": 1,
+     "final": 0.684
+    },
+    "ecoAbioticos": {
+     "min": 0.756,
+     "max": 0.997,
+     "final": 0.756
+    },
+    "ecoLimites": {
+     "min": 0.913,
+     "max": 1,
+     "final": 0.914
+    },
+    "ecoGobernanza": {
+     "min": 0.3,
+     "max": 0.333,
+     "final": 0.3
     }
    },
    "extinciones": [
@@ -1161,6 +1191,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.833,
+     "max": 0.894,
+     "final": 0.851
+    },
+    "ecoIntegridad": {
+     "min": 0.638,
+     "max": 0.703,
+     "final": 0.638
+    },
+    "ecoBiodiversidad": {
+     "min": 0.885,
+     "max": 1,
+     "final": 0.885
+    },
+    "ecoAbioticos": {
+     "min": 0.967,
+     "max": 1,
+     "final": 0.967
+    },
+    "ecoLimites": {
+     "min": 0.75,
+     "max": 1,
+     "final": 1
+    },
+    "ecoGobernanza": {
+     "min": 0.767,
+     "max": 0.767,
+     "final": 0.767
     }
    },
    "extinciones": [
@@ -1543,6 +1603,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.671,
+     "max": 0.8,
+     "final": 0.671
+    },
+    "ecoIntegridad": {
+     "min": 0.528,
+     "max": 0.697,
+     "final": 0.594
+    },
+    "ecoBiodiversidad": {
+     "min": 0.73,
+     "max": 1,
+     "final": 0.767
+    },
+    "ecoAbioticos": {
+     "min": 0.747,
+     "max": 0.997,
+     "final": 0.747
+    },
+    "ecoLimites": {
+     "min": 0.913,
+     "max": 1,
+     "final": 0.913
+    },
+    "ecoGobernanza": {
+     "min": 0.3,
+     "max": 0.333,
+     "final": 0.333
     }
    },
    "extinciones": [
@@ -2344,6 +2434,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.834,
+     "max": 0.902,
+     "final": 0.883
+    },
+    "ecoIntegridad": {
+     "min": 0.528,
+     "max": 0.769,
+     "final": 0.754
+    },
+    "ecoBiodiversidad": {
+     "min": 0.936,
+     "max": 1,
+     "final": 0.936
+    },
+    "ecoAbioticos": {
+     "min": 0.961,
+     "max": 1,
+     "final": 0.961
+    },
+    "ecoLimites": {
+     "min": 0.75,
+     "max": 1,
+     "final": 1
+    },
+    "ecoGobernanza": {
+     "min": 0.736,
+     "max": 0.767,
+     "final": 0.767
     }
    },
    "extinciones": [
@@ -2743,6 +2863,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.675,
+     "max": 0.8,
+     "final": 0.675
+    },
+    "ecoIntegridad": {
+     "min": 0.525,
+     "max": 0.669,
+     "final": 0.525
+    },
+    "ecoBiodiversidad": {
+     "min": 0.735,
+     "max": 1,
+     "final": 0.784
+    },
+    "ecoAbioticos": {
+     "min": 0.801,
+     "max": 0.997,
+     "final": 0.801
+    },
+    "ecoLimites": {
+     "min": 0.933,
+     "max": 1,
+     "final": 0.934
+    },
+    "ecoGobernanza": {
+     "min": 0.333,
+     "max": 0.333,
+     "final": 0.333
     }
    },
    "extinciones": [
@@ -3388,6 +3538,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.834,
+     "max": 0.893,
+     "final": 0.868
+    },
+    "ecoIntegridad": {
+     "min": 0.662,
+     "max": 0.7,
+     "final": 0.675
+    },
+    "ecoBiodiversidad": {
+     "min": 0.914,
+     "max": 1,
+     "final": 0.914
+    },
+    "ecoAbioticos": {
+     "min": 0.983,
+     "max": 1,
+     "final": 0.983
+    },
+    "ecoLimites": {
+     "min": 0.75,
+     "max": 1,
+     "final": 1
+    },
+    "ecoGobernanza": {
+     "min": 0.767,
+     "max": 0.767,
+     "final": 0.767
     }
    },
    "extinciones": [
@@ -3772,6 +3952,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.702,
+     "max": 0.803,
+     "final": 0.703
+    },
+    "ecoIntegridad": {
+     "min": 0.619,
+     "max": 0.747,
+     "final": 0.644
+    },
+    "ecoBiodiversidad": {
+     "min": 0.753,
+     "max": 1,
+     "final": 0.804
+    },
+    "ecoAbioticos": {
+     "min": 0.802,
+     "max": 0.997,
+     "final": 0.802
+    },
+    "ecoLimites": {
+     "min": 0.933,
+     "max": 1,
+     "final": 0.933
+    },
+    "ecoGobernanza": {
+     "min": 0.333,
+     "max": 0.333,
+     "final": 0.333
     }
    },
    "extinciones": [
@@ -4407,6 +4617,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.834,
+     "max": 0.91,
+     "final": 0.887
+    },
+    "ecoIntegridad": {
+     "min": 0.623,
+     "max": 0.782,
+     "final": 0.764
+    },
+    "ecoBiodiversidad": {
+     "min": 0.92,
+     "max": 1,
+     "final": 0.92
+    },
+    "ecoAbioticos": {
+     "min": 0.985,
+     "max": 1,
+     "final": 0.985
+    },
+    "ecoLimites": {
+     "min": 0.75,
+     "max": 1,
+     "final": 1
+    },
+    "ecoGobernanza": {
+     "min": 0.767,
+     "max": 0.767,
+     "final": 0.767
     }
    },
    "extinciones": [
@@ -4781,6 +5021,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.666,
+     "max": 0.8,
+     "final": 0.666
+    },
+    "ecoIntegridad": {
+     "min": 0.504,
+     "max": 0.669,
+     "final": 0.504
+    },
+    "ecoBiodiversidad": {
+     "min": 0.733,
+     "max": 1,
+     "final": 0.777
+    },
+    "ecoAbioticos": {
+     "min": 0.787,
+     "max": 0.997,
+     "final": 0.787
+    },
+    "ecoLimites": {
+     "min": 0.929,
+     "max": 1,
+     "final": 0.93
+    },
+    "ecoGobernanza": {
+     "min": 0.333,
+     "max": 0.333,
+     "final": 0.333
     }
    },
    "extinciones": [
@@ -5471,6 +5741,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.847,
+     "max": 0.908,
+     "final": 0.872
+    },
+    "ecoIntegridad": {
+     "min": 0.653,
+     "max": 0.706,
+     "final": 0.653
+    },
+    "ecoBiodiversidad": {
+     "min": 0.905,
+     "max": 1,
+     "final": 0.905
+    },
+    "ecoAbioticos": {
+     "min": 0.969,
+     "max": 1,
+     "final": 0.969
+    },
+    "ecoLimites": {
+     "min": 0.75,
+     "max": 1,
+     "final": 1
+    },
+    "ecoGobernanza": {
+     "min": 0.833,
+     "max": 0.833,
+     "final": 0.833
     }
    },
    "extinciones": [
@@ -5887,6 +6187,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.675,
+     "max": 0.799,
+     "final": 0.676
+    },
+    "ecoIntegridad": {
+     "min": 0.526,
+     "max": 0.669,
+     "final": 0.526
+    },
+    "ecoBiodiversidad": {
+     "min": 0.744,
+     "max": 1,
+     "final": 0.791
+    },
+    "ecoAbioticos": {
+     "min": 0.802,
+     "max": 0.997,
+     "final": 0.802
+    },
+    "ecoLimites": {
+     "min": 0.934,
+     "max": 1,
+     "final": 0.935
+    },
+    "ecoGobernanza": {
+     "min": 0.285,
+     "max": 0.329,
+     "final": 0.325
     }
    },
    "extinciones": [
@@ -6557,6 +6887,36 @@
      "min": 0,
      "max": 0.1,
      "final": 0.1
+    },
+    "ecoIndice": {
+     "min": 0.831,
+     "max": 0.895,
+     "final": 0.873
+    },
+    "ecoIntegridad": {
+     "min": 0.662,
+     "max": 0.71,
+     "final": 0.685
+    },
+    "ecoBiodiversidad": {
+     "min": 0.933,
+     "max": 1,
+     "final": 0.933
+    },
+    "ecoAbioticos": {
+     "min": 0.985,
+     "max": 1,
+     "final": 0.985
+    },
+    "ecoLimites": {
+     "min": 0.75,
+     "max": 1,
+     "final": 1
+    },
+    "ecoGobernanza": {
+     "min": 0.74,
+     "max": 0.763,
+     "final": 0.763
     }
    },
    "extinciones": [
@@ -6768,5 +7128,5 @@
    "predio": null
   }
  ],
- "ms_por_paso_node": 0.672
+ "ms_por_paso_node": 1.226
 }

@@ -681,6 +681,107 @@ function indSueloUsos(E) { if (E.par !== 5) return null; const U = E.suelo, prot
   const protegidos = E.prop ? [{ x: Math.round(BAV_XZ[0]), z: Math.round(BAV_XZ[1]), n: 'Bavaria Común' }, ...MERCADOS.filter((M, k) => E.s.t >= M.desde && Z_SUELO.includes(MERC_ZONA[k])).map(M => ({ x: Math.round(M.x), z: Math.round(M.z), n: M.n }))] : [];
   return { zonas, protegidos, desplazadas: zonas.filter(z => z.estado === 'desplazada').length, cambian: zonas.filter(z => z.estado === 'cambia').length }; }
 
+/* ---------- MARCO ECOCÉNTRICO (macromodelo de la tesis): ind(s).eco y ind(s).abeja ----------
+   Cinco dimensiones 0–1 (1 = íntegro / sano frente a la referencia del año 1 o a un umbral explícito), calculadas SOLO con lo que el modelo simula.
+   1 · integridad (integridad y funcionalidad ecológica) = promedio de:
+       conectividad: fracción del área de hábitat (parches con calidad × factor de hábitat > 0,05) en parches NO aislados: con otro parche con hábitat a 500 m o
+         menos (alcance de dispersión del grupo «suelo» de sim_vida.js, la fauna terrestre, la más limitada) o unidos por los corredores del par 04 con propuesta
+         cuando están hechos (fase ≥ 1); frente al año 1 (tope 1).
+       nutrientes: circular.indice / 0,5 (tope 1) [SUP meta: que la mitad de los orgánicos vuelva como abono]. agua: humedalFuncional / 100 (tope 1).
+       resiliencia (solo si hay choque: corte del suministro, cierre de vía o pérdida de parche): 1 / (1 + semanas para volver al 90 % de antes / 52); mientras no
+         se recupera, la mitad del valor actual frente al de antes. Métrica: comida de la zona peor servida (pares 01 y 02) u ocupación de los parches (par 04).
+   2 · biodiversidad = promedio de: riqueza de fauna nativa presente / al inicio (sin rata, abeja de miel y caracol de jardín, introducidas);
+       especies clave: pares especie × parche de polinizadores / los del año 1 (tope 1); depredadores tope: fracción presente de las especies de la red que
+       depredan fauna y no son presa de ninguna (sale de los enlaces de biotica.json); plaga: 1 / índice de ratas (tope 1).
+   3 · abioticos = promedio de: agua (área funcional y área de humedal frente a hoy), suelo (árboles de los parques frente a hoy y 1 − fracción talada del
+       bosque de Bavaria), ruido como calidad de hábitat (factor medio de la zona de efecto de las vías para las aves en los parches con hábitat, sim_vida.js,
+       × factor extra del predio, la basura y los desvíos; 1 = como hoy). La fracción de parches bajo 55 dB NO se puede calcular: el modelo no tiene dB por
+       parche (null). aire / microclima: null (el modelo no los simula).
+   4 · limites (huella y límites · no regresión): cada razón frente al año 1 (o a hoy), con tope 1: orgánicos que vuelven como abono, área de humedal, árboles
+       de los parches y ocupación de los parches. 1 = no hay regresión.
+   5 · gobernanza = promedio de: asambleas (1 si la corrida tiene asambleas locales y federación —escenario C de sim_vida.js o el par 06 con propuesta—, 0 con
+       coordinación central), protección del suelo (deslizador / mecanismo de la corrida) y equidad (par 06: la del reparto; en los demás, 1 − Gini de la
+       comida recibida por zona, ponderado por población). derechosNaturaleza = false: ninguna corrida tiene un mecanismo de derechos de la naturaleza.
+   indice = promedio de las cinco (las que no son null). prueba = la dimensión que más pone a prueba el par. */
+const NATIVA_NO = new Set(['rata', 'abeja', 'caracol']);
+const ECO_PAR = { 1: 'integridad', 2: 'abioticos', 3: 'limites', 4: 'biodiversidad', 5: 'gobernanza', 6: 'gobernanza' };
+const DISTP = PARCHES.map(p => PARCHES.map(q => Math.hypot(p.x - q.x, p.z - q.z)));
+let TOPE = null, ABEJA = null;
+function ecoPrep() { if (TOPE) return;
+  const presa = new Set(), depreda = new Set(); for (const [a, b, t] of RED.ENL) if ((t === 0 || t === 7) && RED.esFa(a) && RED.esFa(b)) { depreda.add(RED.FI[a]); presa.add(RED.FI[b]); }
+  TOPE = [...depreda].filter(i => !presa.has(i));
+  const ia = RED.FI.abeja; ABEJA = { i: ia, flora: [...new Set(RED.ENL.filter(([a, b, t]) => a === 'abeja' && RED.esFl(b)).map(([, b]) => RED.FLI[b]))] }; }
+function conectividad(E) { // fracción del área de hábitat en parches NO aislados: con otro parche con hábitat a 500 m o menos, o unido por un corredor hecho
+  const s = E.s, hab = []; for (let p = 0; p < NP; p++) if (s.q[p] * E.xH[p] > 0.05) hab.push(p);
+  const con = new Uint8Array(NP);
+  for (let a = 0; a < hab.length; a++) for (let b = a + 1; b < hab.length; b++) if (DISTP[hab[a]][hab[b]] <= 500) { con[hab[a]] = 1; con[hab[b]] = 1; }
+  if (E.frag && E.prop && E.s.t / 156 >= 1) { con[E.frag.p] = 1; for (const q of E.frag.corr) con[q] = 1; }
+  let tot = 0, ok = 0, ais = 0; for (const p of hab) { const a = Math.max(0.05, PARCHES[p].ha); tot += a; if (con[p]) ok += a; else ais++; }
+  return { frac: tot > 0 ? ok / tot : 0, aislados: ais, parches: hab.length, con }; }function gini(v, w) { let sw = 0, m = 0; for (let i = 0; i < v.length; i++) { sw += w[i]; m += v[i] * w[i]; } m /= sw || 1; if (m <= 0) return 0; let g = 0;
+  for (let i = 0; i < v.length; i++) for (let j = 0; j < v.length; j++) g += w[i] * w[j] * Math.abs(v[i] - v[j]); return g / (2 * sw * sw * m); }
+const media = (a) => { const b = a.filter(v => v != null && isFinite(v)); return b.length ? b.reduce((x, y) => x + y, 0) / b.length : null; };
+function resiliencia(E, x) {
+  let C = E.choque; const t = E.s.t;
+  if (!C) { const t0 = E.corte ? E.corte.t0 : E.cie ? E.cie.t0 : E.frag ? E.frag.t0 : null; if (t0 == null) return null; C = E.choque = { t0, tipo: E.corte ? 'corte del suministro' : E.cie ? 'cierre de vía' : 'pérdida de parche', antes: null, sem: null, min: 1 }; }
+  const v = E.frag ? E.emaP : x.comidaMin;
+  if (t < C.t0) { C.antes = C.antes == null ? v : C.antes * 0.8 + v * 0.2; return { tipo: C.tipo, desde: C.t0, semanas: null, recuperado: null, puntaje: null }; }
+  const r = C.antes > 0 ? v / C.antes : 1; C.min = Math.min(C.min, r);
+  if (C.sem == null && t > C.t0 && r >= 0.9 && (C.min < 0.9 || t - C.t0 >= 26)) C.sem = C.min < 0.9 ? t - C.t0 : 0;
+  return { tipo: C.tipo, desde: C.t0, minimo: C.min, semanas: C.sem, recuperado: C.sem != null, puntaje: C.sem != null ? 1 / (1 + C.sem / 52) : 0.5 * Math.min(1, r) }; }
+function indEco(E, x) {
+  ecoPrep(); const s = E.s, o = E.o, R = E.ref, NFA = RED.NFA, occ = s.occ;
+  const K = conectividad(E); if (R.listo && E.conRef == null) E.conRef = Math.max(1e-6, K.frac);
+  const conect = Math.min(1, K.frac / (E.conRef || Math.max(1e-6, K.frac)));
+  const nutr = Math.min(1, x.circular.indice / 0.5), agua = Math.min(1, x.humedalFuncional / 100), res = resiliencia(E, x);
+  const integridad = media([conect, nutr, agua, res && res.puntaje]);
+  let nat = 0, nat0 = 0; for (let i = 0; i < NFA; i++) { if (NATIVA_NO.has(RED.FAUNA[i].id)) continue; let a = 0, a0 = 0; for (let p = 0; p < NP; p++) { a |= occ[i * NP + p]; a0 |= E.occ0[i * NP + p]; } nat += a; nat0 += a0; }
+  const riqueza = nat0 ? Math.min(1, nat / nat0) : null, clave = Math.min(1, x.poliniz / Math.max(1, refV(E, 'poli', x.poliniz)));
+  let tp = 0, tp0 = 0; for (const i of TOPE) { let a = 0, a0 = 0; for (let p = 0; p < NP; p++) { a |= occ[i * NP + p]; a0 |= (R.listo ? R.occ[i * NP + p] > 0.5 : occ[i * NP + p]) ? 1 : 0; } tp += a; tp0 += a0; }
+  const tope = TOPE.length ? (tp0 ? Math.min(1, tp / tp0) : tp ? 1 : 0) : null, plaga = Math.min(1, 1 / Math.max(1e-3, x.ratas));
+  const biodiversidad = media([riqueza, clave, tope, plaga]);
+  const tala = s.planArb ? s.planArb / PLAN_BAV.ARB_TOT : 0, aguaA = media([agua, Math.min(1, x.humedalHa / Math.max(1e-6, x.humedalHa0))]), suelo = media([1 - x.arbolesPerdidos, 1 - tala]);
+  let fx = 0, nh = 0; for (let p = 0; p < NP; p++) if (s.q[p] * E.xH[p] > 0.05) { fx += E.xAve[p]; nh++; } const ruidoH = Math.min(1, (o.trafico.mq || 1) * (nh ? fx / nh : 1));
+  const abioticos = media([aguaA, suelo, ruidoH]);
+  const ciR = R.listo ? (E.ciRef != null ? E.ciRef : (E.ciRef = Math.max(1e-3, x.circular.indice))) : Math.max(1e-3, x.circular.indice);
+  const lOrg = Math.min(1, x.circular.indice / ciR), lHum = Math.min(1, x.humedalHa / Math.max(1e-6, x.humedalHa0)), lArb = Math.min(1, 1 - x.arbolesPerdidos), lOcu = Math.min(1, E.emaP / Math.max(1, refV(E, 'pares', E.emaP)));
+  const limites = media([lOrg, lHum, lArb, lOcu]);
+  const asam = s.e === 'C' || s.e === 'B' ? 1 : 0, prot = E.suelo ? E.suelo.prot : 0;
+  const equidad = x.gobernanza ? x.gobernanza.equidad : 1 - gini(Array.from(o.zRec, v => isFinite(v) ? Math.min(1, v) : 1), ZONAS.map(Z => Z[2]));
+  const gobernanza = media([asam, prot, equidad]);
+  return { indice: media([integridad, biodiversidad, abioticos, limites, gobernanza]), prueba: ECO_PAR[E.par] || null,
+    integridad, biodiversidad, abioticos, limites, gobernanza,
+    sub: {
+      integridad: { conectividad: { valor: conect, fraccionConectada: K.frac, parchesAislados: K.aislados, parchesHabitat: K.parches, unidad: 'fracción del área de hábitat en parches no aislados (vecino a 500 m o corredor), frente al año 1' },
+        nutrientes: { valor: nutr, indiceCircular: x.circular.indice, unidad: 'orgánicos que vuelven como abono / generados (meta 0,5)' },
+        agua: { valor: agua, humedalFuncional: x.humedalFuncional, unidad: '% del área funcional de hoy' },
+        resiliencia: res ? { valor: res.puntaje, ...res, unidad: 'semanas hasta volver al 90 % de antes del choque' } : null },
+      biodiversidad: { riquezaNativa: { valor: riqueza, presentes: nat, inicio: nat0, unidad: 'especies nativas de fauna presentes / al inicio' },
+        especiesClave: { valor: clave, polinizadores: x.poliniz, ref: refV(E, 'poli', x.poliniz), unidad: 'pares especie × parche de polinizadores / año 1' },
+        depredadoresTope: { valor: tope, presentes: tp, ref: tp0, especies: TOPE.map(i => RED.FAUNA[i].n), unidad: 'fracción presente frente al año 1' },
+        plaga: { valor: plaga, ratas: x.ratas, unidad: '1 / índice de ratas' } },
+      abioticos: { agua: { valor: aguaA, humedalFuncional: x.humedalFuncional, humedalHa: x.humedalHa, humedalHa0: x.humedalHa0, unidad: '% y ha frente a hoy' },
+        suelo: { valor: suelo, arbolesPerdidos: x.arbolesPerdidos, taladoBavaria: tala, unidad: 'árboles que quedan frente a hoy' },
+        ruidoHabitat: { valor: ruidoH, unidad: 'factor de hábitat para aves por la zona de efecto de las vías (1 = como hoy)', fraccionBajo55dB: null, nota: 'el modelo no tiene dB por parche' },
+        aire: null, microclima: null },
+      limites: { organicos: { valor: lOrg, razon: x.circular.indice / ciR }, humedal: { valor: lHum, cambioHa: x.humedalHa - x.humedalHa0 }, arboles: { valor: lArb, cambio: -x.arbolesPerdidos },
+        ocupacion: { valor: lOcu, cambio: E.emaP / Math.max(1, refV(E, 'pares', E.emaP)) - 1 }, unidad: 'razón frente al año 1 / hoy (1 = no regresión)' },
+      gobernanza: { asambleas: { valor: asam, activas: x.gobernanza ? x.gobernanza.asambleas.filter(a => a.activa).length : asam ? 'asambleas y federación del escenario C' : 0, decisiones: x.gobernanza ? x.gobernanza.decisiones : null },
+        proteccionSuelo: { valor: prot }, equidad: { valor: equidad, fuente: x.gobernanza ? 'reparto del par 06' : '1 − Gini de la comida recibida por zona' }, derechosNaturaleza: false } },
+    _conect: K }; }
+function indAbeja(E, x, K) {
+  ecoPrep(); const s = E.s, i = ABEJA.i, occ = s.occ, W3 = RED.W3, M = s.red.flM, R = E.ref; if (i == null) return null;
+  let ahora = 0, ref = 0, conect = 0; const plantas = new Set(), pats = [];
+  let inter = 0; for (let p = 0; p < NP; p++) { ref += R.listo ? R.occ[i * NP + p] : occ[i * NP + p]; if (!occ[i * NP + p]) continue; ahora++; pats.push(p); if (K.con[p]) conect++;
+    for (const f of ABEJA.flora) if (M[f * W3 + (p >> 5)] & (1 << (p & 31))) { inter++; plantas.add(RED.FLORA[f].n); } }
+  // presión principal (solo las que el modelo aplica a la abeja: el ruido de las vías actúa solo sobre las aves en sim_vida.js)
+  let flor = 0, fr = 0, bas = 0, nb = 0; const FA = s.red.flA;
+  if (!E.abFA0 && R.listo) { E.abFA0 = new Float32Array(NP); for (let p = 0; p < NP; p++) E.abFA0[p] = FA[i * NP + p]; }
+  for (let p = 0; p < NP; p++) { const was = R.listo ? R.occ[i * NP + p] > 0.5 : occ[i * NP + p]; if (!was) continue; if (E.abFA0 && E.abFA0[p] > 0) { flor += Math.max(0, 1 - FA[i * NP + p] / E.abFA0[p]); fr++; } bas += 1 - E.xH[p]; nb++; }
+  const P = { 'falta de flores': fr ? flor / fr : 0, 'basura y pérdida de hábitat': nb ? bas / nb : 0, 'tala': s.planArb && pats.includes(PI_BOSQUE) ? s.planArb / PLAN_BAV.ARB_TOT : 0, 'ruido': 0 };
+  let pk = null, pv = 0.02; for (const [k, v] of Object.entries(P)) if (v > pv) { pv = v; pk = k; }
+  return { especie: 'Abeja de miel (Apis mellifera)', id: 'abeja', parches: ahora, parchesRef: ref, interacciones: inter, plantas: [...plantas], conectados: ahora ? conect / ahora : 0,
+    presion: pk || 'ninguna', presiones: P, nota: 'el ruido no afecta a la abeja en el modelo (solo a las aves)' }; }
+
 /* ---------- una semana ---------- */
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
@@ -708,6 +809,7 @@ export function paso(E) {
   E.vals = {}; for (const R of REGLAS) { const v = VALOR[R.k](x); E.vals[R.k] = v; E.racha[R.k] = MALO[R.k](v) ? E.racha[R.k] + 1 : 0;
     if (!E.go && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, sem: s.t + 1, motivo: MOTIVO_GO[R.k], valor: Math.round(v * 1000) / 1000 }; }
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
+  { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
   x.eventos = avisos(E, x);
   return E;
 }
