@@ -782,6 +782,63 @@ function indAbeja(E, x, K) {
   return { especie: 'Abeja de miel (Apis mellifera)', id: 'abeja', parches: ahora, parchesRef: ref, interacciones: inter, plantas: [...plantas], conectados: ahora ? conect / ahora : 0,
     presion: pk || 'ninguna', presiones: P, nota: 'el ruido no afecta a la abeja en el modelo (solo a las aves)' }; }
 
+/* ---------- RED VERDE (ind(s).verde): parches que se liberan, se refuerzan, se crean, crecen y se conectan; o que se rompen ----------
+   Sale del estado del modelo (se recalcula cada 4 semanas y se guarda; entre recálculos es el mismo objeto):
+   · parches existentes de sim_vida.js (humedales, parques, bosque de Bavaria): radio = el del área (√(ha·10⁴/π)); los humedales con el área que les deja la
+     basura (Bs.ha); el bosque de Bavaria con √(1 − fracción talada por el plan parcial) [SUP: la tala del plan quita cobertura verde]; el parche perdido del par 04
+     con √(1 − pérdida). tipo 'reforzado' si su calidad para la fauna (s.q × factor de hábitat) supera en 5 % la de la semana 1, si no 'existente'.
+   · nuevos: los módulos de huertas (cubiertas, colegios, parques) cuando el modelo los activa (s.q > 0, calendario de mercados_red.js): su radio crece de 0 al
+     de su área en 52 semanas [SUP: la vegetación se establece en un año]; techos: los módulos de cubierta.
+   · liberados: cada bodega de Corabastos desmontada (o.cora / s.cora.ap de sim_vida.js): después de 26 semanas de obra aparece su borde restaurado
+     (BODEGAS[i].borde m²) y madura en 156 semanas (DESMONTE de sim_vida.js). Los lotes de Bavaria y los sobrantes del metro NO tienen mecanismo en el modelo.
+   · calidad = s.q × factor de hábitat (0–1); ocupacion = fracción de las 23 especies de fauna presentes en el parche.
+   · conexiones entre parches visibles a 900 m o menos: f = supervivencia al cruzar las vías entre los dos (e^(−c·Q·tráfico), la misma de los atropellos y la
+     colonización; con propuesta −30 % de mortalidad por pasos de fauna [SUP]) × mín(1, calidad menor / 0,4) × madurez de los extremos nuevos o liberados
+     (0 → 1 en 156 semanas desde que aparecen) [SUP]. tipo: 'corredor' (corredores del par 04 con propuesta, f = su fase), 'paso_fauna' (con propuesta, cruza una
+     vía principal), 'calle_verde' (con propuesta, une un módulo nuevo sin cruzar vía principal), 'roto' (f < 0,3: la vía o la degradación cortan el paso) y
+     'corredor' en los demás casos. via = la vía con nombre que corta la línea (ATR.CRUCES). Se guardan hasta 250 (primero las de mayor f).
+   · resumen: haVerde (Σ π r²), haVerde0 (semana 1), nConectados (parches del componente más grande con conexiones f ≥ 0,5 que no están rotas), nParches,
+     conectividad = nConectados / nParches. */
+export const VERDE_SUP = { CADA: 4, MAX_D: 900, CRECE: 52, MADURA: 156, PROP_MORT: 0.7, F_CONECTA: 0.5, F_ROTO: 0.3, MAX_LINKS: 250 };
+const IB_V = PARCHES.findIndex(p => p.dyn); /* el borde restaurado de La Vaca en sim_vida.js */
+const RADIO_HA = (ha) => Math.sqrt(Math.max(0, ha) * 1e4 / Math.PI);
+function verdePaso(E) { /* cada semana: semana en que cada módulo aparece por primera vez */
+  const V_ = E.vd || (E.vd = { desde: new Int32Array(NP).fill(-1), q0: null, cache: null, ha0: null }), s = E.s;
+  if (!V_.q0) V_.q0 = Float32Array.from(s.q, (q, p) => q * E.xH[p]);
+  for (let p = 0; p < NP; p++) if (V_.desde[p] < 0 && s.q[p] > 0 && /^mod/.test(PARCHES[p].t)) V_.desde[p] = s.t; }
+function indVerde(E) {
+  const V_ = E.vd, s = E.s, t = s.t; if (V_.cache && t % VERDE_SUP.CADA !== 0) return V_.cache;
+  const occ = s.occ, NFA = RED.NFA, Bs = E.bas, tala = s.planArb ? s.planArb / PLAN_BAV.ARB_TOT : 0, S = VERDE_SUP, pc = [];
+  const madura = (d) => d == null ? 1 : Math.max(0, Math.min(1, (t - d) / S.MADURA));
+  for (let p = 0; p < NP; p++) { const P = PARCHES[p]; if (P.dyn) continue; const esMod = /^mod/.test(P.t), cal = Math.min(1, s.q[p] * E.xH[p]);
+    let r0 = esMod ? 0 : RADIO_HA(P.ha), r = r0, tipo = 'existente', desde = null;
+    if (esMod) { if (V_.desde[p] < 0 || s.q[p] <= 0) continue; desde = V_.desde[p] + 1; r = RADIO_HA(P.ha) * Math.min(1, (t - V_.desde[p]) / S.CRECE); tipo = 'nuevo'; }
+    else { const k = HUM_P.indexOf(p); if (k >= 0) r = RADIO_HA(Bs.ha[k]); if (p === PI_BOSQUE && tala > 0) r *= Math.sqrt(1 - tala); if (E.frag && p === E.frag.p && t >= E.frag.t0) r *= Math.sqrt(Math.max(0, 1 - E.frag.f));
+      if (cal > V_.q0[p] * 1.05 + 1e-3) tipo = 'reforzado'; }
+    let k = 0; for (let i = 0; i < NFA; i++) k += occ[i * NP + p];
+    pc.push({ id: P.id, n: P.n, x: Math.round(P.x), z: Math.round(P.z), r0: Math.round(r0), r: Math.round(r), tipo, desde, calidad: cal, ocupacion: k / NFA, _p: p, _m: madura(desde) }); }
+  const ap = s.cora && s.cora.ap ? s.cora.ap : [];
+  for (let i = 0; i < ap.length; i++) { const B = BODEGAS[i], w = t - ap[i] - 26; if (!B || w < 0) continue; const mz = Math.min(1, w / S.MADURA);
+    pc.push({ id: 'bodega' + (i + 1), n: 'Borde liberado de La Vaca (bodega ' + (i + 1) + ' de Corabastos)', x: Math.round(B.x), z: Math.round(B.z), r0: 0, r: Math.round(RADIO_HA((B.borde || 0) / 1e4) * Math.sqrt(Math.max(0.05, mz))), tipo: 'liberado', desde: ap[i] + 27, calidad: 0.85 * mz, ocupacion: 0, _p: IB_V, _m: mz }); }
+  const XQ = s.red.XQ, links = [], corr = E.frag && E.prop ? new Set(E.frag.corr.map(q => E.frag.p * NP + q).concat(E.frag.corr.map(q => q * NP + E.frag.p))) : null, fase = Math.min(1, t / 156);
+  for (let a = 0; a < pc.length; a++) for (let b = a + 1; b < pc.length; b++) { const A = pc[a], B = pc[b], d = Math.hypot(A.x - B.x, A.z - B.z); if (d > S.MAX_D || A.r <= 0 || B.r <= 0) continue;
+    const pa = A._p, pb = B._p; let sv = 1, via = null, cruzaVia = false;
+    if (pa >= 0 && pb >= 0 && pa !== pb) { const m = 1 - (XQ ? XQ[pa * NP + pb] : 1) * PRE.S0[pa * NP + pb]; sv = 1 - m * (E.prop ? S.PROP_MORT : 1); cruzaVia = (EXPO.cruce[pa * NP + pb] || 0) + (EXPO.cruce[pb * NP + pa] || 0) > 0;
+      const cr = ATR_CR.get(Math.min(pa, pb) * NP + Math.max(pa, pb)); if (cr) via = ATR.VIAS[cr[0]][0]; }
+    const fb = sv * Math.min(1, Math.min(A.calidad, B.calidad) / 0.4); let f = fb * Math.min(A._m, B._m), tipo = 'corredor'; /* fb sin madurez: un enlace que apenas crece no está roto */
+    if (corr && corr.has(pa * NP + pb)) { f = Math.max(f, fase); tipo = 'corredor'; }
+    else if (fb < S.F_ROTO) tipo = 'roto';
+    else if (E.prop && cruzaVia) tipo = 'paso_fauna';
+    else if (E.prop && (A.tipo === 'nuevo' || B.tipo === 'nuevo')) tipo = 'calle_verde';
+    links.push({ a: A.id, b: B.id, x1: A.x, z1: A.z, x2: B.x, z2: B.z, f, tipo, via, _a: a, _b: b, _d: d }); }
+  links.sort((u, v) => (v.f - u.f) || (u._d - v._d)); const keep = links.slice(0, S.MAX_LINKS);
+  const par = pc.map((_, i) => i), raiz = (i) => { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
+  for (const L of links) if (L.f >= S.F_CONECTA && L.tipo !== 'roto') par[raiz(L._a)] = raiz(L._b);
+  const cnt = new Map(); let nCon = 0; pc.forEach((P, i) => { if (P.r <= 0) return; const r = raiz(i), c = (cnt.get(r) || 0) + 1; cnt.set(r, c); if (c > nCon) nCon = c; });
+  const nPar = pc.filter(P => P.r > 0).length, ha = pc.reduce((s_, P) => s_ + Math.PI * P.r * P.r / 1e4, 0); if (V_.ha0 == null) V_.ha0 = ha;
+  return V_.cache = { parches: pc.slice(0, 150).map(({ _p, _m, ...P }) => P), conexiones: keep.map(({ _a, _b, _d, ...L }) => L),
+    resumen: { haVerde: ha, haVerde0: V_.ha0, nConectados: nCon, nParches: nPar, conectividad: nPar ? nCon / nPar : 0, nRotas: links.filter(L => L.tipo === 'roto').length, nNuevos: pc.filter(P => P.tipo === 'nuevo').length, nLiberados: pc.filter(P => P.tipo === 'liberado').length, nReforzados: pc.filter(P => P.tipo === 'reforzado').length } }; }
+
 /* ---------- una semana ---------- */
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
@@ -810,6 +867,7 @@ export function paso(E) {
     if (!E.go && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, sem: s.t + 1, motivo: MOTIVO_GO[R.k], valor: Math.round(v * 1000) / 1000 }; }
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
+  verdePaso(E); x.verde = indVerde(E);
   atropellosPaso(E, x.trafico); { const A = E.atr; x.atropellos = { total: A.total, porAño: A.porAño.slice(), semana: A.nuevos.length, lista: A.lista.slice(), indice: x.atropellosIndice }; }
   x.eventos = avisos(E, x); x.hechos = E.hechos.slice();
   return E;
@@ -882,7 +940,7 @@ export function ind(E) {
   const borde = BORDE_TOT > 0 ? cl01(o.cora.borde / BORDE_TOT) * (o.cora.mad || 0) : 0;
   const recuperacion = cl01(0.25 * Math.max(cl01((huertas - h0) / (3 * h0)), cl01(comidaLocal / 10)) + 0.15 * arb + 0.15 * borde + 0.15 * cl01((s.W - 0.55) / 0.45) + 0.3 * cl01((red / Math.max(1, refV(E, 'red', red)) - 1) / 0.5));
   return E.ind = { sem, año: sem / V.AÑO, fauna: c.esp, fauna0: c0.esp, flora: c.flora, flora0: c0.flora, red, red0: E.red0, redTipos: c.red, redTipos0: c0.red, pares: c.pares, pares0: c0.pares,
-    aves, poliniz, poliniz0: E.poli0, polinizEsp: poli, trafico, congestion, tiempo10km, ruidoDb, ruidoDb0: E.ruido0, callesRuidosas, callesOMS, atropellosIndice: atrop, atropellos: null, hechos: null, comidaMin: o.zMin, residuos: o.pend / Math.max(1, o.alm),
+    aves, poliniz, poliniz0: E.poli0, polinizEsp: poli, trafico, congestion, tiempo10km, ruidoDb, ruidoDb0: E.ruido0, callesRuidosas, callesOMS, atropellosIndice: atrop, atropellos: null, hechos: null, verde: null, comidaMin: o.zMin, residuos: o.pend / Math.max(1, o.alm),
     huertas, bodegas: s.cora.ap.length, cierre: indCierre(E, o), zonas: { soporteEco, comercio, cora }, extinciones: E.ev, presion, recuperacion, predio, eventos: [],
     ref: E.ref.listo ? { pares: E.ref.pares, red: E.ref.red, poliniz: E.ref.poli, semanas: REF } : null,
     basura: { total_t_dia: Bs.total, puntos: Bs.pts.map(P => ({ x: Math.round(P.x), z: Math.round(P.z), t_dia: P.t, fuente: P.fuente, acumulada: P.acum, acumulada0: P.acum0, sinRecoger_t_dia: P.u, nombre: P.nombre || null })), captura: Bs.captura, fraccionSinRecoger: (() => { let u = 0, g = 0; for (const P of Bs.pts) if (P.fuente !== 'humedal') { u += P.u; g += P.t; } return g > 0 ? u / g : 0; })(), acumulada: Bs.acum, acumulada0: Bs.acum0, sinRecoger_t_dia: Bs.pts.reduce((a, P) => a + P.u, 0) },
