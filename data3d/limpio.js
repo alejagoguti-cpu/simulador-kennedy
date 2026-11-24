@@ -142,7 +142,8 @@ export function iniciarLimpio({ T3 }) {
     const card = document.createElement('div'); card.id = 'lp-red'; card.className = ''; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
     let movido = false;
     setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
-      { const D = document.getElementById('lp-der'); if (D && D.firstElementChild !== card) D.prepend(card); } /* quién interactúa con quién: arriba a la derecha */
+      { const D = document.getElementById('lp-der'); if (D && D.firstElementChild !== card) D.prepend(card); /* quién interactúa con quién: arriba a la derecha */
+        const ley = document.getElementById('bio-ley'); if (D && ley && card.nextElementSibling !== ley) card.after(ley); } /* convenciones de las líneas: debajo, en el mismo panel */
       const on = !!ESC.activo && movido; card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
       const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
@@ -164,7 +165,16 @@ export function iniciarLimpio({ T3 }) {
     #lp-seis .lp-base{margin:0 0 8px;font:500 11px/1.35 system-ui,sans-serif;opacity:.75} #lp-seis h5{margin:0 0 6px;font:600 10.5px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7} #lp-seis button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 8px;margin:0 0 3px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.05);color:inherit;font:600 12.5px system-ui,sans-serif;cursor:pointer}
     #lp-seis button i{font:600 16px 'Barlow Condensed',system-ui,sans-serif;font-style:normal;opacity:.55;width:20px} #lp-seis button:hover{background:rgba(255,255,255,.1)} #lp-seis button.on{border-color:rgba(255,190,90,.9);background:rgba(255,190,90,.12)} #lp-seis.con button.on{border-color:rgba(142,230,168,.95);background:rgba(142,230,168,.12)}
     html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important} #gs-izq #lp-seis{background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:8px 0 4px;margin-top:6px} html.limpio #gs-izq #su-der{position:static;width:auto;max-height:none;padding:6px 0;margin:0;background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-    @media (max-width:760px){#lp-der{top:auto;bottom:86px;left:16px;right:16px;width:auto;max-height:45vh}#lp-esc{top:8px}}`; document.head.appendChild(se); }
+    @media (max-width:760px){#lp-der{top:auto;bottom:86px;left:16px;right:16px;width:auto;max-height:45vh}#lp-esc{top:8px}}
+    /* UN SOLO VIDRIO (pedido de la autora): la columna derecha es un único panel con el mismo vidrio del panel izquierdo (.gs-pan de
+       data3d/giro_sim.js) y lo de adentro (quién interactúa con quién, convenciones, tablero) va sin cajas propias, separado por líneas
+       finas. La barra de años de abajo y el selector de arriba usan el mismo vidrio. */
+    #lp-der,#lp-anos,#lp-esc{background:rgba(8,16,26,.8)!important;border:1px solid rgba(125,211,252,.22)!important;border-radius:14px!important;-webkit-backdrop-filter:blur(12px)!important;backdrop-filter:blur(12px)!important;box-shadow:none!important;color:#e2f3ff}
+    #lp-der{bottom:auto;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:none;padding:11px 12px;gap:0;pointer-events:auto;box-sizing:border-box} #lp-der::-webkit-scrollbar{display:none}
+    #lp-der > *{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:10px 0!important;margin:0!important;flex:none!important;max-height:none!important;overflow:visible!important}
+    #lp-der > * + *{border-top:1px solid rgba(125,211,252,.16)!important} #lp-der > :first-child{padding-top:0!important} #lp-der > :last-child{padding-bottom:0!important}
+    #lp-der #bio-ley{position:static!important;max-width:none!important;display:flex} #lp-der #bio-ley b{color:#94a3b8;letter-spacing:.18em}
+    @media (max-width:760px){#lp-der{max-height:45vh}}`; document.head.appendChild(se); }
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.innerHTML = '<button type="button" data-e="hoy" class="on">Kennedy hoy</button><button type="button" data-e="con" class="con">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.innerHTML = '<div id="lp-seis"></div>'; document.body.appendChild(der);
   let escE = 'hoy';
