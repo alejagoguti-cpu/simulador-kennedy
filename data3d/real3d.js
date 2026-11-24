@@ -269,10 +269,9 @@ function colorPromedioHoja(partes) {
   return null;
 }
 // viento: las hojas del modelo real se mecen (más cuanto más arriba), con fase distinta por árbol
-const QUIETO = { value: 0 }; // tiempo congelado: sin viento
 function balanceo(mat, alto, T3) {
   mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = T3.kenArboles ? QUIETO : T3.waterU; /* simulador: árboles quietos (el movimiento distraía) */
+    sh.uniforms.uTime = T3.waterU;
     sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       #ifdef USE_INSTANCING
         float ph = instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23;
@@ -295,7 +294,7 @@ function balanceo(mat, alto, T3) {
 function materialArbolBajo(T3) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true });
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = T3.kenArboles ? QUIETO : T3.waterU;
+    sh.uniforms.uTime = T3.waterU;
     sh.vertexShader = 'uniform float uTime;\nvarying vec3 vLP;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vec3 ip = vec3(instanceMatrix[3].x, 0.0, instanceMatrix[3].z);
       float ph = ip.x * 0.31 + ip.z * 0.23, hh = max(position.y - 0.25, 0.0);
@@ -308,10 +307,10 @@ function materialArbolBajo(T3) {
         return mix(mix(mix(hs3(i), hs3(i + vec3(1,0,0)), f.x), mix(hs3(i + vec3(0,1,0)), hs3(i + vec3(1,1,0)), f.x), f.y),
                    mix(mix(hs3(i + vec3(0,0,1)), hs3(i + vec3(1,0,1)), f.x), mix(hs3(i + vec3(0,1,1)), hs3(i + vec3(1,1,1)), f.x), f.y), f.z); }
       ` + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-      ${T3.kenArboles ? '' /* simulador: copa sólida y pareja, sin manchas */ : `{ float n = 0.5 * vn3(vLP) + 0.3 * vn3(vLP * 2.3 + 5.0) + 0.2 * vn3(vLP * 5.1 + 11.0); // racimos de hojas claros y oscuros
-        diffuseColor.rgb *= mix(0.45, 1.45, smoothstep(0.2, 0.8, n)); }`}`);
+      { float n = 0.5 * vn3(vLP) + 0.3 * vn3(vLP * 2.3 + 5.0) + 0.2 * vn3(vLP * 5.1 + 11.0); // racimos de hojas claros y oscuros
+        diffuseColor.rgb *= mix(0.45, 1.45, smoothstep(0.2, 0.8, n)); }`);
   };
-  m.customProgramCacheKey = () => 'arbolbajo-v2' + (T3.kenArboles ? 'k' : '');
+  m.customProgramCacheKey = () => 'arbolbajo-v2';
   return m;
 }
 // copa de bajos polígonos DERIVADA del modelo real: se agrupan los puntos de las hojas del nivel 1 en celdas y cada celda ocupada se convierte en una masa
@@ -425,12 +424,8 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
   const CAP1S = especies.map(e => MV ? (e.base === 'arbolpeq' ? 25 : 90) : e.base === 'arbolpeq' ? (LV ? 40 : GD ? 40 : KA ? 80 : 200) : (LV ? 240 : GD ? 320 : KA ? 600 : 1100)); // el arbolpeq tiene 14.000 triángulos en el nivel 1: menos copias
   const TIPO_BAJO = especies.map(e => (e.base === 'arbolpeq' || e.base === 'island_tree_02') ? 1 : 0);
   const matBajo = materialArbolBajo(T3), REF = [0.17, 0.255, 0.0875]; // REF = verde medio del degradado de vértices
-  /* simulador (KA): la autora pidió árboles «totalmente sólidos, con menos opacidad y más claritos» (las hojas recortadas del modelo real
-     semitransparentes se veían como puntos): todos los árboles son la copa sólida con la forma del modelo real (geometriaCopaDeModelo),
-     sin moteado de hojas, de un verde claro y semitransparentes (api.opacidad). */
-  const USAR_BAJOS = KA; // fuera del simulador: las copas de bajos polígonos se veían como bolas verdes al alejar la cámara; lejos se dibuja el árbol real
-  const CAP2B = KA ? (LV ? 8000 : 24000) : CAP2;
-  const bajos = !USAR_BAJOS ? [] : especies.map((e, s) => { const m = new THREE.InstancedMesh(geometriaCopaDeModelo(e.niveles, e.alto, e.ancho, LV ? 0 : 1) || geometriaArbolBajo(TIPO_BAJO[s]), matBajo, CAP2B); m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = true; m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CAP2B * 3), 3); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); T3.scene.add(m); return m; });
+  const USAR_BAJOS = false; // las copas de bajos polígonos se veían como bolas verdes al alejar la cámara: lejos ahora se dibuja el mismo árbol real (fotos desde el lado y desde arriba)
+  const bajos = !USAR_BAJOS ? [] : especies.map((e, s) => { const m = new THREE.InstancedMesh(geometriaCopaDeModelo(e.niveles, e.alto, e.ancho, LV ? 0 : 1) || geometriaArbolBajo(TIPO_BAJO[s]), matBajo, CAP2); m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = true; m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CAP2 * 3), 3); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); T3.scene.add(m); return m; });
   const TINTE_BAJO = especies.map(e => e.hojaRGB.map((v, k) => 0.86 * Math.max(1.1, Math.min(3.4, 2.1 * v / REF[k])))); // lleva el verde de la copa al color real de las hojas de esa especie (el modelo real además brilla un poco por su textura emisiva)
   const lod = especies.map((e, si) => ({ L0: e.niveles.L0.map(p => { const m = new THREE.InstancedMesh(p.geo, p.mat, CAP0S[si]); m.count = 0; m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true; T3.scene.add(m); return m; }),
     L1: e.niveles.L1.map(p => { const m = new THREE.InstancedMesh(p.geo, p.mat, CAP1S[si]); m.count = 0; m.frustumCulled = false; m.castShadow = !LV && !T3.splatLejos; m.receiveShadow = true; T3.scene.add(m); return m; }) })); /* rendimiento: con splat lejano, los reales medios sin sombra propia */
@@ -471,12 +466,11 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
     for (const [i, d2] of cand) {
       const s = SP[i], sc = esc(i), tv = 0.82 + hash(i * 19) * 0.34;
       if (!enVista(i)) continue;
-      if (!KA && d2 < E0 && n0[s] < CAP0S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n0[s]++; pintar(lod[s].L0, especies[s].niveles.L0, k, i, tv); asignado[i] = 1; }
-      else if (!KA && d2 < E1 && n1[s] < CAP1S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n1[s]++; pintar(lod[s].L1, especies[s].niveles.L1, k, i, tv); asignado[i] = 1; }
-      else if (USAR_BAJOS && tot2 < CAP2B) { // arbol 3D de bajos poligonos con el mismo alto y ancho de copa que tendria el modelo real
-        const e = especies[s], w = e.ancho * sc * OC[i], h = e.alto * sc * OC[i], ti = TINTE_BAJO[s], hv = 0.96 + hash(i) * 0.08;
+      if (d2 < E0 && n0[s] < CAP0S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n0[s]++; pintar(lod[s].L0, especies[s].niveles.L0, k, i, tv); asignado[i] = 1; }
+      else if (d2 < E1 && n1[s] < CAP1S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n1[s]++; pintar(lod[s].L1, especies[s].niveles.L1, k, i, tv); asignado[i] = 1; }
+      else if (USAR_BAJOS && tot2 < CAP2) { // arbol 3D de bajos poligonos con el mismo alto y ancho de copa que tendria el modelo real
+        const e = especies[s], w = e.ancho * sc, h = e.alto * sc, ti = TINTE_BAJO[s], hv = 0.96 + hash(i) * 0.08;
         d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); d.scale.set(w, h, w); d.updateMatrix(); col.setRGB(tv * ti[0] * 0.86, tv * hv * ti[1] * 1.0, tv * 0.94 * ti[2] * 0.86);
-        if (KA) col.multiplyScalar(1.55).addScalar(0.07); /* simulador: verde más clarito */
         const k = n2[s]++; bajos[s].setMatrixAt(k, d.matrix); bajos[s].setColorAt(k, col); tot2++; asignado[i] = 1;
       }
     }
@@ -502,15 +496,15 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
   api.tinte = (hex, emis) => {
     const mats = new Set();
     for (const l of lod) for (const m of [...l.L0, ...l.L1]) (Array.isArray(m.material) ? m.material : [m.material]).forEach(x => mats.add(x));
-    for (const m of [...lejos, ...techos, ...bajos]) mats.add(m.material);
+    for (const m of [...lejos, ...techos]) mats.add(m.material);
     for (const m of mats) { if (!m.userData.c0) m.userData.c0 = { c: m.color.clone(), e: m.emissiveIntensity }; if (hex == null) { m.color.copy(m.userData.c0.c); if (m.emissive) m.emissiveIntensity = m.userData.c0.e; } else { m.color.set(hex); if (m.emissive) m.emissiveIntensity = emis ?? m.userData.c0.e; } }
   };
   api.opacidad = (o) => {
     const mats = new Set();
     for (const l of lod) for (const m of [...l.L0, ...l.L1]) (Array.isArray(m.material) ? m.material : [m.material]).forEach(x => mats.add(x));
-    for (const m of [...lejos, ...techos, ...bajos]) mats.add(m.material);
-    for (const m of mats) { m.alphaHash = false; m.transparent = o < 1; m.opacity = o; m.depthWrite = true; m.needsUpdate = true; } // transparencia normal (no por tramado: el tramado titilaba y parecía que los árboles se movían); depthWrite deja ver solo la capa de hojas del frente, pareja y sin parpadeo
-    for (const l of lod) for (const m of [...l.L0, ...l.L1]) m.renderOrder = 5; for (const m of [...lejos, ...techos, ...bajos]) m.renderOrder = 5;
+    for (const m of [...lejos, ...techos]) mats.add(m.material);
+    for (const m of mats) { m.transparent = false; m.alphaHash = o < 1; m.opacity = o; m.depthWrite = true; m.needsUpdate = true; } // transparencia por tramado: pasa por el mismo camino que lo opaco (sombras y oclusión ambiental)
+    for (const l of lod) for (const m of [...l.L0, ...l.L1]) m.renderOrder = 5; for (const m of [...lejos, ...techos]) m.renderOrder = 5;
   };
   return api;
 }
