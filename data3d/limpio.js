@@ -226,7 +226,7 @@ export function iniciarLimpio({ T3 }) {
   let yaOblicua = false;
   function alternar() {
     if (!ESC.activo) return;
-    if (RELOJ.pausaSem && !yaOblicua) { yaOblicua = true; irOblicua(); }
+    /* la cámara no se mueve sola: la vista oblicua ya está puesta desde el inicio (VISTA) */
     if (RELOJ.pausaSem) { if (RELOJ.sem >= FIN_SEM) reiniciar(); RELOJ.detenerSemEn = FIN_SEM; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); RELOJ.presupuestoMs = 10; RELOJ.ponerVel(VEL_DIA[vel]); }
     else { RELOJ.pausarAños(true); RELOJ.presupuestoMs = 6; RELOJ.ponerVel(1); }
   }
@@ -270,7 +270,7 @@ export function iniciarLimpio({ T3 }) {
   /* VISTA INICIAL FIJA: la cámara aparece ya en la vista de pájaro final (la misma de la «vista general»: Bavaria, El Burro, la Av. Ciudad de
      Cali y Corabastos en un cuadro), sin el vuelo de llegada de index.html (T3.llegada) ni zoom. */
   const MOVIL = matchMedia('(max-width: 760px)').matches || /Mobi|Android/i.test(navigator.userAgent);
-  const VISTA = { c: [MOVIL ? 2162 : 2412, 0, 420], d: [270, 2250, 1012] };
+  const VISTA = { c: [2300, 0, 300], d: [340, 470, 1850] }; /* vista oblicua fija desde el inicio (la misma del modo presentación), sin vuelos */
   function ponerVista() { if (!T3.camera || !T3.orbit) return; T3.anim = null; T3.llegada = null; T3.orbit.target.set(VISTA.c[0], VISTA.c[1], VISTA.c[2]); T3.camera.position.set(VISTA.c[0] + VISTA.d[0], VISTA.d[1], VISTA.c[2] + VISTA.d[2]); T3.orbit.update(); }
   ponerVista();
   { let k = 0; const fija = setInterval(() => { const L = document.getElementById('loader'); if (L && !L.classList.contains('hidden')) { ponerVista(); return; } if (++k < 12) ponerVista(); else clearInterval(fija); }, 250); } // mientras carga y el primer segundo y medio después de abrir
