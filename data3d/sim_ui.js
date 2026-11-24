@@ -5,6 +5,7 @@
    · informe final (al año 20 o en el game over): veredicto, tabla inicio → final, gráficas, especies que desaparecieron y por qué,
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
+import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=1';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
 
@@ -38,7 +39,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=22'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=23'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -177,7 +178,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-av button.ver { background: rgba(255,176,70,.92); color: #1b1206; border-color: transparent; } .su-av button.x { padding: 2px 8px; opacity: .7; }
   @media (max-width: 760px) { #su-der { width: calc(100vw - 32px); top: auto; bottom: 86px; max-height: 40vh; } #su-inf .caja { padding: 16px; } }
   @media print { body > *:not(#su-inf) { display: none !important; } #su-inf { position: static; background: none; } #su-inf .caja { max-height: none; color: #111; background: #fff; box-shadow: none; } #su-inf .bot { display: none; } }`;
-  st.textContent += ESTILO_ECO;
+  st.textContent += ESTILO_ECO + CSS_EVALUACION;
   document.head.appendChild(st);
 
   /* ---------- elementos ---------- */
@@ -250,9 +251,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let idBase = 0;
   function parejaSin() { const d = R.def || {}; if (d.par != null) return d.propuesta ? R.sim - 1 : null; return R.sim !== 1 ? 1 : null; }
   function calcularBase() {
-    const otra = parejaSin(); if (!M || otra == null) { R.base = null; return; }
-    try { const id = ++idBase, d = defDe(otra), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = R.valores[s.k] != null ? R.valores[s.k] : s.val; }); const s = M.crear(otra, SEMILLA, v); const H = [];
-      const lote = () => { if (id !== idBase) return; try { for (let k = 0; k < 80 && H.length < FIN; k++) { M.paso(s); H.push(derivar(M.ind(s))); if (M.gameOver(s)) { R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else R.base = H; } catch (e) { console.warn('base:', e); } };
+    const otra = R.def && R.def.par != null ? (R.def.propuesta ? R.sim - 1 : R.sim + 1) : parejaSin(); R.ecoBase = null; if (!M || otra == null || !M.SIMS.some(s => s.id === otra)) { R.base = null; return; }
+    try { const id = ++idBase, d = defDe(otra), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = R.valores[s.k] != null ? R.valores[s.k] : s.val; }); const s = M.crear(otra, SEMILLA, v); const H = []; R.ecoBase = H;
+      const lote = () => { if (id !== idBase) return; try { for (let k = 0; k < 80 && H.length < FIN; k++) { M.paso(s); H.push(derivar(M.ind(s))); if (M.gameOver(s)) { if (R.def && R.def.propuesta) R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else if (R.def && R.def.propuesta) R.base = H; } catch (e) { console.warn('base:', e); } };
       lote(); } // por lotes: 20 años de una vez trabarían la página
     catch (e) { console.warn('base del par:', e); }
   }
@@ -783,6 +784,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     'Biodiversidad (Shannon)': { por: 'No basta contar especies: importa que estén repartidas y cumplan funciones distintas.', para: 'Medir la diversidad de la fauna de Kennedy.', como: 'Índice de Shannon H\' sobre la ocupación de cada especie (más alto = más especies y más repartidas).', donde: 'En todos los parches de Kennedy.', pts: I => [] }
   });
   const tab = document.createElement('div'); tab.id = 'su-tab';
+  const panelEvaluacion = crearPanelEvaluacion({ T3 });
   setInterval(() => { const D = document.getElementById('lp-der'); if (D && tab.parentNode !== D) D.appendChild(tab); }, 700); /* los diagramas van a la DERECHA (debajo de quién interactúa con quién) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
@@ -815,27 +817,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const CORTO = { abejas: 'Abejas', corredores: 'Corredores', parches: 'Parches nuevos', muertes: 'Muertes de fauna', ruido: 'Bienestar de aves', ciclos: 'Ciclos (agua, suelo)', residuos: 'Basura sin recoger', biodiv: 'Biodiversidad' };
   const CAUSA_N = { colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }, CAUSA_C = { colision: '#ff9d97', atropello: '#f2c680', ruido: '#d4bcf5', hambre_habitat: '#8ad9e5' };
   function pintarTablero() {
-    const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
-    const d = R.def || {}, H = R.hist, B = d.propuesta && R.base ? R.base.slice(0, H.length) : null;
-    const fv = (v, u) => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u || '');
-    const filas = TAB.map(T => { let v = null; try { v = T.v(I); } catch (e) { /* */ } if (v == null || !isFinite(v)) return '';
-      const a = serie(H, T.v, 4), b = B ? serie(B, T.v, 4) : [], vb = b.filter(x => x != null).pop(), v0 = a.length > 13 ? a[13] : null; /* año 1 = semana 52 (el modelo ya se asentó) */
-      const dl = v0 != null && v0 !== 0 ? (v - v0) / Math.abs(v0) * 100 : 0, bien = v0 != null && dl * T.mejor > 0.5, mal = v0 != null && dl * T.mejor < -0.5, est = bien ? 'bien' : mal ? 'mal' : '';
-      const colC = bien ? '#8ee6a8' : mal ? '#ff8a80' : '#cfd8e0';
-      /* TARJETA: nombre corto, valor grande, flecha + % y la palabra (mejora/empeora/igual), mini curva con área; muertes ocupa el ancho con sus causas */
-      const flecha = v0 == null ? '<em>empezando</em>' : !bien && !mal ? '<em>= igual</em>' : `<em class="${est}">${dl > 0 ? '▲' : '▼'} ${Math.abs(dl) < 10 ? Math.abs(dl).toFixed(1) : Math.round(Math.abs(dl))} % ${bien ? 'mejora' : 'empeora'}</em>`;
-      const causas = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0) : [];
-      const extra = causas.length ? `<div class="tb2-cl">${causas.map(([k, c]) => `<span><i style="background:${CAUSA_C[k] || '#888'}"></i>${CAUSA_N[k] || k} ${c}</span>`).join('')}</div>` : '';
-      return `<div class="tb3-t ${est}${causas.length ? ' ancho' : ''}" data-k="${T.k}" tabindex="0" role="group" aria-label="${escH(limpiarNombre(T.n))}. Presiona Enter para saber cómo se mide" title="Toca para ver por qué, cómo y dónde se mide">
-        <div class="tb3-h"><span>${escH(CORTO[T.k] || limpiarNombre(T.n))}</span>${T.ver ? '<button type="button" class="v" title="Ver dónde pasa">Ver</button>' : ''}</div>
-        <b style="color:${colC}">${fv(v, T.u)}</b>${flecha}${datoEco(T.k, I, v)}${cintaEco(a, b, v0, T.mejor, FIN)}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
-    tab.innerHTML = `<h5 class="su-tt">Jardín de indicadores · en vivo</h5><div id="su-eco"></div><h5 class="su-tt tb3-st">Huellas del territorio <span>Valores actuales · toca una ficha para explorar</span></h5><div class="eco-key"><span><i style="background:#a8e5b5"></i>mejora</span><span><i style="background:#ff9d97"></i>empeora</span><span>● ahora · línea punteada: ${B ? 'sin propuesta' : 'año 1'}</span><span>Las curvas tienen escalas propias.</span></div><div class="tb3-grid">${filas}</div>`;
-    tab.querySelectorAll('.tb3-t').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
-      el.onclick = (e) => { if (e.target.closest('.v')) return; abrirFicha(T.n); };
-      el.onkeydown = e => { if (e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrirFicha(T.n); } };
-      const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
-        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes', animal: p.animal });
-        const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
+    const I = ultimo();
+    if (!I || !R.sim) { tab.innerHTML = ''; panelEvaluacion.clear(); return; }
+    if (!tab.querySelector('#ee-panel')) tab.innerHTML = '<h5 class="su-tt">Jardín de indicadores · en vivo</h5><div id="su-eco"></div><div id="ee-panel"></div>';
+    const B = (R.ecoBase || R.base || []).filter(h => h.sem <= I.sem);
+    panelEvaluacion.render(tab.querySelector('#ee-panel'), I, R.hist, B, !!R.def?.propuesta, R.s);
     pintarEco();
   }
   function pintarTableroViejo() {

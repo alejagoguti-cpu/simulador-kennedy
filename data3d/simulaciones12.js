@@ -68,6 +68,7 @@
    · extinciones: una especie desaparece de TODA Kennedy esa semana; parche = su último parche (si eran varios a la vez, el de más área);
      motivo = el que anotó data3d/red_trofica.js al extinguirse en ese parche (sin recursos de la red, tráfico y ruido, tala, humedal degradado o
      azar demográfico). */
+import { redCompleta, evaluarEstado } from './evaluacion_ecologica.js?v=1';
 import * as V from './sim_vida.js?v=sims1';
 import { crearRed, MOTIVOS } from './red_trofica.js?v=2';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS } from './sim_red_datos.js?v=2';
@@ -847,6 +848,7 @@ function indVerde(E) {
   for (const L of links) if (L.f >= S.F_CONECTA && L.tipo !== 'roto') par[raiz(L._a)] = raiz(L._b);
   const cnt = new Map(); let nCon = 0; pc.forEach((P, i) => { if (P.r <= 0) return; const r = raiz(i), c = (cnt.get(r) || 0) + 1; cnt.set(r, c); if (c > nCon) nCon = c; });
   const nPar = pc.filter(P => P.r > 0).length, ha = pc.reduce((s_, P) => s_ + Math.PI * P.r * P.r / 1e4, 0); if (V_.ha0 == null) V_.ha0 = ha;
+  E.evaluacionRed = redCompleta(pc, links);
   return V_.cache = { parches: pc.slice(0, 150).map(({ _p, _m, ...P }) => P), conexiones: keep.map(({ _a, _b, _d, ...L }) => L),
     resumen: { haVerde: ha, haVerde0: V_.ha0, nConectados: nCon, nParches: nPar, conectividad: nPar ? nCon / nPar : 0, nRotas: links.filter(L => L.tipo === 'roto').length, nNuevos: pc.filter(P => P.tipo === 'nuevo').length, nLiberados: pc.filter(P => P.tipo === 'liberado').length, nReforzados: pc.filter(P => P.tipo === 'reforzado').length } }; }
 
@@ -971,6 +973,7 @@ export function paso(E) {
   atropellosPaso(E, x.trafico); { const A = E.atr; x.atropellos = { total: A.total, porAño: A.porAño.slice(), semana: A.nuevos.length, lista: A.lista.slice(), indice: x.atropellosIndice }; }
   muertesPaso(E); { const M = E.muertes; x.muertes = { total: M.total, semana: M.semana, porCausa: { ...M.porCausa }, porAño: M.porAño.slice(), lista: M.lista.slice() }; }
   x.avesRuido = indAvesRuido(E, x); x.ciclos = indCiclos(E, x); x.biodiversidad = indBiodiversidad(E);
+  x.evaluacion = evaluarEstado(E, x, RED, PARCHES);
   x.eventos = avisos(E, x); x.hechos = E.hechos.slice();
   return E;
 }
