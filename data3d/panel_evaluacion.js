@@ -51,8 +51,8 @@ export function contenidoEco(I,H,B,prop,selected,open){
  '<details data-detail="'+d.id+'" '+(open.has(d.id)?'open':'')+'><summary>Fórmula, datos y fuente científica</summary><p class="ee-formula">'+esc(d.formula)+'</p><p>'+esc(d.nota)+'</p><a href="'+d.fuente+'" target="_blank" rel="noopener noreferrer">'+esc(d.autor)+'</a></details></section>').join('');
  const species=(I.evaluacion?.especies||[]).map(s=>'<div class="ee-species"><b>'+esc(s.n||s.id)+'</b><span>'+esc(s.id==='abeja'?'Polinización':s.id==='mirla'?'Dispersión de semillas':'Conservación de hábitats')+'</span><p>'+ (s.disponible?fmt(s.ocupados)+' parches · '+fmt(s.colonizaciones)+' colonizaciones · '+fmt(s.extinciones)+' extinciones locales':esc(s.motivo))+'</p></div>').join('');
  return '<div class="ee-intro"><h5>Evaluación ecocéntrica · 15 años</h5><p><i class="ee-con"></i>Con propuesta <i class="ee-sin"></i>Sin propuesta</p><small>Datos del modelo · unidades y escalas propias. Las series se detienen cuando termina la corrida; no se prolongan datos faltantes.</small></div>'+
- '<details class="ee-causal"><summary>Cómo se conectan las relaciones</summary>'+causal+'<p>Huertas → recursos vegetales presentes → recursos de la red biótica → probabilidades de colonización y extinción → ocupación de parches.</p><p>Hábitat y cruces viales → conectividad del grafo → PC. Tráfico y edificios → riesgo de atropello y choque.</p><p>Orgánicos → tratamiento → flujos de compost → huertas.</p><p class="ee-pendiente">Relaciones pendientes de calibrar: visitas florales → reproducción vegetal; rutas alternativas → exposición real al desplazarse; compost → nutrientes disponibles. No se asignan resultados a estas relaciones.</p></details>'+
- '<details class="ee-focal"><summary>Especies focales</summary>'+species+'</details><p class="ee-values">Mapa: verde = mayor valor; coral = menor; ámbar = igual, frente a la pareja en la misma semana. En supervivencia se marcan los eventos recientes registrados.</p><button class="ee-clear">Quitar selección del mapa</button>'+cards;
+ '<details class="ee-causal" data-detail="causal" '+(open.has('causal')?'open':'')+'><summary>Cómo se conectan las relaciones</summary>'+causal+'<p>Huertas → recursos vegetales presentes → recursos de la red biótica → probabilidades de colonización y extinción → ocupación de parches.</p><p>Hábitat y cruces viales → conectividad del grafo → PC. Tráfico y edificios → riesgo de atropello y choque.</p><p>Orgánicos → tratamiento → flujos de compost → huertas.</p><p class="ee-pendiente">Relaciones pendientes de calibrar: visitas florales → reproducción vegetal; rutas alternativas → exposición real al desplazarse; compost → nutrientes disponibles. No se asignan resultados a estas relaciones.</p></details>'+
+ '<details class="ee-focal" data-detail="focal" '+(open.has('focal')?'open':'')+'><summary>Especies focales</summary>'+species+'</details><p class="ee-values">Mapa: verde = mayor valor; coral = menor; ámbar = igual, frente a la pareja en la misma semana. En supervivencia se marcan los eventos recientes registrados.</p><button class="ee-clear">Quitar selección del mapa</button>'+cards;
 }
 export function crearPanelEvaluacion({T3}){
  let selected=null,group=null,host=null,last=null,signature='',open=new Set(),lastOther=null;
@@ -79,6 +79,7 @@ export function crearPanelEvaluacion({T3}){
  },clear};
 }
 export const CSS_EVALUACION = `
+#su-tab .ee-causal svg{display:block;width:100%;height:auto}
 #su-tab .ee-intro h5{font-size:13px;letter-spacing:.06em;margin:14px 0 7px}
 #su-tab .ee-intro p,#su-tab .ee-intro small{font-size:10px;line-height:1.5;color:#c4d8cf}
 #su-tab .ee-intro i{display:inline-block;width:15px;height:3px;margin:0 4px 3px}
