@@ -334,7 +334,7 @@ body.tb-abierto #dock{display:none}
     for (const p of PAR.values()) { const a = NODO.get(p.s), b = NODO.get(p.d); if (a) a.obj += p.v; if (b && b !== a) b.obj += p.v; else if (b) b.obj += p.v; }
     for (const N of NODO.values()) N.v = N.obj;
     const orden = [...NODO.entries()].filter(([, N]) => N.v > 0.04);
-    const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 92, GAP = orden.length > 1 ? 0.022 : 0;
+    const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 44, /* bola más grande, nombres más chicos */ GAP = orden.length > 1 ? 0.022 : 0;
     const tot = orden.reduce((s, [, N]) => s + N.v, 0);
     if (tot < 0.05) { g.fillStyle = '#646c71'; g.font = '12px Inter,system-ui,sans-serif'; g.textAlign = 'center'; g.fillText('Sin encuentros en este momento', cx, cy); geo = null; return; }
     const disp = TAU - GAP * orden.length; let a = -Math.PI / 2; const ARC = new Map();
@@ -359,12 +359,12 @@ body.tb-abierto #dock{display:none}
     // arcos de los nodos y nombres
     for (const [id, A] of ARC) {
       const on = !foco || foco === id || pares.some(p => (p.s === foco && p.d === id) || (p.d === foco && p.s === id));
-      g.beginPath(); g.arc(cx, cy, R + 4, A.a0, A.a1); g.lineWidth = 7; g.strokeStyle = rgba(A.N.c, on ? 0.95 : 0.25); g.lineCap = 'butt'; g.stroke();
+      g.beginPath(); g.arc(cx, cy, R + 4, A.a0, A.a1); g.lineWidth = 6; g.strokeStyle = rgba(A.N.c, on ? 0.95 : 0.25); g.lineCap = 'butt'; g.stroke();
       if (A.a1 - A.a0 > 0.045 || foco === id) {
-        const m = (A.a0 + A.a1) / 2, [lx, ly] = P(m, R + 14), der = Math.cos(m) >= 0;
+        const m = (A.a0 + A.a1) / 2, [lx, ly] = P(m, R + 11), der = Math.cos(m) >= 0;
         g.save(); g.translate(lx, ly); g.rotate(der ? m : m + Math.PI); g.textAlign = der ? 'left' : 'right'; g.textBaseline = 'middle';
-        g.font = (foco === id ? '500 ' : '400 ') + '10.5px Inter,system-ui,sans-serif'; g.fillStyle = on ? (A.N.fauna ? '#e9ebec' : '#a9bfae') : '#4b5257';
-        const nn = A.N.n.split(',')[0].replace(/ \(.*\)/, ''), txt = nn.length > 15 ? nn.slice(0, 14) + '…' : nn; g.fillText(txt, 0, 0); g.restore();
+        g.font = (foco === id ? '500 ' : '400 ') + '7.5px Inter,system-ui,sans-serif'; g.fillStyle = on ? (A.N.fauna ? '#e9ebec' : '#a9bfae') : '#4b5257';
+        const nn = A.N.n.split(',')[0].replace(/ \(.*\)/, ''), txt = nn.length > 12 ? nn.slice(0, 11) + '…' : nn; g.fillText(txt, 0, 0); g.restore();
       }
     }
   }
