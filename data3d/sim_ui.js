@@ -414,7 +414,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   function ponerCierre(C) {
     if (!C || !(C.fase > 0)) { if (CIE) CIE.quitar(); return; }
-    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=4').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
+    if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=5').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
     CIE.poner({ via: C.via, fase: C.fase, ruidoExtraDb: C.ruidoExtraDb, traficoDesvio: C.traficoDesvio });
   }
 

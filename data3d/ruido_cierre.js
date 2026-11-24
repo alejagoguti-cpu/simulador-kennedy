@@ -52,6 +52,9 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
     const nv = RM.niveles(); if (!nv) return null;
     if (!campoH || sigH !== RM.ver) { campoH = campo(G.L0R); sigH = RM.ver; } if (sigP !== nv.sig) { campoP = campo(nv.Lp); sigP = nv.sig; }
     return nv; };
+  /* nivel de ruido (dB) en un punto del mundo, con lo dinámico (hora, carros, Corabastos): lo usan las aves para alejarse del rojo */
+  T3.ruidoNivel = (x, z) => { const RM = T3.ruidoMod, G = RM && RM.G; if (!G || !campoH || !cov || !plano.visible) return 0; const i = Math.floor((x - G.x0) / G.cs), j = Math.floor((z - G.z0) / G.cs); if (i < 0 || j < 0 || i >= G.nx || j >= G.nz) return 0;
+    const q = j * G.nx + i, c = cov[q]; if (!(c >= 0.9)) return 0; let L = 10 * Math.log10(campoH[q] / c) + (T3.ruidoExtraDb || 0); const RF = T3.ruidoFoco; if (RF && RF.db) { const dd = (x - RF.x) * (x - RF.x) + (z - RF.z) * (z - RF.z); if (dd < RF.r * RF.r) { const k = 1 - dd / (RF.r * RF.r); L += RF.db * k * k; } } return L; };
   function pintarRuido() {
     const RM = T3.ruidoMod; if (!RM || !RM.G) return; const nv = RM.G.L0R ? preparar(RM) : null; const ve = RM.vistaEf();
     if (!nv) { go.clearRect(0, 0, W, H); tex.needsUpdate = true; badge().textContent = 'Calculando el ruido…'; return; }

@@ -25,7 +25,7 @@ export function iniciarPicosZonas({ T3 }) {
   const mesh = new THREE.InstancedMesh(geo, mat, NZ); mesh.frustumCulled = false; mesh.renderOrder = 14; mesh.name = 'picos_zonas';
   const gB = new THREE.CircleGeometry(1, 20); gB.rotateX(-Math.PI / 2);
   const mB = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
-  const base = new THREE.InstancedMesh(gB, mB, NZ); base.frustumCulled = false; base.renderOrder = 13;
+  const base = new THREE.InstancedMesh(gB, mB, NZ); base.frustumCulled = false; base.renderOrder = 13; base.name = 'picos_zonas_base';
   T3.scene.add(mesh); T3.scene.add(base);
   const h = new Float32Array(NZ), meta = new Float32Array(NZ), pulso = new Float32Array(NZ), antes = new Int8Array(NZ).fill(-1);
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color();

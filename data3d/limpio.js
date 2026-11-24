@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=51';
+import { iniciarSimUI } from './sim_ui.js?v=52';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -130,7 +130,7 @@ export function iniciarLimpio({ T3 }) {
   const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
     if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
   // sin los anillos naranjas de entrada ni los halos de camiones (data3d/origenes.js): la autora no los quiere (solo los carros)
-  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; } for (const nm of ['picos_zonas', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
+  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; } for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
   setInterval(() => { T3.scene.traverse(o => {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
@@ -204,8 +204,22 @@ export function iniciarLimpio({ T3 }) {
     const L = document.getElementById('loader'); if (L && !L.classList.contains('hidden')) return void setTimeout(precompilar, 800);
     try { const g = ['metro_l1_estaciones', 'metro_l1_catenaria', 'metro_l1_letreros', 'metro_l1_obra'].map(n => T3.scene.getObjectByName(n)).filter(Boolean);
       const antes = g.map(o => o.visible); g.forEach(o => { o.visible = true; }); if (T3.renderer.compile) T3.renderer.compile(T3.scene, T3.camera); g.forEach((o, i) => { o.visible = antes[i]; }); } catch (e) { /* sin precompilar */ }
-  }, 2500);  /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=4', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=3', './capas_pares.js?v=1', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
+  }, 2500);  /* RUIDO QUE SALE DE CADA CARRO: con el mapa de ruido prendido, cada carro de la simulación de tráfico lleva un halo naranja-rojo suave
+     (aditivo, ~22 m) que se mueve con él: se ve que el ruido lo producen los carros y que se concentra donde hay más. Una InstancedMesh;
+     cada cuadro copia las posiciones de las mallas de carros (grupo 'vehiculos' visible). */
+  { const N = 4000, g = new T3.THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2);
+    const m = new T3.THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: T3.THREE.AdditiveBlending, toneMapped: false,
+      vertexShader: 'varying vec2 vU; void main(){ vU = position.xz; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'varying vec2 vU; void main(){ float d = length(vU); float a = (1.0 - smoothstep(0.0, 1.0, d)); gl_FragColor = vec4(vec3(0.95, 0.16, 0.08) * a * a * 0.16, 1.0); }' });
+    const halo = new T3.THREE.InstancedMesh(g, m, N); halo.count = 0; halo.frustumCulled = false; halo.renderOrder = 6; halo.name = 'ruido-halos'; T3.scene.add(halo);
+    const A = halo.instanceMatrix.array, R = 13, Y = (T3.viaY != null ? T3.viaY : 0.6) + 1.6;
+    RELOJ.alDibujar(() => { const plano = T3.scene.getObjectByName('ruido-carros'); if (!plano || !plano.visible || !ESC.activo) { halo.visible = false; return; } halo.visible = true;
+      let k = 0; for (const grp of T3.scene.children) { if (grp.name !== 'vehiculos' || !grp.visible) continue;
+        grp.traverse(o => { if (!o.isInstancedMesh || !o.visible) return; const B = o.instanceMatrix.array; for (let i = 0; i < o.count && k < N; i++) { const s = i * 16; if (B[s] === 0 && B[s + 5] === 0 && B[s + 10] === 0) continue; const d = k * 16;
+          A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
+      halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
+  /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=5', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=3', './capas_pares.js?v=1', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

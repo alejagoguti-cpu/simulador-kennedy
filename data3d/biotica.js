@@ -369,7 +369,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const vuelo = (a, x1, y1, z1, v, arco) => { y1 = Math.max(GY, y1); const d = Math.hypot(x1 - a.x, z1 - a.z); a.st = 'vuelo'; a.f = { x0: a.x, y0: a.y, z0: a.z, x1, y1, z1, d: Math.max(1, d), s: 0, v, arco: arco ?? Math.min(18, 3 + d * 0.12), off: gauss() * 0.4 }; };
   const alcanzables = (a, R) => { if (REL_M) return BIT[a.e] ? cercanos(a.x, a.z, R, [], BIT[a.e]) : []; const h = a.h, L = []; for (const t of arbolesCerca(h, a.x, a.z, R)) if (t.fl.some(f => REL[a.e].flora.has(f))) L.push(t); return L; };
   const huir = (a, de, t = 4) => { a.huye = { x: de.x, z: de.z, t }; };
-  function elegirPercha(a) {
+  /* las aves no se posan en el rojo del mapa de ruido (> 66 dB): prueban varias perchas y se quedan con la más tranquila; si están en una
+     calle ruidosa se van antes (T3.ruidoNivel lo pone data3d/ruido_cierre.js cuando el mapa de ruido está prendido) */
+  const RUIDO_MAX = 66, ruidoEn = (x, z) => { const T = window.KEN_T3; return T && T.ruidoNivel ? T.ruidoNivel(x, z) : 0; };
+  function elegirPercha(a) { let mejor = null, lm = Infinity; for (let k = 0; k < 6; k++) { const p = elegirPerchaBase(a), L = ruidoEn(p[0], p[2]); if (L <= RUIDO_MAX) return p; if (L < lm) { lm = L; mejor = p; } } return mejor; }
+  function elegirPerchaBase(a) {
     const e = ESP[a.e], h = a.h;
     const cercaDe = (r, enAgua) => { for (let k = 0; k < 30; k++) { const x = a.x + gauss() * r, z = a.z + gauss() * r; if (dentro(x, z, h.poly) === enAgua) return [x, z]; } return enAgua ? puntoEn(h) : bordeCercano(h, a.x, a.z)[0]; };
     if (e.junco && rnd() < e.junco) { const p = cercaDe(35, true); return [p[0], GY + 1.4, p[1], null]; } // juncal cercano (monjita)
@@ -383,6 +387,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const e = ESP[a.e];
     if (a.st === 'posado') {
       a.vel = 0; if (a.huye) { a.t = 0; }
+      if (a.t > 0.6 && ruidoEn(a.x, a.z) > RUIDO_MAX) a.t = 0.6; // posada en el rojo: se va enseguida
       if ((a.t -= dt) > 0) { if (!a.duerme && rnd() < dt * 0.3) a.rot += gauss() * 0.8; return; }
       if (!despierta(a)) { a.t = 4 + rnd() * 8; return; } // a esta hora sigue posado, en reposo
       const [x, y, z, t] = elegirPercha(a); a.arb = t; vuelo(a, x, y, z, e.v * (0.85 + rnd() * 0.3));
