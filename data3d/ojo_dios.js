@@ -32,6 +32,7 @@ function armar() {
 #ojo-t .oj-h{font:600 10px/1.2 var(--ui-sans,'Geist',system-ui,sans-serif);letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:4px}
 #ojo-t .oj-t{font:500 19px/1.12 'Barlow Condensed',var(--ui-sans,system-ui),sans-serif;letter-spacing:.015em;margin:0 0 6px}
 #ojo-t .oj-x{margin:0 0 11px;color:var(--ui-tx2,#c6cdd1)}
+#ojo-t .oj-d{margin:-4px 0 11px;font-size:12px;color:var(--ui-tx,#eceff1)}#ojo-t .oj-d span{display:inline-block;margin-right:7px;font:600 9.5px/1 var(--ui-sans,'Geist',system-ui,sans-serif);letter-spacing:.12em;text-transform:uppercase;opacity:.55}
 #ojo-t button{all:unset;box-sizing:border-box;cursor:pointer;height:32px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);font:500 12.5px/32px var(--ui-sans,'Geist',system-ui,sans-serif)}
 #ojo-t button:hover{background:rgba(255,255,255,.16)}#ojo-t button:focus-visible{outline:2px solid var(--ojo-c,#ffb347);outline-offset:2px}
 @media(max-width:700px){#ojo-t{top:auto;bottom:78px;right:8px;left:8px;width:auto}}`;
@@ -68,7 +69,7 @@ const alturaEn = (x, z, rad = 1) => { // lo más alto alrededor de (x, z) en ±r
 };
 
 /* ---------- trayectoria en arco por encima de lo más alto de la ruta ---------- */
-function planear(p0, c0, p1, c1) {
+function planear(p0, c0, p1, c1, rapido) {
   const N = 180, xs = new Float32Array(N + 1), zs = new Float32Array(N + 1), req = new Float32Array(N + 1), ys = new Float32Array(N + 1);
   const g = T3.fotoReal ? MARGEN + MARGEN_GOOGLE : MARGEN;
   let crucero = 0;
@@ -82,7 +83,7 @@ function planear(p0, c0, p1, c1) {
   // los extremos son exactamente la cámara de salida y la de llegada (sin bajar de lo requerido cerca del destino)
   for (let s = 0; s <= N; s++) { const u = s / N, a = smooth(0, 0.1, u), b = 1 - smooth(0.9, 1, u); let y = p0.y + (ys[s] - p0.y) * a; y = p1.y + (y - p1.y) * b; if (u > 0.9) y = Math.max(y, req[s] - g * 0.6); ys[s] = y; }
   ys[0] = p0.y; ys[N] = p1.y;
-  return { N, xs, zs, ys, c0: c0.clone(), c1: c1.clone(), dur: Math.max(2.8, Math.min(6.5, 2.4 + dist / 1400 + Math.max(0, crucero - Math.max(p0.y, p1.y)) / 500)) };
+  return { N, xs, zs, ys, c0: c0.clone(), c1: c1.clone(), dur: rapido ? Math.max(1.1, Math.min(2.2, 0.9 + dist / 3500)) /* avisos: llega en 1-2 s */ : Math.max(2.8, Math.min(6.5, 2.4 + dist / 1400 + Math.max(0, crucero - Math.max(p0.y, p1.y)) / 500)) };
 }
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const suave = (u) => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
@@ -127,21 +128,22 @@ function ponerMarca(x, z, color) {
   }
   marca.position.set(x, y0, z); marca.userData.haz.material.color.copy(c); marca.userData.anillo.material.color.copy(c); marca.visible = true;
 }
-function mostrarTarjeta(titulo, texto, color) {
+function mostrarTarjeta(titulo, texto, color, lugar, etiqueta) {
   if (!tarjeta) {
     tarjeta = document.createElement('section'); tarjeta.id = 'ojo-t'; tarjeta.setAttribute('role', 'dialog'); tarjeta.setAttribute('aria-live', 'polite');
     document.body.appendChild(tarjeta);
   }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   tarjeta.style.setProperty('--ojo-c', color);
-  tarjeta.innerHTML = `<div class="oj-h">Ojo de Dios</div><h3 class="oj-t">${esc(titulo)}</h3>${texto ? `<p class="oj-x">${esc(texto)}</p>` : ''}<button type="button">Cerrar</button>`;
+  tarjeta.innerHTML = `<div class="oj-h">${esc(etiqueta || 'Ojo de Dios')}</div><h3 class="oj-t">${esc(titulo)}</h3>${texto ? `<p class="oj-x">${esc(texto)}</p>` : ''}${lugar ? `<p class="oj-d"><span>Dónde</span>${esc(lugar)}</p>` : ''}<button type="button">Cerrar</button>`;
   tarjeta.querySelector('button').onclick = () => cerrar();
   tarjeta.style.display = ''; requestAnimationFrame(() => tarjeta.classList.add('on'));
 }
 function quitarTarjeta() { if (tarjeta) { tarjeta.classList.remove('on'); const t = tarjeta; setTimeout(() => { if (!t.classList.contains('on')) t.style.display = 'none'; }, 380); } }
 
 /* ---------- API ---------- */
-async function ir({ x, z, titulo = '', texto = '', color = '#ffb347' } = {}) {
+/* opciones: rapido (vuelo de 1-2 s), cenital (God's Eye: cámara alta y empinada, ~58°, que encuadra el lugar desde arriba), lugar (dónde pasó; va en la tarjeta) */
+async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '' } = {}) {
   if (!armar()) throw new Error('KEN_OJO: el 3D aún no está listo');
   if (!isFinite(x) || !isFinite(z)) throw new Error('KEN_OJO.ir: x, z inválidos');
   await armarAlturas();
@@ -150,14 +152,16 @@ async function ir({ x, z, titulo = '', texto = '', color = '#ffb347' } = {}) {
   orbita = null; quitarTarjeta();
   // llega desde el lado por donde viene (si está casi encima, desde el sur)
   let dx = cam.position.x - x, dz = cam.position.z - z; const dh = Math.hypot(dx, dz); if (dh < 50) { dx = 0; dz = 1; } else { dx /= dh; dz /= dh; }
-  const rh = R_FIN * Math.cos(ELEV); let yF = y0 + R_FIN * Math.sin(ELEV);
+  const RF = cenital ? 520 : R_FIN, EL = cenital ? 1.02 : ELEV;
+  const rh = RF * Math.cos(EL); let yF = y0 + RF * Math.sin(EL);
   const pF = new V(x + dx * rh, yF, z + dz * rh); pF.y = Math.max(yF, alturaEn(pF.x, pF.z, 1) + MARGEN);
   const c1 = new V(x, y0, z);
   ponerMarca(x, z, color);
-  const ok = await new Promise(res => volar(planear(cam.position.clone(), T3.orbit.target.clone(), pF, c1), res));
+  if (rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta); // la tarjeta sale de una vez: se lee mientras vuela
+  const ok = await new Promise(res => volar(planear(cam.position.clone(), T3.orbit.target.clone(), pF, c1, rapido), res));
   if (!ok) return false;
   orbita = { on: true, c: c1, rh, y: pF.y, th: Math.atan2(dz, dx) };
-  mostrarTarjeta(titulo, texto, color);
+  if (!rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta);
   return true;
 }
 async function cerrar() {

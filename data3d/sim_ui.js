@@ -141,7 +141,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-av.on { opacity: 1; transform: none; } .su-av.bien { border-left-color: #8ee6a8; } .su-av.mal { border-left-color: #ff8a80; } .su-av.viendo { box-shadow: 0 0 0 1px rgba(255,255,255,.4), 0 10px 30px rgba(0,0,0,.4); }
   .su-av > i { font-style: normal; font-size: 14px; line-height: 1; margin-top: 2px; } .su-av > div:nth-child(2) { flex: 1; min-width: 0; }
   .su-av small { display: block; font: 600 10px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
-  .su-av b { display: block; font: 600 12px/1.25 system-ui, sans-serif; margin: 1px 0 2px; } .su-av p { margin: 0; opacity: .8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .su-av.viendo p { -webkit-line-clamp: unset; display: block; }
+  .su-av b { display: block; font: 600 12px/1.25 system-ui, sans-serif; margin: 1px 0 2px; } .su-av p { margin: 0; opacity: .8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .su-av.viendo p { -webkit-line-clamp: unset; display: block; } .su-av p.su-av-d { margin-top: 3px; opacity: 1; font-weight: 600; -webkit-line-clamp: 1; }
   .su-av .bt { display: flex; gap: 4px; align-items: center; } .su-av button { border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: inherit; border-radius: 7px; font: 600 11px system-ui, sans-serif; padding: 3px 8px; cursor: pointer; }
   .su-av button.ver { background: rgba(255,176,70,.92); color: #1b1206; border-color: transparent; } .su-av button.x { padding: 2px 8px; opacity: .7; }
   @media (max-width: 760px) { #su-der { width: calc(100vw - 32px); top: auto; bottom: 86px; max-height: 40vh; } #su-inf .caja { padding: 16px; } }
@@ -250,6 +250,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       M.paso(R.s); const I = M.ind(R.s); derivar(I); R.hist.push(I);
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       for (const ev of I.eventos || []) avisar(ev);
+      vigilar(I);
       if (I.hechos && I.sem % 4 === 0) clavar(I.hechos);
       if (I.atropellos && typeof I.atropellos === 'object' && I.sem % 4 === 0) { if (HEC) HEC.atropellos(I.atropellos, I.sem); else clavar([]); }
       if (I.predio || PRE) ponerPredio(I.predio);
@@ -378,7 +379,47 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
 
   /* ---------- especie que desaparece: cámara tipo God's Eye (data3d/ojo_dios.js) ---------- */
   function avisarExtincion(x) { // una especie que desaparece también es un aviso (con «Ver» vuela al lugar)
-    avisar({ sem: x.sem, tipo: 'especies', capa: 'especies', signo: -1, x: x.x, z: x.z, especies: [x.nombre || x.especie], titulo: `Desapareció ${x.nombre || x.especie}`, texto: `Motivo: ${x.motivo}${x.parche ? ' · ' + x.parche : ''}.` });
+    avisar({ sem: x.sem, tipo: 'especies', capa: 'especies', signo: -1, prio: true, x: x.x, z: x.z, especies: [x.nombre || x.especie], titulo: `Desapareció ${x.nombre || x.especie}`, texto: `Motivo: ${x.motivo}.`, lugar: x.lugar || x.parche || '' });
+  }
+
+  /* ---------- ALERTAS DE LOS INDICADORES: muertes de fauna, mucho ruido y caídas del tablero ----------
+     Cada semana del modelo se revisa lo nuevo y, si algo se pone mal, sale una tarjeta con «Ver» (vuela rápido, en God's Eye, al lugar).
+     Para no interrumpir todo el tiempo cada tipo de alerta sale como mucho cada ESPERA semanas. Al saltar en la barra (o ponerse al día
+     con otro escenario) se toma lo que ya pasó como punto de partida: no salen avisos del pasado. */
+  const ESPERA = { muerte: 13, ruido: 26, basura: 26, caida: 26 };
+  const RUIDO_ALTO = 65; /* dB en un parche con aves: por encima el bienestar de las aves cae a menos del 25 % (indAvesRuido: 0 % a 70 dB) */
+  const CAIDAS = [ // indicador, valor, lugar donde se ve, mejor si sube
+    { k: 'abejas', n: 'Abejas (especie clave)', v: I => I.abeja ? I.abeja.parches : null, donde: I => { const L = I.abeja && I.abeja.lugares; return L && L.length ? { x: L[0].x, z: L[0].z, n: L[0].n } : null; } },
+    { k: 'corredores', n: 'Continuidad de corredores', v: I => I.verde && I.verde.resumen ? I.verde.resumen.conectividad : null, donde: I => { const C = I.verde && I.verde.conexiones && I.verde.conexiones[0]; return C ? { x: (C.x1 + C.x2) / 2, z: (C.z1 + C.z2) / 2, n: C.via ? 'cruce de la ' + C.via : 'corredor ecológico' } : null; } },
+    { k: 'biodiv', n: 'Biodiversidad (Shannon)', v: I => I.biodiversidad ? I.biodiversidad.shannon : null, donde: I => { const L = (I.muertes && I.muertes.lista) || []; const m = L[L.length - 1]; return m ? { x: m.x, z: m.z, n: m.lugar } : null; } },
+    { k: 'aves', n: 'Bienestar de las aves', v: I => I.avesRuido ? I.avesRuido.bienestar : null, donde: I => { const P = I.avesRuido && I.avesRuido.porParche && I.avesRuido.porParche.slice().sort((a, b) => b.db - a.db)[0]; return P ? { x: P.x, z: P.z, n: P.n } : null; } }
+  ];
+  const CAUSA = { colision: 'se estrelló', atropello: 'atropellada', ruido: 'por el ruido', hambre_habitat: 'sin hábitat' };
+  function vigilar(I) {
+    if (!I || I.sem == null) return;
+    let A = R.alertas;
+    if (!A || I.sem < A.sem || I.sem - A.sem > 8) { A = R.alertas = { sem: I.sem, ult: {}, ref: {}, paso: {} }; for (const c of CAIDAS) { const v = c.v(I); if (v != null && isFinite(v)) A.ref[c.k] = v; } return; } /* punto de partida */
+    const semPrev = A.sem; A.sem = I.sem;
+    const libre = (t) => I.sem - (A.ult[t] == null ? -999 : A.ult[t]) >= ESPERA[t], marcar = (t) => { A.ult[t] = I.sem; };
+    // 1. muertes de fauna nuevas (la más reciente, con su causa y lugar)
+    const L = (I.muertes && I.muertes.lista) || [], nuevas = L.filter(m => m.sem > semPrev && m.sem <= I.sem);
+    if (nuevas.length) { A.pend = (A.pend || 0) + nuevas.length; A.ultM = nuevas[nuevas.length - 1]; }
+    if (A.pend && libre('muerte') && A.ultM) { const m = A.ultM, n = A.pend; A.pend = 0; marcar('muerte');
+      avisar({ sem: I.sem, tipo: 'especies', capa: 'especies', signo: -1, prio: true, x: m.x, z: m.z, especies: [m.nombre || m.especie], titulo: `Murió ${m.nombre || m.especie}${m.causa && CAUSA[m.causa] ? ' · ' + CAUSA[m.causa] : ''}`, texto: (m.detalle ? m.detalle.charAt(0).toUpperCase() + m.detalle.slice(1) + '.' : '') + (n > 1 ? ` ${n - 1} muerte${n > 2 ? 's' : ''} más desde el último aviso.` : ''), lugar: m.lugar || '' }); }
+    // 2. mucho ruido donde viven aves
+    const PR = I.avesRuido && I.avesRuido.porParche; if (PR && PR.length && libre('ruido')) { const P = PR.reduce((a, b) => b.db > a.db ? b : a);
+      if (P.db >= RUIDO_ALTO && P.db >= (A.dbAvisado || 0) + 1) { A.dbAvisado = P.db; marcar('ruido');
+        avisar({ sem: I.sem, tipo: 'ruido', capa: 'ruido', signo: -1, prio: true, x: P.x, z: P.z, titulo: `Mucho ruido: ${Math.round(P.db)} dB`, texto: `${P.aves} especies de aves viven aquí con más de ${RUIDO_ALTO} dB: no se oyen para cantar, se estresan y se van.`, lugar: P.n || '' }); } }
+    // 3. basura acumulada que sigue creciendo
+    const BP = I.basura && I.basura.puntos; if (BP && BP.length && libre('basura')) { const P = BP.reduce((a, b) => b.acumulada > a.acumulada ? b : a), sig = Math.floor((P.acumulada - (P.acumulada0 || 0)) / 50); /* cada 50 t más que al empezar */
+      if (sig >= 1 && sig > (A.basura || 0)) { A.basura = sig; marcar('basura');
+        avisar({ sem: I.sem, tipo: 'residuos', capa: 'basura', signo: -1, prio: true, x: P.x, z: P.z, titulo: `Basura acumulada: ${Math.round(P.acumulada)} t`, texto: 'Sin recoger trae ratas que se comen los nidos y rellena los bordes de los humedales.', lugar: P.nombre || '' }); } }
+    // 4. un indicador del tablero cae un 10 %, 20 %, 30 %… frente al punto de partida
+    if (libre('caida')) for (const c of CAIDAS) { const v = c.v(I), v0 = A.ref[c.k]; if (v == null || !isFinite(v)) continue; if (v0 == null) { A.ref[c.k] = v; continue; } if (!v0) continue;
+      const caida = (v0 - v) / Math.abs(v0), esc = Math.floor(caida * 10); if (esc < 1 || esc <= (A.paso[c.k] || 0)) continue;
+      const d = c.donde(I); A.paso[c.k] = esc; marcar('caida');
+      avisar({ sem: I.sem, tipo: c.k === 'aves' ? 'ruido' : 'especies', capa: c.k === 'aves' ? 'ruido' : 'especies', signo: -1, prio: true, x: d ? d.x : null, z: d ? d.z : null, titulo: `${c.n}: bajó ${Math.round(caida * 100)} %`, texto: 'Frente a cuando empezó a correr esta simulación. Mira dónde se nota más.', lugar: d && d.n ? d.n : '' });
+      break; }
   }
 
   /* ---------- AVISOS: lo que va pasando (ind().eventos del modelo) ----------
@@ -410,12 +451,12 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!ev || !ev.titulo) return; R.eventos.push(ev);
     if (!SIN_CAPAS && !generico(ev)) { clavar([ev]); if (!(esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo)) return; }
     if (!SIN_CAPAS && esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo) { semAuto = ev.sem || 0; ev.auto = true; cola.unshift(ev); tUlt = 0; return; }
-    cola.push(ev); while (cola.length > 3) { const k = cola.findIndex(e => !(e.tipo === 'especies' && e.signo < 0)); cola.splice(k >= 0 ? k : 0, 1); }
+    cola.push(ev); while (cola.length > 3) { const k = cola.findIndex(e => !e.prio && !(e.tipo === 'especies' && e.signo < 0)); /* las alertas (prio) no se descartan */ cola.splice(k >= 0 ? k : 0, 1); }
   }
   function mostrarAviso(ev) {
     const c = document.createElement('div'); c.className = 'su-av ' + (ev.signo > 0 ? 'bien' : ev.signo < 0 ? 'mal' : '');
     const año = ev.sem != null ? Math.floor(ev.sem / 52) + 1 : null;
-    c.innerHTML = `<i>${ICO[ev.tipo] || '•'}</i><div><small>${año ? 'Año ' + año : ''}${ev.especies && ev.especies.length ? ' · ' + escH(ev.especies.slice(0, 3).join(', ')) : ''}</small><b>${escH(ev.titulo)}</b><p>${escH(ev.texto)}</p></div>
+    c.innerHTML = `<i>${ICO[ev.tipo] || '•'}</i><div><small>${año ? 'Año ' + año : ''}${ev.especies && ev.especies.length ? ' · ' + escH(ev.especies.slice(0, 3).join(', ')) : ''}</small><b>${escH(ev.titulo)}</b><p>${escH(ev.texto)}</p>${ev.lugar ? `<p class="su-av-d">📍 ${escH(ev.lugar)}</p>` : ''}</div>
       <div class="bt">${ev.x != null || ev.capa ? '<button type="button" class="ver">Ver</button>' : ''}<button type="button" class="x" aria-label="Cerrar">×</button></div>`;
     c.querySelector('.x').onclick = () => quitar(c);
     const bv = c.querySelector('.ver'); if (bv) bv.onclick = () => verEvento(ev, c);
@@ -437,7 +478,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (window.KEN_FOCO) window.KEN_FOCO.on([capa, 'predio', 'cierre', 'basura', 'degradacion', 'caminos', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // lo que explica el aviso queda en color
     const bv = c.querySelector('.ver'); if (bv) { bv.textContent = 'Seguir'; bv.onclick = () => seguir(); }
     if (window.KEN_OJO && ev.x != null) {
-      await window.KEN_OJO.ir({ x: ev.x, z: ev.z, titulo: ev.titulo, texto: ev.texto, color: ev.signo > 0 ? '#8ee6a8' : '#ff8a80' });
+      const añoV = ev.sem != null ? Math.floor(ev.sem / 52) + 1 : null; /* vuelo rápido y encuadre desde arriba (God's Eye) con qué pasó y dónde */
+      await window.KEN_OJO.ir({ x: ev.x, z: ev.z, titulo: ev.titulo, texto: ev.texto, lugar: ev.lugar || '', etiqueta: (añoV ? 'Año ' + añoV + ' · ' : '') + 'Qué pasó', rapido: true, cenital: true, color: ev.signo > 0 ? '#8ee6a8' : '#ff8a80' });
       const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (viendo === c) seguir(false, true); }, { once: true });
     }
   }
