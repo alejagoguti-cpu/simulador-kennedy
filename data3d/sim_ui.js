@@ -6,6 +6,7 @@
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
 import { RELOJ } from './reloj.js?v=5';
+import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -176,6 +177,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-av button.ver { background: rgba(255,176,70,.92); color: #1b1206; border-color: transparent; } .su-av button.x { padding: 2px 8px; opacity: .7; }
   @media (max-width: 760px) { #su-der { width: calc(100vw - 32px); top: auto; bottom: 86px; max-height: 40vh; } #su-inf .caja { padding: 16px; } }
   @media print { body > *:not(#su-inf) { display: none !important; } #su-inf { position: static; background: none; } #su-inf .caja { max-height: none; color: #111; background: #fff; box-shadow: none; } #su-inf .bot { display: none; } }`;
+  st.textContent += ESTILO_ECO;
   document.head.appendChild(st);
 
   /* ---------- elementos ---------- */
@@ -670,26 +672,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     s += `<polygon points="${poli(E)}" fill="${col}33" stroke="${col}" stroke-width="2"/>`;
     return s + '</svg>';
   }
-  /* ÍNDICE ECOCÉNTRICO legible (pedido: «haz bien los diagramas, no se entienden»): número grande 0–100 y las 5 dimensiones como barras
-     horizontales (0–100, más es mejor) con una marca gris de «sin propuesta» en la misma semana. Reemplaza al radar. */
+  /* Flor: longitud de cada pétalo = dimensión (0–100), con referencia del otro escenario. */
   function pintarEco() {
     const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
-    const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, Eb = B && B.eco ? B.eco : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
-    const pc = (v) => Math.round(Math.max(0, Math.min(1, v || 0)) * 100);
-    /* MEDIDOR: medio círculo de 0 a 100 con el índice; color y palabra según cómo está (sano / en riesgo / crítico); marca gris = sin propuesta */
-    const est = (v) => v >= 70 ? ['Sano', '#8ee6a8'] : v >= 45 ? ['En riesgo', '#ffcf7a'] : ['Crítico', '#ff8a80'];
-    const v = pc(I.eco.indice), [pal, cE] = est(v), vb = Eb ? pc(Eb.indice) : null;
-    const arco = (a0, a1) => { const P = (t) => { const a = Math.PI * (1 - t); return [60 + Math.cos(a) * 48, 58 - Math.sin(a) * 48]; }, [x0, y0] = P(a0), [x1, y1] = P(a1); return `M${x0.toFixed(1)} ${y0.toFixed(1)} A48 48 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
-    const marca = (t, c, w) => { const a = Math.PI * (1 - t); return `<line x1="${(60 + Math.cos(a) * 39).toFixed(1)}" y1="${(58 - Math.sin(a) * 39).toFixed(1)}" x2="${(60 + Math.cos(a) * 57).toFixed(1)}" y2="${(58 - Math.sin(a) * 57).toFixed(1)}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`; };
-    const gauge = `<svg class="tb3-g" viewBox="0 0 120 66"><path d="${arco(0, 1)}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9" stroke-linecap="round"/>
-      ${[0.45, 0.7].map(t => marca(t, 'rgba(255,255,255,.35)', 1)).join('')}
-      ${v > 0 ? `<path d="${arco(0, Math.max(0.01, v / 100))}" fill="none" stroke="${cE}" stroke-width="9" stroke-linecap="round"/>` : ''}
-      ${vb != null ? marca(vb / 100, '#dfe5ea', 2.2) : ''}
-      <text x="60" y="52" text-anchor="middle" fill="#fff" font-size="26" font-weight="600" font-family="'Barlow Condensed',system-ui,sans-serif">${v}</text></svg>`;
-    box.innerHTML = `<div class="tb3-hd">${gauge}<div><span class="tb3-k">Índice ecocéntrico</span><strong style="color:${cE}">${pal}</strong><p>Qué tan sano está Kennedy para la vida no humana (0–100).${vb != null ? ` Sin propuesta: <b>${vb}</b>.` : ''}</p></div></div>
-      <div class="tb2-dims">${DIMS.map(([k, n]) => { const x = pc(I.eco[k]), xb = Eb && Eb[k] != null ? pc(Eb[k]) : null, c2 = est(x)[1];
-        return `<div class="tb2-d"><span>${n}</span><i><u style="width:${x}%;background:${c2}"></u>${xb != null ? `<s style="left:${xb}%" title="sin propuesta: ${xb}"></s>` : ''}</i><b>${x}</b></div>`; }).join('')}</div>
-      <p class="tb2-ley"><i style="background:#8ee6a8"></i>sano <i style="background:#ffcf7a"></i>en riesgo <i style="background:#ff8a80"></i>crítico${Eb ? ' <i class="g"></i>sin propuesta' : ''}</p>`;
+    const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null;
+    box.innerHTML = florEco(I.eco, B && B.eco);
   }
   function pintarEcoViejo() {
     const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
@@ -825,19 +812,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       + `<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
       + (ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3" fill="${col}" stroke="#08101a" stroke-width="1.5"/>` : '') + '</svg>';
   }
-  const CORTO = { abejas: 'Abejas', corredores: 'Corredores', parches: 'Parches nuevos', muertes: 'Muertes de fauna', ruido: 'Aves sin ruido', ciclos: 'Ciclos (agua, suelo)', residuos: 'Basura sin recoger', biodiv: 'Biodiversidad' };
-  function miniCurva(a, b, v0, col) { // tarjeta: área suave bajo la curva, línea del año 1 punteada, punto de ahora
-    const W = 120, H = 30, n = Math.ceil(FIN / 4), vals = a.concat(b, v0 != null ? [v0] : []).filter(v => v != null); if (vals.length < 2) return '<svg class="tb3-s" viewBox="0 0 120 30"></svg>';
-    let mn = Math.min(...vals), mx = Math.max(...vals); if (mx - mn < 1e-6) { mx += 1; mn -= 1; } const pad = (mx - mn) * 0.2; mn -= pad; mx += pad;
-    const X = i => (i / (n - 1) * W).toFixed(1), Y = v => (H - (v - mn) / (mx - mn) * H).toFixed(1);
-    const pts = a.map((v, i) => v == null ? null : [X(i), Y(v)]).filter(Boolean); if (pts.length < 2) return '<svg class="tb3-s" viewBox="0 0 120 30"></svg>';
-    const L = pts.map(p => p.join(',')).join(' '), id = 'g' + Math.random().toString(36).slice(2, 7), last = pts[pts.length - 1];
-    return `<svg class="tb3-s" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>`
-      + (v0 != null ? `<line x1="0" x2="${W}" y1="${Y(v0)}" y2="${Y(v0)}" stroke="rgba(255,255,255,.3)" stroke-dasharray="2 3"/>` : '')
-      + (b.length ? `<polyline points="${b.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ')}" fill="none" stroke="rgba(220,226,232,.5)" stroke-width="1.2"/>` : '')
-      + `<polygon points="${pts[0][0]},${H} ${L} ${last[0]},${H}" fill="url(#${id})"/><polyline points="${L}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.4" fill="${col}"/></svg>`;
-  }
-  const CAUSA_N = { colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }, CAUSA_C = { colision: '#ff6b6b', atropello: '#ffb347', ruido: '#c58cff', hambre_habitat: '#8fa3b5' };
+  const CORTO = { abejas: 'Abejas', corredores: 'Corredores', parches: 'Parches nuevos', muertes: 'Muertes de fauna', ruido: 'Bienestar de aves', ciclos: 'Ciclos (agua, suelo)', residuos: 'Basura sin recoger', biodiv: 'Biodiversidad' };
+  const CAUSA_N = { colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }, CAUSA_C = { colision: '#ff9d97', atropello: '#f2c680', ruido: '#d4bcf5', hambre_habitat: '#8ad9e5' };
   function pintarTablero() {
     const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
     const d = R.def || {}, H = R.hist, B = d.propuesta && R.base ? R.base.slice(0, H.length) : null;
@@ -849,13 +825,14 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       /* TARJETA: nombre corto, valor grande, flecha + % y la palabra (mejora/empeora/igual), mini curva con área; muertes ocupa el ancho con sus causas */
       const flecha = v0 == null ? '<em>empezando</em>' : !bien && !mal ? '<em>= igual</em>' : `<em class="${est}">${dl > 0 ? '▲' : '▼'} ${Math.abs(dl) < 10 ? Math.abs(dl).toFixed(1) : Math.round(Math.abs(dl))} % ${bien ? 'mejora' : 'empeora'}</em>`;
       const causas = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0) : [];
-      const extra = causas.length ? `<div class="tb2-cb">${causas.map(([k, c]) => `<i style="flex:${c};background:${CAUSA_C[k] || '#888'}"></i>`).join('')}</div><div class="tb2-cl">${causas.map(([k, c]) => `<span><i style="background:${CAUSA_C[k] || '#888'}"></i>${CAUSA_N[k] || k} ${c}</span>`).join('')}</div>` : '';
-      return `<div class="tb3-t ${est}${causas.length ? ' ancho' : ''}" data-k="${T.k}" title="Toca para ver por qué, cómo y dónde se mide">
+      const extra = causas.length ? `<div class="tb2-cl">${causas.map(([k, c]) => `<span><i style="background:${CAUSA_C[k] || '#888'}"></i>${CAUSA_N[k] || k} ${c}</span>`).join('')}</div>` : '';
+      return `<div class="tb3-t ${est}${causas.length ? ' ancho' : ''}" data-k="${T.k}" tabindex="0" role="group" aria-label="${escH(limpiarNombre(T.n))}. Presiona Enter para saber cómo se mide" title="Toca para ver por qué, cómo y dónde se mide">
         <div class="tb3-h"><span>${escH(CORTO[T.k] || limpiarNombre(T.n))}</span>${T.ver ? '<button type="button" class="v" title="Ver dónde pasa">Ver</button>' : ''}</div>
-        <b style="color:${colC}">${fv(v, T.u)}</b>${flecha}${miniCurva(a, b, v0, colC)}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
-    tab.innerHTML = `<h5 class="su-tt">Modelo ecocéntrico · en vivo</h5><div id="su-eco"></div><h5 class="su-tt tb3-st">Indicadores <span>frente al año 1 · toca uno para saber más</span></h5><div class="tb3-grid">${filas}</div>`;
+        <b style="color:${colC}">${fv(v, T.u)}</b>${flecha}${datoEco(T.k, I, v)}${cintaEco(a, b, v0, T.mejor, FIN)}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
+    tab.innerHTML = `<h5 class="su-tt">Jardín de indicadores · en vivo</h5><div id="su-eco"></div><h5 class="su-tt tb3-st">Huellas del territorio <span>Valores actuales · toca una ficha para explorar</span></h5><div class="eco-key"><span><i style="background:#a8e5b5"></i>mejora</span><span><i style="background:#ff9d97"></i>empeora</span><span>● ahora · línea punteada: ${B ? 'sin propuesta' : 'año 1'}</span><span>Las curvas tienen escalas propias.</span></div><div class="tb3-grid">${filas}</div>`;
     tab.querySelectorAll('.tb3-t').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
       el.onclick = (e) => { if (e.target.closest('.v')) return; abrirFicha(T.n); };
+      el.onkeydown = e => { if (e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrirFicha(T.n); } };
       const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
         await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes', animal: p.animal });
         const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
