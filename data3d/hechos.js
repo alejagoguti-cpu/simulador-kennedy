@@ -57,7 +57,7 @@ export function crearHechos({ T3 }) {
     // los 4 más recientes con etiqueta completa; el resto en mínimo; más de 40 → se quitan los más viejos
     const arr = [...H.values()].sort((a, b) => (b.ev.sem || 0) - (a.ev.sem || 0));
     arr.forEach((h, i) => h.d.classList.toggle('min', i >= 4));
-    for (const h of arr.slice(40)) quitar(h);
+    for (const h of arr.slice(8)) quitar(h); /* vista limpia: solo los 8 hechos más recientes */
   }
   function quitar(h) { G.remove(h.g); h.mA.dispose(); h.d.remove(); H.delete(clave(h.ev)); }
   function limpiar() { for (const h of [...H.values()]) quitar(h); if (atr) { G.remove(atr.v); G.remove(atr.n); atr = null; } atrN = -1; }
@@ -86,7 +86,7 @@ export function crearHechos({ T3 }) {
     const mk = (arr, px) => { const pos = new Float32Array(arr.length * 3); arr.forEach((a, i) => { pos[i * 3] = a.x; pos[i * 3 + 1] = Y + 4; pos[i * 3 + 2] = a.z; });
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       const o = new THREE.Points(geo, new THREE.PointsMaterial({ size: px * Math.min(2, devicePixelRatio || 1), sizeAttenuation: false, map: texAtr, transparent: true, alphaTest: 0.3, depthTest: false, toneMapped: false })); o.renderOrder = 41; o.frustumCulled = false; G.add(o); return o; };
-    const s0 = (sem || 0) - 26; atr = { v: mk(L.filter(a => a.sem < s0), 9), n: mk(L.filter(a => a.sem >= s0), 15) };
+    const s0 = (sem || 0) - 26; atr = { v: mk([], 9), n: mk(L.filter(a => a.sem >= s0), 13) }; /* solo los atropellos de los últimos 6 meses */
   }
   /* sin burbujas: las etiquetas no se muestran; un clic sobre un aro (a menos de 30 px en pantalla) abre su información (alClic) */
   const cvs = T3.renderer && T3.renderer.domElement; let pd = null;

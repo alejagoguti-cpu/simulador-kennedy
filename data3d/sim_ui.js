@@ -151,9 +151,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function preparar(id) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
-    reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null);
+    reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null); { const lr = document.getElementById('lp-red'); if (lr) lr.style.display = 'none'; } /* vista limpia: sin el diagrama de interacciones mientras corre */
     setTimeout(apagarSintaxis, 1600); setTimeout(apagarSintaxis, 3200);
-    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5);
+    setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); const ruidoOn = !!(H && H.ruido && !(R.def && R.def.propuesta)); /* con propuesta: sin capa de ruido, la historia es la red verde y el reparto */ if (H && rb && rb.classList.contains('on') !== ruidoOn) rb.click(); pintarHistoria(); focoHistoria(5);
       apagarSintaxis();
       // sin propuesta (plan parcial): capa «Flujo de carros» prendida para ver las vías internas de Bavaria y Boyacá congestionadas
       if (R.def && R.def.par != null && !R.def.propuesta) { const fv = document.querySelector('#gs-fc button[data-v="1"]'); if (fv && !fv.classList.contains('on')) fv.click(); }
@@ -163,7 +163,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
       // el tráfico se ve con la capa de RUIDO de carros (no con el flujo de puntos): ruido prendido, flujo apagado
       const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click();
-      const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on')) rb.click();
+      const rb = document.getElementById('rc-btn'); if (rb && !rb.classList.contains('on') && !(R.def && R.def.propuesta)) rb.click();
       }, 700); // la capa de comercio (CCL) se prende a mano en «Indicadores»
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
@@ -380,7 +380,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const generico = (ev) => { const K = M && M.KEN_XZ; return ev.x == null || (K && Math.abs(ev.x - K[0]) < 2 && Math.abs(ev.z - K[1]) < 2); };
   function clavar(lista) {
     const L = (lista || []).filter(ev => ev && !generico(ev)); if (!L.length) return;
-    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=5').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
+    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=6').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
     HEC.poner(L);
   }
   function avisar(ev) {
@@ -477,12 +477,17 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   function ponerLugares(I) {
     if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=5').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
-    LUG.ver(!!R.sim && !!R.def && (R.def.par === 1 || R.def.par === 2)); /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
+    LUG.ver(false); /* vista limpia: sin pines de tiendas (los mercados se ven como volúmenes en el reparto) */ /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
-  let CONT = null, pCont = null;
+  let CONT = null, pCont = null, REP = null, pRep = null;
   function ponerCapaPar(I) {
     const c = I ? capaPar() : null;
     // par 01: contenedores (Corabastos con su tope y los mercados) en vez de nodos y rutas
+    /* con propuesta: la carga de Corabastos se reparte entre los mercados (volúmenes proporcionales a las t/día, data3d/reparto.js) */
+    const repartir = c === 'abasto' && R.def && R.def.propuesta && I.abasto;
+    { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP); }
+    if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=1').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
+    if (REP) REP.ver(false);
     if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=6').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
@@ -496,7 +501,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
         (sin propuesta / con propuesta, mismos valores, misma semana) para ver cómo la arquitectura cambia la dinámica. */
   const TODAS = ['abasto_cont', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza', 'basura', 'degradacion', 'cierre', 'caminos', 'predio', 'biotica', 'indicadores'];
   const HISTORIA = {
-    1: { capas: ['abasto_cont', 'basura', 'degradacion', 'biotica', 'predio', 'caminos'], ruido: true, etq: ['bas'] },
+    1: { capas: ['abasto_cont', 'basura', 'degradacion', 'predio', 'caminos'], ruido: true, etq: ['bas'] },
     2: { capas: ['cierre', 'biotica', 'predio', 'caminos'], ruido: true, etq: [] },
     3: { capas: ['residuos', 'basura', 'degradacion', 'predio', 'caminos'], ruido: false, etq: ['bas', 'pares'] },
     4: { capas: ['biodiversidad', 'biotica', 'degradacion', 'predio', 'caminos'], ruido: false, etq: ['pares'] },
