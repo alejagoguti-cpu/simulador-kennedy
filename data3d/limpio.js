@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=92';
+import { iniciarSimUI } from './sim_ui.js?v=93';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -182,6 +182,8 @@ export function iniciarLimpio({ T3 }) {
     if (!ESC.activo) { escoger(13); setTimeout(() => { if (RELOJ.pausaSem) alternar(); pintarSeis(); }, 900); } }, 0);
   /* sin la capa de flujo de carros (las líneas de colores en las calles): los carros ya se ven */
   let nFc = 0; const fcOff = setInterval(() => { const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click(); if (++nFc > 40) clearInterval(fcOff); }, 500);
+  /* VÍAS MÁS OSCURAS: calzada de asfalto oscuro y andenes un poco más oscuros (las rayas blancas quedan); el color multiplica la textura */
+  let nVia = 0; const vOsc = setInterval(() => { const V = T3.viasMallas; if (V && V[2]) { V[2].material.color.setHex(0x3c3f44); V[0].material.color.setHex(0x8e8e8b); clearInterval(vOsc); } else if (++nVia > 60) clearInterval(vOsc); }, 500);
   addEventListener('lp-vuelta', () => { reiniciar(); setTimeout(() => { if (RELOJ.pausaSem) alternar(); }, 300); });
   /* ---------- barra de años ---------- */
   const bar = document.createElement('div'); bar.id = 'lp-anos'; bar.className = 'vacia';
