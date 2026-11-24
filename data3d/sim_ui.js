@@ -380,7 +380,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const generico = (ev) => { const K = M && M.KEN_XZ; return ev.x == null || (K && Math.abs(ev.x - K[0]) < 2 && Math.abs(ev.z - K[1]) < 2); };
   function clavar(lista) {
     const L = (lista || []).filter(ev => ev && !generico(ev)); if (!L.length) return;
-    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=4').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
+    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=5').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
     HEC.poner(L);
   }
   function avisar(ev) {
@@ -469,7 +469,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      Bavaria Común y las Estaciones Circulares) — data3d/lugares.js */
   let LUG = null, pLug = null;
   function ponerLugares(I) {
-    if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=4').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
+    if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=5').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
     LUG.ver(!!R.sim && !!R.def && (R.def.par === 1 || R.def.par === 2)); /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
   let CONT = null, pCont = null;

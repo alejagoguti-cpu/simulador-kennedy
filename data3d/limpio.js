@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=65';
+import { iniciarSimUI } from './sim_ui.js?v=67';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -126,6 +126,7 @@ export function iniciarLimpio({ T3 }) {
   /* RED DE INTERACCIONES («la bolita» del tablero): el diagrama de cuerdas de quién interactúa con quién, en vivo, en una tarjeta flotante
      a la izquierda (el canvas #tb-cuerda del tablero se mueve aquí; tablero.js lo dibuja aunque el tablero esté cerrado). El tablero
      sigue contando encuentros (su paso del reloj queda prendido). */
+  { const sb = document.createElement('style'); sb.textContent = '.lug-et,.hc-et,#bas-etq,.be,#cont-et,#mercred-aviso{display:none!important}'; document.head.appendChild(sb); } /* sin burbujas de información sobre el mapa */
   { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
     #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
     #lp-red h5{cursor:pointer} #lp-red h5::after{content:' ▾';opacity:.7} #lp-red.cerrado h5::after{content:' ▸'} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}`; document.head.appendChild(st);
