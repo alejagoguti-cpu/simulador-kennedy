@@ -138,7 +138,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function preparar(id) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
-    reiniciarModelo(); pintarPanel(); der.classList.add('on');
+    reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null);
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5);
       // sin propuesta (plan parcial): capa «Flujo de carros» prendida para ver las vías internas de Bavaria y Boyacá congestionadas
       if (R.def && R.def.par != null && !R.def.propuesta) { const fv = document.querySelector('#gs-fc button[data-v="1"]'); if (fv && !fv.classList.contains('on')) fv.click(); }
@@ -214,6 +214,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.cierre || CIE) ponerCierre(I.cierre);
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       ponerCapaPar(I);
+      if (I.sem % 4 === 0 || R.hist.length === 1) ponerLugares(I);
       if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
@@ -437,6 +438,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* ---------- CAPA PRINCIPAL DE CADA PAR (data3d/capas_pares.js): abasto, residuos, biodiversidad, suelo, gobernanza ---------- */
   let PAR = null, pPar = null;
   const capaPar = () => { const c = R.def && R.def.capa; return c && c !== 'movilidad' ? c : null; };
+  /* LUGARES: pines con ícono y nombre de dónde está cada cosa (tiendas, supermercados, plazas, Corabastos; con propuesta los mercados,
+     Bavaria Común y las Estaciones Circulares) — data3d/lugares.js */
+  let LUG = null, pLug = null;
+  function ponerLugares(I) {
+    if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=2').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
+    LUG.ver(!!R.sim); LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
+  }
   let CONT = null, pCont = null;
   function ponerCapaPar(I) {
     const c = I ? capaPar() : null;
