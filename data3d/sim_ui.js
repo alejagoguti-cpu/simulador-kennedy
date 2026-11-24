@@ -764,7 +764,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     tab.querySelectorAll('.su-tf').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
       el.querySelector('.i').onclick = () => abrirFicha(T.n);
       const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
-        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80' });
+        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes' }); /* igual que los avisos: rápido, cenital y X en el piso donde murió */
         const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
     pintarEco();
   }
