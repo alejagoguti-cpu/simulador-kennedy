@@ -94,6 +94,7 @@ export function iniciarLimpio({ T3 }) {
     @media (min-width: 1100px) { #lp-anos { left: 296px; right: 312px; transform: none; width: auto; } #lp-anos .tit { max-width: 200px; } #lp-anos .pista { min-width: 380px; } } /* barra larga: ocupa todo el ancho entre los dos paneles */
 @media (max-width: 640px) { #lp-anos .tit { display: none; } #lp-anos { gap: 8px; padding: 8px 10px; } }`;
   document.head.appendChild(css);
+  import('./camara_quieta.js?v=1').then(m => m.iniciarCamaraQuieta({ T3 })).catch(e => console.warn('cámara quieta:', e)); /* la cámara nunca se mueve sola */
 
   /* ---------- panel de la izquierda: se quita poco (ángulo, textos largos, flujo de agentes, ¿de dónde vienen?, agentes) ---------- */
   const limpiarPanel = () => {

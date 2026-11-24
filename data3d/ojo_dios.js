@@ -186,7 +186,7 @@ async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = f
   if (rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta); // la tarjeta sale de una vez: se lee mientras vuela
   const ok = await new Promise(res => volar(planear(cam.position.clone(), T3.orbit.target.clone(), pF, c1, rapido), res));
   if (!ok) return false;
-  orbita = { on: !cenital, c: c1, rh, y: pF.y, th: Math.atan2(dz, dx) }; /* desde arriba la cámara se queda quieta */
+  orbita = { on: !cenital && !document.documentElement.classList.contains('limpio') /* simulador: la cámara nunca gira sola */, c: c1, rh, y: pF.y, th: Math.atan2(dz, dx) }; /* desde arriba la cámara se queda quieta */
   if (!rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta);
   return true;
 }
