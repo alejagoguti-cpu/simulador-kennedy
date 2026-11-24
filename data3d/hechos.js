@@ -81,7 +81,7 @@ export function crearHechos({ T3 }) {
     g.strokeStyle = '#fff'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.moveTo(15, 15); g.lineTo(33, 33); g.moveTo(33, 15); g.lineTo(15, 33); g.stroke();
     const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; return tx; })();
   function atropellos(A, sem) {
-    const L = A && A.lista ? A.lista.filter(a => a.x != null) : []; const k = L.length + '|' + (L.length ? L[L.length - 1].sem : 0); if (k === atrN) return; atrN = k;
+    const L = A && A.lista ? A.lista.filter(a => a.x != null && !/rata|caracol/i.test(a.nombre || a.especie || '')) : []; /* solo fauna nativa (sin ratas ni caracoles) */ const k = L.length + '|' + (L.length ? L[L.length - 1].sem : 0); if (k === atrN) return; atrN = k;
     if (atr) { G.remove(atr.v); G.remove(atr.n); atr.v.geometry.dispose(); atr.n.geometry.dispose(); atr = null; } if (!L.length) return;
     const mk = (arr, px) => { const pos = new Float32Array(arr.length * 3); arr.forEach((a, i) => { pos[i * 3] = a.x; pos[i * 3 + 1] = Y + 4; pos[i * 3 + 2] = a.z; });
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));

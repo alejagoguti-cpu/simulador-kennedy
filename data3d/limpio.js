@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=72';
+import { iniciarSimUI } from './sim_ui.js?v=74';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -141,7 +141,7 @@ export function iniciarLimpio({ T3 }) {
   const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
     if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
   // sin los anillos naranjas de entrada ni los halos de camiones (data3d/origenes.js): la autora no los quiere (solo los carros)
-  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
+  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = T3.scene.getObjectByName(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
   setInterval(() => { T3.scene.traverse(o => {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
@@ -161,8 +161,22 @@ export function iniciarLimpio({ T3 }) {
   $b('.rei').onclick = () => { if (!ESC.activo) return; reiniciar(); };
   $b('.vel').onclick = () => { vel = (vel + 1) % VELS.length; $b('.vel').textContent = VEL_TXT[vel]; if (!RELOJ.pausaSem) { RELOJ.ponerVelAños(VELS[vel]); RELOJ.ponerVel(VEL_DIA[vel]); } };
   addEventListener('keydown', (e) => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement && document.activeElement.tagName)) { e.preventDefault(); alternar(); } });
+  /* MODO PRESENTACIÓN (como la referencia: ciudad real en vista oblicua hacia el horizonte, masas de color y solo la línea de tiempo):
+     al darle play la cámara baja suave a una vista oblicua y los paneles laterales se desvanecen; en pausa vuelven. */
+  { const sp = document.createElement('style'); sp.textContent = `#gs-izq,#su-der,#su-hist,#lp-red{transition:opacity .6s ease,transform .6s ease}
+    body.lp-corre #gs-izq{opacity:0!important;pointer-events:none!important;transform:translateX(-24px)} body.lp-corre #su-der{opacity:0!important;pointer-events:none!important;transform:translateX(24px)}
+    body.lp-corre #su-hist,body.lp-corre #lp-red{opacity:0!important;pointer-events:none!important}
+    #lp-ojo{position:fixed;right:16px;top:16px;z-index:45;padding:7px 12px;border-radius:10px;background:rgba(20,22,28,.78);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);color:#eef1f4;font:600 11.5px system-ui,sans-serif;cursor:pointer;display:none} body.lp-corre #lp-ojo{display:block}`; document.head.appendChild(sp);
+    const ob = document.createElement('button'); ob.id = 'lp-ojo'; ob.type = 'button'; ob.textContent = '❚❚ Pausar y ver los datos'; ob.onclick = () => alternar(); document.body.appendChild(ob); }
+  const VOBL = { c: [2350, 0, 380], d: [420, 560, 2250] }; let camT = null;
+  function irOblicua() { if (!T3.camera || !T3.orbit) return; T3.anim = null; camT = { t0: performance.now(), dur: 2600, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone() }; }
+  RELOJ.alDibujar(() => { if (!camT) return; const k = Math.min(1, (performance.now() - camT.t0) / camT.dur), e = k * k * (3 - 2 * k);
+    T3.orbit.target.set(camT.c0.x + (VOBL.c[0] - camT.c0.x) * e, camT.c0.y + (VOBL.c[1] - camT.c0.y) * e, camT.c0.z + (VOBL.c[2] - camT.c0.z) * e);
+    T3.camera.position.set(camT.p0.x + (VOBL.c[0] + VOBL.d[0] - camT.p0.x) * e, camT.p0.y + (VOBL.d[1] - camT.p0.y) * e, camT.p0.z + (VOBL.c[2] + VOBL.d[2] - camT.p0.z) * e); T3.orbit.update(); if (k >= 1) camT = null; });
+  let yaOblicua = false;
   function alternar() {
     if (!ESC.activo) return;
+    if (RELOJ.pausaSem && !yaOblicua) { yaOblicua = true; irOblicua(); }
     if (RELOJ.pausaSem) { if (RELOJ.sem >= FIN_SEM) reiniciar(); RELOJ.detenerSemEn = FIN_SEM; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); RELOJ.presupuestoMs = 10; RELOJ.ponerVel(VEL_DIA[vel]); }
     else { RELOJ.pausarAños(true); RELOJ.presupuestoMs = 6; RELOJ.ponerVel(1); }
   }
@@ -173,6 +187,7 @@ export function iniciarLimpio({ T3 }) {
     $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
     const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
+    document.body.classList.toggle('lp-corre', corre && !!ESC.activo);
     const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
   });
 
@@ -188,7 +203,7 @@ export function iniciarLimpio({ T3 }) {
   }
   function escoger(id) {
     const S = SIMS.find(s => s.id === id); if (!S) return;
-    ESC.activo = id; ESC.sim = S; bar.classList.remove('vacia');
+    ESC.activo = id; ESC.sim = S; bar.classList.remove('vacia'); yaOblicua = false;
     document.querySelectorAll('#lp-sims button').forEach(b => b.classList.toggle('on', +b.dataset.s === id));
     const nm = document.getElementById('lp-simn'); if (nm) nm.textContent = S.n;
     $b('.tit').textContent = `Simulación ${id} · ${S.n}`;

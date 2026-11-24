@@ -380,7 +380,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const generico = (ev) => { const K = M && M.KEN_XZ; return ev.x == null || (K && Math.abs(ev.x - K[0]) < 2 && Math.abs(ev.z - K[1]) < 2); };
   function clavar(lista) {
     const L = (lista || []).filter(ev => ev && !generico(ev)); if (!L.length) return;
-    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=6').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
+    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=7').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
     HEC.poner(L);
   }
   function avisar(ev) {
@@ -689,7 +689,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (kCiu === metaCiu && kCiu === 1) return;
     if (ahora - tRec > 600) { tRec = ahora; recolectar(); } // la malla de Google carga teselas nuevas: se recogen cada 0,6 s
     const paso = dt / Math.max(0.2, durCiu) * 0.55; kCiu = kCiu > metaCiu ? Math.max(metaCiu, kCiu - paso) : Math.min(metaCiu, kCiu + paso); aplicarCiu(); });
-  const ciudad = (on, dur = 1) => { metaCiu = on ? 0.45 : 1; durCiu = dur; };
+  const ciudad = (on, dur = 1) => { metaCiu = on ? 0.85 : 1; durCiu = dur; };
   const FOCO_CIU = { on: (c, o) => { ciudad(true, o && o.dur ? o.dur : 1); return Promise.resolve(true); }, off: (o) => ciudad(false, o && o.dur ? o.dur : 1), get activo() { return metaCiu < 1; }, get nivel() { return (1 - kCiu) / 0.55; } };
   setInterval(() => { if (window.KEN_FOCO !== FOCO_CIU) window.KEN_FOCO = FOCO_CIU; }, 500);
   /* la sintaxis espacial (líneas de colores de integración/elección) empieza y se mantiene apagada al escoger una simulación: otros
