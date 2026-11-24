@@ -8,7 +8,7 @@ import { RELOJ } from './reloj.js?v=5';
 import { construirRed, arbol } from './viajes_mercados.js?v=9';
 import { ZONAS } from './sim_red_datos.js?v=2';
 
-const POR_CARRO = 20, VEL = 14, MAXC = 400; // autos por carro dibujado · m/s en pantalla · tope de carros dibujados
+const POR_CARRO = 20, VEL = 14, MAXC = 1500, POR_VEH = 12; /* POR_VEH: con el modelo semanal (ind().predio.vehiculosDia) se dibuja 1 carro por cada 12 vehículos/día que entran y salen del predio: ~1.400 carros con el plan terminado */ // autos por carro dibujado · m/s en pantalla · tope de carros dibujados
 function ruta(R, T, u) { // nodo u -> raíz del árbol (el predio), con largo acumulado
   if (!isFinite(T.dist[u])) return null; const out = [[R.X[u], R.Z[u]]];
   while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) return null; const v = R.ea[e] === u ? R.eb[e] : R.ea[e]; out.push([R.X[v], R.Z[v]]); u = v; }
@@ -41,8 +41,8 @@ export async function iniciarTraficoPlan({ T3 }) {
   const yV = () => (T3.sueloY != null ? T3.sueloY : 0.3) + 0.02;
   RELOJ.alDibujar(() => {
     const E = window.KEN_ESIM, esc = E && E.esc, o = E && E.vida && E.vida.S && E.vida.S.D ? E.vida.S.D.o : null;
-    const on = !!(esc === 'D' && o && o.plan && VEH); im.visible = on; if (VEH) VEH.grupo.visible = on; if (!on) { im.count = 0; return; }
-    const n = Math.min(MAXC, Math.round(o.plan.autos / POR_CARRO)), tA = RELOJ.tAnim || 0;
+    const PS = window.KEN_PREDIO_SIM, on = !!(VEH && ((PS && PS.vehiculosDia > 0) || (esc === 'D' && o && o.plan))); im.visible = on; if (VEH) VEH.grupo.visible = on; if (!on) { im.count = 0; return; }
+    const n = Math.min(MAXC, Math.round(PS && PS.vehiculosDia > 0 ? PS.vehiculosDia / POR_VEH : o.plan.autos / POR_CARRO)), tA = RELOJ.tAnim || 0;
     VEH.inicio();
     for (let i = 0; i < n; i++) { const c = carros[i], L = c.r.L, s0 = ((tA * VEL / L) + c.fase) % 1, s = (c.sale ? s0 : 1 - s0) * L; // la ruta va del destino (0) al predio (L)
       let [x, z, fx, fz] = enRuta(c.r, s); if (!c.sale) { fx = -fx; fz = -fz; } /* s baja con el tiempo: el carro va en contra del sentido de la ruta */

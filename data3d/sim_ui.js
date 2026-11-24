@@ -265,7 +265,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (R.previa && !RELOJ.pausaSem) { R.previa = false; pintarPrevia(''); } // al darle play la vista previa se va y los picos siguen la barra
     let n = 0;
     while (R.s && R.hist.length < Math.max(1, Math.min(FIN, RELOJ.sem)) && n++ < 30) {
-      M.paso(R.s); const I = M.ind(R.s); derivar(I); R.hist.push(I);
+      M.paso(R.s); const I = M.ind(R.s); derivar(I); R.hist.push(I); window.KEN_PREDIO_SIM = I.predio || null; /* carros del plan parcial (data3d/trafico_plan.js) según los vehículos/día del modelo */
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       for (const ev of I.eventos || []) avisar(ev);
       vigilar(I);

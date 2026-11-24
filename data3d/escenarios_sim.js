@@ -579,7 +579,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     .catch(er => { console.warn('modo simple:', er); document.documentElement.classList.remove('ms-simple'); });
   setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple') && !document.documentElement.classList.contains('limpio')) import('./guia.js?v=3').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
   import('./mejora_tour.js?v=11').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=16').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./capas_escenario.js?v=17').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, get esc() { return esc(); }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }
