@@ -48,7 +48,7 @@ export async function crearLugares({ T3 }) {
   let oe = null, nEst = -1;
   // rótulos (vidrio, sans-serif) de los lugares grandes
   const css = document.createElement('style'); css.textContent = `.lug-et{position:fixed;z-index:5;pointer-events:none;transform:translate(-50%,-150%);padding:3px 8px;border-radius:9px;background:rgba(20,22,28,.82);border:1px solid rgba(255,255,255,.18);color:#f2f3f5;font:600 11px/1.2 system-ui,sans-serif;white-space:nowrap;display:none}
-  #lug-ley{position:fixed;left:296px;bottom:212px;z-index:41;padding:8px 10px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);color:#eef1f4;font:500 11px/1.5 system-ui,sans-serif;display:none}
+  #lug-ley{position:fixed;left:648px;bottom:212px;z-index:41;padding:8px 10px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);color:#eef1f4;font:500 11px/1.5 system-ui,sans-serif;display:none}
   #lug-ley b{display:block;font:600 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:3px} #lug-ley span{display:flex;align-items:center;gap:6px} #lug-ley i{font-style:normal;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;border:1.5px solid #fff}
   @media (max-width:1100px){#lug-ley{display:none!important}}`; document.head.appendChild(css);
   const ets = [];

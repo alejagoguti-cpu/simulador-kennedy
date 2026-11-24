@@ -442,7 +442,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      Bavaria Común y las Estaciones Circulares) — data3d/lugares.js */
   let LUG = null, pLug = null;
   function ponerLugares(I) {
-    if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=2').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
+    if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=4').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
     LUG.ver(!!R.sim); LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
   let CONT = null, pCont = null;

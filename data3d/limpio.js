@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=54';
+import { iniciarSimUI } from './sim_ui.js?v=56';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -123,7 +123,17 @@ export function iniciarLimpio({ T3 }) {
   const intentar = () => { if (!limpiarPanel()) setTimeout(intentar, 300); };
   intentar();
   // el tablero de interacciones (su panel está escondido en esta vista) no necesita correr: libera ~0,2 ms por segundo simulado
-  let nTb = 0; const apTb = setInterval(() => { const s = RELOJ.sistemas.find(x => x.nombre === 'tablero'); if (s && !s._lp) { s._lp = 1; s.step = () => {}; } if (s || ++nTb > 60) clearInterval(apTb); }, 1000);
+  /* RED DE INTERACCIONES («la bolita» del tablero): el diagrama de cuerdas de quién interactúa con quién, en vivo, en una tarjeta flotante
+     a la izquierda (el canvas #tb-cuerda del tablero se mueve aquí; tablero.js lo dibuja aunque el tablero esté cerrado). El tablero
+     sigue contando encuentros (su paso del reloj queda prendido). */
+  { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
+    #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
+    #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}`; document.head.appendChild(st);
+    const card = document.createElement('div'); card.id = 'lp-red'; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card);
+    let movido = false;
+    setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
+      const on = !!ESC.activo && movido; card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
+      const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
 
   /* sin la franja verde de la orilla del humedal ni los rellenos planos verdes de zonas (se veían raros sobre la foto) */
@@ -219,7 +229,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=5', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=3', './capas_pares.js?v=1', './lugares.js?v=2', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=5', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=3', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

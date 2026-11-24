@@ -301,7 +301,7 @@ body.tb-abierto #dock{display:none}
       if (primado && (u0 === undefined || ahora - u0 > 60000)) EV.push({ tr: ahoraA + RELOJ.azarDe('tablero_ev', nEv, 0) * 500, t: L.t, txt: `${nombreDe(L.a)} ${VERBO[L.t] || '→'} ${nombreDe(L.b, L).toLowerCase()}`, hab: L.a.h.n, y: RELOJ.azarDe('tablero_ev', nEv++, 1) });
       VISTO.set(kv, ahora);
     }
-    ahoraEnc = n; primado = true;
+    ahoraEnc = n; window.KEN_ENC = n; primado = true;
     if (RELOJ.t - tCambio >= 10) { const sl = Math.floor(t / 15) % 96, V = VIVO[escAct] || (VIVO[escAct] = new Array(96).fill(null)); if (!V[sl]) V[sl] = { v: n, k: 1 }; else { V[sl].k++; V[sl].v += (n - V[sl].v) / Math.min(V[sl].k, 20); } } // encuentros por cuarto de hora en el escenario activo
     while (EV.length && ahoraA - EV[0].tr > 92000) EV.shift(); if (EV.length > 1500) EV.splice(0, EV.length - 1500);
     if (VISTO.size > 20000) for (const [k, u0] of VISTO) if (ahora - u0 > 60000) VISTO.delete(k);
@@ -542,8 +542,8 @@ body.tb-abierto #dock{display:none}
   let tFlujo = 0;
   // dibujo en el bucle maestro del reloj (solo lee el estado; la cuerda y el pulso usan el tiempo de animación)
   RELOJ.alDibujar((info) => {
-    if (!abierto()) return;
     const dt = Math.min(0.1, info.dtAnim);
+    if (!abierto()) { if (window.KEN_CUERDA_VIVA) dibujarCuerda(Math.max(dt, 0.016)); return; } // vista limpia: la cuerda se dibuja en su tarjeta flotante (data3d/limpio.js)
     dibujarCuerda(dt); dibujarPulso(); if ((tFlujo -= info.dtReal) <= 0) { tFlujo = 0.5; dibujarFlujo(); }
   });
   /* ---------- Av. Ciudad de Cali: tráfico hoy y con la propuesta (data3d/alivio_cali.js, conteo en vivo de la simulación) ---------- */
