@@ -18,11 +18,14 @@ export async function iniciarPlanBavaria({ T3 }) {
   const forma = (q) => { const s = new THREE.Shape(q.o.map(p => { const w = W(p); return new THREE.Vector2(w[0], -w[1]); }));
     for (const h of q.h || []) s.holes.push(new THREE.Path(h.map(p => { const w = W(p); return new THREE.Vector2(w[0], -w[1]); }))); return s; };
 
+  /* edificios resaltados en AMARILLO SUAVE (pedido de la autora: «resalta los edificios como en un amarillo suave»), con un poco de luz
+     propia para que se despeguen del suelo oscuro; en obra, el mismo amarillo más apagado */
+  const AMA = (c, e, r) => new THREE.MeshStandardMaterial({ color: c, roughness: r, emissive: e, emissiveIntensity: 1 });
   const mats = {
-    ladrillo: new THREE.MeshStandardMaterial({ color: 0xcfc6b8, roughness: 0.85 }), // fachada clara (antes ladrillo rojo saturado: se veía feo desde lejos)
-    blanco: new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.7 }),
-    vidrio: new THREE.MeshStandardMaterial({ color: 0xc9d2d8, roughness: 0.5 }),
-    obra: new THREE.MeshStandardMaterial({ color: 0x9a9da0, roughness: 0.9 })
+    ladrillo: AMA(0xf1dd9c, 0x2a2208, 0.85),
+    blanco: AMA(0xf6e7b4, 0x2a2208, 0.7),
+    vidrio: AMA(0xeedfae, 0x241e08, 0.5),
+    obra: AMA(0xc9bd93, 0x16130a, 0.9)
   };
   /* fachada dibujada en la tarjeta gráfica (sin texturas): ventanas por piso (3 m) y por módulo (3,3 m), placa de entrepiso, primer piso
      de locales con vidrio corrido y cubierta gris. De lejos se promedia (sin moiré). Ladrillo con variación de tono por tramo.
@@ -39,7 +42,7 @@ export async function iniciarPlanBavaria({ T3 }) {
           float gWin = 0.0;
           { vec3 n = normalize(vWN); float yy = vWP.y - uY0;
             ${tipo === 'ladrillo' ? 'diffuseColor.rgb *= 0.86 + 0.24 * vIH;' : 'diffuseColor.rgb *= 0.95 + 0.07 * vIH;'}
-            if (n.y > 0.5) { diffuseColor.rgb = vec3(0.34, 0.34, 0.33) * (0.9 + 0.1 * vIH); }
+            if (n.y > 0.5) { diffuseColor.rgb *= 0.9 + 0.06 * vIH; } /* cubierta: el mismo amarillo suave (desde arriba es lo que más se ve) */
             else if (n.y > -0.5) {
               vec2 tg = normalize(vec2(-n.z, n.x)); float hh = dot(vWP.xz, tg);
               float bay = hh / 3.3, fl = yy / 3.0; vec2 w = fwidth(vec2(bay, fl)); float fx = fract(bay), fy = fract(fl);
@@ -58,7 +61,7 @@ export async function iniciarPlanBavaria({ T3 }) {
           }`)
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.12, gWin);');
     };
-    m.customProgramCacheKey = () => 'fachadaPlanBav2_' + tipo;
+    m.customProgramCacheKey = () => 'fachadaPlanBav3_' + tipo;
   };
   if (T3.env) Object.values(mats).forEach(m => { m.envMap = T3.env; m.envMapIntensity = 0.8; });
   for (const k in mats) fachada(mats[k], k);
@@ -75,6 +78,15 @@ export async function iniciarPlanBavaria({ T3 }) {
   /* ---------- suelo del plan: calzada, andén, alameda, lote (antejardín) y patio, parques; cada capa aparece en su año ---------- */
   const suelo = (color, rough, dy, ro) => new THREE.MeshStandardMaterial({ color, roughness: rough, polygonOffset: true, polygonOffsetFactor: -1 - ro, polygonOffsetUnits: -2 - ro, emissive: new THREE.Color(color).multiplyScalar(0.12) });
   const mS = { calzada: suelo(0x4b4e52, 0.95, 0, 1), anden: suelo(0xbdb8ae, 0.9, 0, 2), alameda: suelo(0xb9b3a4, 0.9, 0, 2), lote: suelo(0x8f8a7f, 0.95, 0, 3), patio: suelo(0xa8a396, 0.95, 0, 4), parque: suelo(0x9c978a, 0.95, 0, 3) }; // patios y parques en concreto (sin verde: pedido de la autora)
+  /* TODO el suelo del plan del MISMO color que las vías del simulador (pedido de la autora: el plan se veía raro con tantos grises):
+     color de la calzada (T3.viasMallas[2]: tinte × promedio de su textura); mientras no esté, el gris de la calzada del plan */
+  const ponerColorSuelo = (c) => { for (const k in mS) { mS[k].color.copy(c); mS[k].emissive.copy(c).multiplyScalar(0.12); } };
+  ponerColorSuelo(new THREE.Color(0x4b4e52));
+  { let n = 0; const iv = setInterval(() => { const V = T3.viasMallas, m = V && V[2] && V[2].material; if (++n > 80) clearInterval(iv); if (!m) return;
+      const img = m.map && m.map.image; if (m.map && !(img && img.width)) return; // textura aún cargando
+      const c = m.color.clone();
+      if (img) { try { const cv = document.createElement('canvas'); cv.width = cv.height = 8; const g = cv.getContext('2d'); g.drawImage(img, 0, 0, 8, 8); const d = g.getImageData(0, 0, 8, 8).data; let r = 0, gg = 0, b = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; } const k = 64 * 255; c.multiply(new THREE.Color().setRGB(r / k, gg / k, b / k, THREE.SRGBColorSpace)); } catch (e) { /* textura de otro origen: solo el tinte */ } }
+      ponerColorSuelo(c); /* se sigue leyendo ~40 s: la vista limpia oscurece las vías después de cargar */ }, 500); }
   const capas = []; // { mesh, anio, dy }
   const capa = (polys, mat, anio, dy, ro) => {
     if (!polys || !polys.length) return;
