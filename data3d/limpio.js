@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=79';
+import { iniciarSimUI } from './sim_ui.js?v=81';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -50,7 +50,9 @@ export const SIMS = [
   { id: 9, par: 5, n: 'Población y especulación · sin propuesta', base: 'D', cam: 'general' },
   { id: 10, par: 5, n: 'Población y especulación · con propuesta', base: 'C', cam: 'general' },
   { id: 11, par: 6, n: 'Gobernanza · sin propuesta', base: 'D', cam: 'general' },
-  { id: 12, par: 6, n: 'Gobernanza · con propuesta', base: 'C', cam: 'general' }
+  { id: 12, par: 6, n: 'Gobernanza · con propuesta', base: 'C', cam: 'general' },
+  { id: 13, par: 0, n: 'Kennedy hoy', base: 'D', cam: 'general' },          /* simulación BASE (sin escenario): siempre corriendo */
+  { id: 14, par: 0, n: 'Kennedy con propuesta', base: 'C', cam: 'general' }
 ];
 
 const OCULTAR = ['#guia', '#guia-velo', '#su-hist', '#su-graf', '#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
@@ -148,7 +150,7 @@ export function iniciarLimpio({ T3 }) {
   const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
     if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
   // sin los anillos naranjas de entrada ni los halos de camiones (data3d/origenes.js): la autora no los quiere (solo los carros)
-  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = T3.scene.getObjectByName(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
+  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; for (const nm of ['escenarios_sim', 'estrategias', 'red-mercados', 'picos_zonas', 'picos_zonas_base', 'medicion', 'huertas-hidroponicas', 'mercados-barrio'])  { const g = T3.scene.getObjectByName(nm); if (g && g.visible) g.visible = false; } /* sin capas de escenario (columnas, rutas, líneas de colores): mapa limpio */ if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = T3.scene.getObjectByName(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
   setInterval(() => { T3.scene.traverse(o => {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
@@ -158,7 +160,7 @@ export function iniciarLimpio({ T3 }) {
     #lp-esc button{padding:9px 18px;border-radius:10px;border:0;background:none;color:#eef1f4;font:600 13.5px system-ui,sans-serif;cursor:pointer;opacity:.7} #lp-esc button.on{opacity:1;background:rgba(255,255,255,.12)} #lp-esc button.con.on{background:rgba(142,230,168,.2);color:#c9f5d6}
     #lp-der{position:fixed;right:16px;top:16px;bottom:96px;width:300px;z-index:39;display:flex;flex-direction:column;gap:8px;pointer-events:none} #lp-der > *{pointer-events:auto}
     #lp-seis{padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4}
-    #lp-seis h5{margin:0 0 6px;font:600 10.5px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7} #lp-seis button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 8px;margin:0 0 3px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.05);color:inherit;font:600 12.5px system-ui,sans-serif;cursor:pointer}
+    #lp-seis .lp-base{margin:0 0 8px;font:500 11px/1.35 system-ui,sans-serif;opacity:.75} #lp-seis h5{margin:0 0 6px;font:600 10.5px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7} #lp-seis button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 8px;margin:0 0 3px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.05);color:inherit;font:600 12.5px system-ui,sans-serif;cursor:pointer}
     #lp-seis button i{font:600 16px 'Barlow Condensed',system-ui,sans-serif;font-style:normal;opacity:.55;width:20px} #lp-seis button:hover{background:rgba(255,255,255,.1)} #lp-seis button.on{border-color:rgba(255,190,90,.9);background:rgba(255,190,90,.12)} #lp-seis.con button.on{border-color:rgba(142,230,168,.95);background:rgba(142,230,168,.12)}
     html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important} html.limpio #lp-der #su-der{position:static;width:auto;max-height:none;flex:1;min-height:0;overflow-y:auto}
     @media (max-width:760px){#lp-der{top:auto;bottom:86px;left:16px;right:16px;width:auto;max-height:45vh}#lp-esc{top:8px}}`; document.head.appendChild(se); }
@@ -166,12 +168,19 @@ export function iniciarLimpio({ T3 }) {
   const der = document.createElement('div'); der.id = 'lp-der'; der.innerHTML = '<div id="lp-seis"></div>'; document.body.appendChild(der);
   let escE = 'hoy';
   function pintarSeis() { const box = document.getElementById('lp-seis'); box.className = escE === 'con' ? 'con' : '';
-    box.innerHTML = `<h5>${escE === 'con' ? 'Kennedy con propuesta' : 'Kennedy hoy'} · 6 simulaciones</h5>` + PARES.map(P => { const id = escE === 'con' ? 2 * P.par : 2 * P.par - 1; return `<button type="button" data-s="${id}" class="${ESC.activo === id ? 'on' : ''}" title="${P.prueba}"><i>${String(P.par).padStart(2, '0')}</i>${P.n}</button>`; }).join('');
-    box.querySelectorAll('button').forEach(b => b.onclick = () => escoger(+b.dataset.s)); }
+    const base = escE === 'con' ? 14 : 13;
+    box.innerHTML = `<h5>Escenarios que pueden ocurrir</h5><p class="lp-base">${ESC.activo === base ? '▶ Corre ' + (escE === 'con' ? 'Kennedy con propuesta' : 'Kennedy hoy') + ' sin escenario. Toca uno para que ocurra desde ahora.' : 'Toca otra vez el escenario para quitarlo.'}</p>` + PARES.map(P => { const id = escE === 'con' ? 2 * P.par : 2 * P.par - 1; return `<button type="button" data-s="${id}" class="${ESC.activo === id ? 'on' : ''}" title="${P.prueba}"><i>${String(P.par).padStart(2, '0')}</i>${P.n}</button>`; }).join('');
+    box.querySelectorAll('button').forEach(b => b.onclick = () => { const id = +b.dataset.s; escoger(ESC.activo === id ? base : id, true); setTimeout(pintarSeis, 120); }); }
   escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-    const par = ESC.activo ? Math.ceil(ESC.activo / 2) : null; pintarSeis(); if (par) escoger(escE === 'con' ? 2 * par : 2 * par - 1); /* mismo par, el otro escenario: mismas variables, otro resultado */ });
+    const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? (escE === 'con' ? 2 * par : 2 * par - 1) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */ setTimeout(pintarSeis, 120); });
   setInterval(() => { const sd = document.getElementById('su-der'); if (sd && sd.parentNode !== der) der.appendChild(sd); }, 600);
   setTimeout(pintarSeis, 0);
+  /* SIEMPRE CORRIENDO: al abrir arranca la simulación base (Kennedy hoy) y la barra de años corre sola; al llegar al año 15 vuelve a empezar */
+  setTimeout(function arrancar() { const L = document.getElementById('loader'); if ((L && !L.classList.contains('hidden')) || !UI) return void setTimeout(arrancar, 400);
+    if (!ESC.activo) { escoger(13); setTimeout(() => { if (RELOJ.pausaSem) alternar(); pintarSeis(); }, 900); } }, 0);
+  /* sin la capa de flujo de carros (las líneas de colores en las calles): los carros ya se ven */
+  let nFc = 0; const fcOff = setInterval(() => { const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click(); if (++nFc > 40) clearInterval(fcOff); }, 500);
+  addEventListener('lp-vuelta', () => { reiniciar(); setTimeout(() => { if (RELOJ.pausaSem) alternar(); }, 300); });
   /* ---------- barra de años ---------- */
   const bar = document.createElement('div'); bar.id = 'lp-anos'; bar.className = 'vacia';
   bar.innerHTML = `<button type="button" class="play" title="Correr la simulación (barra espaciadora)">▶</button>
@@ -227,8 +236,8 @@ export function iniciarLimpio({ T3 }) {
     const d = RELOJ.sem - METRO_SEM_OP; if (d < 0) return 1;
     return 1 - METRO_MENOS_CARROS * Math.min(1, d / 52);
   }
-  function escoger(id) {
-    const S = SIMS.find(s => s.id === id); if (!S) return;
+  function escoger(id, continuar) {
+    const S = SIMS.find(s => s.id === id); if (!S) return; const seguir = continuar && RELOJ.sem > 1 && ESC.activo;
     ESC.activo = id; ESC.sim = S; bar.classList.remove('vacia'); yaOblicua = false;
     document.querySelectorAll('#lp-sims button, #lp-seis button').forEach(b => b.classList.toggle('on', +b.dataset.s === id));
     const nm = document.getElementById('lp-simn'); if (nm) nm.textContent = S.n;
@@ -237,7 +246,7 @@ export function iniciarLimpio({ T3 }) {
     const btn = document.querySelector(`#esim .seg button[data-e="${S.base}"]`); if (btn) btn.click();
     if (window.KEN_PLANBAV) window.KEN_PLANBAV.ver(S.base === 'D');
     // queda en el año 1, en pausa: corre al darle play
-    setTimeout(() => { reiniciar(); if (UI) UI.preparar(id); }, 60);
+    setTimeout(() => { if (seguir) { if (UI) UI.preparar(id, { desde: Math.min(FIN_SEM, RELOJ.sem) }); } else { reiniciar(); if (UI) UI.preparar(id); } }, 60);
     // rutas y vehículos de reparto de «Viajes de abastecimiento» (panel escondido): apagados, tiñen el mapa de naranja y pesan
     for (const ms of [400, 1500, 3500]) setTimeout(() => { const vm = document.getElementById('vm-panel'); if (vm) vm.querySelectorAll('button').forEach(b => { if (/^Apagar$/.test(b.textContent.trim()) && !b.classList.contains('on')) b.click(); }); }, ms);
     // la cámara NO se mueve al escoger una simulación: el panel escondido A·B·C·D pide su «vista general» 250 ms después del clic; se cancela

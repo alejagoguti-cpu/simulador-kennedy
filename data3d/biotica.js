@@ -567,7 +567,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   /* LÍNEAS QUE SE NOTAN DESDE LA VISTA ALTA: el encuentro es un trazo grueso sin luz (no lo apaga la sombra ni el tono de la foto) con un
      destello que corre del actor al objetivo; debajo va una banda ancha oscura que lo despega de la foto y que, cuando la interacción recién
      empieza, se enciende con el color del tipo (brillo corto de 1,6 s) */
-  const FUERTE = capa(movil ? 4.5 : 6, 1), TENUE = capa(movil ? 2.4 : 3.2, 0.85), HALO = capa(movil ? 9 : 12, 0.6, true);
+  const FUERTE = capa(movil ? 3 : 3.6, 0.55), TENUE = capa(movil ? 1.6 : 2, 0.32), HALO = capa(movil ? 5 : 6.5, 0.28, true); /* más suaves: la autora pidió bajar la opacidad de las líneas */
   const resol = () => { const v = new THREE.Vector2(); T3.renderer.getSize ? T3.renderer.getSize(v) : v.set(innerWidth, innerHeight); FUERTE.m.resolution.copy(v); TENUE.m.resolution.copy(v); HALO.m.resolution.copy(v); };
   resol(); addEventListener('resize', resol);
   // pulsos: el que viaja por cada línea + el destello en las dos puntas cuando empieza un encuentro (tamaño por punto, aditivo, núcleo blanco)
@@ -624,7 +624,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const d = Math.hypot(P1[0] - P0[0], P1[2] - P0[2]), h = Math.min(14, 1.5 + d * 0.2), c = COLT[t]; // arco más bajo (antes hasta 45 m: parecían fuegos artificiales)
     const pt = (u, o) => { o[0] = P0[0] + (P1[0] - P0[0]) * u; o[1] = P0[1] + (P1[1] - P0[1]) * u + Math.sin(Math.PI * u) * h; o[2] = P0[2] + (P1[2] - P0[2]) * u; return o; };
     const P = C.p.array, K = C.c.array, fase = (tiempo * (0.5 + 30 / (d + 30)) * 0.5 + C.n * 0.137) % 1, kb = C === FUERTE ? 1.1 : 0.95;
-    const PG = G && G.n < MAXL ? G.p.array : null, KG = PG ? G.c.array : null, fl = flash || 0, kg = 0.1 + 1.1 * fl, wg = 0.25 * fl; // banda: oscura (0,1 del color) y encendida al empezar
+    const PG = G && G.n < MAXL ? G.p.array : null, KG = PG ? G.c.array : null, fl = flash || 0, kg = 0.1, wg = 0; /* la banda ya no se enciende de golpe */ // banda: oscura (0,1 del color) y encendida al empezar
     for (let s = 0; s < SEG; s++) {
       pt(s / SEG, Q); pt((s + 1) / SEG, Rr); const o = (C.n * SEG + s) * 6;
       P[o] = Q[0]; P[o + 1] = Q[1]; P[o + 2] = Q[2]; P[o + 3] = Rr[0]; P[o + 4] = Rr[1]; P[o + 5] = Rr[2];
@@ -636,7 +636,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     }
     if (PG) G.n++;
     if (pulso) { pt(fase, Q); punto(Q, c, 1.15, movil ? 7 : 9, 1); }
-    if (flash > 0.02) { const tf = (movil ? 9 : 12) + 26 * (1 - flash); punto(P0, c, 1.2, tf, -flash); punto(P1, c, 1.2, tf, -flash); } // «ping»: anillo del color del tipo que se abre y se apaga en 1,6 s // destello en las dos puntas al empezar la interacción
+    if (false && flash > 0.02) { /* sin «ping»: los anillos que se abrían parecían bombas que salían de la nada */ const tf = (movil ? 9 : 12) + 26 * (1 - flash); punto(P0, c, 1.2, tf, -flash); punto(P1, c, 1.2, tf, -flash); } // «ping»: anillo del color del tipo que se abre y se apaga en 1,6 s // destello en las dos puntas al empezar la interacción
     C.n++;
   }
   function dibujarRed(tiempo, sinSubir) { // sinSubir: solo recuenta (CUENTA/ENC que leen los paneles), sin buffers ni marcas
@@ -1005,7 +1005,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
      propios y las demás capas (tráfico, ruido, indicadores…). Mientras está prendido se repite en cada cuadro (otras capas se vuelven a prender
      solas y la malla carga teselas nuevas). Al apagar todo vuelve como estaba. */
   const SOLO = { on: false, k: 1, ocultos: new Map(), antes: null };
-  const SOLO_K = 0.15;
+  const SOLO_K = 0.6; /* el territorio 3D se sigue viendo (un poco más oscuro) y la red biótica resalta encima */
   const BASE = new Set(); // lo que se queda a la vista: la red biótica, las luces, la malla de Google y el cielo (se arma al prender)
   const armarBase = () => { BASE.clear(); BASE.add(grupo); if (T3.tiles && T3.tiles.group) BASE.add(T3.tiles.group);
     for (const o of T3.scene.children) if (o.isLight || o.isCamera || o.type === 'Sky' || /^(cielo|sky|sol|luna|estrellas|nubes|agua)/i.test(o.name || '')) BASE.add(o); };
@@ -1021,6 +1021,14 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (SOLO.on) { for (const o of T3.scene.children) { if (BASE.has(o)) continue; if (o.visible) { if (!SOLO.ocultos.has(o)) SOLO.ocultos.set(o, true); o.visible = false; } else if (!SOLO.ocultos.has(o)) SOLO.ocultos.set(o, false); }
       grupo.visible = true; }
   });
+  /* CONVENCIONES: qué significa cada color de línea (los tipos de interacción de la red), abajo a la izquierda del mapa */
+  { const st = document.createElement('style'); st.textContent = `#bio-ley{position:fixed;left:296px;bottom:92px;z-index:41;display:flex;flex-wrap:wrap;gap:4px 12px;max-width:min(560px,calc(100vw - 640px));padding:8px 11px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.74),rgba(20,22,28,.86));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#eef1f4;font:500 11px system-ui,sans-serif}
+    #bio-ley b{width:100%;font:600 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7} #bio-ley span{display:inline-flex;align-items:center;gap:5px} #bio-ley i{width:14px;height:3px;border-radius:2px;display:inline-block}
+    #bio-ley small{width:100%;opacity:.6;font-size:10px} @media (max-width:1100px){#bio-ley{display:none}}`; document.head.appendChild(st);
+    const ley = document.createElement('div'); ley.id = 'bio-ley';
+    ley.innerHTML = `<b>Relaciones entre especies (líneas)</b>${TIPOS.map(t => `<span><i style="background:${t.c}"></i>${t.n}</span>`).join('')}<small>Cada línea une a un animal con la especie o el árbol con el que se relaciona; el punto que corre va del que actúa al que recibe.</small>`;
+    document.body.appendChild(ley);
+    setInterval(() => { ley.style.display = grupo.visible && ESTADO.on && lineas.visible ? '' : 'none'; }, 800); }
   window.KEN_BIOTICA_SOLO = {
     on() { if (SOLO.on) return; SOLO.on = true; armarBase(); SOLO.antes = { gv: grupo.visible, on: ESTADO.on, ag: ESTADO.agentes, mk: T3.maskU ? T3.maskU.uOn.value : null };
       if (T3.maskU) T3.maskU.uOn.value = 0; // los edificios propios se ocultan (su sombreador no obedece al color): la malla de Google vuelve a mostrar los suyos, oscurecidos
