@@ -730,7 +730,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     { k: 'parches', n: 'Parches ecológicos nuevos', u: '', v: I => I.verde && I.verde.resumen ? (I.verde.resumen.nNuevos || 0) + (I.verde.resumen.nLiberados || 0) : null, mejor: 1,
       ver: I => { const P = I.verde && (I.verde.parches.find(p => p.tipo === 'liberado') || I.verde.parches.find(p => p.tipo === 'nuevo')); return P ? { x: P.x, z: P.z, t: P.tipo === 'liberado' ? 'Espacio liberado que se vuelve verde' : 'Parche nuevo', tx: P.n } : null; } },
     { k: 'muertes', n: 'Muertes de fauna', u: '', v: I => I.muertes ? I.muertes.total : I.atropellos && I.atropellos.total, mejor: -1,
-      ver: I => { const m = ultimaMuerte(I); return m ? { x: m.x, z: m.z, t: `Murió: ${m.nombre || m.especie}`, tx: m.detalle || m.causa || '' } : null; } },
+      ver: I => { const m = ultimaMuerte(I); return m ? { x: m.x, z: m.z, t: `Murió: ${m.nombre || m.especie}`, tx: m.detalle || m.causa || '', animal: m.nombre || m.especie } : null; } },
     { k: 'ruido', n: 'Bienestar de las aves (ruido)', u: ' %', v: I => I.avesRuido ? I.avesRuido.bienestar * 100 : null, mejor: 1,
       ver: I => { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); const P = I.avesRuido && I.avesRuido.porParche && I.avesRuido.porParche[0]; return P ? { x: P.x, z: P.z, t: `Aves con ${Math.round(P.db)} dB`, tx: 'Con mucho ruido las aves se alejan y su bienestar baja.' } : null; } },
     { k: 'ciclos', n: 'Ciclos biogeoquímicos', u: ' %', v: I => I.ciclos ? I.ciclos.indice * 100 : (I.eco ? I.eco.abioticos * 100 : null), mejor: 1, ver: null },
@@ -777,7 +777,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     tab.querySelectorAll('.su-tf').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
       el.querySelector('.i').onclick = () => abrirFicha(T.n);
       const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
-        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes' }); /* igual que los avisos: rápido, cenital y X en el piso donde murió */
+        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes', animal: p.animal }); /* igual que los avisos: rápido, cenital y X en el piso donde murió */
         const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
     pintarEco();
   }
