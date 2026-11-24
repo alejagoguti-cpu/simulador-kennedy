@@ -4,6 +4,8 @@
    - CERCA: carrocería con bordes redondeados, pintura de carro con barniz (clearcoat) y reflejos del cielo, vidrios polarizados, parales,
      espejos, manijas, llantas de caucho con rin metálico de 5 radios, pasos de rueda, farolas, stops, parrilla y placas amarillas de Colombia.
    - LEJOS: volumen simple con la misma silueta y color.
+   - MUY LEJOS (> 550 m): píldora sin luz con el color del tipo (carro blanco cálido, moto ámbar, camión magenta), que crece con la distancia
+     para leerse como un flujo (boids) desde la vista alta.
    Se ponen con poner(a, tipo, x, y, z, rumbo) en cada cuadro y se cierran con fin(cámara). */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -311,7 +313,8 @@ const CAT_MAT = (n) => /Body_Color/.test(n) ? ['pintura'] : /Glass_Gray|Projecto
 const SOLO = /^(body|glass|tire|rim_..|wheel|lights|lights_red|grills|trim|yellow_trim|blue|metal|chrome)$/;
 let PROMESA_REAL = null;
 function geometriaReal() {
-  return PROMESA_REAL || (PROMESA_REAL = (async () => {
+  if (!PROMESA_REAL && window.KEN_PROMESA_CARRO) PROMESA_REAL = window.KEN_PROMESA_CARRO; // otra copia del módulo (importado con otro ?v=) ya lo está bajando: se comparte
+  return PROMESA_REAL || (PROMESA_REAL = window.KEN_PROMESA_CARRO = (async () => {
     const [{ GLTFLoader }, { DRACOLoader }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/loaders/DRACOLoader.js')]);
     const dl = new DRACOLoader(); dl.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');
     const gl = new GLTFLoader(); gl.setDRACOLoader(dl);
@@ -378,9 +381,28 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
   const blob = new THREE.InstancedMesh(bg, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, opacity: 0.75, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -20 }), Math.max(1, total));
   blob.count = 0; blob.frustumCulled = false; blob.renderOrder = -3; blob.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(blob);
 
+  /* LEJOS (boids): pasados PIL0 m de la cámara cada vehículo es una PÍLDORA (cápsula alargada, orientada en su sentido de marcha) sin luz, con el
+     color de su tipo, que se agranda con la distancia (×1 en PIL0 hasta ×PIL_MAX a 3 km) para que el flujo se lea desde la vista alta.
+     Una sola InstancedMesh dentro del grupo 'vehiculos' (los halos de ruido de data3d/limpio.js leen sus posiciones igual que las de los modelos). */
+  const PIL0 = 550, PIL1 = 3000, PIL_MAX = 4.6, PIL_LEJOS = maxDist * 1.6; // de lejos se dibujan hasta 1,6 veces más lejos que los modelos (son muy livianas)
+  const PIL_COL = { carro: new THREE.Color(0xfff0d2), moto: new THREE.Color(0xffae1f), camion: new THREE.Color(0xff3d6e), bici: new THREE.Color(0x7fe3ff) };
+  const PIL_DIM = { carro: [1.8, 1.45, 4.5], moto: [1.25, 1.3, 2.8], camion: [2.4, 2.9, 8.2], bici: [0.7, 1.2, 1.8] }; // ancho, alto, largo (m)
+  const pilGeo = (() => { const g = new THREE.CapsuleGeometry(0.5, 1, 3, 10); g.rotateX(Math.PI / 2); g.translate(0, 0.5, 0); /* largo 2 en z, base en y = 0 */
+    const n = g.attributes.normal, c = new Float32Array(n.count * 3); for (let i = 0; i < n.count; i++) { const k = 0.62 + 0.38 * Math.max(0, n.getY(i)) + 0.1 * Math.abs(n.getZ(i)); c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = Math.min(1, k); } /* sombreado fijo: techo claro, costados más oscuros (se lee el volumen sin luz) */
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3)); return g; })();
+  const pil = new THREE.InstancedMesh(pilGeo, new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, fog: false }), Math.max(1, total));
+  pil.name = 'vehiculos-lejos'; pil.count = 0; pil.frustumCulled = false; pil.castShadow = pil.receiveShadow = false; pil.renderOrder = 2;
+  pil.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pil.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, total) * 3).fill(1), 3); pil.instanceColor.setUsage(THREE.DynamicDrawUsage); grupo.add(pil);
+  // contorno oscuro de ~1,5 px (caras de atrás infladas en pantalla): despega las píldoras claras del asfalto claro de la foto. Usa las mismas matrices.
+  const pilBorde = new THREE.ShaderMaterial({ side: THREE.BackSide, uniforms: { uPx: { value: 0.001 } },
+    vertexShader: 'uniform float uPx; void main(){ vec4 mv = modelViewMatrix * instanceMatrix * vec4(position, 1.0); vec3 n = normalize(mat3(modelViewMatrix) * mat3(instanceMatrix) * normal); mv.xyz += n * (-mv.z) * uPx * 1.6; gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'void main(){ gl_FragColor = vec4(0.05, 0.06, 0.08, 1.0); }' });
+  const pilB = new THREE.InstancedMesh(pilGeo, pilBorde, Math.max(1, total)); pilB.name = 'vehiculos-lejos-borde'; pilB.instanceMatrix = pil.instanceMatrix; pilB.count = 0; pilB.frustumCulled = false; pilB.renderOrder = 1; grupo.add(pilB);
+  let np = 0;
+
   let REAL = null; const REAL_MAX = movil ? 0 : 12, CERCA_R = 120; // carros reales: los 12 más cercanos (en celular, ninguno)
   if (REAL_MAX) geometriaReal().then(G => { REAL = { cerca: Object.entries(G).map(([mat, geo]) => ({ mat, m: mk(geo, M[mat], REAL_MAX, false, mat === 'pintura') })), nc: 0 }; }).catch(e => console.warn('carro real:', e));
-  const d = new THREE.Object3D(), ds = new THREE.Object3D(), col = new THREE.Color(), cam = new THREE.Vector3();
+  const d = new THREE.Object3D(), ds = new THREE.Object3D(), dp = new THREE.Object3D(), col = new THREE.Color(), cam = new THREE.Vector3();
   let nb = 0, CERCA = movil ? 90 : 230, tAhora = 0;
   const elegir = (a, tipo) => {
     const def = TIPOS[tipo], r = Math.random(); let acc = 0, v = def.v[def.v.length - 1][0];
@@ -394,7 +416,7 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
     // desplazamiento lateral hacia la derecha del sentido de marcha (en Colombia se maneja por la derecha)
     carril(a, tipo) { if (a._vv === undefined) elegir(a, tipo); return (tipo === 'camion' ? 2.0 : tipo === 'carro' ? 1.8 : tipo === 'moto' ? 1.4 : 2.7) + a._vl; },
     vistos: [], // vehículos puestos en este cuadro (para seguirlos: data3d/seguir.js)
-    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); api.tPrev = api.tFrame || 0; api.tFrame = tAhora; if (REAL) REAL.nc = 0; },
+    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; np = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); api.tPrev = api.tFrame || 0; api.tFrame = tAhora; if (REAL) REAL.nc = 0; },
     poner(a, tipo, x, y, z, rumbo) {
       if (a._vv === undefined) elegir(a, tipo);
       a._x = x; a._y = y; a._z = z; a._r = rumbo; a._tp = tipo; a._ts = tAhora; a._vs = api; api.vistos.push(a);
@@ -404,6 +426,12 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
       if (REAL && tipo === 'carro' && a._vv !== 'pickup' && a._vv !== 'van' && dist < CERCA_R && REAL.nc < REAL_MAX && nb < blob.instanceMatrix.count) { // carro real de cerca
         const i = REAL.nc++; col.setHex(a._vc); for (const p of REAL.cerca) { p.m.setMatrixAt(i, d.matrix); if (p.mat === 'pintura') p.m.setColorAt(i, col); }
         const S = SOMBRA.carro; ds.position.set(x, y + 0.03, z); ds.rotation.set(0, rumbo, 0); ds.scale.set(S[0], 1, S[1]); ds.updateMatrix(); blob.setMatrixAt(nb++, ds.matrix); return;
+      }
+      if (dist >= PIL0) { // lejos: píldora del color del tipo (sin sombra de contacto: a esa distancia no se ve)
+        if (dist > PIL_LEJOS || np >= pil.instanceMatrix.count) return;
+        const u = Math.min(1, (dist - PIL0) / (PIL1 - PIL0)), k = dist > PIL1 ? Math.min(7, PIL_MAX * dist / PIL1) : 1.15 + (PIL_MAX - 1.15) * u * u * (3 - 2 * u), D = PIL_DIM[tipo] || PIL_DIM.carro;
+        dp.position.set(x, y + 1 + dist * 0.003, z); dp.rotation.set(0, rumbo, 0); /* un poco alzada con la distancia: la malla de Google no la entierra (de lejos no se nota) */ dp.scale.set(D[0] * k, D[1] * (1 + (k - 1) * 0.55), D[2] * k * 0.5); dp.updateMatrix();
+        pil.setMatrixAt(np, dp.matrix); pil.setColorAt(np, PIL_COL[tipo] || PIL_COL.carro); np++; return;
       }
       const cerca = dist < CERCA && o.nc < o.capC;
       if (dist > maxDist || (!cerca && o.nl >= o.capL) || nb >= blob.instanceMatrix.count) return; // muy lejos o sin cupo: no se dibuja
@@ -424,7 +452,8 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
         const o = V[k];
         for (const [lista, n] of [[o.cerca, o.nc], [o.lejos, o.nl]]) for (const p of lista) subir(p.m, n);
       }
-      subir(blob, nb);
+      subir(blob, nb); subir(pil, np); pilB.count = np; pilB.visible = np > 0; // el contorno comparte las matrices de las píldoras (ya subidas)
+      if (np) { const cm = T3.camera; pilBorde.uniforms.uPx.value = 2 * Math.tan((cm.fov || 45) * Math.PI / 360) / Math.max(1, innerHeight) / (cm.zoom || 1); }
       if (REAL) for (const p of REAL.cerca) subir(p.m, REAL.nc);
     },
     set visible(v) { grupo.visible = v; },

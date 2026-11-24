@@ -548,7 +548,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       const a = AG[iEnc++ % AG.length], claves = [];
       for (const v of conexiones(a)) {
         const kb = v.b._kb || (v.b._kb = v.b.id !== undefined ? 'a' + v.b.id : 'f' + v.b.x.toFixed(1) + v.b.z.toFixed(1)), key = a.id + '|' + kb; claves.push(key); // _kb: la misma clave, calculada una vez (los árboles no se mueven; el id no cambia)
-        const L = LINKS.get(key); if (L) L.vivo = VIDA_LINK; else LINKS.set(key, { a, b: v.b, t: v.t, al: 0, vivo: VIDA_LINK, r: v.r, f: v.f });
+        const L = LINKS.get(key); if (L) L.vivo = VIDA_LINK; else LINKS.set(key, { a, b: v.b, t: v.t, al: 0, vivo: VIDA_LINK, r: v.r, f: v.f, te: -1e9, ep: false }); /* te, ep: solo del dibujo (destello al empezar el encuentro) */
       }
       a.links = claves;
     }
@@ -558,19 +558,30 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
 
   /* ---------- líneas en arco con grosor real (LineSegments2) + pulsos (del actor al objetivo) + marca de cada animal ---------- */
   const SEG = 10, MAXL = movil ? 800 : 2600;
-  const capa = (ancho, opac) => { // segmentos gruesos en píxeles; se escriben en los búferes una vez por cuadro
+  const capa = (ancho, opac, debajo) => { // segmentos gruesos en píxeles; se escriben en los búferes una vez por cuadro (debajo: se dibuja antes que los trazos)
     const g = new LineSegmentsGeometry(); g.setPositions(new Float32Array(MAXL * SEG * 6)); g.setColors(new Float32Array(MAXL * SEG * 6));
-    const m = new LineMaterial({ vertexColors: true, linewidth: ancho, transparent: true, opacity: opac, depthWrite: false, fog: false, worldUnits: false });
-    const o = new LineSegments2(g, m); o.frustumCulled = false; o.renderOrder = 8; grupo.add(o);
+    const m = new LineMaterial({ vertexColors: true, linewidth: ancho, transparent: true, opacity: opac, depthWrite: false, fog: false, worldUnits: false, toneMapped: false });
+    const o = new LineSegments2(g, m); o.frustumCulled = false; o.renderOrder = debajo ? 7 : 8; grupo.add(o);
     return { g, m, o, p: g.attributes.instanceStart.data, c: g.attributes.instanceColorStart.data, n: 0 };
   };
-  const FUERTE = capa(movil ? 3 : 4.2, 1), TENUE = capa(movil ? 1.8 : 2.6, 0.75); // líneas delgadas: encuentro / conexión a distancia
-  const resol = () => { const v = new THREE.Vector2(); T3.renderer.getSize ? T3.renderer.getSize(v) : v.set(innerWidth, innerHeight); FUERTE.m.resolution.copy(v); TENUE.m.resolution.copy(v); };
+  /* LÍNEAS QUE SE NOTAN DESDE LA VISTA ALTA: el encuentro es un trazo grueso sin luz (no lo apaga la sombra ni el tono de la foto) con un
+     destello que corre del actor al objetivo; debajo va una banda ancha oscura que lo despega de la foto y que, cuando la interacción recién
+     empieza, se enciende con el color del tipo (brillo corto de 1,6 s) */
+  const FUERTE = capa(movil ? 4.5 : 6, 1), TENUE = capa(movil ? 2.4 : 3.2, 0.85), HALO = capa(movil ? 9 : 12, 0.6, true);
+  const resol = () => { const v = new THREE.Vector2(); T3.renderer.getSize ? T3.renderer.getSize(v) : v.set(innerWidth, innerHeight); FUERTE.m.resolution.copy(v); TENUE.m.resolution.copy(v); HALO.m.resolution.copy(v); };
   resol(); addEventListener('resize', resol);
-  const disco = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.beginPath(); g.arc(32, 32, 26, 0, 6.283); g.fill(); g.lineWidth = 6; g.strokeStyle = 'rgba(8,16,26,.85)'; g.stroke(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
-  const pp = new Float32Array(MAXL * 3), pc = new Float32Array(MAXL * 4);
-  const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3).setUsage(THREE.DynamicDrawUsage)); pg.setAttribute('color', new THREE.BufferAttribute(pc, 4).setUsage(THREE.DynamicDrawUsage));
-  const pulsos = new THREE.Points(pg, new THREE.PointsMaterial({ size: movil ? 3 : 4, map: disco, alphaTest: 0.3, sizeAttenuation: false, vertexColors: true, transparent: true, depthWrite: false, fog: false }));
+  // pulsos: el que viaja por cada línea + el destello en las dos puntas cuando empieza un encuentro (tamaño por punto, aditivo, núcleo blanco)
+  const MAXP = MAXL * 3, pp = new Float32Array(MAXP * 3), pc = new Float32Array(MAXP * 4), pt2 = new Float32Array(MAXP);
+  const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3).setUsage(THREE.DynamicDrawUsage)); pg.setAttribute('color', new THREE.BufferAttribute(pc, 4).setUsage(THREE.DynamicDrawUsage)); pg.setAttribute('tam', new THREE.BufferAttribute(pt2, 1).setUsage(THREE.DynamicDrawUsage));
+  // mezcla premultiplicada: alfa >= 0 = punto sólido con borde oscuro (se lee sobre la foto clara); alfa < 0 = brillo aditivo de intensidad -alfa
+  const pulsos = new THREE.Points(pg, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, toneMapped: false,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    uniforms: { uPx: { value: Math.min(2, devicePixelRatio || 1) } },
+    vertexShader: 'attribute vec4 color; attribute float tam; uniform float uPx; varying vec4 vC; void main(){ vC = color; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = tam * uPx; }',
+    fragmentShader: `varying vec4 vC; void main(){ float d = length(gl_PointCoord * 2.0 - 1.0); if (d > 1.0) discard;
+      if (vC.a < 0.0) { float k = -vC.a, a = (smoothstep(0.62, 0.8, d) * (1.0 - smoothstep(0.8, 1.0, d)) + pow(1.0 - d, 3.0) * 0.5) * k; gl_FragColor = vec4(vC.rgb * a, 0.0); return; } /* anillo que se abre + núcleo */
+      float a = (1.0 - smoothstep(0.82, 1.0, d)) * vC.a; vec3 c = d > 0.62 ? vec3(0.03, 0.05, 0.08) : mix(vC.rgb, vec3(1.0), smoothstep(0.35, 0.0, d) * 0.7);
+      gl_FragColor = vec4(c * a, a); }` }));
   pulsos.frustumCulled = false; pulsos.renderOrder = 9; grupo.add(pulsos);
   // marca: un punto redondo con el color de la convención del grupo encima de cada animal (se ve desde la vista general)
   const mp = new Float32Array(AG.length * 3), mc = new Float32Array(AG.length * 4);
@@ -579,7 +590,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   // marca de lejos: TRIÁNGULO que apunta hacia donde avanza el animal (ángulo en pantalla por animal, calculado en cada cuadro)
   const ma = new Float32Array(AG.length); mg.setAttribute('ang', new THREE.BufferAttribute(ma, 1).setUsage(THREE.DynamicDrawUsage));
   const marcas = new THREE.Points(mg, new THREE.ShaderMaterial({
-    uniforms: { uTam: { value: (movil ? 8 : 9) * Math.min(2, devicePixelRatio || 1) } }, transparent: true, depthWrite: false,
+    uniforms: { uTam: { value: (movil ? 10 : 12) * Math.min(2, devicePixelRatio || 1) } }, transparent: true, depthWrite: false,
     vertexShader: `attribute float ang; attribute vec4 color; uniform float uTam; varying vec4 vC; varying float vA;
       void main(){ vC = color; vA = ang; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = uTam; }`,
     fragmentShader: `varying vec4 vC; varying float vA;
@@ -596,7 +607,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       }`
   }));
   marcas.frustumCulled = false; marcas.renderOrder = 10; grupo.add(marcas);
-  const lineas = { set visible(v) { FUERTE.o.visible = TENUE.o.visible = v; } };
+  const lineas = { set visible(v) { FUERTE.o.visible = TENUE.o.visible = HALO.o.visible = v; } };
   const alto = (a) => { const e = ESP[a.e]; return (e.ave ? (e.ave.alto + e.ave.len * 0.35) : 0.06) * MAL[a.e].s; };
   const ancla = (o, out) => { if (o.id !== undefined) { out[0] = o.x; out[1] = o.y + alto(o); out[2] = o.z; } else { out[0] = o.x; out[1] = o.y; out[2] = o.z; } return out; };
   const P0 = [0, 0, 0], P1 = [0, 0, 0], Q = [0, 0, 0], Rr = [0, 0, 0], VA = new THREE.Vector3(), VB = new THREE.Vector3();
@@ -605,34 +616,46 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const ENCL = new Array(TIPOS.length).fill(0);
   function contarEncuentros() { ENCL.fill(0); for (const L of LINKS.values()) { if (L.al < 0.3) continue; if (Math.hypot(L.b.x - L.a.x, L.b.z - L.a.z) < CERCA) ENCL[L.t]++; } }
   let np = 0;
-  function pintar(C, A, Bv, t, pulso, tiempo) {
+  const brillo = (u, fase) => { let d = Math.abs(u - fase); if (d > 0.5) d = 1 - d; return Math.exp(-d * d * 90); }; // destello que corre por la línea (0 a 1)
+  const punto = (q, c, k, tam, alfa) => { if (np >= MAXP) return; const o = np * 3, oc = np * 4; pp[o] = q[0]; pp[o + 1] = q[1]; pp[o + 2] = q[2]; pc[oc] = c.r * k; pc[oc + 1] = c.g * k; pc[oc + 2] = c.b * k; pc[oc + 3] = alfa; pt2[np] = tam; np++; };
+  // C: capa del trazo; G: capa del halo (o null); flash: 1 justo al empezar el encuentro, baja a 0 en 1,6 s
+  function pintar(C, A, Bv, t, pulso, tiempo, G, flash) {
     if (C.n >= MAXL) return; ancla(A, P0); ancla(Bv, P1);
     const d = Math.hypot(P1[0] - P0[0], P1[2] - P0[2]), h = Math.min(14, 1.5 + d * 0.2), c = COLT[t]; // arco más bajo (antes hasta 45 m: parecían fuegos artificiales)
     const pt = (u, o) => { o[0] = P0[0] + (P1[0] - P0[0]) * u; o[1] = P0[1] + (P1[1] - P0[1]) * u + Math.sin(Math.PI * u) * h; o[2] = P0[2] + (P1[2] - P0[2]) * u; return o; };
-    const P = C.p.array, K = C.c.array;
+    const P = C.p.array, K = C.c.array, fase = (tiempo * (0.5 + 30 / (d + 30)) * 0.5 + C.n * 0.137) % 1, kb = C === FUERTE ? 1.1 : 0.95;
+    const PG = G && G.n < MAXL ? G.p.array : null, KG = PG ? G.c.array : null, fl = flash || 0, kg = 0.1 + 1.1 * fl, wg = 0.25 * fl; // banda: oscura (0,1 del color) y encendida al empezar
     for (let s = 0; s < SEG; s++) {
       pt(s / SEG, Q); pt((s + 1) / SEG, Rr); const o = (C.n * SEG + s) * 6;
       P[o] = Q[0]; P[o + 1] = Q[1]; P[o + 2] = Q[2]; P[o + 3] = Rr[0]; P[o + 4] = Rr[1]; P[o + 5] = Rr[2];
-      K[o] = c.r; K[o + 1] = c.g; K[o + 2] = c.b; K[o + 3] = c.r; K[o + 4] = c.g; K[o + 5] = c.b;
+      const b0 = pulso ? brillo(s / SEG, fase) : 0, b1 = pulso ? brillo((s + 1) / SEG, fase) : 0, k0 = kb + 0.45 * b0, k1 = kb + 0.45 * b1, w0 = 0.45 * b0, w1 = 0.45 * b1;
+      K[o] = c.r * k0 + w0; K[o + 1] = c.g * k0 + w0; K[o + 2] = c.b * k0 + w0; K[o + 3] = c.r * k1 + w1; K[o + 4] = c.g * k1 + w1; K[o + 5] = c.b * k1 + w1;
+      if (PG) { const og = (G.n * SEG + s) * 6;
+        PG[og] = Q[0]; PG[og + 1] = Q[1]; PG[og + 2] = Q[2]; PG[og + 3] = Rr[0]; PG[og + 4] = Rr[1]; PG[og + 5] = Rr[2];
+        KG[og] = KG[og + 3] = c.r * kg + wg; KG[og + 1] = KG[og + 4] = c.g * kg + wg; KG[og + 2] = KG[og + 5] = c.b * kg + wg; }
     }
-    if (pulso && np < MAXL) { const u = ((tiempo * (0.5 + 30 / (d + 30)) * 0.5 + C.n * 0.137) % 1), o = np * 3, oc = np * 4; pt(u, Q); pp[o] = Q[0]; pp[o + 1] = Q[1]; pp[o + 2] = Q[2]; pc[oc] = Math.min(1, c.r * 1.25 + 0.12); pc[oc + 1] = Math.min(1, c.g * 1.25 + 0.12); pc[oc + 2] = Math.min(1, c.b * 1.25 + 0.12); pc[oc + 3] = 1; np++; }
+    if (PG) G.n++;
+    if (pulso) { pt(fase, Q); punto(Q, c, 1.15, movil ? 7 : 9, 1); }
+    if (flash > 0.02) { const tf = (movil ? 9 : 12) + 26 * (1 - flash); punto(P0, c, 1.2, tf, -flash); punto(P1, c, 1.2, tf, -flash); } // «ping»: anillo del color del tipo que se abre y se apaga en 1,6 s // destello en las dos puntas al empezar la interacción
     C.n++;
   }
   function dibujarRed(tiempo, sinSubir) { // sinSubir: solo recuenta (CUENTA/ENC que leen los paneles), sin buffers ni marcas
-    FUERTE.n = TENUE.n = 0; np = 0; CUENTA.fill(0); ENC.fill(0);
+    FUERTE.n = TENUE.n = HALO.n = 0; np = 0; CUENTA.fill(0); ENC.fill(0);
     const sel = ESTADO.sel;
     if (ESTADO.on) for (const L of LINKS.values()) {
       if (L.al < 0.3) continue; const d = Math.hypot(L.b.x - L.a.x, L.b.z - L.a.z), enc = d < CERCA;
+      if (enc && !L.ep) L.te = tR; L.ep = enc; /* solo dibujo: cuándo empezó el encuentro (destello, en tiempo real) */
       CUENTA[L.t]++; if (enc) ENC[L.t]++; if (!ESTADO.tipos.has(L.t)) continue;
       const delSel = sel && (L.a === sel || L.b === sel);
       // solo se dibujan los encuentros (la interacción está ocurriendo) y solo con la propuesta; las conexiones a distancia, solo del animal elegido
       // como antes: encuentro = trazo grueso con pulso; conexión a distancia = trazo fino. Sin las conexiones muy lejanas (> 120 m), que eran los «fuegos artificiales»
       if (!enc && !delSel && d > 120) continue;
-      pintar(enc || delSel ? FUERTE : TENUE, L.a, L.b, L.t, enc || delSel || (!sel && L.a.id % 3 === 0), tiempo);
+      const fuerte = enc || delSel, flash = enc ? Math.max(0, 1 - (tR - L.te) / 1.6) : 0;
+      pintar(fuerte ? FUERTE : TENUE, L.a, L.b, L.t, fuerte || (!sel && L.a.id % 3 === 0), tiempo, fuerte ? HALO : null, flash);
     }
     // red potencial del agente elegido: hasta el individuo o árbol más cercano de cada especie con la que tiene relación
-    if (sel && ESTADO.pot) for (const p of ESTADO.pot) pintar(FUERTE, sel, p.b, p.t, true, tiempo);
-    for (const C of [FUERTE, TENUE]) {
+    if (sel && ESTADO.pot) for (const p of ESTADO.pot) pintar(FUERTE, sel, p.b, p.t, true, tiempo, HALO, 0);
+    for (const C of [FUERTE, TENUE, HALO]) {
       C.g.instanceCount = C.n * SEG;
       if (sinSubir) { C.nAnt = MAXL; continue; } // al volver a verse se sube el búfer completo una vez
       if (C.n === 0 && C.nAnt === 0) continue; // oculto o vacío: no se sube nada a la GPU
@@ -641,7 +664,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       for (const b of [C.p, C.c]) { b.clearUpdateRanges(); b.addUpdateRange(0, len); b.needsUpdate = true; }
     }
     if (sinSubir) return;
-    pg.setDrawRange(0, np); pg.attributes.position.needsUpdate = true; pg.attributes.color.needsUpdate = true;
+    pg.setDrawRange(0, np); pg.attributes.position.needsUpdate = true; pg.attributes.color.needsUpdate = true; pg.attributes.tam.needsUpdate = true;
     const cam = T3.camera; cam.updateMatrixWorld();
     AG.forEach((a, i) => {
       const y = a.y + alto(a) * 1.6 + 1.2; mp[i * 3] = a.x; mp[i * 3 + 1] = y; mp[i * 3 + 2] = a.z; mc[i * 4 + 3] = a.vis && ESTADO.agentes ? 1 : 0;
@@ -933,7 +956,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   }
 
   /* ---------- paso del reloj universal (lógica: siempre, se vea o no la red) ---------- */
-  let tUI = 0, tPot = 0, nCuadro = 0, tOc = 0, dtI = 0;
+  let tUI = 0, tPot = 0, nCuadro = 0, tOc = 0, dtI = 0, tR = 0;
   function paso(dt, t) {
     tPaso = t;
     if (t % 60 === 0) actualizarAC(); // actividad por especie: cada minuto simulado
@@ -961,7 +984,8 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     hash: () => { let h = 0x811c9dc5; for (const a of AG) { h = hashNum(h, a.x); h = hashNum(h, a.y - GY); h = hashNum(h, a.z); } /* altura sobre el suelo: el nivel del suelo (GY) depende de cuándo cargó la foto 3D, no de la simulación */ return hashNum(h, LINKS.size); } });
   /* ---------- dibujo: solo lee el estado (lo llama el reloj después de los pasos del cuadro) ---------- */
   RELOJ.alDibujar((info) => {
-    const dt = info.dtReal, tiempo = info.tAnim;
+    const dt = info.dtReal; tR += Math.min(0.25, dt || 0); /* tR: tiempo real del dibujo (el flujo y el destello de las líneas siguen en pausa; no tocan el estado) */
+    const tiempo = tR;
     // red biótica oculta (grupo apagado, o sin líneas ni agentes): no se suben buffers; solo se recuenta cada ~1 s para los paneles
     if (!grupo.visible || (!ESTADO.on && ESTADO.agentes === false)) {
       if ((tOc += dt) >= 1) { tOc = 0; dibujarRed(tiempo, true); TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); }
@@ -975,5 +999,36 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
   });
-  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, ENCL, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
+  /* ---------- SOLO LA RED BIÓTICA (window.KEN_BIOTICA_SOLO = { on(), off(), activo }) ----------
+     Deja a la vista solo la capa biótica: la malla de Google se oscurece a 0,15 (mismo truco de color que FOCO_CIU en data3d/sim_ui.js, con el
+     mismo color original userData._c0) y muestra sus propios edificios (se apaga el recorte de huellas, maskU.uOn); se ocultan los edificios
+     propios y las demás capas (tráfico, ruido, indicadores…). Mientras está prendido se repite en cada cuadro (otras capas se vuelven a prender
+     solas y la malla carga teselas nuevas). Al apagar todo vuelve como estaba. */
+  const SOLO = { on: false, k: 1, ocultos: new Map(), antes: null };
+  const SOLO_K = 0.15;
+  const BASE = new Set(); // lo que se queda a la vista: la red biótica, las luces, la malla de Google y el cielo (se arma al prender)
+  const armarBase = () => { BASE.clear(); BASE.add(grupo); if (T3.tiles && T3.tiles.group) BASE.add(T3.tiles.group);
+    for (const o of T3.scene.children) if (o.isLight || o.isCamera || o.type === 'Sky' || /^(cielo|sky|sol|luna|estrellas|nubes|agua)/i.test(o.name || '')) BASE.add(o); };
+  let kAct = 1;
+  const tenirMat = (m) => { if (!m || !m.color) return; if (!m.userData._c0) m.userData._c0 = m.color.clone(); m.color.copy(m.userData._c0).multiplyScalar(kAct); };
+  const tenirObj = (x) => { const ms = x.material; if (!ms) return; if (Array.isArray(ms)) { for (let i = 0; i < ms.length; i++) tenirMat(ms[i]); } else tenirMat(ms); };
+  const tenir = (k) => { kAct = k; if (T3.tiles && T3.tiles.group) T3.tiles.group.traverse(tenirObj); };
+  RELOJ.alDibujar((info) => {
+    if (!SOLO.on && SOLO.k === 1) return;
+    const meta = SOLO.on ? SOLO_K : 1, paso = Math.min(0.25, (info && info.dtReal) || 0.016) / 0.5 * (1 - SOLO_K); // fundido de 0,5 s (en tiempo real, no por cuadros)
+    SOLO.k = SOLO.k > meta ? Math.max(meta, SOLO.k - paso) : Math.min(meta, SOLO.k + paso);
+    tenir(SOLO.k); // en cada cuadro: la malla de Google cambia de teselas todo el tiempo (cada 0,6 s quedaban teselas nuevas sin oscurecer)
+    if (SOLO.on) { for (const o of T3.scene.children) { if (BASE.has(o)) continue; if (o.visible) { if (!SOLO.ocultos.has(o)) SOLO.ocultos.set(o, true); o.visible = false; } else if (!SOLO.ocultos.has(o)) SOLO.ocultos.set(o, false); }
+      grupo.visible = true; }
+  });
+  window.KEN_BIOTICA_SOLO = {
+    on() { if (SOLO.on) return; SOLO.on = true; armarBase(); SOLO.antes = { gv: grupo.visible, on: ESTADO.on, ag: ESTADO.agentes, mk: T3.maskU ? T3.maskU.uOn.value : null };
+      if (T3.maskU) T3.maskU.uOn.value = 0; // los edificios propios se ocultan (su sombreador no obedece al color): la malla de Google vuelve a mostrar los suyos, oscurecidos
+      grupo.visible = true; ESTADO.on = true; ESTADO.agentes = true; lineas.visible = pulsos.visible = true; bOn.classList.add('on'); },
+    off() { if (!SOLO.on) return; SOLO.on = false;
+      for (const [o, v] of SOLO.ocultos) o.visible = v; SOLO.ocultos.clear(); // cada capa vuelve a como estaba antes de prender
+      const A = SOLO.antes || {}; if (T3.maskU && A.mk != null) T3.maskU.uOn.value = A.mk; grupo.visible = A.gv !== undefined ? A.gv : grupo.visible; ESTADO.on = A.on !== false; ESTADO.agentes = A.ag !== false;
+      lineas.visible = pulsos.visible = ESTADO.on; bOn.classList.toggle('on', ESTADO.on); },
+    get activo() { return SOLO.on; }
+  };  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, ENCL, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar, solo: window.KEN_BIOTICA_SOLO };
 }
