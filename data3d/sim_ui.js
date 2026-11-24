@@ -35,9 +35,9 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=19'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=20'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
-  if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
+  if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
   /* ---------- estilos (vidrio, como los paneles del simulador) ---------- */
   const st = document.createElement('style'); st.id = 'simui-css';
@@ -72,6 +72,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-eco .su-eco-l { font: 500 10.5px system-ui, sans-serif; opacity: .75; margin: 0 0 6px; display: flex; gap: 6px; align-items: center; } #su-eco .su-eco-l i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; } #su-eco .su-eco-l i.pt { background: repeating-linear-gradient(90deg, #dde 0 4px, transparent 4px 7px); }
   .su-abeja { padding: 8px 9px; border-radius: 10px; background: rgba(255,207,122,.07); border: 1px solid rgba(255,207,122,.22); font: 500 11px system-ui, sans-serif; } .su-abeja > b { display: block; margin-bottom: 4px; color: #ffd28a; } .su-abeja div { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 3px 0; border-top: 1px solid rgba(255,255,255,.06); } .su-abeja div b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; text-align: right; } .su-abeja small { grid-column: 1 / -1; opacity: .6; } .su-abeja p { margin: 5px 0 0; }
   #su-eco .su-eco-n { font: 400 10px/1.35 system-ui, sans-serif; opacity: .55; margin: 6px 0 0; }
+  #su-tab { margin-top: 8px; } #su-tab:empty { display: none; }
+  .su-tf { padding: 6px 0 7px; border-top: 1px solid rgba(255,255,255,.08); } .su-th { display: flex; align-items: baseline; gap: 6px; } .su-th span { flex: 1; font: 500 11.5px system-ui, sans-serif; color: #e9ecef; }
+  .su-th b { font: 600 16px 'Barlow Condensed', system-ui, sans-serif; color: #fff; } .su-th b.bien { color: #8ee6a8; } .su-th b.mal { color: #ff8a80; }
+  .su-tg { display: flex; align-items: center; gap: 6px; margin-top: 2px; } .su-tg svg { flex: 1; height: 26px; min-width: 0; }
+  .su-tb { display: flex; gap: 4px; } .su-tb button { font: 600 10.5px system-ui, sans-serif; padding: 3px 7px; border-radius: 7px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.07); color: #fff; cursor: pointer; } .su-tb button.v { background: rgba(158,203,255,.18); border-color: rgba(158,203,255,.45); }
+  .su-ts, .su-tl { display: block; font: 500 10px system-ui, sans-serif; opacity: .6; margin-top: 1px; }
+  .su-tc { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin-top: 4px; gap: 1px; } .su-tc i { display: block; background: #888; } .su-tc i.c-colision { background: #ff6b6b; } .su-tc i.c-atropello { background: #ffb347; } .su-tc i.c-ruido { background: #c58cff; }
   #su-graf { position: fixed; left: 50%; transform: translateX(-50%); bottom: 88px; z-index: 42; display: none; gap: 8px; padding: 8px 10px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
   #su-graf.on { display: flex; } #su-graf figure { margin: 0; width: 220px; } #su-graf figcaption { display: flex; align-items: baseline; gap: 6px; font: 500 10.5px system-ui, sans-serif; color: #e9ecef; margin-bottom: 2px; }
   #su-graf figcaption span { flex: 1; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #su-graf figcaption b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; } #su-graf figcaption i { font: 500 11px system-ui, sans-serif; font-style: normal; opacity: .55; }
@@ -151,7 +158,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function preparar(id) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
-    reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null); { const lr = document.getElementById('lp-red'); if (lr) lr.style.display = 'none'; } /* vista limpia: sin el diagrama de interacciones mientras corre */
+    reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null);
     setTimeout(apagarSintaxis, 1600); setTimeout(apagarSintaxis, 3200);
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); const ruidoOn = !!(H && H.ruido && !(R.def && R.def.propuesta)); /* con propuesta: sin capa de ruido, la historia es la red verde y el reparto */ if (H && rb && rb.classList.contains('on') !== ruidoOn) rb.click(); pintarHistoria(); focoHistoria(5);
       apagarSintaxis();
@@ -168,7 +175,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); if (window.KEN_VERDE) { window.KEN_VERDE.limpiar(); window.KEN_VERDE.ver(false); } ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.cora0 = null; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof tab !== 'undefined') tab.innerHTML = ''; if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); if (window.KEN_VERDE) { window.KEN_VERDE.limpiar(); window.KEN_VERDE.ver(false); } ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -208,13 +215,19 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* RUIDO QUE SE MUEVE: el mapa de ruido sigue a los carros de la simulación (KEN_TRAF_F: con propuesta baja, sin propuesta sube),
      a la hora del día (picos de la mañana y la tarde) y, en el par 01, suma ruido alrededor de Corabastos cuando se llena. */
   RELOJ.alDibujar(() => {
-    if (!R.sim) { T3.ruidoExtraDb = 0; T3.ruidoFoco = null; T3.ruidoSig = ''; return; }
+    if (!R.sim) { T3.ruidoExtraDb = 0; T3.ruidoFoco = null; T3.ruidoFocos = null; T3.ruidoSig = ''; return; }
     const h = ((RELOJ.minutoDia != null ? RELOJ.minutoDia : (RELOJ.t % 86400) / 60) / 60) % 24, pico = (c, w) => Math.exp(-((h - c) * (h - c)) / (2 * w * w));
     const fh = 0.35 + 0.75 * Math.max(pico(7.5, 1.3), pico(18, 1.6)) + 0.25 * pico(13, 2.5);
     const ex = 10 * Math.log10(Math.max(0.2, (window.KEN_TRAF_F || 1) * fh)), L = ultimo(), C = L && L.abasto && L.abasto.cora;
     T3.ruidoExtraDb = Math.round(ex * 2) / 2;
-    T3.ruidoFoco = C ? { x: C.x, z: C.z, r: 1100, db: Math.round(8 * Math.max(0, (C.carga - 0.7) / 0.3) * 2) / 2 } : null;
-    T3.ruidoSig = T3.ruidoExtraDb + '|' + (T3.ruidoFoco ? T3.ruidoFoco.db : 0);
+    /* el ruido sigue a la carga: Corabastos suma ruido cuando se llena y BAJA cuando los mercados toman parte de la carga (db negativo);
+       cada mercado de barrio activo hace ruido según las t/día que mueve (camiones y carros que ahora van a él y no a Corabastos) */
+    const A = L && L.abasto, nc = A && A.nodos ? A.nodos.find(q => q.tipo === 'corabastos') : null;
+    if (nc && R.cora0 == null && nc.t_dia > 0) R.cora0 = nc.t_dia;
+    const dC = nc && R.cora0 ? 10 * Math.log10(Math.max(0.2, nc.t_dia / R.cora0)) : 0; /* dB por cambio de carga de Corabastos frente al año 1 */
+    T3.ruidoFoco = C ? { x: C.x, z: C.z, r: 1300, db: Math.round((dC * 1.6 + 6 * Math.max(0, (C.carga - 0.8) / 0.2)) * 2) / 2 } : null;
+    T3.ruidoFocos = A && A.mercados ? A.mercados.filter(m => m.activo && m.t_dia > 0.05).map(m => ({ x: m.x, z: m.z, r: 520, db: Math.round(Math.min(9, 3 * Math.log2(1 + m.t_dia / 2)) * 2) / 2 })) : null;
+    T3.ruidoSig = T3.ruidoExtraDb + '|' + (T3.ruidoFoco ? T3.ruidoFoco.db : 0) + '|' + (T3.ruidoFocos ? T3.ruidoFocos.map(f => f.db).join(',') : '');
   });
   RELOJ.alDibujar(() => {
     if (!R.s || R.go || R.fin) return;
@@ -232,7 +245,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       ponerCapaPar(I);
       if (I.sem % 4 === 0 || R.hist.length === 1) ponerLugares(I);
-      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarEco(); ponerVerde(I); }
+      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarTablero(); ponerVerde(I); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
@@ -247,12 +260,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function pintarPanel() {
     const d = R.def;
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
-    der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">Prueba: ${d.prueba}</p>` : ''}<p class="pre">${d ? d.pregunta || d.desc || '' : ''}</p>
+    der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">${d.prueba}</p>` : ''}
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
-      <h4>Evaluación ecocéntrica</h4><div id="su-eco"><p class="pre">Dale play para ver las cinco dimensiones.</p></div>
-      <h4>Mira en el territorio</h4><div class="su-lug">${lugares().map((l, i) => `<button type="button" data-l="${i}">${l.n}</button>`).join('')}</div>
-      <h4>Resultados en vivo</h4><div id="su-inds"></div>
-      <h4>Resaltar</h4><div class="su-seg" data-g="foco"><button data-v="especies">Especies</button><button data-v="ruido">Ruido</button><button data-v="trafico">Tráfico</button><button data-v="" class="on">Normal</button></div>
+      <div id="su-inds" hidden></div>
       <h4>Informe</h4><div class="su-seg"><button data-inf>Ver informe ahora</button></div>`;
     der.querySelectorAll('input[type=range]').forEach(inp => {
       const pinta = () => { const s = d.sliders.find(x => x.k === inp.dataset.k); inp.style.setProperty('--p', ((inp.value - s.min) / (s.max - s.min) * 100) + '%'); der.querySelector(`[data-v="${s.k}"]`).textContent = vfmt(s, +inp.value); };
@@ -486,9 +496,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     /* con propuesta: la carga de Corabastos se reparte entre los mercados (volúmenes proporcionales a las t/día, data3d/reparto.js) */
     const repartir = c === 'abasto' && R.def && R.def.propuesta && I.abasto;
     { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP); }
-    if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=1').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
+    if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=6').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=7').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -639,6 +649,60 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaF && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } }, { once: true }); };
   }
   graf.addEventListener('click', (e) => { const f = e.target.closest('figure[data-f]'); if (!f) return; if (f.classList.contains('sel') && ficha.classList.contains('on')) cerrarFicha(); else abrirFicha(f.dataset.f); });
+  /* ---------- TABLERO ECOCÉNTRICO (izquierda, debajo del reloj) ----------
+     Una fila por indicador: nombre, valor ahora, curva de los 15 años (esta corrida en color; en «con propuesta» la pareja «sin
+     propuesta» punteada), ⓘ = ficha (por qué, para qué, cómo y dónde se mide) y «Ver» = la cámara va al lugar donde se ve. */
+  const ultimaMuerte = (I) => { const L = (I.muertes && I.muertes.lista) || (I.atropellos && I.atropellos.lista) || []; return L.length ? L[L.length - 1] : null; };
+  const TAB = [
+    { k: 'abejas', n: '🐝 Abejas (especie clave)', u: ' lugares', v: I => I.abeja ? I.abeja.parches : null, mejor: 1,
+      ver: I => { const L = I.abeja && I.abeja.lugares; if (L && L.length) return { x: L[0].x, z: L[0].z, t: 'Aquí están las abejas', tx: `${I.abeja.parches} lugares ocupados · ${I.abeja.interacciones} flores polinizadas` }; const P = I.verde && I.verde.parches.find(p => p.tipo === 'nuevo'); return P ? { x: P.x, z: P.z, t: 'Huertas donde llegan las abejas', tx: P.n } : null; } },
+    { k: 'corredores', n: 'Continuidad de corredores', u: ' %', v: I => I.verde && I.verde.resumen ? I.verde.resumen.conectividad * 100 : null, mejor: 1,
+      ver: I => { const C = I.verde && I.verde.conexiones && I.verde.conexiones[0]; return C ? { x: (C.x1 + C.x2) / 2, z: (C.z1 + C.z2) / 2, t: 'Corredor ecológico', tx: `${I.verde.resumen.nConectados} de ${I.verde.resumen.nParches} parches conectados entre sí` } : null; } },
+    { k: 'parches', n: 'Parches ecológicos nuevos', u: '', v: I => I.verde && I.verde.resumen ? (I.verde.resumen.nNuevos || 0) + (I.verde.resumen.nLiberados || 0) : null, mejor: 1,
+      ver: I => { const P = I.verde && (I.verde.parches.find(p => p.tipo === 'liberado') || I.verde.parches.find(p => p.tipo === 'nuevo')); return P ? { x: P.x, z: P.z, t: P.tipo === 'liberado' ? 'Espacio liberado que se vuelve verde' : 'Parche nuevo', tx: P.n } : null; } },
+    { k: 'muertes', n: 'Muertes de fauna', u: '', v: I => I.muertes ? I.muertes.total : I.atropellos && I.atropellos.total, mejor: -1,
+      ver: I => { const m = ultimaMuerte(I); return m ? { x: m.x, z: m.z, t: `Murió: ${m.nombre || m.especie}`, tx: m.detalle || m.causa || '' } : null; } },
+    { k: 'ruido', n: 'Bienestar de las aves (ruido)', u: ' %', v: I => I.avesRuido ? I.avesRuido.bienestar * 100 : null, mejor: 1,
+      ver: I => { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); const P = I.avesRuido && I.avesRuido.porParche && I.avesRuido.porParche[0]; return P ? { x: P.x, z: P.z, t: `Aves con ${Math.round(P.db)} dB`, tx: 'Con mucho ruido las aves se alejan y su bienestar baja.' } : null; } },
+    { k: 'ciclos', n: 'Ciclos biogeoquímicos', u: ' %', v: I => I.ciclos ? I.ciclos.indice * 100 : (I.eco ? I.eco.abioticos * 100 : null), mejor: 1, ver: null },
+    { k: 'residuos', n: 'Residuos sin recoger', u: ' t', v: I => I.basura ? I.basura.acumulada : null, mejor: -1,
+      ver: I => { const P = I.basura && I.basura.puntos && I.basura.puntos.slice().sort((a, b) => b.acumulada - a.acumulada)[0]; return P ? { x: P.x, z: P.z, t: 'Aquí se acumula la basura', tx: `${Math.round(P.acumulada)} t` } : null; } },
+    { k: 'biodiv', n: 'Biodiversidad (Shannon)', u: '', v: I => I.biodiversidad ? I.biodiversidad.shannon : (I.eco ? I.eco.biodiversidad * 100 : null), mejor: 1, ver: null }
+  ];
+  Object.assign(FICHA, {
+    '🐝 Abejas (especie clave)': { por: 'La abeja es especie clave: poliniza las flores de huertas y parques; si ella está, el ciclo de la flora sigue.', para: 'Ver si la propuesta (huertas, techos, corredores) le da más lugares y cómo se expande.', como: 'Parches donde la abeja está presente esa semana (modelo de ocupación) y flores que poliniza.', donde: 'En las huertas, parques y humedales donde aparece.', pts: I => (I.abeja && I.abeja.lugares || []).slice(0, 8).map(p => ({ x: p.x, z: p.z, n: p.n || 'Abejas' })) },
+    'Continuidad de corredores': { por: 'Un parche aislado no sirve: la fauna necesita moverse entre humedales, parques y huertas.', para: 'Medir si la ciudad se reconecta como red ecológica.', como: 'Parches en el grupo conectado más grande (enlaces con supervivencia al cruzar las vías ≥ 0,5) ÷ todos los parches.', donde: 'En las franjas verdes entre parches.', pts: I => (I.verde && I.verde.conexiones || []).slice(0, 6).map(c => ({ x: (c.x1 + c.x2) / 2, z: (c.z1 + c.z2) / 2, n: c.via ? 'cruza ' + c.via : 'corredor' })) },
+    'Parches ecológicos nuevos': { por: 'Para que las aves tengan dónde estar hace falta crear y liberar espacio verde.', para: 'Contar cuánto hábitat nuevo genera la propuesta.', como: 'Módulos de huerta que se activan + bodegas de Corabastos liberadas que se vuelven verde (maduran en 3 años).', donde: 'En las manchas verdes lima (nuevos) y tierra→verde (liberados).', pts: I => (I.verde && I.verde.parches || []).filter(p => p.tipo === 'nuevo' || p.tipo === 'liberado').slice(0, 8).map(p => ({ x: p.x, z: p.z, n: p.n })) },
+    'Muertes de fauna': { por: 'La mayoría de los animales que mueren en la ciudad se estrellan: contra vidrios y fachadas o contra los carros.', para: 'Ver dónde ocurre y qué la causa, y si la propuesta la reduce.', como: 'Animales que cruzan entre parches; mueren con una probabilidad según las fachadas de vidrio y los vehículos al día que cruzan.', donde: 'En el punto exacto de cada muerte (botón Ver: la más reciente).', pts: I => ((I.muertes && I.muertes.lista) || (I.atropellos && I.atropellos.lista) || []).slice(-6).map(m => ({ x: m.x, z: m.z, n: (m.nombre || '') + ' · ' + (m.detalle || m.causa || '') })) },
+    'Bienestar de las aves (ruido)': { por: 'Con mucho ruido las aves no se oyen para cantar, se estresan y se alejan.', para: 'Medir cómo el tráfico afecta el bienestar de las aves.', como: 'Ruido de cada carro sumado en cada parche; bienestar 100 % bajo 50 dB y 0 % a 70 dB.', donde: 'En los parches donde viven las aves (capa de ruido).', pts: I => (I.avesRuido && I.avesRuido.porParche || []).slice(0, 6).map(p => ({ x: p.x, z: p.z, n: Math.round(p.db) + ' dB' })) },
+    'Ciclos biogeoquímicos': { por: 'Un territorio vivo mantiene sus ciclos: el carbono que capturan los árboles, los nutrientes que vuelven al suelo y el agua que se infiltra.', para: 'Ver si la propuesta cierra los ciclos dentro de Kennedy.', como: 'Promedio de carbono capturado, nutrientes devueltos con el compost, agua de lluvia infiltrada y suelo vivo, frente al año 1.', donde: 'En las huertas, parques, humedales y Estaciones Circulares.', pts: I => [] },
+    'Residuos sin recoger': FICHA['Basura sin recoger (t)'] || FICHA['Basura sin recoger'],
+    'Biodiversidad (Shannon)': { por: 'No basta contar especies: importa que estén repartidas y cumplan funciones distintas.', para: 'Medir la diversidad de la fauna de Kennedy.', como: 'Índice de Shannon H\' sobre la ocupación de cada especie (más alto = más especies y más repartidas).', donde: 'En todos los parches de Kennedy.', pts: I => [] }
+  });
+  const tab = document.createElement('div'); tab.id = 'su-tab';
+  setInterval(() => { const g = document.getElementById('gs-izq'), r = g && g.querySelector('.gs-reloj'); if (!r) return; const ref = g.querySelector('#lp-red') || r; if (tab.previousElementSibling !== ref) ref.after(tab); }, 700); /* orden: reloj → quién interactúa con quién → tablero */
+  function chispaT(a, b, col) { const W = 120, H = 26, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
+    let mn = Math.min(...all), mx = Math.max(...all); if (mx - mn < 1e-6) { mx += 1; mn -= 1; }
+    const P = arr => arr.map((v, i) => v == null ? null : (i / (n - 1) * W).toFixed(1) + ',' + (H - 2 - (v - mn) / (mx - mn) * (H - 4)).toFixed(1)).filter(Boolean).join(' ');
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${b.length ? `<polyline points="${P(b)}" fill="none" stroke="rgba(220,224,230,.55)" stroke-width="1.3" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>` : ''}<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; }
+  function pintarTablero() {
+    const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
+    const d = R.def || {}, H = R.hist, B = d.propuesta && R.base ? R.base.slice(0, H.length) : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
+    const fv = (v, u) => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u || '');
+    const filas = TAB.map(T => { let v = null; try { v = T.v(I); } catch (e) { /* */ } if (v == null || !isFinite(v)) return '';
+      const a = serie(H, T.v, 4), b = B ? serie(B, T.v, 4) : [], vb = b.filter(x => x != null).pop(), v0 = a.find(x => x != null);
+      const dl = v0 != null && v0 !== 0 ? (v - v0) / Math.abs(v0) * 100 : 0, bien = dl * T.mejor > 0.5, mal = dl * T.mejor < -0.5;
+      const extra = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? `<div class="su-tc">${Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0).map(([k, c]) => `<i style="flex:${c}" class="c-${k}" title="${k}: ${c}"></i>`).join('')}</div><small class="su-tl">${Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0).map(([k, c]) => `${{ colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }[k] || k} ${c}`).join(' · ')}</small>` : '';
+      return `<div class="su-tf" data-k="${T.k}"><div class="su-th"><span>${T.n}</span><b class="${bien ? 'bien' : mal ? 'mal' : ''}">${fv(v, T.u)}</b></div>
+        <div class="su-tg">${chispaT(a, b, col)}<div class="su-tb"><button type="button" class="i" title="Por qué, cómo y dónde se mide">ⓘ</button>${T.ver ? '<button type="button" class="v">Ver</button>' : ''}</div></div>${B && vb != null ? `<small class="su-ts">sin propuesta: ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
+    tab.innerHTML = `<div class="gs-sub">TABLERO ECOCÉNTRICO</div>${filas}<div id="su-eco"></div>`;
+    tab.querySelectorAll('.su-tf').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
+      el.querySelector('.i').onclick = () => abrirFicha(T.n);
+      const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
+        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80' });
+        const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
+    pintarEco();
+  }
   function serie(H, f, paso) { const out = []; for (let i = 0; i < H.length; i += paso) { let v = null; try { v = f(H[i]); } catch (e) { /* */ } out.push(v == null || !isFinite(v) ? null : v); } return out; }
   function pintarGraficas() {
     const d = R.def || {}, S = SERIES[d.par], H = R.hist; if (!S || !H.length) { graf.classList.remove('on'); return; }
@@ -651,13 +715,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const pts = (arr) => arr.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ');
       const ult = a.filter(v => v != null).pop(), ultB = bb.filter(v => v != null).pop();
       const fmtv = v => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u === '%' ? ' %' : '');
-      const xs = [5, 10, 15].map(an => `<line x1="${X(an * 52 / paso)}" x2="${X(an * 52 / paso)}" y1="0" y2="${Hh}" stroke="rgba(255,255,255,.07)"/>`).join('');
+      const xs = [5, 10].map(an => `<line x1="${X(an * 52 / paso)}" x2="${X(an * 52 / paso)}" y1="0" y2="${Hh}" stroke="rgba(255,255,255,.07)"/>`).join('');
       const ia = a.length - 1 - [...a].reverse().findIndex(v => v != null), area = a.some(v => v != null) ? `<polygon points="0,${Hh} ${pts(a)} ${X(ia)},${Hh}" fill="${d.propuesta ? "#8ee6a8" : "#ffcf7a"}" opacity=".13"/>` : "";
       return `<figure data-f="${nom}" title="Clic: dónde, cómo y para qué se mide"><figcaption><span>${nom}</span><b>${fmtv(ult)}</b>${B && ultB != null ? `<i>sin: ${fmtv(ultB)}${B.length < H.length ? '*' : ''}</i>` : ''}</figcaption>
         <svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none">${xs}${lim != null ? `<line x1="0" x2="${W}" y1="${Y(lim)}" y2="${Y(lim)}" stroke="#ff8a80" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>` : ''}
         ${B ? `<polyline points="${pts(bb)}" fill="none" stroke="rgba(220,224,230,.6)" stroke-width="1.6" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>` : ''}
         ${area}<polyline points="${pts(a)}" fill="none" stroke="${d.propuesta ? '#8ee6a8' : '#ffcf7a'}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>${ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3" fill="#fff"/>` : ''}</svg>
-        <div class="ej"><span>año 1</span><span>5</span><span>10</span><span>15</span><span>20</span></div>${lim != null ? `<em class="lim">--- límite ${fmtv(lim)}</em>` : ''}<u>ⓘ dónde y cómo se mide${B && B.length < H.length ? ` · *sin propuesta: game over año ${Math.floor(B.length / 52) + 1}` : ''}</u></figure>`; }).join('');
+        <div class="ej"><span>año 1</span><span>5</span><span>10</span><span>15</span></div>${lim != null ? `<em class="lim">--- límite ${fmtv(lim)}</em>` : ''}<u>ⓘ dónde y cómo se mide${B && B.length < H.length ? ` · *sin propuesta: game over año ${Math.floor(B.length / 52) + 1}` : ''}</u></figure>`; }).join('');
     graf.classList.add('on');
   }
   function pintarHistoria() {

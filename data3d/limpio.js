@@ -9,10 +9,10 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=76';
+import { iniciarSimUI } from './sim_ui.js?v=79';
 
 export const METRO_SEM_OP = 114;
-export const SEMANAS_FIN = 1040;
+export const SEMANAS_FIN = 780; /* 15 años */
 /* dos escenarios: Kennedy como está (sin la propuesta de la tesis) y Kennedy con la propuesta */
 /* SEIS PARES: cada par pone a prueba lo mismo, con las mismas variables; uno corre Kennedy sin la propuesta y el otro con la
    infraestructura propuesta (id impar = sin, id par = con). */
@@ -28,14 +28,14 @@ export const METRO_MENOS_CARROS = 0.10;   // [SUP] ver arriba
 /* UN SOLO TIEMPO. La barra corre 20 años (1040 semanas) en tres plazos. 1× = un año en 12 s reales (20 años ≈ 4 min); 2× y 4× lo
    comprimen. El día (carros, fauna, cielo, reloj de la izquierda) corre con la MISMA velocidad: al subir la velocidad de los años suben
    también los carros (VEL_DIA = segundos simulados del día por segundo real). Un año real a 1× no es viable en una presentación. */
-const FIN_SEM = 1040, AÑOS = 20;
+const FIN_SEM = 780, AÑOS = 15;
 const VELS = [52 / 12, 52 / 6, 52 / 3];   // semanas del modelo por segundo real: 1× = 1 año / 12 s, 2× = 6 s, 4× = 3 s
 const VEL_DIA = [40, 80, 160];            // el día corre al mismo ritmo relativo (en pausa vuelve a tiempo real: 1×). Tope real: cada segundo
                                           // simulado del día cuesta ~4 ms (boids 2, carros 1, agentes 0,7, aves 0,4): con 10 ms por cuadro a 60 fps
                                           // caben ~150 s simulados por segundo; más que eso el reloj recorta (no hay pasos más grandes).
 const VEL_TXT = ['1 año = 12 s', '1 año = 6 s', '1 año = 3 s']; // la simulación no va en tiempo real: el botón dice cuánto dura un año
 const AÑO0 = 2026, MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 20 }];
+const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 15 }];
 
 // las 12 simulaciones (nombre corto; base = escenario del modelo semanal que se prende en el mapa)
 export const SIMS = [
@@ -53,7 +53,7 @@ export const SIMS = [
   { id: 12, par: 6, n: 'Gobernanza · con propuesta', base: 'C', cam: 'general' }
 ];
 
-const OCULTAR = ['#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
+const OCULTAR = ['#guia', '#guia-velo', '#su-hist', '#su-graf', '#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
 
 export function iniciarLimpio({ T3 }) {
   const html = document.documentElement;
@@ -109,8 +109,13 @@ export function iniciarLimpio({ T3 }) {
     off(document.getElementById('gs-flujo')); off(document.getElementById('gs-og'));
     const ag = document.getElementById('gs-ag'); if (ag) off(ag.closest('.gs-fila'));
     g.querySelectorAll(':scope > div:not([id]):not([class])').forEach(d => { if (!d.querySelector('button') && (d.textContent || '').trim().length > 60) off(d); });
-    // SIMULACIONES
-    if (!document.getElementById('lp-sims')) {
+    /* INTUITIVO: a la izquierda solo el reloj, el diagrama de quién interactúa con quién y el tablero ecocéntrico; capas: ruido y
+       «solo relaciones bióticas». Las simulaciones van a la derecha (6 por escenario). */
+    for (const s of g.querySelectorAll('.gs-sub')) { const tx = (s.textContent || '').trim().toUpperCase(); if (/^(SINTAXIS|FLUJO DE CARROS|SIMULACIONES)/.test(tx)) { off(s); for (let k = s.nextElementSibling; k && !k.classList.contains('gs-sub') && !k.classList.contains('ui-capas-h'); k = k.nextElementSibling) off(k); } }
+    g.querySelectorAll(':scope > button').forEach(b => { if (b.id !== 'rc-btn' && b.id !== 'lp-bio') off(b); });
+    if (!document.getElementById('lp-bio')) { const rc = document.getElementById('rc-btn'); if (rc) { const bb = document.createElement('button'); bb.id = 'lp-bio'; bb.type = 'button'; bb.textContent = 'Solo relaciones bióticas'; bb.className = rc.className.replace(/\bon\b/, '');
+      bb.onclick = () => { const B = window.KEN_BIOTICA_SOLO; if (!B) return; if (B.activo) { B.off(); bb.classList.remove('on'); } else { B.on(); bb.classList.add('on'); } }; rc.after(bb); } }
+    if (false && !document.getElementById('lp-sims')) {
       const h = document.createElement('div'); h.className = 'gs-sub'; h.textContent = 'SIMULACIONES';
       const f = document.createElement('div'); f.id = 'lp-sims';
       f.innerHTML = PARES.map(P => `<div class="lp-gr"><b>${String(P.par).padStart(2, '0')} · ${P.n}</b><span>${P.prueba}</span></div><button type="button" data-s="${2 * P.par - 1}" title="${P.n} sin propuesta">Sin propuesta</button><button type="button" data-s="${2 * P.par}" class="con" title="${P.n} con propuesta">Con propuesta</button>`).join('');
@@ -129,10 +134,12 @@ export function iniciarLimpio({ T3 }) {
   { const sb = document.createElement('style'); sb.textContent = '.lug-et,.hc-et,#bas-etq,.be,#cont-et,#mercred-aviso,#pares-etq{display:none!important}'; document.head.appendChild(sb); } /* sin burbujas de información sobre el mapa */
   { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
     #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
-    #lp-red h5{cursor:pointer} #lp-red h5::after{content:' ▾';opacity:.7} #lp-red.cerrado h5::after{content:' ▸'} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}`; document.head.appendChild(st);
-    const card = document.createElement('div'); card.id = 'lp-red'; card.className = 'cerrado'; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
+    #lp-red h5{cursor:pointer} #lp-red h5::after{content:' ▾';opacity:.7} #lp-red.cerrado h5::after{content:' ▸'} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}
+    #gs-izq #lp-red{position:static;width:auto;margin:8px 0 0;padding:6px 0 4px;background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none} #gs-izq #lp-red h5::after{content:''} #gs-izq #lp-red canvas{max-width:210px;margin:0 auto} #gs-izq #lp-red p{display:none}`; document.head.appendChild(st);
+    const card = document.createElement('div'); card.id = 'lp-red'; card.className = ''; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
     let movido = false;
     setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
+      { const gz = document.getElementById('gs-izq'), rl = gz && gz.querySelector('.gs-reloj'); if (rl && card.previousElementSibling !== rl) rl.after(card); } /* el tablero se abre solo a la izquierda, debajo del reloj */
       const on = !!ESC.activo && movido; card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
       const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
@@ -146,12 +153,31 @@ export function iniciarLimpio({ T3 }) {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
 
+  /* ---------- ESCENARIOS (arriba) y SUS 6 SIMULACIONES (derecha) ---------- */
+  { const se = document.createElement('style'); se.textContent = `#lp-esc{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:4px;padding:4px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    #lp-esc button{padding:9px 18px;border-radius:10px;border:0;background:none;color:#eef1f4;font:600 13.5px system-ui,sans-serif;cursor:pointer;opacity:.7} #lp-esc button.on{opacity:1;background:rgba(255,255,255,.12)} #lp-esc button.con.on{background:rgba(142,230,168,.2);color:#c9f5d6}
+    #lp-der{position:fixed;right:16px;top:16px;bottom:96px;width:300px;z-index:39;display:flex;flex-direction:column;gap:8px;pointer-events:none} #lp-der > *{pointer-events:auto}
+    #lp-seis{padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4}
+    #lp-seis h5{margin:0 0 6px;font:600 10.5px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7} #lp-seis button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 8px;margin:0 0 3px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.05);color:inherit;font:600 12.5px system-ui,sans-serif;cursor:pointer}
+    #lp-seis button i{font:600 16px 'Barlow Condensed',system-ui,sans-serif;font-style:normal;opacity:.55;width:20px} #lp-seis button:hover{background:rgba(255,255,255,.1)} #lp-seis button.on{border-color:rgba(255,190,90,.9);background:rgba(255,190,90,.12)} #lp-seis.con button.on{border-color:rgba(142,230,168,.95);background:rgba(142,230,168,.12)}
+    html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important} html.limpio #lp-der #su-der{position:static;width:auto;max-height:none;flex:1;min-height:0;overflow-y:auto}
+    @media (max-width:760px){#lp-der{top:auto;bottom:86px;left:16px;right:16px;width:auto;max-height:45vh}#lp-esc{top:8px}}`; document.head.appendChild(se); }
+  const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.innerHTML = '<button type="button" data-e="hoy" class="on">Kennedy hoy</button><button type="button" data-e="con" class="con">Kennedy con propuesta</button>'; document.body.appendChild(escB);
+  const der = document.createElement('div'); der.id = 'lp-der'; der.innerHTML = '<div id="lp-seis"></div>'; document.body.appendChild(der);
+  let escE = 'hoy';
+  function pintarSeis() { const box = document.getElementById('lp-seis'); box.className = escE === 'con' ? 'con' : '';
+    box.innerHTML = `<h5>${escE === 'con' ? 'Kennedy con propuesta' : 'Kennedy hoy'} · 6 simulaciones</h5>` + PARES.map(P => { const id = escE === 'con' ? 2 * P.par : 2 * P.par - 1; return `<button type="button" data-s="${id}" class="${ESC.activo === id ? 'on' : ''}" title="${P.prueba}"><i>${String(P.par).padStart(2, '0')}</i>${P.n}</button>`; }).join('');
+    box.querySelectorAll('button').forEach(b => b.onclick = () => escoger(+b.dataset.s)); }
+  escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    const par = ESC.activo ? Math.ceil(ESC.activo / 2) : null; pintarSeis(); if (par) escoger(escE === 'con' ? 2 * par : 2 * par - 1); /* mismo par, el otro escenario: mismas variables, otro resultado */ });
+  setInterval(() => { const sd = document.getElementById('su-der'); if (sd && sd.parentNode !== der) der.appendChild(sd); }, 600);
+  setTimeout(pintarSeis, 0);
   /* ---------- barra de años ---------- */
   const bar = document.createElement('div'); bar.id = 'lp-anos'; bar.className = 'vacia';
   bar.innerHTML = `<button type="button" class="play" title="Correr la simulación (barra espaciadora)">▶</button>
     <button type="button" class="rei" title="Volver al año 1">⟲</button>
     <span class="tit">Escoge una simulación</span>
-    <div class="pista"><i></i><b></b>${FASES.map(f => `<u title="${f.n} · años ${f.a0}–${f.a1}" style="left:${(f.a0 - 1) / AÑOS * 100}%;width:${(f.a1 - f.a0 + 1) / AÑOS * 100}%">${f.n.replace(' plazo', '')}</u>`).join('')}${[1, 5, 10, 15, 20].map(a => `<s style="left:${(a - 0.5) / AÑOS * 100}%">${a}</s>`).join('')}</div>
+    <div class="pista"><i></i><b></b>${FASES.map(f => `<u title="${f.n} · años ${f.a0}–${f.a1}" style="left:${(f.a0 - 1) / AÑOS * 100}%;width:${(f.a1 - f.a0 + 1) / AÑOS * 100}%">${f.n.replace(' plazo', '')}</u>`).join('')}${[1, 5, 10, 15].map(a => `<s style="left:${(a - 0.5) / AÑOS * 100}%">${a}</s>`).join('')}</div>
     <span class="ano">Año 1<small>Corto plazo</small></span>
     <button type="button" class="vel" title="Velocidad: cuánto dura un año de la simulación (no es tiempo real)">${VEL_TXT[0]}</button>`;
   document.body.appendChild(bar);
@@ -187,7 +213,7 @@ export function iniciarLimpio({ T3 }) {
     $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
     const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
-    document.body.classList.toggle('lp-corre', corre && !!ESC.activo); T3.horaLuz = ESC.activo ? 10.5 : null; { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las ✕ de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
+    /* simulador: el tablero y las simulaciones quedan visibles mientras corre (sin desvanecer paneles) */ T3.horaLuz = 10.5; /* siempre luz de media mañana (el reloj y los carros siguen su hora) */ { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las ✕ de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
     const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
   });
 
@@ -204,7 +230,7 @@ export function iniciarLimpio({ T3 }) {
   function escoger(id) {
     const S = SIMS.find(s => s.id === id); if (!S) return;
     ESC.activo = id; ESC.sim = S; bar.classList.remove('vacia'); yaOblicua = false;
-    document.querySelectorAll('#lp-sims button').forEach(b => b.classList.toggle('on', +b.dataset.s === id));
+    document.querySelectorAll('#lp-sims button, #lp-seis button').forEach(b => b.classList.toggle('on', +b.dataset.s === id));
     const nm = document.getElementById('lp-simn'); if (nm) nm.textContent = S.n;
     $b('.tit').textContent = `Simulación ${id} · ${S.n}`;
     // escenario del modelo en el mapa (los botones del panel A·B·C·D, escondido)
