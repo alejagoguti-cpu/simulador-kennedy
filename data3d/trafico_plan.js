@@ -5,7 +5,7 @@
    entre el predio y 16 destinos repartidos por Kennedy (centros de las zonas de 500 m más pobladas de cada sector). Movimiento cosmético
    (reloj universal, RELOJ.tAnim); color ámbar-rojizo para distinguirlos del tráfico SUMO grabado. Solo en el escenario D. */
 import { RELOJ } from './reloj.js?v=5';
-import { construirRed, arbol } from './viajes_mercados.js?v=8';
+import { construirRed, arbol } from './viajes_mercados.js?v=9';
 import { ZONAS } from './sim_red_datos.js?v=2';
 
 const POR_CARRO = 20, VEL = 14, MAXC = 400; // autos por carro dibujado · m/s en pantalla · tope de carros dibujados

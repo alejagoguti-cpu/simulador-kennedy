@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=18'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=19'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -168,7 +168,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); if (window.KEN_VERDE) { window.KEN_VERDE.limpiar(); window.KEN_VERDE.ver(false); } ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -232,7 +232,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       ponerCapaPar(I);
       if (I.sem % 4 === 0 || R.hist.length === 1) ponerLugares(I);
-      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarEco(); }
+      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarEco(); ponerVerde(I); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
@@ -468,6 +468,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* LUGARES: pines con ícono y nombre de dónde está cada cosa (tiendas, supermercados, plazas, Corabastos; con propuesta los mercados,
      Bavaria Común y las Estaciones Circulares) — data3d/lugares.js */
   let LUG = null, pLug = null;
+  /* RED VERDE (data3d/verde_red.js): parches que se liberan, refuerzan o crean, crecen y se conectan, con ind().verde del modelo */
+  let VER = null, pVer = null;
+  function ponerVerde(I) {
+    if (!I || !I.verde) { if (VER) VER.ver(false); return; }
+    if (!VER) { if (!pVer) pVer = import('./verde_red.js?v=3').then(m => { VER = m.crearVerde({ T3 }); const U = ultimo(); if (U) ponerVerde(U); }).catch(e => console.warn('red verde:', e)); return; }
+    VER.ver(!!R.sim); VER.poner(I.verde);
+  }
   function ponerLugares(I) {
     if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=5').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
     LUG.ver(!!R.sim && !!R.def && (R.def.par === 1 || R.def.par === 2)); /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
@@ -557,7 +564,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
     const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, Eb = B && B.eco ? B.eco : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
     const A = I.abeja, Ab = B && B.abeja;
-    box.innerHTML = `<div class="su-eco-i"><b style="color:${col}">${Math.round((I.eco.indice || 0) * 100)}</b><span>índice ecocéntrico${Eb ? ` · sin propuesta <b>${Math.round((Eb.indice || 0) * 100)}</b>` : ''}</span></div>${radar(I.eco, Eb, col)}
+    const VR = I.verde && I.verde.resumen, VB = B && B.verde && B.verde.resumen;
+    const redV = VR ? `<div class="su-abeja" style="background:rgba(95,211,138,.07);border-color:rgba(95,211,138,.25);margin-bottom:8px"><b style="color:#8ee6a8">Red verde de Kennedy</b>
+      <div><span>Parches conectados entre sí</span><b>${VR.nConectados} de ${VR.nParches}</b><small>${VB ? "sin: " + VB.nConectados + " de " + VB.nParches : ""}</small></div>
+      <div><span>Área verde</span><b>${Math.round(VR.haVerde)} ha</b><small>año 1: ${Math.round(VR.haVerde0)} ha${VB ? " · sin: " + Math.round(VB.haVerde) + " ha" : ""}</small></div>
+      <div><span>Conectividad</span><b>${Math.round((VR.conectividad || 0) * 100)} %</b><small>${VB ? "sin: " + Math.round((VB.conectividad || 0) * 100) + " %" : ""}</small></div>
+      <p style="opacity:.7">En el mapa: manchas verdes = parches (lima nuevos, tierra→verde liberados), franjas = conexiones que se van construyendo, rojo = conexión rota.</p></div>` : "";
+    box.innerHTML = redV + `<div class="su-eco-i"><b style="color:${col}">${Math.round((I.eco.indice || 0) * 100)}</b><span>índice ecocéntrico${Eb ? ` · sin propuesta <b>${Math.round((Eb.indice || 0) * 100)}</b>` : ''}</span></div>${radar(I.eco, Eb, col)}
       ${Eb ? '<p class="su-eco-l"><i style="background:' + col + '"></i>con propuesta <i class="pt"></i>sin propuesta (misma semana)</p>' : ''}
       ${A ? `<div class="su-abeja"><b>🐝 La abeja (especie clave)</b>
         <div><span>Lugares que ocupa</span><b>${A.parches}</b><small>año 1: ${Math.round(A.parchesRef)}${Ab ? ' · sin: ' + Ab.parches : ''}</small></div>

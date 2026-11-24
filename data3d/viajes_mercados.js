@@ -310,7 +310,7 @@ export async function crearViajesMercados({ T3, cj }) {
   const YV = () => (T3.viaY != null ? T3.viaY : 0.62);
   const cintaMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8, fog: false, toneMapped: false });
   const cintas = new THREE.Mesh(new THREE.BufferGeometry(), cintaMat); cintas.renderOrder = 6; cintas.frustumCulled = false; grupo.add(cintas);
-  const marcas = new THREE.Group(); grupo.add(marcas);
+  const marcas = new THREE.Group(); marcas.name = 'vm_marcas'; grupo.add(marcas);
   const C_HOY = new THREE.Color('#e15759'), C_PRO = new THREE.Color('#e2a55b'), C_MAS = new THREE.Color('#e0603a'), C_MENOS = new THREE.Color('#4fb3a6'), C_CORA = new THREE.Color('#e15759');
   let verCintas = -1, modoCintas = '';
   function rehacerCintas() {
