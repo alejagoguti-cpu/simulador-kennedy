@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=16'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=17'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -68,6 +68,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-que { margin: 9px 0 2px; font: 400 12px/1.4 system-ui, sans-serif; opacity: .9; } .su-que b { font-weight: 600; } .su-que span { opacity: .6; font-size: 11px; }
   #ojo-t { right: auto !important; left: 296px !important; transform: none; top: auto !important; bottom: 92px !important; z-index: 46 !important; } @media (max-width: 760px) { #ojo-t { left: 50% !important; transform: translateX(-50%); } } /* abajo a la izquierda: a la derecha va la leyenda de la maqueta */ /* la tarjeta del Ojo de Dios abajo al centro: arriba a la derecha la tapaba el panel */
   .su-lug { display: flex; flex-wrap: wrap; gap: 5px; } .su-lug button { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; border-radius: 8px; font: 500 11.5px system-ui, sans-serif; padding: 5px 9px; cursor: pointer; } .su-lug button:hover { background: rgba(255,207,122,.18); border-color: rgba(255,207,122,.5); }
+  #su-eco .su-eco-i { display: flex; align-items: baseline; gap: 8px; } #su-eco .su-eco-i > b { font: 600 30px 'Barlow Condensed', system-ui, sans-serif; } #su-eco .su-eco-i span { font: 500 11px system-ui, sans-serif; opacity: .8; }
+  #su-eco .su-eco-l { font: 500 10.5px system-ui, sans-serif; opacity: .75; margin: 0 0 6px; display: flex; gap: 6px; align-items: center; } #su-eco .su-eco-l i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; } #su-eco .su-eco-l i.pt { background: repeating-linear-gradient(90deg, #dde 0 4px, transparent 4px 7px); }
+  .su-abeja { padding: 8px 9px; border-radius: 10px; background: rgba(255,207,122,.07); border: 1px solid rgba(255,207,122,.22); font: 500 11px system-ui, sans-serif; } .su-abeja > b { display: block; margin-bottom: 4px; color: #ffd28a; } .su-abeja div { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 3px 0; border-top: 1px solid rgba(255,255,255,.06); } .su-abeja div b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; text-align: right; } .su-abeja small { grid-column: 1 / -1; opacity: .6; } .su-abeja p { margin: 5px 0 0; }
+  #su-eco .su-eco-n { font: 400 10px/1.35 system-ui, sans-serif; opacity: .55; margin: 6px 0 0; }
   #su-graf { position: fixed; left: 50%; transform: translateX(-50%); bottom: 88px; z-index: 42; display: none; gap: 8px; padding: 8px 10px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
   #su-graf.on { display: flex; } #su-graf figure { margin: 0; width: 220px; } #su-graf figcaption { display: flex; align-items: baseline; gap: 6px; font: 500 10.5px system-ui, sans-serif; color: #e9ecef; margin-bottom: 2px; }
   #su-graf figcaption span { flex: 1; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #su-graf figcaption b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; } #su-graf figcaption i { font: 500 11px system-ui, sans-serif; font-style: normal; opacity: .55; }
@@ -217,7 +221,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
       ponerCapaPar(I);
       if (I.sem % 4 === 0 || R.hist.length === 1) ponerLugares(I);
-      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); }
+      if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarEco(); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
@@ -234,6 +238,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
     der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">Prueba: ${d.prueba}</p>` : ''}<p class="pre">${d ? d.pregunta || d.desc || '' : ''}</p>
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
+      <h4>Evaluación ecocéntrica</h4><div id="su-eco"><p class="pre">Dale play para ver las cinco dimensiones.</p></div>
       <h4>Mira en el territorio</h4><div class="su-lug">${lugares().map((l, i) => `<button type="button" data-l="${i}">${l.n}</button>`).join('')}</div>
       <h4>Indicadores · picos sobre Kennedy</h4><div id="su-picos"></div>
       <h4>Resultados en vivo</h4><div id="su-inds"></div>
@@ -514,6 +519,32 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     6: [['Equidad entre barrios', I => I.gobernanza ? I.gobernanza.equidad : null, '', null], ['Recursos que alcanzan', I => I.gobernanza ? I.gobernanza.coberturaMedia * 100 : null, '%', null], ['Decisiones tomadas', I => I.gobernanza ? I.gobernanza.decisiones : null, '', null]]
   };
   const graf = document.createElement('div'); graf.id = 'su-graf'; document.body.appendChild(graf);
+  /* EVALUACIÓN ECOCÉNTRICA (macromodelo de la tesis): radar de las 5 dimensiones de ind().eco (0–1), esta corrida en color y, en «con
+     propuesta», la pareja «sin propuesta» punteada en la misma semana; debajo la tarjeta de la abeja (especie foco, ind().abeja) */
+  const DIMS = [['integridad', 'Integridad'], ['biodiversidad', 'Biodiversidad'], ['abioticos', 'Agua y suelo'], ['limites', 'No regresión'], ['gobernanza', 'Gobernanza']];
+  function radar(E, Eb, col) {
+    const W = 270, H = 200, cx = W / 2, cy = 104, R = 66, ang = (i) => -Math.PI / 2 + i * 2 * Math.PI / DIMS.length, P = (i, v) => [cx + Math.cos(ang(i)) * R * v, cy + Math.sin(ang(i)) * R * v];
+    const poli = (e) => DIMS.map(([k], i) => P(i, e && e[k] != null ? Math.max(0, Math.min(1, e[k])) : 0).map(n => n.toFixed(1)).join(',')).join(' ');
+    let s = `<svg viewBox="-20 0 ${W + 40} ${H}" width="100%" style="overflow:visible">`;
+    for (const r of [0.25, 0.5, 0.75, 1]) s += `<polygon points="${DIMS.map((_, i) => P(i, r).map(n => n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="rgba(255,255,255,${r === 1 ? 0.25 : 0.1})"/>`;
+    DIMS.forEach(([k, n], i) => { const [x, y] = P(i, 1), [lx, ly] = P(i, 1.2); s += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.1)"/><text x="${lx.toFixed(1)}" y="${(ly + 3).toFixed(1)}" fill="#e9ecef" font-size="9.5" font-family="system-ui,sans-serif" text-anchor="${Math.abs(lx - cx) < 8 ? 'middle' : lx > cx ? 'start' : 'end'}">${n}${E && E[k] != null ? ' · ' + Math.round(E[k] * 100) : ''}</text>`; });
+    if (Eb) s += `<polygon points="${poli(Eb)}" fill="rgba(200,205,212,.08)" stroke="rgba(220,224,230,.7)" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+    s += `<polygon points="${poli(E)}" fill="${col}33" stroke="${col}" stroke-width="2"/>`;
+    return s + '</svg>';
+  }
+  function pintarEco() {
+    const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
+    const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, Eb = B && B.eco ? B.eco : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
+    const A = I.abeja, Ab = B && B.abeja;
+    box.innerHTML = `<div class="su-eco-i"><b style="color:${col}">${Math.round((I.eco.indice || 0) * 100)}</b><span>índice ecocéntrico${Eb ? ` · sin propuesta <b>${Math.round((Eb.indice || 0) * 100)}</b>` : ''}</span></div>${radar(I.eco, Eb, col)}
+      ${Eb ? '<p class="su-eco-l"><i style="background:' + col + '"></i>con propuesta <i class="pt"></i>sin propuesta (misma semana)</p>' : ''}
+      ${A ? `<div class="su-abeja"><b>🐝 La abeja (especie clave)</b>
+        <div><span>Lugares que ocupa</span><b>${A.parches}</b><small>año 1: ${Math.round(A.parchesRef)}${Ab ? ' · sin: ' + Ab.parches : ''}</small></div>
+        <div><span>Flores que poliniza (activas)</span><b>${A.interacciones}</b><small>${Ab ? 'sin: ' + Ab.interacciones : ''}</small></div>
+        <div><span>Lugares conectados por corredores</span><b>${Math.round((A.conectados || 0) * 100)} %</b><small>${Ab ? 'sin: ' + Math.round((Ab.conectados || 0) * 100) + ' %' : ''}</small></div>
+        <p>Presión principal: <b>${A.presion || 'ninguna'}</b></p></div>` : ''}
+      <p class="su-eco-n">Derechos de la naturaleza: el modelo no los simula (sin mecanismo). Cada número sale del modelo semanal; ver «Notas y fuentes» del informe.</p>`;
+  }
   function serie(H, f, paso) { const out = []; for (let i = 0; i < H.length; i += paso) { let v = null; try { v = f(H[i]); } catch (e) { /* */ } out.push(v == null || !isFinite(v) ? null : v); } return out; }
   function pintarGraficas() {
     const d = R.def || {}, S = SERIES[d.par], H = R.hist; if (!S || !H.length) { graf.classList.remove('on'); return; }
