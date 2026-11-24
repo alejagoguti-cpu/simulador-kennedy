@@ -334,6 +334,14 @@ export const SIMS = [];
 for (const P of PARES) for (const prop of [false, true]) SIMS.push({ id: 2 * P.par - (prop ? 0 : 1), par: P.par, propuesta: prop, parN: P.n, prueba: P.prueba, capa: P.capa,
   n: P.n.slice(3) + (prop ? ' · con propuesta' : ' · sin propuesta'), corto: P.n.slice(3) + (prop ? ' · con' : ' · sin'), base: prop ? 'C' : 'A', grupo: prop ? 'propuesta' : 'actual',
   pregunta: prop ? P.pregCon : P.pregSin, desc: prop ? P.con : P.sin, visible: P.visible, sliders: PAR_SL[P.par] });
+/* SIMULACIONES BASE (fondo que siempre corre), sin prueba de estrés: 13 = Kennedy hoy (escenario D de sim_vida.js: estado actual + plan parcial Bavaria),
+   14 = Kennedy con propuesta (escenario C). Condiciones normales: población +0,5 %/año [SUP: crecimiento moderado, Kennedy ya es una localidad consolidada], carros +1,5 %/año, recolección 84 %; sin corte,
+   sin cierre, sin pérdida de parche, sin aumento de orgánicos, sin presión inmobiliaria extra ni falta de recursos. Las reglas de game over siguen activas. */
+const BASE_SL = [sPob(0.5), sTraf, sRecol];
+SIMS.push({ id: 13, par: 0, propuesta: false, parN: '00 Base', prueba: 'Sin prueba de estrés: Kennedy en condiciones normales', capa: null, n: 'Kennedy hoy', corto: 'Kennedy hoy', base: 'D', grupo: 'actual',
+  pregunta: '¿Qué pasaría con Kennedy en 15 años si sigue como hoy, con el plan parcial Bavaria?', desc: 'Estado actual con el plan parcial Bavaria, el metro y el crecimiento normal de la población y del tráfico.', visible: 'Todo el territorio.', sliders: BASE_SL },
+  { id: 14, par: 0, propuesta: true, parN: '00 Base', prueba: 'Sin prueba de estrés: Kennedy en condiciones normales', capa: null, n: 'Kennedy con propuesta', corto: 'Kennedy con propuesta', base: 'C', grupo: 'propuesta',
+  pregunta: '¿Qué pasaría con Kennedy en 15 años con la red de mercados, huertas, Estaciones Circulares y Bavaria Común?', desc: 'La red distribuida de la propuesta con el metro y el crecimiento normal de la población y del tráfico.', visible: 'Todo el territorio.', sliders: BASE_SL });
 
 export const MITIGA_DB = 3; // dB menos en las calles pacificadas (ver mitiga arriba) [SUP]
 
@@ -399,7 +407,7 @@ const listo = () => { if (!D) throw new Error('simulaciones.js: falta await carg
 const clonar = (o) => JSON.parse(JSON.stringify(o));
 /* PLAN PARCIAL BAVARIA EN «SIN PROPUESTA» (pedido de la autora, 2026-11-23): las 6 corridas sin propuesta (id impar) incluyen el Plan Parcial
    Fábrica Bavaria (Decreto 448/2023) por etapas, como la trayectoria real de Kennedy; las corridas con propuesta tienen Bavaria Común en ese predio. */
-const PRED_SIMS = new Set([1, 3, 5, 7, 9, 11]);
+const PRED_SIMS = new Set([1, 3, 5, 7, 9, 11, 13]); /* las corridas sin propuesta (y la base 13) tienen el plan parcial y su predio */
 const KEN_XZ = (() => { let x = 0, z = 0, w = 0; for (const Z of ZONAS) { x += Z[0] * Z[2]; z += Z[1] * Z[2]; w += Z[2]; } return [x / w, z / w]; })(); // centro poblado de Kennedy
 const CORA_XZ = [BODEGAS.reduce((a, b) => a + b.x, 0) / BODEGAS.length, BODEGAS.reduce((a, b) => a + b.z, 0) / BODEGAS.length];
 const BORDE_TOT = BODEGAS.reduce((a, b) => a + (b.borde || 0), 0);
