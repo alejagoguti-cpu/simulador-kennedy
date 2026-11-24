@@ -95,17 +95,14 @@ export function iniciarLimpio({ T3 }) {
 @media (max-width: 640px) { #lp-anos .tit { display: none; } #lp-anos { gap: 8px; padding: 8px 10px; } }`;
   document.head.appendChild(css);
   import('./camara_quieta.js?v=1').then(m => m.iniciarCamaraQuieta({ T3 })).catch(e => console.warn('cámara quieta:', e)); /* la cámara nunca se mueve sola */
-  /* OPACIDAD DE LA FOTO DE FONDO (malla de Google, T3.tiles): barra en «Capas». La foto se dibuja primero (renderOrder −10) y luego se borra
-     la profundidad para que el modelo propio quede encima; por eso NO se marca transparent (la mandaría al final): se mezcla con
-     CustomBlending dentro de la pasada opaca, conservando su turno. Se recuerda en este navegador. */
-  let opFoto = 1; try { const g = parseFloat(localStorage.getItem('lp-opfoto')); if (g >= 0 && g <= 1) opFoto = g; } catch (e) { /* */ }
+  /* OPACIDAD DE LA FOTO DE FONDO (malla de Google, T3.tiles): fija al 80 % (pedido de la autora). La foto se dibuja primero (renderOrder −10)
+     y luego se borra la profundidad para que el modelo propio quede encima; por eso NO se marca transparent (la mandaría al final): se
+     mezcla con CustomBlending dentro de la pasada opaca, conservando su turno. */
+  let opFoto = 0.8;
   const opMat = (m) => { if (!m || m.userData._opF === opFoto || (opFoto === 1 && m.blending !== THREE_CUSTOM)) return; /* al 100 % no se toca nada */ if (m.blending !== THREE_CUSTOM) { m.blending = THREE_CUSTOM; m.blendSrc = 204; /* SrcAlphaFactor */ m.blendDst = 205; /* OneMinusSrcAlphaFactor */ m.needsUpdate = true; } m.opacity = opFoto; m.userData._opF = opFoto; };
   const THREE_CUSTOM = 5; /* THREE.CustomBlending */
   const aplicarOpFoto = () => { const g = T3.tiles && T3.tiles.group; if (g) g.traverse(o => { if (o.isMesh && o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(opMat); }); };
-  function ponerOpFoto(o) { opFoto = Math.max(0, Math.min(1, o)); try { localStorage.setItem('lp-opfoto', String(opFoto)); } catch (e) { /* */ } aplicarOpFoto(); }
   setInterval(aplicarOpFoto, 700); /* teselas nuevas que va cargando la malla */
-  { const st = document.createElement('style'); st.textContent = `#lp-foto{display:block;margin-top:8px;font:500 11px system-ui,sans-serif;color:#e2f3ff} #lp-foto span{display:flex;justify-content:space-between;margin-bottom:3px;opacity:.85} #lp-foto b{font-weight:600}
-    #lp-foto input{width:100%;accent-color:#7dd3fc;margin:0}`; document.head.appendChild(st); }
 
   /* ---------- panel de la izquierda: se quita poco (ángulo, textos largos, flujo de agentes, ¿de dónde vienen?, agentes) ---------- */
   const limpiarPanel = () => {
@@ -129,9 +126,7 @@ export function iniciarLimpio({ T3 }) {
     g.querySelectorAll(':scope > button').forEach(b => { if (b.id !== 'rc-btn' && b.id !== 'lp-bio') off(b); });
     if (!document.getElementById('lp-bio')) { const rc = document.getElementById('rc-btn'); if (rc) { const bb = document.createElement('button'); bb.id = 'lp-bio'; bb.type = 'button'; bb.textContent = 'Solo relaciones bióticas'; bb.className = rc.className.replace(/\bon\b/, '');
       bb.onclick = () => { const B = window.KEN_BIOTICA_SOLO; if (!B) return; if (B.activo) { B.off(); bb.classList.remove('on'); } else { B.on(); bb.classList.add('on'); } }; rc.after(bb); } }
-    { const lb = document.getElementById('lp-bio'); if (lb) lb.classList.remove('lp-off');
-      if (lb && !document.getElementById('lp-foto')) { const fo = document.createElement('label'); fo.id = 'lp-foto'; fo.innerHTML = `<span>Foto de fondo<b>${Math.round(opFoto * 100)} %</b></span><input type="range" min="0" max="100" step="5" value="${Math.round(opFoto * 100)}" aria-label="Opacidad de la foto de fondo">`;
-        const inp = fo.querySelector('input'); inp.oninput = () => { ponerOpFoto(inp.value / 100); fo.querySelector('b').textContent = inp.value + ' %'; }; lb.after(fo); } }
+    { const lb = document.getElementById('lp-bio'); if (lb) lb.classList.remove('lp-off'); }
     if (false && !document.getElementById('lp-sims')) {
       const h = document.createElement('div'); h.className = 'gs-sub'; h.textContent = 'SIMULACIONES';
       const f = document.createElement('div'); f.id = 'lp-sims';
@@ -207,7 +202,7 @@ export function iniciarLimpio({ T3 }) {
   /* sin la capa de flujo de carros (las líneas de colores en las calles): los carros ya se ven */
   let nFc = 0; const fcOff = setInterval(() => { const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click(); if (++nFc > 40) clearInterval(fcOff); }, 500);
   /* VÍAS MÁS OSCURAS: calzada de asfalto oscuro y andenes un poco más oscuros (las rayas blancas quedan); el color multiplica la textura */
-  let nVia = 0; const vOsc = setInterval(() => { const V = T3.viasMallas; if (V && V[2]) { V[2].material.color.multiplyScalar(0.78); /* un poco más oscura, no negra; andenes como estaban */ clearInterval(vOsc); } else if (++nVia > 60) clearInterval(vOsc); }, 500);
+  let nVia = 0; const vOsc = setInterval(() => { const V = T3.viasMallas; if (V && V[2]) { V[2].material.color.multiplyScalar(0.7); /* un poco más oscura (antes 0,78), no negra; andenes como estaban */ clearInterval(vOsc); } else if (++nVia > 60) clearInterval(vOsc); }, 500);
   addEventListener('lp-vuelta', () => { reiniciar(); setTimeout(() => { if (RELOJ.pausaSem) alternar(); }, 300); });
   /* ---------- barra de años ---------- */
   const bar = document.createElement('div'); bar.id = 'lp-anos'; bar.className = 'vacia';
