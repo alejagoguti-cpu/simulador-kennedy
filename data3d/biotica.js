@@ -1004,23 +1004,12 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
      mismo color original userData._c0) y muestra sus propios edificios (se apaga el recorte de huellas, maskU.uOn); se ocultan los edificios
      propios y las demás capas (tráfico, ruido, indicadores…). Mientras está prendido se repite en cada cuadro (otras capas se vuelven a prender
      solas y la malla carga teselas nuevas). Al apagar todo vuelve como estaba. */
-  const SOLO = { on: false, k: 1, ocultos: new Map(), antes: null };
-  const SOLO_K = 0.6; /* el territorio 3D se sigue viendo (un poco más oscuro) y la red biótica resalta encima */
-  const BASE = new Set(); // lo que se queda a la vista: la red biótica, las luces, la malla de Google y el cielo (se arma al prender)
-  const armarBase = () => { BASE.clear(); BASE.add(grupo); if (T3.tiles && T3.tiles.group) BASE.add(T3.tiles.group);
-    for (const o of T3.scene.children) if (o.isLight || o.isCamera || o.type === 'Sky' || /^(cielo|sky|sol|luna|estrellas|nubes|agua)/i.test(o.name || '')) BASE.add(o); };
-  let kAct = 1;
-  const tenirMat = (m) => { if (!m || !m.color) return; if (!m.userData._c0) m.userData._c0 = m.color.clone(); m.color.copy(m.userData._c0).multiplyScalar(kAct); };
-  const tenirObj = (x) => { const ms = x.material; if (!ms) return; if (Array.isArray(ms)) { for (let i = 0; i < ms.length; i++) tenirMat(ms[i]); } else tenirMat(ms); };
-  const tenir = (k) => { kAct = k; if (T3.tiles && T3.tiles.group) T3.tiles.group.traverse(tenirObj); };
-  RELOJ.alDibujar((info) => {
-    if (!SOLO.on && SOLO.k === 1) return;
-    const meta = SOLO.on ? SOLO_K : 1, paso = Math.min(0.25, (info && info.dtReal) || 0.016) / 0.5 * (1 - SOLO_K); // fundido de 0,5 s (en tiempo real, no por cuadros)
-    SOLO.k = SOLO.k > meta ? Math.max(meta, SOLO.k - paso) : Math.min(meta, SOLO.k + paso);
-    tenir(SOLO.k); // en cada cuadro: la malla de Google cambia de teselas todo el tiempo (cada 0,6 s quedaban teselas nuevas sin oscurecer)
-    if (SOLO.on) { for (const o of T3.scene.children) { if (BASE.has(o)) continue; if (o.visible) { if (!SOLO.ocultos.has(o)) SOLO.ocultos.set(o, true); o.visible = false; } else if (!SOLO.ocultos.has(o)) SOLO.ocultos.set(o, false); }
-      grupo.visible = true; }
-  });
+  /* La autora: «deja todo en 3D pero que se noten más solo las interacciones, en blanco y negro el 3D, igual lo de Bavaria».
+     Ya no se esconde nada ni se oscurece: todo el 3D (malla de Google, edificios, Bavaria, árboles, carros) pasa a blanco y negro
+     (data3d/gris.js) y la red biótica (animales y líneas de interacción) queda en color encima. */
+  const SOLO = { on: false, antes: null };
+  let GRIS = null; const pGris = import('./gris.js?v=1').then(m => { GRIS = m.crearGris({ T3, excluir: [grupo] }); return GRIS; }).catch(e => console.warn('blanco y negro:', e));
+  RELOJ.alDibujar(() => { if (SOLO.on) { grupo.visible = true; lineas.visible = pulsos.visible = true; } });
   /* CONVENCIONES: qué significa cada color de línea (los tipos de interacción de la red), abajo a la izquierda del mapa */
   { const st = document.createElement('style'); st.textContent = `#bio-ley{position:fixed;left:296px;bottom:92px;z-index:41;display:flex;flex-wrap:wrap;gap:4px 12px;max-width:min(560px,calc(100vw - 640px));padding:8px 11px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.74),rgba(20,22,28,.86));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#eef1f4;font:500 11px system-ui,sans-serif}
     #bio-ley b{width:100%;font:600 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7} #bio-ley span{display:inline-flex;align-items:center;gap:5px} #bio-ley i{width:14px;height:3px;border-radius:2px;display:inline-block}
@@ -1030,12 +1019,12 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     document.body.appendChild(ley);
     setInterval(() => { ley.style.display = grupo.visible ? '' : 'none'; }, 800); }
   window.KEN_BIOTICA_SOLO = {
-    on() { if (SOLO.on) return; SOLO.on = true; armarBase(); SOLO.antes = { gv: grupo.visible, on: ESTADO.on, ag: ESTADO.agentes, mk: T3.maskU ? T3.maskU.uOn.value : null };
-      if (T3.maskU) T3.maskU.uOn.value = 0; // los edificios propios se ocultan (su sombreador no obedece al color): la malla de Google vuelve a mostrar los suyos, oscurecidos
+    on() { if (SOLO.on) return; SOLO.on = true; SOLO.antes = { gv: grupo.visible, on: ESTADO.on, ag: ESTADO.agentes };
+      pGris.then(G => { if (G && SOLO.on) G.on(); });
       grupo.visible = true; ESTADO.on = true; ESTADO.agentes = true; lineas.visible = pulsos.visible = true; bOn.classList.add('on'); },
     off() { if (!SOLO.on) return; SOLO.on = false;
-      for (const [o, v] of SOLO.ocultos) o.visible = v; SOLO.ocultos.clear(); // cada capa vuelve a como estaba antes de prender
-      const A = SOLO.antes || {}; if (T3.maskU && A.mk != null) T3.maskU.uOn.value = A.mk; grupo.visible = A.gv !== undefined ? A.gv : grupo.visible; ESTADO.on = A.on !== false; ESTADO.agentes = A.ag !== false;
+      if (GRIS) GRIS.off();
+      const A = SOLO.antes || {}; grupo.visible = A.gv !== undefined ? A.gv : grupo.visible; ESTADO.on = A.on !== false; ESTADO.agentes = A.ag !== false;
       lineas.visible = pulsos.visible = ESTADO.on; bOn.classList.toggle('on', ESTADO.on); },
     get activo() { return SOLO.on; }
   };  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, ENCL, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar, solo: window.KEN_BIOTICA_SOLO };

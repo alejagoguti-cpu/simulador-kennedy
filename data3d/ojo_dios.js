@@ -83,7 +83,7 @@ function planear(p0, c0, p1, c1, rapido) {
   // los extremos son exactamente la cámara de salida y la de llegada (sin bajar de lo requerido cerca del destino)
   for (let s = 0; s <= N; s++) { const u = s / N, a = smooth(0, 0.1, u), b = 1 - smooth(0.9, 1, u); let y = p0.y + (ys[s] - p0.y) * a; y = p1.y + (y - p1.y) * b; if (u > 0.9) y = Math.max(y, req[s] - g * 0.6); ys[s] = y; }
   ys[0] = p0.y; ys[N] = p1.y;
-  return { N, xs, zs, ys, c0: c0.clone(), c1: c1.clone(), dur: rapido ? Math.max(1.1, Math.min(2.2, 0.9 + dist / 3500)) /* avisos: llega en 1-2 s */ : Math.max(2.8, Math.min(6.5, 2.4 + dist / 1400 + Math.max(0, crucero - Math.max(p0.y, p1.y)) / 500)) };
+  return { N, xs, zs, ys, c0: c0.clone(), c1: c1.clone(), dur: rapido ? Math.max(0.55, Math.min(0.95, 0.45 + dist / 8000)) /* avisos: llega en menos de 1 s */ : Math.max(2.8, Math.min(6.5, 2.4 + dist / 1400 + Math.max(0, crucero - Math.max(p0.y, p1.y)) / 500)) };
 }
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const suave = (u) => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
@@ -117,6 +117,7 @@ function paso() {
 
 /* ---------- marca en el piso y tarjeta ---------- */
 function ponerMarca(x, z, color) {
+  if (marcaX) marcaX.visible = false;
   const y0 = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.6, c = new THREE.Color(color);
   if (!marca) {
     marca = new THREE.Group(); marca.name = 'ojo_marca';
@@ -127,6 +128,22 @@ function ponerMarca(x, z, color) {
     T3.scene.add(marca);
   }
   marca.position.set(x, y0, z); marca.userData.haz.material.color.copy(c); marca.userData.anillo.material.color.copy(c); marca.visible = true;
+}
+/* X en el piso (animal muerto): dos barras planas cruzadas de 26 m, del color del aviso con borde oscuro; nada más (sin haz ni anillo) */
+let marcaX = null;
+function ponerX(x, z, color) {
+  if (marca) marca.visible = false;
+  const y0 = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.5;
+  if (!marcaX) {
+    marcaX = new THREE.Group(); marcaX.name = 'ojo_x';
+    const barra = (w, l, mat) => new THREE.Mesh(new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2), mat);
+    const mB = new THREE.MeshBasicMaterial({ color: 0x0b0d10, transparent: true, opacity: 0.8, depthWrite: false, depthTest: false /* la malla de Google puede quedar más alta que el piso: la X siempre se ve */, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -30 });
+    const mC = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, depthTest: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -40 });
+    for (const a of [Math.PI / 4, -Math.PI / 4]) { const b = barra(6.4, 30, mB); b.rotation.y = a; b.renderOrder = 15; const c = barra(4, 26, mC); c.rotation.y = a; c.position.y = 0.05; c.renderOrder = 16; marcaX.add(b, c); }
+    marcaX.userData.mC = mC; marcaX.traverse(m => { m.frustumCulled = false; });
+    T3.scene.add(marcaX);
+  }
+  marcaX.userData.mC.color.set(color); marcaX.position.set(x, y0, z); marcaX.visible = true;
 }
 function mostrarTarjeta(titulo, texto, color, lugar, etiqueta) {
   if (!tarjeta) {
@@ -143,7 +160,7 @@ function quitarTarjeta() { if (tarjeta) { tarjeta.classList.remove('on'); const 
 
 /* ---------- API ---------- */
 /* opciones: rapido (vuelo de 1-2 s), cenital (God's Eye: cámara alta y empinada, ~58°, que encuadra el lugar desde arriba), lugar (dónde pasó; va en la tarjeta) */
-async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '' } = {}) {
+async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '', x0 = false /* animal muerto: solo una X en el piso */ } = {}) {
   if (!armar()) throw new Error('KEN_OJO: el 3D aún no está listo');
   if (!isFinite(x) || !isFinite(z)) throw new Error('KEN_OJO.ir: x, z inválidos');
   await armarAlturas();
@@ -152,21 +169,21 @@ async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = f
   orbita = null; quitarTarjeta();
   // llega desde el lado por donde viene (si está casi encima, desde el sur)
   let dx = cam.position.x - x, dz = cam.position.z - z; const dh = Math.hypot(dx, dz); if (dh < 50) { dx = 0; dz = 1; } else { dx /= dh; dz /= dh; }
-  const RF = cenital ? 520 : R_FIN, EL = cenital ? 1.02 : ELEV;
+  const RF = cenital ? 380 : R_FIN, EL = cenital ? 1.40 : ELEV; /* God's Eye: casi vertical (~80°), mirando el lugar desde arriba */
   const rh = RF * Math.cos(EL); let yF = y0 + RF * Math.sin(EL);
   const pF = new V(x + dx * rh, yF, z + dz * rh); pF.y = Math.max(yF, alturaEn(pF.x, pF.z, 1) + MARGEN);
   const c1 = new V(x, y0, z);
-  ponerMarca(x, z, color);
+  if (x0) ponerX(x, z, color); else ponerMarca(x, z, color);
   if (rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta); // la tarjeta sale de una vez: se lee mientras vuela
   const ok = await new Promise(res => volar(planear(cam.position.clone(), T3.orbit.target.clone(), pF, c1, rapido), res));
   if (!ok) return false;
-  orbita = { on: true, c: c1, rh, y: pF.y, th: Math.atan2(dz, dx) };
+  orbita = { on: !cenital, c: c1, rh, y: pF.y, th: Math.atan2(dz, dx) }; /* desde arriba la cámara se queda quieta */
   if (!rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta);
   return true;
 }
 async function cerrar() {
   if (!armado) return false;
-  quitarTarjeta(); orbita = null; if (marca) marca.visible = false;
+  quitarTarjeta(); orbita = null; if (marca) marca.visible = false; if (marcaX) marcaX.visible = false;
   if (!casa) return true;
   const destino = casa; casa = null;
   await armarAlturas();
