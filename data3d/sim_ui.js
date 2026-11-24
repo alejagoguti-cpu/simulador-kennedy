@@ -493,7 +493,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const bv = c.querySelector('.ver'); if (bv) { bv.textContent = 'Seguir'; bv.onclick = () => seguir(); }
     if (window.KEN_OJO && ev.x != null) {
       const añoV = ev.sem != null ? Math.floor(ev.sem / 52) + 1 : null; /* vuelo rápido y encuadre desde arriba (God's Eye) con qué pasó y dónde */
-      await window.KEN_OJO.ir({ x: ev.x, z: ev.z, titulo: ev.titulo, texto: ev.texto, lugar: ev.lugar || '', etiqueta: (añoV ? 'Año ' + añoV + ' · ' : '') + 'Qué pasó', rapido: true, cenital: true, x0: /murió|atropell|desapareci/i.test(ev.titulo || '') /* animal muerto: X en el piso */, color: ev.signo > 0 ? '#8ee6a8' : '#ff8a80' });
+      await window.KEN_OJO.ir({ x: ev.x, z: ev.z, titulo: ev.titulo, texto: ev.texto, lugar: ev.lugar || '', etiqueta: (añoV ? 'Año ' + añoV + ' · ' : '') + 'Qué pasó', rapido: true, cenital: true, x0: /murió|atropell|desapareci/i.test(ev.titulo || '') /* animal muerto: X en el piso */, animal: (ev.especies && ev.especies[0]) || '', color: ev.signo > 0 ? '#8ee6a8' : '#ff8a80' });
       const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (viendo === c) seguir(false, true); }, { once: true });
     }
   }

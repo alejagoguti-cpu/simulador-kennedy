@@ -131,7 +131,7 @@ function ponerMarca(x, z, color) {
 }
 /* X en el piso (animal muerto): dos barras planas cruzadas de 26 m, del color del aviso con borde oscuro; nada más (sin haz ni anillo) */
 let marcaX = null;
-function ponerX(x, z, color) {
+function ponerX(x, z, color, animal) {
   if (marca) marca.visible = false;
   const y0 = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.5;
   if (!marcaX) {
@@ -139,11 +139,20 @@ function ponerX(x, z, color) {
     const barra = (w, l, mat) => new THREE.Mesh(new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2), mat);
     const mB = new THREE.MeshBasicMaterial({ color: 0x0b0d10, transparent: true, opacity: 0.8, depthWrite: false, depthTest: false /* la malla de Google puede quedar más alta que el piso: la X siempre se ve */, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -30 });
     const mC = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, depthTest: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -40 });
-    for (const a of [Math.PI / 4, -Math.PI / 4]) { const b = barra(6.4, 30, mB); b.rotation.y = a; b.renderOrder = 15; const c = barra(4, 26, mC); c.rotation.y = a; c.position.y = 0.05; c.renderOrder = 16; marcaX.add(b, c); }
+    for (const a of [Math.PI / 4, -Math.PI / 4]) { const b = barra(1.3, 6.4, mB); b.rotation.y = a; b.renderOrder = 15; const c = barra(0.75, 5.8, mC); c.rotation.y = a; c.position.y = 0.05; c.renderOrder = 16; marcaX.add(b, c); } /* X pequeña (~6 m) bajo el animal */
     marcaX.userData.mC = mC; marcaX.traverse(m => { m.frustumCulled = false; });
     T3.scene.add(marcaX);
   }
   marcaX.userData.mC.color.set(color); marcaX.position.set(x, y0, z); marcaX.visible = true;
+  // el animal muerto, tirado de lado sobre la X (su modelo de data3d/biotica.js, a ~2,4 m de largo para verse desde arriba)
+  if (marcaX.userData.cuerpo) { marcaX.remove(marcaX.userData.cuerpo); marcaX.userData.cuerpo = null; }
+  const B = animal && window.KEN_BIO_MODELO ? window.KEN_BIO_MODELO(animal) : null;
+  if (B && B.geo) {
+    if (!B.geo.boundingBox) B.geo.computeBoundingBox(); const bb = B.geo.boundingBox, L = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z, 1e-3), k = 2.4 / L;
+    const mA = marcaX.userData.mA || (marcaX.userData.mA = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    const m = new THREE.Mesh(B.geo, mA); m.scale.setScalar(k); m.rotation.set(Math.PI / 2, 0, 0.6); /* de lado, como caído */ m.position.y = 0.25 + (bb.max.z - bb.min.z) * k * 0.5; m.renderOrder = 17; m.frustumCulled = false;
+    marcaX.add(m); marcaX.userData.cuerpo = m;
+  }
 }
 function mostrarTarjeta(titulo, texto, color, lugar, etiqueta) {
   if (!tarjeta) {
@@ -160,7 +169,7 @@ function quitarTarjeta() { if (tarjeta) { tarjeta.classList.remove('on'); const 
 
 /* ---------- API ---------- */
 /* opciones: rapido (vuelo de 1-2 s), cenital (God's Eye: cámara alta y empinada, ~58°, que encuadra el lugar desde arriba), lugar (dónde pasó; va en la tarjeta) */
-async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '', x0 = false /* animal muerto: solo una X en el piso */ } = {}) {
+async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '', x0 = false /* animal muerto: solo una X en el piso */, animal = '' /* su especie: se dibuja tirado sobre la X */ } = {}) {
   if (!armar()) throw new Error('KEN_OJO: el 3D aún no está listo');
   if (!isFinite(x) || !isFinite(z)) throw new Error('KEN_OJO.ir: x, z inválidos');
   await armarAlturas();
@@ -169,11 +178,11 @@ async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = f
   orbita = null; quitarTarjeta();
   // llega desde el lado por donde viene (si está casi encima, desde el sur)
   let dx = cam.position.x - x, dz = cam.position.z - z; const dh = Math.hypot(dx, dz); if (dh < 50) { dx = 0; dz = 1; } else { dx /= dh; dz /= dh; }
-  const RF = cenital ? 380 : R_FIN, EL = cenital ? 1.40 : ELEV; /* God's Eye: casi vertical (~80°), mirando el lugar desde arriba */
+  const RF = x0 ? 42 /* animal muerto: muy cerca para verlo */ : cenital ? 380 : R_FIN, EL = cenital ? 1.40 : ELEV; /* God's Eye: casi vertical (~80°), mirando el lugar desde arriba */
   const rh = RF * Math.cos(EL); let yF = y0 + RF * Math.sin(EL);
-  const pF = new V(x + dx * rh, yF, z + dz * rh); pF.y = Math.max(yF, alturaEn(pF.x, pF.z, 1) + MARGEN);
+  const pF = new V(x + dx * rh, yF, z + dz * rh); pF.y = Math.max(yF, x0 ? alturaEn(pF.x, pF.z, 0) + 12 /* de cerca: solo por encima de lo que hay justo debajo */ : alturaEn(pF.x, pF.z, 1) + MARGEN);
   const c1 = new V(x, y0, z);
-  if (x0) ponerX(x, z, color); else ponerMarca(x, z, color);
+  if (x0) ponerX(x, z, color, animal); else ponerMarca(x, z, color);
   if (rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta); // la tarjeta sale de una vez: se lee mientras vuela
   const ok = await new Promise(res => volar(planear(cam.position.clone(), T3.orbit.target.clone(), pF, c1, rapido), res));
   if (!ok) return false;

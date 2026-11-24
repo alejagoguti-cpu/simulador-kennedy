@@ -362,6 +362,13 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     let al = null; if (e.ave || e.alas) { al = new THREE.InstancedMesh(modeloAla(e.ave || e.alas), mat, n * 2); al.frustumCulled = false; al.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(al); }
     MAL[k] = { cu, al, s: escala(k) };
   }
+  /* modelo 3D de una especie por su nombre o clave (para mostrar el animal muerto en el piso: data3d/ojo_dios.js) → { geo, esc } */
+  window.KEN_BIO_MODELO = (nombre) => {
+    const t = String(nombre || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), ks = Object.keys(ESP), nm = (k) => String(ESP[k].n || k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    let k = ks.find(q => q.toLowerCase() === t || nm(q) === t) || ks.find(q => t && (t.includes(q.toLowerCase()) || nm(q).split(' ')[0] === t.split(' ')[0] || t.includes(nm(q).split(' ')[0])));
+    if (!k) k = ks.find(q => ESP[q].ave); if (!k) return null;
+    const e = ESP[k]; return { geo: GEO[k] || (e.ave ? modeloAve(e.ave) : modeloOtro(e.cuerpo)), esc: escala(k), ave: !!e.ave };
+  };
 
   /* ---------- movimiento ---------- */
   const girarA = (a, dx, dz, dt, max = 4) => { if (dx * dx + dz * dz < 1e-8) return; const obj = Math.atan2(-dz, dx); let d = ((obj - a.rot + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = Math.max(-max * dt, Math.min(max * dt, d)); a.rot += d; };
