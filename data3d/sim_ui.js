@@ -402,7 +402,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const semPrev = A.sem; A.sem = I.sem;
     const libre = (t) => I.sem - (A.ult[t] == null ? -999 : A.ult[t]) >= ESPERA[t], marcar = (t) => { A.ult[t] = I.sem; };
     // 1. muertes de fauna nuevas (la más reciente, con su causa y lugar)
-    const L = (I.muertes && I.muertes.lista) || [], nuevas = L.filter(m => m.sem > semPrev && m.sem <= I.sem);
+    const L = (I.muertes && I.muertes.lista) || [], nuevas = L.filter(m => m.sem > semPrev && m.sem <= I.sem && m.causa !== 'atropello' /* los atropellos ya llegan como aviso del modelo */ && !MENORES.test(m.nombre || m.especie || ''));
     if (nuevas.length) { A.pend = (A.pend || 0) + nuevas.length; A.ultM = nuevas[nuevas.length - 1]; }
     if (A.pend && libre('muerte') && A.ultM) { const m = A.ultM, n = A.pend; A.pend = 0; marcar('muerte');
       avisar({ sem: I.sem, tipo: 'especies', capa: 'especies', signo: -1, prio: true, x: m.x, z: m.z, especies: [m.nombre || m.especie], titulo: `Murió ${m.nombre || m.especie}${m.causa && CAUSA[m.causa] ? ' · ' + CAUSA[m.causa] : ''}`, texto: (m.detalle ? m.detalle.charAt(0).toUpperCase() + m.detalle.slice(1) + '.' : '') + (n > 1 ? ` ${n - 1} muerte${n > 2 ? 's' : ''} más desde el último aviso.` : ''), lugar: m.lugar || '' }); }
@@ -447,8 +447,17 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=7').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
     HEC.poner(L);
   }
+  /* menos tarjetas: el mismo título no se repite en medio año simulado; los atropellos (pasan cada semana) salen de a uno a la vez y
+     nunca los de fauna menor (caracoles, ratas…) */
+  const MENORES = /caracol|babosa|rata|rat[oó]n|cucaracha|lombriz|zancudo|mosca|hormiga/i;
+  const esAtropello = (ev) => /atropell/i.test(ev.titulo || '');
+  const yaAvisado = new Map();
   function avisar(ev) {
     if (!ev || !ev.titulo) return; R.eventos.push(ev);
+    const sem = ev.sem || 0, ult = yaAvisado.get(ev.titulo); if (ult != null && sem >= ult && sem - ult < 26) return; /* repetido */
+    if (esAtropello(ev)) { if ([ev.titulo, ...(ev.especies || [])].some(s => MENORES.test(s))) return;
+      if (cola.some(esAtropello) || [...avs.children].some(c => c._atr)) return; ev._atr = true; }
+    yaAvisado.set(ev.titulo, sem);
     if (!SIN_CAPAS && !generico(ev)) { clavar([ev]); if (!(esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo)) return; }
     if (!SIN_CAPAS && esMuerte(ev) && (ev.sem || 0) - semAuto >= 52 && !viendo) { semAuto = ev.sem || 0; ev.auto = true; cola.unshift(ev); tUlt = 0; return; }
     cola.push(ev); while (cola.length > 3) { const k = cola.findIndex(e => !e.prio && !(e.tipo === 'especies' && e.signo < 0)); /* las alertas (prio) no se descartan */ cola.splice(k >= 0 ? k : 0, 1); }
@@ -456,6 +465,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function mostrarAviso(ev) {
     const c = document.createElement('div'); c.className = 'su-av ' + (ev.signo > 0 ? 'bien' : ev.signo < 0 ? 'mal' : '');
     const año = ev.sem != null ? Math.floor(ev.sem / 52) + 1 : null;
+    c._atr = !!ev._atr;
     c.innerHTML = `<i>${ICO[ev.tipo] || '•'}</i><div><small>${año ? 'Año ' + año : ''}${ev.especies && ev.especies.length ? ' · ' + escH(ev.especies.slice(0, 3).join(', ')) : ''}</small><b>${escH(ev.titulo)}</b><p>${escH(ev.texto)}</p>${ev.lugar ? `<p class="su-av-d">📍 ${escH(ev.lugar)}</p>` : ''}</div>
       <div class="bt">${ev.x != null || ev.capa ? '<button type="button" class="ver">Ver</button>' : ''}<button type="button" class="x" aria-label="Cerrar">×</button></div>`;
     c.querySelector('.x').onclick = () => quitar(c);

@@ -431,7 +431,7 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
         if (dist > PIL_LEJOS || np >= pil.instanceMatrix.count) return;
         const u = Math.min(1, (dist - PIL0) / (PIL1 - PIL0)), k = dist > PIL1 ? Math.min(7, PIL_MAX * dist / PIL1) : 1.15 + (PIL_MAX - 1.15) * u * u * (3 - 2 * u), D = PIL_DIM[tipo] || PIL_DIM.carro;
         dp.position.set(x, y + 1 + dist * 0.003, z); dp.rotation.set(0, rumbo, 0); /* un poco alzada con la distancia: la malla de Google no la entierra (de lejos no se nota) */ dp.scale.set(D[0] * k, D[1] * (1 + (k - 1) * 0.55), D[2] * k * 0.5); dp.updateMatrix();
-        pil.setMatrixAt(np, dp.matrix); pil.setColorAt(np, PIL_COL[tipo] || PIL_COL.carro); np++; return;
+        pil.setMatrixAt(np, dp.matrix); pil.setColorAt(np, a._pc != null ? col.setHex(a._pc) : (PIL_COL[tipo] || PIL_COL.carro)); /* a._pc: color propio de lejos (p. ej. los carros nuevos del plan parcial) */ np++; return;
       }
       const cerca = dist < CERCA && o.nc < o.capC;
       if (dist > maxDist || (!cerca && o.nl >= o.capL) || nb >= blob.instanceMatrix.count) return; // muy lejos o sin cupo: no se dibuja
