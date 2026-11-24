@@ -269,9 +269,10 @@ function colorPromedioHoja(partes) {
   return null;
 }
 // viento: las hojas del modelo real se mecen (más cuanto más arriba), con fase distinta por árbol
+const QUIETO = { value: 0 }; // tiempo congelado: sin viento
 function balanceo(mat, alto, T3) {
   mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = T3.waterU;
+    sh.uniforms.uTime = T3.kenArboles ? QUIETO : T3.waterU; /* simulador: árboles quietos (el movimiento distraía) */
     sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       #ifdef USE_INSTANCING
         float ph = instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23;
@@ -294,7 +295,7 @@ function balanceo(mat, alto, T3) {
 function materialArbolBajo(T3) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true });
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = T3.waterU;
+    sh.uniforms.uTime = T3.kenArboles ? QUIETO : T3.waterU;
     sh.vertexShader = 'uniform float uTime;\nvarying vec3 vLP;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vec3 ip = vec3(instanceMatrix[3].x, 0.0, instanceMatrix[3].z);
       float ph = ip.x * 0.31 + ip.z * 0.23, hh = max(position.y - 0.25, 0.0);
@@ -503,7 +504,7 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
     const mats = new Set();
     for (const l of lod) for (const m of [...l.L0, ...l.L1]) (Array.isArray(m.material) ? m.material : [m.material]).forEach(x => mats.add(x));
     for (const m of [...lejos, ...techos]) mats.add(m.material);
-    for (const m of mats) { m.transparent = false; m.alphaHash = o < 1; m.opacity = o; m.depthWrite = true; m.needsUpdate = true; } // transparencia por tramado: pasa por el mismo camino que lo opaco (sombras y oclusión ambiental)
+    for (const m of mats) { m.alphaHash = false; m.transparent = o < 1; m.opacity = o; m.depthWrite = true; m.needsUpdate = true; } // transparencia normal (no por tramado: el tramado titilaba y parecía que los árboles se movían); depthWrite deja ver solo la capa de hojas del frente, pareja y sin parpadeo
     for (const l of lod) for (const m of [...l.L0, ...l.L1]) m.renderOrder = 5; for (const m of [...lejos, ...techos]) m.renderOrder = 5;
   };
   return api;

@@ -1414,7 +1414,7 @@ async function initTodoReal() {
     if (REALISTA && !LIVIANO && new URLSearchParams(location.search).get('ao') !== '0') crearPostproceso(T3).catch(e => console.warn('postproceso:', e)); // luz tipo render (oclusión ambiental)
     if (KEN) { T3.kenFill = 0.62; setTimeout(function capaSombra() { if (!T3.scene || !T3.THREE) return setTimeout(capaSombra, 500); const TH = T3.THREE, m = new TH.Mesh(new TH.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), new TH.ShadowMaterial({ opacity: 0.42, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.position.set(1700, 0.42, -200); m.receiveShadow = true; m.renderOrder = 1; m.name = 'capa-sombras'; T3.scene.add(m); }, 500); } /* sombras de edificios y árboles sobre la foto del suelo */
     if (KEN) import('./data3d/ui_sobrio.js?v=19').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
-    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=80'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
+    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=81'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
     // el tráfico empieza a bajar YA (antes esperaba a edificios, vías y árboles): son pocos KB por trozo
     const pTraf = QUEST ? Promise.resolve(null) : buildTraffic(THREE).then(() => { marcarPaso('trafico'); return null; }, e => e); // Kennedy: también, con la simulación SUMO (miles de carros)
     if (QUEST) marcarPaso('trafico');
@@ -1549,7 +1549,7 @@ async function initTodoReal() {
         const TIN = await pTin; if (TIN && TIN.zona_modelo) TT = { ...TT, t: TT.t.filter(t => !enPoli(TIN.zona_modelo, t[0], t[1])) }; // sin árboles bajo las palmas de la plaza ni en la huerta de la Biblioteca El Tintal
         T3.trees = await T3.R.buildTrees(T3, ZON ? { ...TT, t: TT.t.filter(t => enZona(t[0], t[1], 100)) } : TT, W, lw, T3.env);
         if (T3.fotoReal && T3.trees && T3.trees.ver) T3.trees.ver(false); // Foto real: los árboles son los de la foto
-        if (KEN) { T3.opArboles = 0.55; if (T3.trees && T3.trees.opacidad) T3.trees.opacidad(T3.opArboles); } // simulador: árboles semitransparentes (la autora pidió bajarles la opacidad); arboles_splat.js toma T3.opArboles
+        if (KEN) { T3.opArboles = 0.4; if (T3.trees && T3.trees.opacidad) T3.trees.opacidad(T3.opArboles); } // simulador: árboles semitransparentes (la autora pidió bajarles la opacidad); arboles_splat.js toma T3.opArboles
         if (T3.splatLejos && T3.trees && T3.trees.pos) setTimeout(() => import('./data3d/arboles_splat.js?v=10').then(m => { T3.arbolesSplat = m.crearArbolesSplat({ THREE, T3, movil: MOVIL, cerca: 230 }); }).catch(e => console.warn('árboles splat:', e)), 6000); /* rendimiento: las copas lejanas se arman 6 s después */ // de cerca árboles reales modelados (tronco y follaje); de lejos copas tipo gaussian splat
         T3.counts.t = T.t.length;
         say('🌳 Árboles reales 3D cargados', 3000);
