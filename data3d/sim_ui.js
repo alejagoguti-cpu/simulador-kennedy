@@ -76,6 +76,18 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-eco .su-eco-n { font: 400 10px/1.35 system-ui, sans-serif; opacity: .55; margin: 6px 0 0; }
   #su-tab { padding: 10px 12px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.8), rgba(20,22,28,.9)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #eef1f4; flex: 1; min-height: 0; overflow-y: auto; } #su-tab:empty { display: none; }
   .su-tt { margin: 0 0 6px; font: 600 10.5px system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #ffd28a; }
+  /* tablero (tb3): medidor del índice + barras de las dimensiones + tarjetas de indicadores en dos columnas */
+  .tb3-hd { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; } .tb3-g { width: 112px; flex: none; overflow: visible; }
+  .tb3-k { display: block; font: 600 10px system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; opacity: .6; } .tb3-hd strong { display: block; font: 600 22px/1.05 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; margin: 1px 0 2px; }
+  .tb3-hd p { margin: 0; font: 400 10.5px/1.35 system-ui, sans-serif; opacity: .7; } .tb3-hd p b { color: #fff; }
+  .tb3-st { margin-top: 12px !important; display: flex; align-items: baseline; justify-content: space-between; gap: 6px; } .tb3-st span { font: 500 9.5px system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: #c3cace; opacity: .75; }
+  .tb3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tb3-t { position: relative; padding: 8px 9px 6px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: background .2s; min-width: 0; }
+  .tb3-t:hover { background: rgba(255,255,255,.1); } .tb3-t.ancho { grid-column: 1 / -1; } .tb3-t::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; border-radius: 0 2px 2px 0; background: rgba(255,255,255,.18); } .tb3-t.bien::before { background: #8ee6a8; } .tb3-t.mal::before { background: #ff8a80; }
+  .tb3-h { display: flex; align-items: center; gap: 4px; } .tb3-h span { flex: 1; min-width: 0; font: 500 10.5px system-ui, sans-serif; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb3-h .v { flex: none; width: 20px; height: 20px; padding: 0; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #fff; font: 600 12px/18px system-ui, sans-serif; cursor: pointer; } .tb3-h .v:hover { background: rgba(255,255,255,.18); }
+  .tb3-t > b { display: block; font: 600 22px/1.05 'Barlow Condensed', system-ui, sans-serif; margin-top: 2px; } .tb3-t > em { display: block; font: 600 10px system-ui, sans-serif; font-style: normal; opacity: .6; } .tb3-t > em.bien { color: #8ee6a8; opacity: 1; } .tb3-t > em.mal { color: #ff8a80; opacity: 1; }
+  .tb3-s { display: block; width: 100%; height: 30px; margin-top: 4px; overflow: visible; } .tb3-t > small { display: block; font: 500 9.5px system-ui, sans-serif; opacity: .55; margin-top: 2px; }
   /* tablero legible (tb2): índice + barras + una fila por indicador, sin cajas dentro de cajas */
   .tb2-hd { display: flex; gap: 10px; align-items: center; margin: 2px 0 8px; } .tb2-n { display: flex; align-items: baseline; flex: none; } .tb2-n b { font: 600 38px/1 'Barlow Condensed', system-ui, sans-serif; } .tb2-n span { font: 500 12px system-ui, sans-serif; opacity: .5; margin-left: 2px; }
   .tb2-hd strong { display: block; font: 600 12px system-ui, sans-serif; } .tb2-hd p { margin: 2px 0 0; font: 400 10.5px/1.35 system-ui, sans-serif; opacity: .65; } .tb2-hd p b { opacity: 1; color: #fff; }
@@ -664,10 +676,20 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
     const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, Eb = B && B.eco ? B.eco : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
     const pc = (v) => Math.round(Math.max(0, Math.min(1, v || 0)) * 100);
-    box.innerHTML = `<div class="tb2-hd"><div class="tb2-n"><b style="color:${col}">${pc(I.eco.indice)}</b><span>/100</span></div><div><strong>Índice ecocéntrico</strong><p>Qué tan sano está Kennedy para la vida no humana. Más es mejor.${Eb ? ` Sin propuesta: <b>${pc(Eb.indice)}</b>.` : ''}</p></div></div>
-      <div class="tb2-dims">${DIMS.map(([k, n]) => { const v = pc(I.eco[k]), vb = Eb && Eb[k] != null ? pc(Eb[k]) : null;
-        return `<div class="tb2-d"><span>${n}</span><i><u style="width:${v}%;background:${col}"></u>${vb != null ? `<s style="left:${vb}%" title="sin propuesta: ${vb}"></s>` : ''}</i><b>${v}</b></div>`; }).join('')}</div>
-      ${Eb ? `<p class="tb2-ley"><i style="background:${col}"></i>con propuesta <i class="g"></i>sin propuesta</p>` : ''}`;
+    /* MEDIDOR: medio círculo de 0 a 100 con el índice; color y palabra según cómo está (sano / en riesgo / crítico); marca gris = sin propuesta */
+    const est = (v) => v >= 70 ? ['Sano', '#8ee6a8'] : v >= 45 ? ['En riesgo', '#ffcf7a'] : ['Crítico', '#ff8a80'];
+    const v = pc(I.eco.indice), [pal, cE] = est(v), vb = Eb ? pc(Eb.indice) : null;
+    const arco = (a0, a1) => { const P = (t) => { const a = Math.PI * (1 - t); return [60 + Math.cos(a) * 48, 58 - Math.sin(a) * 48]; }, [x0, y0] = P(a0), [x1, y1] = P(a1); return `M${x0.toFixed(1)} ${y0.toFixed(1)} A48 48 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
+    const marca = (t, c, w) => { const a = Math.PI * (1 - t); return `<line x1="${(60 + Math.cos(a) * 39).toFixed(1)}" y1="${(58 - Math.sin(a) * 39).toFixed(1)}" x2="${(60 + Math.cos(a) * 57).toFixed(1)}" y2="${(58 - Math.sin(a) * 57).toFixed(1)}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`; };
+    const gauge = `<svg class="tb3-g" viewBox="0 0 120 66"><path d="${arco(0, 1)}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9" stroke-linecap="round"/>
+      ${[0.45, 0.7].map(t => marca(t, 'rgba(255,255,255,.35)', 1)).join('')}
+      ${v > 0 ? `<path d="${arco(0, Math.max(0.01, v / 100))}" fill="none" stroke="${cE}" stroke-width="9" stroke-linecap="round"/>` : ''}
+      ${vb != null ? marca(vb / 100, '#dfe5ea', 2.2) : ''}
+      <text x="60" y="52" text-anchor="middle" fill="#fff" font-size="26" font-weight="600" font-family="'Barlow Condensed',system-ui,sans-serif">${v}</text></svg>`;
+    box.innerHTML = `<div class="tb3-hd">${gauge}<div><span class="tb3-k">Índice ecocéntrico</span><strong style="color:${cE}">${pal}</strong><p>Qué tan sano está Kennedy para la vida no humana (0–100).${vb != null ? ` Sin propuesta: <b>${vb}</b>.` : ''}</p></div></div>
+      <div class="tb2-dims">${DIMS.map(([k, n]) => { const x = pc(I.eco[k]), xb = Eb && Eb[k] != null ? pc(Eb[k]) : null, c2 = est(x)[1];
+        return `<div class="tb2-d"><span>${n}</span><i><u style="width:${x}%;background:${c2}"></u>${xb != null ? `<s style="left:${xb}%" title="sin propuesta: ${xb}"></s>` : ''}</i><b>${x}</b></div>`; }).join('')}</div>
+      <p class="tb2-ley"><i style="background:#8ee6a8"></i>sano <i style="background:#ffcf7a"></i>en riesgo <i style="background:#ff8a80"></i>crítico${Eb ? ' <i class="g"></i>sin propuesta' : ''}</p>`;
   }
   function pintarEcoViejo() {
     const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
@@ -803,6 +825,18 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       + `<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
       + (ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3" fill="${col}" stroke="#08101a" stroke-width="1.5"/>` : '') + '</svg>';
   }
+  const CORTO = { abejas: 'Abejas', corredores: 'Corredores', parches: 'Parches nuevos', muertes: 'Muertes de fauna', ruido: 'Aves sin ruido', ciclos: 'Ciclos (agua, suelo)', residuos: 'Basura sin recoger', biodiv: 'Biodiversidad' };
+  function miniCurva(a, b, v0, col) { // tarjeta: área suave bajo la curva, línea del año 1 punteada, punto de ahora
+    const W = 120, H = 30, n = Math.ceil(FIN / 4), vals = a.concat(b, v0 != null ? [v0] : []).filter(v => v != null); if (vals.length < 2) return '<svg class="tb3-s" viewBox="0 0 120 30"></svg>';
+    let mn = Math.min(...vals), mx = Math.max(...vals); if (mx - mn < 1e-6) { mx += 1; mn -= 1; } const pad = (mx - mn) * 0.2; mn -= pad; mx += pad;
+    const X = i => (i / (n - 1) * W).toFixed(1), Y = v => (H - (v - mn) / (mx - mn) * H).toFixed(1);
+    const pts = a.map((v, i) => v == null ? null : [X(i), Y(v)]).filter(Boolean); if (pts.length < 2) return '<svg class="tb3-s" viewBox="0 0 120 30"></svg>';
+    const L = pts.map(p => p.join(',')).join(' '), id = 'g' + Math.random().toString(36).slice(2, 7), last = pts[pts.length - 1];
+    return `<svg class="tb3-s" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>`
+      + (v0 != null ? `<line x1="0" x2="${W}" y1="${Y(v0)}" y2="${Y(v0)}" stroke="rgba(255,255,255,.3)" stroke-dasharray="2 3"/>` : '')
+      + (b.length ? `<polyline points="${b.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ')}" fill="none" stroke="rgba(220,226,232,.5)" stroke-width="1.2"/>` : '')
+      + `<polygon points="${pts[0][0]},${H} ${L} ${last[0]},${H}" fill="url(#${id})"/><polyline points="${L}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.4" fill="${col}"/></svg>`;
+  }
   const CAUSA_N = { colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }, CAUSA_C = { colision: '#ff6b6b', atropello: '#ffb347', ruido: '#c58cff', hambre_habitat: '#8fa3b5' };
   function pintarTablero() {
     const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
@@ -812,15 +846,16 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const a = serie(H, T.v, 4), b = B ? serie(B, T.v, 4) : [], vb = b.filter(x => x != null).pop(), v0 = a.length > 13 ? a[13] : null; /* año 1 = semana 52 (el modelo ya se asentó) */
       const dl = v0 != null && v0 !== 0 ? (v - v0) / Math.abs(v0) * 100 : 0, bien = v0 != null && dl * T.mejor > 0.5, mal = v0 != null && dl * T.mejor < -0.5, est = bien ? 'bien' : mal ? 'mal' : '';
       const colC = bien ? '#8ee6a8' : mal ? '#ff8a80' : '#cfd8e0';
-      const chip = v0 == null ? '<em>empezando</em>' : !bien && !mal ? '<em>igual que el año 1</em>' : `<em class="${est}">${dl > 0 ? '▲' : '▼'} ${Math.abs(dl) < 10 ? Math.abs(dl).toFixed(1) : Math.round(Math.abs(dl))} % · ${bien ? 'mejora' : 'empeora'}</em>`;
+      /* TARJETA: nombre corto, valor grande, flecha + % y la palabra (mejora/empeora/igual), mini curva con área; muertes ocupa el ancho con sus causas */
+      const flecha = v0 == null ? '<em>empezando</em>' : !bien && !mal ? '<em>= igual</em>' : `<em class="${est}">${dl > 0 ? '▲' : '▼'} ${Math.abs(dl) < 10 ? Math.abs(dl).toFixed(1) : Math.round(Math.abs(dl))} % ${bien ? 'mejora' : 'empeora'}</em>`;
       const causas = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0) : [];
       const extra = causas.length ? `<div class="tb2-cb">${causas.map(([k, c]) => `<i style="flex:${c};background:${CAUSA_C[k] || '#888'}"></i>`).join('')}</div><div class="tb2-cl">${causas.map(([k, c]) => `<span><i style="background:${CAUSA_C[k] || '#888'}"></i>${CAUSA_N[k] || k} ${c}</span>`).join('')}</div>` : '';
-      return `<div class="tb2-r" data-k="${T.k}"><div class="tb2-t"><span>${escH(limpiarNombre(T.n))}</span><b class="${est}">${fv(v, T.u)}</b></div>
-        <div class="tb2-c">${chip}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}<span class="tb2-bt"><button type="button" class="i" title="Por qué, cómo y dónde se mide">ⓘ</button>${T.ver ? '<button type="button" class="v">Ver</button>' : ''}</span></div>
-        ${curva(a, b, v0, colC)}${extra}</div>`; }).join('');
-    tab.innerHTML = `<h5 class="su-tt">Modelo ecocéntrico · en vivo</h5><div id="su-eco"></div><p class="tb2-ley tb2-ley2"><i class="p"></i>año 1 · curvas de los 15 años${B ? ' · <i class="g"></i>sin propuesta' : ''}</p>${filas}`;
-    tab.querySelectorAll('.tb2-r').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
-      el.querySelector('.i').onclick = () => abrirFicha(T.n);
+      return `<div class="tb3-t ${est}${causas.length ? ' ancho' : ''}" data-k="${T.k}" title="Toca para ver por qué, cómo y dónde se mide">
+        <div class="tb3-h"><span>${escH(CORTO[T.k] || limpiarNombre(T.n))}</span>${T.ver ? '<button type="button" class="v" title="Ver dónde pasa">⌖</button>' : ''}</div>
+        <b style="color:${colC}">${fv(v, T.u)}</b>${flecha}${miniCurva(a, b, v0, colC)}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
+    tab.innerHTML = `<h5 class="su-tt">Modelo ecocéntrico · en vivo</h5><div id="su-eco"></div><h5 class="su-tt tb3-st">Indicadores <span>frente al año 1 · toca uno para saber más</span></h5><div class="tb3-grid">${filas}</div>`;
+    tab.querySelectorAll('.tb3-t').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
+      el.onclick = (e) => { if (e.target.closest('.v')) return; abrirFicha(T.n); };
       const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
         await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes', animal: p.animal });
         const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
