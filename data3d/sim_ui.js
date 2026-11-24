@@ -35,7 +35,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=17'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=18'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = M.SEMANAS_FIN;
 
@@ -75,6 +75,15 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-graf { position: fixed; left: 50%; transform: translateX(-50%); bottom: 88px; z-index: 42; display: none; gap: 8px; padding: 8px 10px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
   #su-graf.on { display: flex; } #su-graf figure { margin: 0; width: 220px; } #su-graf figcaption { display: flex; align-items: baseline; gap: 6px; font: 500 10.5px system-ui, sans-serif; color: #e9ecef; margin-bottom: 2px; }
   #su-graf figcaption span { flex: 1; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #su-graf figcaption b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; } #su-graf figcaption i { font: 500 11px system-ui, sans-serif; font-style: normal; opacity: .55; }
+  #su-graf svg { width: 220px; height: 74px; display: block; overflow: visible; } #su-graf figure { cursor: pointer; padding: 4px 6px; border-radius: 10px; transition: background .2s; position: relative; } #su-graf figure:hover, #su-graf figure.sel { background: rgba(255,255,255,.07); }
+  #su-graf .ej { display: flex; justify-content: space-between; font: 500 9px system-ui, sans-serif; opacity: .45; margin-top: 1px; } #su-graf .lim { position: absolute; right: 8px; top: 22px; font: 500 9px system-ui, sans-serif; font-style: normal; color: #ff8a80; opacity: .85; }
+  #su-graf u { display: block; text-decoration: none; font: 500 9.5px system-ui, sans-serif; color: #9ecbff; opacity: .75; margin-top: 2px; } #su-graf figure:hover u { opacity: 1; }
+  #su-ficha { position: fixed; left: 50%; transform: translateX(-50%); bottom: 236px; z-index: 47; width: min(700px, calc(100vw - 32px)); padding: 12px 14px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.88), rgba(18,20,26,.94)); border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 12px 34px rgba(0,0,0,.4); color: #eef1f4; display: none; font: 400 11.5px/1.45 system-ui, sans-serif; }
+  #su-ficha.on { display: block; } #su-ficha h5 { margin: 0 0 8px; font: 600 15px system-ui, sans-serif; display: flex; gap: 10px; align-items: baseline; } #su-ficha h5 small { font: 500 11px system-ui, sans-serif; opacity: .6; }
+  #su-ficha .g { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 14px; } #su-ficha .g div b { display: block; font: 600 9.5px system-ui, sans-serif; letter-spacing: .09em; text-transform: uppercase; color: #9ecbff; margin-bottom: 1px; }
+  #su-ficha .bt { display: flex; gap: 8px; margin-top: 10px; } #su-ficha button { font: 600 11px system-ui, sans-serif; padding: 6px 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; cursor: pointer; } #su-ficha button.ver { background: #9ecbff; color: #10141a; border-color: #9ecbff; }
+  #su-ficha .sup { margin-top: 8px; font-size: 10.5px; opacity: .6; }
+  @media (max-width: 760px) { #su-ficha { bottom: 120px; } #su-ficha .g { grid-template-columns: 1fr; } }
   #su-graf svg { width: 220px; height: 74px; display: block; } @media (max-width: 1100px) { #su-graf { display: none !important; } }
   #su-hist { position: fixed; left: 296px; top: 16px; z-index: 43; width: 330px; max-width: calc(100vw - 640px); padding: 11px 13px 9px; border-radius: 14px; color: #f2f3f5; background: linear-gradient(180deg, rgba(40,44,52,.74), rgba(20,22,28,.86)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,.35); display: none; font: 400 11.5px/1.35 system-ui, sans-serif; }
   #su-hist.on { display: block; } #su-hist h5 { margin: 0 0 2px; font: 600 10.5px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #ffd28a; } #su-hist p { margin: 0 0 7px; opacity: .75; }
@@ -98,23 +107,23 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-inf { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center; background: rgba(6,8,12,.55); }
   #su-inf.on { display: flex; }
   #su-inf .caja { width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow-y: auto; padding: 22px 26px 26px; }
-  #su-inf header { display: flex; align-items: flex-start; gap: 12px; }
-  #su-inf header div { flex: 1; } #su-inf h2 { margin: 0; font: 600 26px/1.1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; }
-  #su-inf .sub { margin: 4px 0 0; font: 500 13px system-ui, sans-serif; opacity: .7; }
-  #su-inf .ver { margin: 16px 0; padding: 12px 16px; border-radius: 12px; font: 600 16px/1.4 system-ui, sans-serif; }
-  #su-inf .ver.go { background: rgba(220,40,40,.22); border: 1px solid rgba(255,90,90,.5); } #su-inf .ver.ok { background: rgba(60,180,110,.18); border: 1px solid rgba(110,220,150,.45); }
-  #su-inf table { width: 100%; border-collapse: collapse; font: 500 13px system-ui, sans-serif; margin: 8px 0 4px; }
-  #su-inf th, #su-inf td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: right; } #su-inf th:first-child, #su-inf td:first-child { text-align: left; }
-  #su-inf th { font: 600 10.5px/1 Geist, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
-  #su-inf td.bien { color: #8ee6a8; } #su-inf td.mal { color: #ff8a80; }
-  #su-inf .graf { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 14px 0; }
-  #su-inf .graf figure { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); }
-  #su-inf .graf figcaption { font: 600 11px Geist, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; opacity: .65; margin-bottom: 6px; }
-  #su-inf .graf svg { width: 100%; height: 90px; }
-  #su-inf ul { margin: 6px 0; padding-left: 18px; font: 500 13px/1.5 system-ui, sans-serif; }
-  #su-inf h3 { margin: 18px 0 4px; font: 600 11px Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
-  #su-inf .bot { display: flex; gap: 8px; } #su-inf .bot button { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
-  #su-inf .bot button.pri { background: rgba(255,176,70,.9); color: #1b1206; border-color: transparent; }
+  :where(#su-inf) header:not(.i2-hero) { display: flex; align-items: flex-start; gap: 12px; }
+  :where(#su-inf) header:not(.i2-hero) div { flex: 1; } :where(#su-inf) h2 { margin: 0; font: 600 26px/1.1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; }
+  :where(#su-inf) .sub { margin: 4px 0 0; font: 500 13px system-ui, sans-serif; opacity: .7; }
+  :where(#su-inf) .ver { margin: 16px 0; padding: 12px 16px; border-radius: 12px; font: 600 16px/1.4 system-ui, sans-serif; }
+  :where(#su-inf) .ver.go { background: rgba(220,40,40,.22); border: 1px solid rgba(255,90,90,.5); } :where(#su-inf) .ver.ok { background: rgba(60,180,110,.18); border: 1px solid rgba(110,220,150,.45); }
+  :where(#su-inf) table { width: 100%; border-collapse: collapse; font: 500 13px system-ui, sans-serif; margin: 8px 0 4px; }
+  :where(#su-inf) th, :where(#su-inf) td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: right; } :where(#su-inf) th:first-child, :where(#su-inf) td:first-child { text-align: left; }
+  :where(#su-inf) th { font: 600 10.5px/1 Geist, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+  :where(#su-inf) td.bien { color: #8ee6a8; } :where(#su-inf) td.mal { color: #ff8a80; }
+  :where(#su-inf) .graf { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 14px 0; }
+  :where(#su-inf) .graf figure { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); }
+  :where(#su-inf) .graf figcaption { font: 600 11px Geist, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; opacity: .65; margin-bottom: 6px; }
+  :where(#su-inf) .graf svg { width: 100%; height: 90px; }
+  :where(#su-inf) ul { margin: 6px 0; padding-left: 18px; font: 500 13px/1.5 system-ui, sans-serif; }
+  :where(#su-inf) h3 { margin: 18px 0 4px; font: 600 11px Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
+  :where(#su-inf) .bot { display: flex; gap: 8px; } :where(#su-inf) .bot button { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+  :where(#su-inf) .bot button.pri { background: rgba(255,176,70,.9); color: #1b1206; border-color: transparent; }
   #su-avisos { position: fixed; top: 14px; left: calc(50% + 130px); transform: translateX(-50%); z-index: 44; width: min(370px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
   .su-av { pointer-events: auto; display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px 7px 10px; border-radius: 14px; color: #f2f3f5;
     background: linear-gradient(180deg, rgba(40,44,52,.72), rgba(20,22,28,.84)); border: 1px solid rgba(255,255,255,.14); border-left: 3px solid #ffcf7a;
@@ -159,7 +168,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
   }
@@ -216,6 +225,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       for (const ev of I.eventos || []) avisar(ev);
       if (I.hechos && I.sem % 4 === 0) clavar(I.hechos);
+      if (I.atropellos && typeof I.atropellos === 'object' && I.sem % 4 === 0) { if (HEC) HEC.atropellos(I.atropellos, I.sem); else clavar([]); }
       if (I.predio || PRE) ponerPredio(I.predio);
       if (I.basura || BAS) ponerBasura(I);
       if (I.cierre || CIE) ponerCierre(I.cierre);
@@ -371,7 +381,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const generico = (ev) => { const K = M && M.KEN_XZ; return ev.x == null || (K && Math.abs(ev.x - K[0]) < 2 && Math.abs(ev.z - K[1]) < 2); };
   function clavar(lista) {
     const L = (lista || []).filter(ev => ev && !generico(ev)); if (!L.length) return;
-    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=2').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
+    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=3').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
     HEC.poner(L);
   }
   function avisar(ev) {
@@ -519,13 +529,14 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
         ['Equipamientos habilitados', (I) => I.gobernanza ? fmt(I.gobernanza.equipamientos.length) : '—']]
   };
   const hist = document.createElement('div'); hist.id = 'su-hist'; document.body.appendChild(hist);
+  hist.addEventListener('click', (e) => { const tr = e.target.closest('tr, .fila, li'); if (!tr) return; const txt = tr.textContent || ''; const k = Object.keys(FICHA).sort((a, b) => b.length - a.length).find(n => txt.includes(n)); if (k) abrirFicha(k); });
   /* GRÁFICAS EN VIVO (sobre la barra de años): 3 curvas por par, la corrida actual (ámbar) y, en «con propuesta», la pareja «sin
      propuesta» (gris punteada) hasta la misma semana; eje x = los 20 años; valor actual rotulado */
   const SERIES = {
     1: [['Corabastos frente a su tope', I => I.abasto && I.abasto.cora ? I.abasto.cora.carga * 100 : null, '%', 100], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70], ['Interacciones entre especies', I => I.red, '', null]],
-    2: [['Comida en la zona peor', I => (I.comidaMin || 0) * 100, '%', 80], ['Tráfico (100 = hoy)', I => (I.trafico || 1) * 100, '', 130], ['Interacciones entre especies', I => I.red, '', null]],
+    2: [['Comida en la zona peor', I => (I.comidaMin || 0) * 100, '%', 80], ['Tráfico (100 = hoy)', I => (I.trafico || 1) * 100, '', 130], ['Atropellos de fauna (total)', I => I.atropellos && I.atropellos.total, '', null], ['Interacciones entre especies', I => I.red, '', null]],
     3: [['Basura sin recoger (t)', I => I.basura ? I.basura.acumulada : null, '', null], ['Economía circular', I => (I.circularIdx || 0) * 100, '%', null], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70]],
-    4: [['Territorio con fauna', I => I.pares, '', null], ['Interacciones entre especies', I => I.red, '', null], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70]],
+    4: [['Atropellos de fauna (total)', I => I.atropellos && I.atropellos.total, '', null], ['Territorio con fauna', I => I.pares, '', null], ['Interacciones entre especies', I => I.red, '', null], ['Humedales que funcionan', I => I.humedalFuncional, '%', 70]],
     5: [['Hogares en riesgo', I => I.hogaresRiesgo, '', null], ['Precio del suelo (1 = hoy)', I => I.sueloIdx, '', null], ['Tráfico (100 = hoy)', I => (I.trafico || 1) * 100, '', 130]],
     6: [['Equidad entre barrios', I => I.gobernanza ? I.gobernanza.equidad : null, '', null], ['Recursos que alcanzan', I => I.gobernanza ? I.gobernanza.coberturaMedia * 100 : null, '%', null], ['Decisiones tomadas', I => I.gobernanza ? I.gobernanza.decisiones : null, '', null]]
   };
@@ -556,6 +567,61 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
         <p>Presión principal: <b>${A.presion || 'ninguna'}</b></p></div>` : ''}
       <p class="su-eco-n">Derechos de la naturaleza: el modelo no los simula (sin mecanismo). Cada número sale del modelo semanal; ver «Notas y fuentes» del informe.</p>`;
   }
+  /* FICHA DE CADA INDICADOR: por qué se mide, para qué, cómo se calcula y dónde; «Ver dónde se mide» pone aros azules en los lugares de
+     medición y vuela con el Ojo de Dios al principal. pts(I) = [{ x, z, n }] en coordenadas del mundo (salen del mismo ind() del modelo). */
+  const MAX = (arr, f) => (arr || []).reduce((m, e) => (m == null || f(e) > f(m) ? e : m), null);
+  const pHum = (I) => (I.humedales || []).map(h => ({ x: h.x, z: h.z, n: `${h.nombre} · ${(h.ha || 0).toFixed(1)} de ${(h.ha0 || 0).toFixed(1)} ha · calidad ${Math.round((h.calidad || 0) * 100)} %` })).sort((a, b) => 0);
+  const pCora = (I) => I.abasto && I.abasto.cora ? [{ x: I.abasto.cora.x, z: I.abasto.cora.z, n: 'Corabastos (bodegas de la central)' }] : [];
+  const pPred = (I) => I.predio ? [{ x: I.predio.x, z: I.predio.z, n: I.predio.nombre + ' · entradas al predio' }] : [];
+  const pZonaPeor = (I) => { const Z = M && M.ZONAS_XZ, c = I.zonas && I.zonas.cora; if (!Z || !c) return []; let k = 0; for (let i = 1; i < c.length; i++) if (c[i] > c[k]) k = i; return [{ x: Z[k][0], z: Z[k][1], n: 'Zona de 500 m peor servida (la que más depende de Corabastos)' }]; };
+  const pBasu = (I) => (I.basura && I.basura.puntos || []).slice().sort((a, b) => b.acumulada - a.acumulada).slice(0, 6).map(P => ({ x: P.x, z: P.z, n: `${P.nombre || P.fuente} · ${Math.round(P.acumulada)} t acumuladas` }));
+  const pEst = (I) => (I.estaciones || []).filter(e => e.x != null).slice(0, 8).map(e => ({ x: e.x, z: e.z, n: `${e.n || e.nombre || 'Estación circular'}${e.tratado_t_dia != null ? ' · ' + e.tratado_t_dia.toFixed(1) + ' t/día' : ''}` }));
+  const pSuelo = (I) => (I.especulacion && I.especulacion.zonas || []).slice().sort((a, b) => b.indice - a.indice).slice(0, 5).map(z => ({ x: z.x, z: z.z, n: `Suelo ×${z.indice.toFixed(2)} frente a hoy` }));
+  const pGob = (I) => { const G = I.gobernanza; const L = G && (G.sectores || G.equipamientos) || []; return L.filter(e => e && e.x != null).slice(0, 8).map(e => ({ x: e.x, z: e.z, n: e.n || e.nombre || 'Sector' })); };
+  const pFauna = (I) => pHum(I).concat(pPred(I).map(p => ({ ...p, n: 'Bosque y patios de Bavaria' })));
+  const FICHA = {
+    'Corabastos frente a su tope': { por: 'Más del 94 % de lo que se come en Bogotá entra por Corabastos: es un solo punto que, si se llena, deja a Kennedy sin comida.', para: 'Saber en qué año la demanda desborda la central y si la red de mercados de barrio de la propuesta lo evita.', como: 'Toneladas al día que se le piden (población × consumo − lo que producen las huertas y los mercados de la red) ÷ toneladas al día que puede mover. 100 % = tope (supuesto calibrado; el tope no es un dato oficial).', donde: 'En las bodegas de la Central de Abastos (Av. de las Américas con Av. Agoberto Mejía).', pts: pCora },
+    'Humedales que funcionan': { por: 'Los humedales El Burro, La Vaca y Techo son el hábitat de aves y anfibios y regulan el agua; la basura del borde los va rellenando.', para: 'Ver si el borde de los humedales se pierde (game over por debajo de 70 %) o se restaura.', como: 'Área que queda × calidad del agua y del borde, frente a hoy (100 % = como están hoy). El área baja con la basura arrojada en el borde; la calidad con la basura acumulada.', donde: 'En los tres humedales de Kennedy (aros azules).', pts: pHum },
+    'Interacciones entre especies': { por: 'Desde lo ecocéntrico importa la relación, no solo cuántas especies hay: una abeja sin flores o un ave sin árbol para anidar ya no cumplen su función.', para: 'Medir si la arquitectura (huertas, conexiones, refugios) multiplica las relaciones o si se rompen.', como: 'Número de pares especie–especie activos (poliniza, come, anida, dispersa) que coinciden en el mismo parche esa semana, según la red de interacciones del modelo.', donde: 'En cada parche verde: humedales, parques, el bosque de Bavaria y las huertas.', pts: pFauna },
+    'Territorio con fauna': { por: 'Si las especies ocupan menos lugares, la fauna se concentra y queda expuesta a una sola amenaza.', para: 'Ver si las especies ganan o pierden lugares donde vivir.', como: 'Pares especie–parche ocupados (cada especie en cada parche donde está presente), promedio móvil de 13 semanas.', donde: 'En los parches verdes de Kennedy.', pts: pFauna },
+    'Comida en la zona peor': { por: 'El promedio esconde a los barrios que se quedan sin comida; la cadena se rompe primero en el lugar más débil.', para: 'Detectar la zona que deja de recibir lo que necesita cuando se cierra una vía o se corta el suministro (límite 80 %).', como: 'Comida que llega ÷ comida que necesita, en cada zona de 500 m; se muestra la zona con el valor más bajo.', donde: 'En la zona de 500 m peor servida (aro azul).', pts: pZonaPeor },
+    'Tráfico (100 = hoy)': { por: 'Más carros significa más ruido, más atropellos de fauna y rutas de abastecimiento más lentas.', para: 'Ver si el plan parcial o un cierre de vía congestionan Kennedy (límite 130) y si la propuesta lo baja.', como: 'Vehículos frente a hoy (100 = 2025, congestión TomTom 69,9 %), con el crecimiento de la población, el metro (−% a 800 m del eje) y los viajes nuevos del predio.', donde: 'En todas las calles de Kennedy; más cargado en las entradas del predio de Bavaria y la Av. Boyacá.', pts: pPred },
+    'Basura sin recoger (t)': { por: 'La basura acumulada trae ratas, que depredan nidos, y rellena los bordes de los humedales.', para: 'Ver si los orgánicos se tratan cerca (estaciones circulares) o se acumulan.', como: 'Toneladas acumuladas en los puntos de basura: lo que se genera cada día − lo que se recoge (84 %) − lo que se limpia.', donde: 'En los puntos de acumulación: Corabastos, la plaza Las Flores y los bordes de los humedales.', pts: pBasu },
+    'Economía circular': { por: 'Si los orgánicos vuelven como abono a las huertas, el ciclo de nutrientes se cierra dentro de Kennedy (ciclos biogeoquímicos).', para: 'Medir cuánto del residuo orgánico deja de ir al relleno Doña Juana.', como: 'Toneladas al día compostadas que vuelven a las huertas ÷ toneladas al día de orgánicos que genera Kennedy.', donde: 'En las Estaciones Circulares de los mercados nodo y en Bavaria Común.', pts: pEst },
+    'Hogares en riesgo': { por: 'El metro y el plan parcial suben el suelo; los que pagan arriendo pueden tener que irse.', para: 'Ver si la protección del suelo y la captura de plusvalías de la propuesta frenan el desplazamiento.', como: 'Hogares arrendatarios en zonas donde el suelo sube más de lo que pueden pagar (51 % arrienda en Kennedy).', donde: 'En las zonas junto a las estaciones del metro y al predio de Bavaria donde más sube el suelo.', pts: pSuelo },
+    'Precio del suelo (1 = hoy)': { por: 'El alza del suelo es lo que empuja a la gente fuera y cambia el uso de los predios.', para: 'Comparar el alza con y sin protección del suelo.', como: 'Índice de precio frente a hoy, promedio de las zonas junto al metro y al plan parcial (rampa de 2 años después de cada obra).', donde: 'En las zonas de 500 m más cercanas al metro y al predio.', pts: pSuelo },
+    'Equidad entre barrios': { por: 'Repartir con datos viejos y desde una oficina central deja barrios sin lo que necesitan.', para: 'Comparar la coordinación central con las asambleas de las Juntas de Acción Comunal.', como: '1 − desigualdad entre lo que recibe cada sector y lo que necesita (1 = todos reciben en proporción a su necesidad).', donde: 'En los ocho sectores de Kennedy (asambleas).', pts: pGob },
+    'Recursos que alcanzan': { por: 'Los recursos nunca alcanzan para todo: importa a dónde van.', para: 'Ver cuánta de la necesidad se cubre en promedio.', como: 'Recursos repartidos ÷ necesidad, promedio de los sectores.', donde: 'En los ocho sectores de Kennedy.', pts: pGob },
+    'Decisiones tomadas': { por: 'Decidir en asamblea es más lento pero más ajustado al barrio.', para: 'Medir el costo en tiempo de la gobernanza comunitaria.', como: 'Número acumulado de decisiones de reparto tomadas.', donde: 'En las asambleas de los ocho sectores.', pts: pGob }
+  };
+  FICHA['Atropellos de fauna (total)'] = { por: 'Las avenidas cortan el paso entre humedales y parques: ranas, serpientes, lagartijas, curíes y aves bajas mueren al cruzar.', para: 'Ver dónde la vía corta un corredor de fauna y si los pasos de fauna y las conexiones vegetales de la propuesta lo bajan.', como: 'Cada semana cada parche ocupado manda un animal que se dispersa a otro parche; muere con probabilidad 1 − e^(−c·Q) según los vehículos al día (Q) de las vías principales que cruza (Hels y Buchwald). Con la propuesta −30 % por pasos de fauna [supuesto].', donde: 'En el punto exacto donde la avenida (nombre de OpenStreetMap) corta la línea entre los dos parches: marcas rojas ✕ en el mapa.', pts: (I) => { const L = I.atropellos && I.atropellos.lista || [], c = {}; for (const a of L) { const k = a.via || '?'; (c[k] = c[k] || { n: 0, a }).n++; } return Object.values(c).sort((x, y) => y.n - x.n).slice(0, 5).map(({ n, a }) => ({ x: a.x, z: a.z, n: `${a.via} · ${n} atropellos recientes (último: ${a.nombre}) · ${a.causa || ''}` })); } };
+  FICHA['Basura sin recoger'] = FICHA['Basura sin recoger (t)']; FICHA['Comida en la zona peor servida'] = FICHA['Comida en la zona peor']; FICHA['Hogares en riesgo de desplazamiento'] = FICHA['Hogares en riesgo']; FICHA['Precio del suelo'] = FICHA['Precio del suelo (1 = hoy)']; FICHA['Tráfico'] = FICHA['Tráfico (100 = hoy)'];
+  const ficha = document.createElement('div'); ficha.id = 'su-ficha'; document.body.appendChild(ficha);
+  let gMed = null;
+  function medir(P) { // aros azules en los lugares donde se mide
+    const THREE = T3.THREE; if (!gMed) { gMed = new THREE.Group(); gMed.name = 'medicion'; T3.scene.add(gMed);
+      RELOJ.alDibujar(() => { if (!gMed.children.length) return; const s = 1 + 0.15 * Math.sin(performance.now() / 300); gMed.children.forEach(o => { if (o.userData.aro) o.scale.set(s, 1, s); }); }); }
+    while (gMed.children.length) { const o = gMed.children.pop(); o.material.dispose(); }
+    const y = (T3.sueloY != null ? T3.sueloY : 0.3) + 2;
+    for (const p of P || []) { const a = new THREE.Mesh(new THREE.RingGeometry(40, 50, 56).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9ecbff, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+      a.position.set(p.x, y, p.z); a.renderOrder = 45; a.userData.aro = true; gMed.add(a);
+      const d = new THREE.Mesh(new THREE.CircleGeometry(40, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9ecbff, transparent: true, opacity: 0.18, depthTest: false, depthWrite: false, toneMapped: false })); d.position.copy(a.position); d.renderOrder = 44; gMed.add(d); }
+  }
+  function cerrarFicha() { ficha.classList.remove('on'); medir([]); graf.querySelectorAll('figure.sel').forEach(f => f.classList.remove('sel')); }
+  function abrirFicha(nom) {
+    const F = FICHA[nom], I = ultimo(); if (!F) return;
+    graf.querySelectorAll('figure').forEach(f => f.classList.toggle('sel', f.dataset.f === nom));
+    let P = []; try { P = I ? F.pts(I).filter(p => p && isFinite(p.x) && isFinite(p.z)) : []; } catch (e) { P = []; }
+    ficha.innerHTML = `<h5>${escH(nom)}<small>${P.length ? P.length + (P.length > 1 ? ' lugares de medición' : ' lugar de medición') : 'toda Kennedy'}</small></h5>
+      <div class="g"><div><b>Por qué se mide</b>${F.por}</div><div><b>Para qué</b>${F.para}</div><div><b>Cómo se calcula</b>${F.como}</div><div><b>Dónde se mide</b>${F.donde}${P.length ? '<br><span style="opacity:.75">' + P.slice(0, 3).map(p => '· ' + escH(p.n)).join('<br>') + '</span>' : ''}</div></div>
+      <div class="bt">${P.length ? '<button type="button" class="ver">Ver dónde se mide</button>' : ''}<button type="button" class="x">Cerrar</button></div>`;
+    ficha.classList.add('on'); medir(P);
+    ficha.querySelector('.x').onclick = cerrarFicha;
+    const bv = ficha.querySelector('.ver'); if (bv) bv.onclick = async () => { if (!window.KEN_OJO) return; const corriaF = !RELOJ.pausaSem; RELOJ.pausarAños(true); ficha.classList.remove('on'); /* la ficha se esconde para ver el lugar; los aros azules quedan */
+      await window.KEN_OJO.ir({ x: P[0].x, z: P[0].z, titulo: 'Aquí se mide: ' + nom, texto: P[0].n + '. ' + F.como, color: '#9ecbff' });
+      const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaF && !R.go && !R.fin) { const p = document.querySelector('#lp-anos .play'); if (p && RELOJ.pausaSem) p.click(); } }, { once: true }); };
+  }
+  graf.addEventListener('click', (e) => { const f = e.target.closest('figure[data-f]'); if (!f) return; if (f.classList.contains('sel') && ficha.classList.contains('on')) cerrarFicha(); else abrirFicha(f.dataset.f); });
   function serie(H, f, paso) { const out = []; for (let i = 0; i < H.length; i += paso) { let v = null; try { v = f(H[i]); } catch (e) { /* */ } out.push(v == null || !isFinite(v) ? null : v); } return out; }
   function pintarGraficas() {
     const d = R.def || {}, S = SERIES[d.par], H = R.hist; if (!S || !H.length) { graf.classList.remove('on'); return; }
@@ -569,10 +635,12 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const ult = a.filter(v => v != null).pop(), ultB = bb.filter(v => v != null).pop();
       const fmtv = v => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u === '%' ? ' %' : '');
       const xs = [5, 10, 15].map(an => `<line x1="${X(an * 52 / paso)}" x2="${X(an * 52 / paso)}" y1="0" y2="${Hh}" stroke="rgba(255,255,255,.07)"/>`).join('');
-      return `<figure><figcaption><span>${nom}</span><b>${fmtv(ult)}</b>${B && ultB != null ? `<i>sin: ${fmtv(ultB)}</i>` : ''}</figcaption>
+      const ia = a.length - 1 - [...a].reverse().findIndex(v => v != null), area = a.some(v => v != null) ? `<polygon points="0,${Hh} ${pts(a)} ${X(ia)},${Hh}" fill="${d.propuesta ? "#8ee6a8" : "#ffcf7a"}" opacity=".13"/>` : "";
+      return `<figure data-f="${nom}" title="Clic: dónde, cómo y para qué se mide"><figcaption><span>${nom}</span><b>${fmtv(ult)}</b>${B && ultB != null ? `<i>sin: ${fmtv(ultB)}${B.length < H.length ? '*' : ''}</i>` : ''}</figcaption>
         <svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none">${xs}${lim != null ? `<line x1="0" x2="${W}" y1="${Y(lim)}" y2="${Y(lim)}" stroke="#ff8a80" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>` : ''}
         ${B ? `<polyline points="${pts(bb)}" fill="none" stroke="rgba(220,224,230,.6)" stroke-width="1.6" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>` : ''}
-        <polyline points="${pts(a)}" fill="none" stroke="${d.propuesta ? '#8ee6a8' : '#ffcf7a'}" stroke-width="2.4" vector-effect="non-scaling-stroke"/></svg></figure>`; }).join('');
+        ${area}<polyline points="${pts(a)}" fill="none" stroke="${d.propuesta ? '#8ee6a8' : '#ffcf7a'}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>${ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3" fill="#fff"/>` : ''}</svg>
+        <div class="ej"><span>año 1</span><span>5</span><span>10</span><span>15</span><span>20</span></div>${lim != null ? `<em class="lim">--- límite ${fmtv(lim)}</em>` : ''}<u>ⓘ dónde y cómo se mide${B && B.length < H.length ? ` · *sin propuesta: game over año ${Math.floor(B.length / 52) + 1}` : ''}</u></figure>`; }).join('');
     graf.classList.add('on');
   }
   function pintarHistoria() {

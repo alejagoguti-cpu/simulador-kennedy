@@ -60,7 +60,7 @@ export function crearHechos({ T3 }) {
     for (const h of arr.slice(40)) quitar(h);
   }
   function quitar(h) { G.remove(h.g); h.mA.dispose(); h.d.remove(); H.delete(clave(h.ev)); }
-  function limpiar() { for (const h of [...H.values()]) quitar(h); }
+  function limpiar() { for (const h of [...H.values()]) quitar(h); if (atr) { G.remove(atr.v); G.remove(atr.n); atr = null; } atrN = -1; }
   const v = new THREE.Vector3(); let tR = 0;
   RELOJ.alDibujar(() => {
     if (!H.size) return; const ahora = performance.now();
@@ -74,6 +74,20 @@ export function crearHechos({ T3 }) {
       h.d.style.display = 'block'; h.d.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; h.d.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
     }
   });
-  const api = window.KEN_HECHOS = { poner, limpiar, ver(on) { visible = !!on; G.visible = !!on; }, alClic(fn) { alClic = fn; }, get n() { return H.size; } };
+  /* ATROPELLOS: cada atropello de ind().atropellos.lista es una marca roja con ✕ en el punto exacto donde la vía corta el paso de la
+     fauna (tamaño fijo en pantalla); los de las últimas 26 semanas más grandes */
+  let atr = null, atrN = -1; const texAtr = (() => { const s = 48, cv = document.createElement('canvas'); cv.width = cv.height = s; const g = cv.getContext('2d');
+    g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 3, 0, 7); g.fillStyle = '#e5383b'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke();
+    g.strokeStyle = '#fff'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.moveTo(15, 15); g.lineTo(33, 33); g.moveTo(33, 15); g.lineTo(15, 33); g.stroke();
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; return tx; })();
+  function atropellos(A, sem) {
+    const L = A && A.lista ? A.lista.filter(a => a.x != null) : []; const k = L.length + '|' + (L.length ? L[L.length - 1].sem : 0); if (k === atrN) return; atrN = k;
+    if (atr) { G.remove(atr.v); G.remove(atr.n); atr.v.geometry.dispose(); atr.n.geometry.dispose(); atr = null; } if (!L.length) return;
+    const mk = (arr, px) => { const pos = new Float32Array(arr.length * 3); arr.forEach((a, i) => { pos[i * 3] = a.x; pos[i * 3 + 1] = Y + 4; pos[i * 3 + 2] = a.z; });
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const o = new THREE.Points(geo, new THREE.PointsMaterial({ size: px * Math.min(2, devicePixelRatio || 1), sizeAttenuation: false, map: texAtr, transparent: true, alphaTest: 0.3, depthTest: false, toneMapped: false })); o.renderOrder = 41; o.frustumCulled = false; G.add(o); return o; };
+    const s0 = (sem || 0) - 26; atr = { v: mk(L.filter(a => a.sem < s0), 9), n: mk(L.filter(a => a.sem >= s0), 15) };
+  }
+  const api = window.KEN_HECHOS = { poner, atropellos, limpiar, ver(on) { visible = !!on; G.visible = !!on; }, alClic(fn) { alClic = fn; }, get n() { return H.size; } };
   return api;
 }
