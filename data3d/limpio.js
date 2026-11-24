@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=87';
+import { iniciarSimUI } from './sim_ui.js?v=89';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -138,11 +138,11 @@ export function iniciarLimpio({ T3 }) {
   { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
     #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
     #lp-red h5{cursor:pointer} #lp-red h5::after{content:' ▾';opacity:.7} #lp-red.cerrado h5::after{content:' ▸'} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}
-    #gs-izq #lp-red{position:static;width:auto;margin:8px 0 0;padding:6px 0 4px;background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none} #gs-izq #lp-red h5::after{content:''} #gs-izq #lp-red canvas{max-width:210px;margin:0 auto} #gs-izq #lp-red p{display:none}`; document.head.appendChild(st);
+    #lp-der #lp-red{position:static;width:auto;flex:none} #lp-der #lp-red h5::after{content:''} #lp-der #lp-red canvas{max-width:250px;margin:0 auto} #lp-der #lp-red p{font-size:10px}`; document.head.appendChild(st);
     const card = document.createElement('div'); card.id = 'lp-red'; card.className = ''; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
     let movido = false;
     setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
-      { const gz = document.getElementById('gs-izq'), rl = gz && gz.querySelector('.gs-reloj'); if (rl && card.previousElementSibling !== rl) rl.after(card); } /* el tablero se abre solo a la izquierda, debajo del reloj */
+      { const D = document.getElementById('lp-der'); if (D && D.firstElementChild !== card) D.prepend(card); } /* quién interactúa con quién: arriba a la derecha */
       const on = !!ESC.activo && movido; card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
       const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
@@ -159,11 +159,11 @@ export function iniciarLimpio({ T3 }) {
   /* ---------- ESCENARIOS (arriba) y SUS 6 SIMULACIONES (derecha) ---------- */
   { const se = document.createElement('style'); se.textContent = `#lp-esc{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:4px;padding:4px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
     #lp-esc button{padding:9px 18px;border-radius:10px;border:0;background:none;color:#eef1f4;font:600 13.5px system-ui,sans-serif;cursor:pointer;opacity:.7} #lp-esc button.on{opacity:1;background:rgba(255,255,255,.12)} #lp-esc button.con.on{background:rgba(142,230,168,.2);color:#c9f5d6}
-    #lp-der{position:fixed;right:16px;top:16px;bottom:96px;width:300px;z-index:39;display:flex;flex-direction:column;gap:8px;pointer-events:none} #lp-der > *{pointer-events:auto}
+    #lp-der{position:fixed;right:16px;top:16px;bottom:96px;width:320px;z-index:39;display:flex;flex-direction:column;gap:8px;pointer-events:none} #lp-der > *{pointer-events:auto}
     #lp-seis{padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4}
     #lp-seis .lp-base{margin:0 0 8px;font:500 11px/1.35 system-ui,sans-serif;opacity:.75} #lp-seis h5{margin:0 0 6px;font:600 10.5px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7} #lp-seis button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 8px;margin:0 0 3px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.05);color:inherit;font:600 12.5px system-ui,sans-serif;cursor:pointer}
     #lp-seis button i{font:600 16px 'Barlow Condensed',system-ui,sans-serif;font-style:normal;opacity:.55;width:20px} #lp-seis button:hover{background:rgba(255,255,255,.1)} #lp-seis button.on{border-color:rgba(255,190,90,.9);background:rgba(255,190,90,.12)} #lp-seis.con button.on{border-color:rgba(142,230,168,.95);background:rgba(142,230,168,.12)}
-    html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important} html.limpio #lp-der #su-der{position:static;width:auto;max-height:none;flex:1;min-height:0;overflow-y:auto}
+    html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important} #gs-izq #lp-seis{background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:8px 0 4px;margin-top:6px} html.limpio #gs-izq #su-der{position:static;width:auto;max-height:none;padding:6px 0;margin:0;background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
     @media (max-width:760px){#lp-der{top:auto;bottom:86px;left:16px;right:16px;width:auto;max-height:45vh}#lp-esc{top:8px}}`; document.head.appendChild(se); }
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.innerHTML = '<button type="button" data-e="hoy" class="on">Kennedy hoy</button><button type="button" data-e="con" class="con">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.innerHTML = '<div id="lp-seis"></div>'; document.body.appendChild(der);
@@ -174,7 +174,8 @@ export function iniciarLimpio({ T3 }) {
     box.querySelectorAll('button').forEach(b => b.onclick = () => { const id = +b.dataset.s; escoger(ESC.activo === id ? base : id, true); setTimeout(pintarSeis, 120); }); }
   escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
     const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? (escE === 'con' ? 2 * par : 2 * par - 1) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */ setTimeout(pintarSeis, 120); });
-  setInterval(() => { const sd = document.getElementById('su-der'); if (sd && sd.parentNode !== der) der.appendChild(sd); }, 600);
+  /* IZQUIERDA: reloj → escenarios que pueden ocurrir → variables; DERECHA: quién interactúa con quién y los diagramas del modelo ecocéntrico */
+  setInterval(() => { const gz = document.getElementById('gs-izq'), rl = gz && gz.querySelector('.gs-reloj'), ls = document.getElementById('lp-seis'), sd = document.getElementById('su-der'); if (!rl) return; if (ls && rl.nextElementSibling !== ls) rl.after(ls); if (sd && ls && ls.nextElementSibling !== sd) ls.after(sd); }, 600);
   setTimeout(pintarSeis, 0);
   /* SIEMPRE CORRIENDO: al abrir arranca la simulación base (Kennedy hoy) y la barra de años corre sola; al llegar al año 15 vuelve a empezar */
   setTimeout(function arrancar() { const L = document.getElementById('loader'); if ((L && !L.classList.contains('hidden')) || !UI) return void setTimeout(arrancar, 400);

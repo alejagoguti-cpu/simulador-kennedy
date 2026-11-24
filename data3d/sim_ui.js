@@ -74,7 +74,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-eco .su-eco-l { font: 500 10.5px system-ui, sans-serif; opacity: .75; margin: 0 0 6px; display: flex; gap: 6px; align-items: center; } #su-eco .su-eco-l i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; } #su-eco .su-eco-l i.pt { background: repeating-linear-gradient(90deg, #dde 0 4px, transparent 4px 7px); }
   .su-abeja { padding: 8px 9px; border-radius: 10px; background: rgba(255,207,122,.07); border: 1px solid rgba(255,207,122,.22); font: 500 11px system-ui, sans-serif; } .su-abeja > b { display: block; margin-bottom: 4px; color: #ffd28a; } .su-abeja div { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 3px 0; border-top: 1px solid rgba(255,255,255,.06); } .su-abeja div b { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; text-align: right; } .su-abeja small { grid-column: 1 / -1; opacity: .6; } .su-abeja p { margin: 5px 0 0; }
   #su-eco .su-eco-n { font: 400 10px/1.35 system-ui, sans-serif; opacity: .55; margin: 6px 0 0; }
-  #su-tab { margin-top: 8px; } #su-tab:empty { display: none; }
+  #su-tab { padding: 10px 12px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.8), rgba(20,22,28,.9)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #eef1f4; flex: 1; min-height: 0; overflow-y: auto; } #su-tab:empty { display: none; }
+  .su-tt { margin: 0 0 6px; font: 600 10.5px system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #ffd28a; }
+  figure.su-tf { margin: 8px 0 0; padding: 8px 9px 7px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); } figure.su-tf svg { display: block; width: 100%; height: 64px; margin-top: 4px; }
+  .su-th em { font: 600 10.5px system-ui, sans-serif; font-style: normal; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,.07); } .su-th em.bien { color: #8ee6a8; } .su-th em.mal { color: #ff8a80; } .su-th b { font-size: 19px !important; }
+  .su-ej { display: flex; justify-content: space-between; font: 500 9px system-ui, sans-serif; opacity: .45; margin-top: 1px; } .su-tp { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; } .su-tp .su-ts b { opacity: 1; color: #fff; }
   .su-tf { padding: 6px 0 7px; border-top: 1px solid rgba(255,255,255,.08); } .su-th { display: flex; align-items: baseline; gap: 6px; } .su-th span { flex: 1; font: 500 11.5px system-ui, sans-serif; color: #e9ecef; }
   .su-th b { font: 600 16px 'Barlow Condensed', system-ui, sans-serif; color: #fff; } .su-th b.bien { color: #8ee6a8; } .su-th b.mal { color: #ff8a80; }
   .su-tg { display: flex; align-items: center; gap: 6px; margin-top: 2px; } .su-tg svg { flex: 1; height: 40px; min-width: 0; background: rgba(255,255,255,.03); border-radius: 6px; }
@@ -745,8 +749,16 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     'Biodiversidad (Shannon)': { por: 'No basta contar especies: importa que estén repartidas y cumplan funciones distintas.', para: 'Medir la diversidad de la fauna de Kennedy.', como: 'Índice de Shannon H\' sobre la ocupación de cada especie (más alto = más especies y más repartidas).', donde: 'En todos los parches de Kennedy.', pts: I => [] }
   });
   const tab = document.createElement('div'); tab.id = 'su-tab';
-  setInterval(() => { const g = document.getElementById('gs-izq'), r = g && g.querySelector('.gs-reloj'); if (!r) return; const ref = g.querySelector('#lp-red') || r; if (tab.previousElementSibling !== ref) ref.after(tab); }, 700); /* orden: reloj → quién interactúa con quién → tablero */
-  function chispaT(a, b, col) { const W = 200, H = 40, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
+  setInterval(() => { const D = document.getElementById('lp-der'); if (D && tab.parentNode !== D) D.appendChild(tab); }, 700); /* los diagramas van a la DERECHA (debajo de quién interactúa con quién) */
+  /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
+     5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
+  function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
+    let mn = Math.min(...all), mx = Math.max(...all); if (mx - mn < 1e-6) { mx += 1; mn -= 1; } const pad = (mx - mn) * 0.15; mn -= pad; mx += pad;
+    const X = i => (i / (n - 1) * W).toFixed(1), Y = v => (H - 3 - (v - mn) / (mx - mn) * (H - 6)).toFixed(1);
+    const P = arr => arr.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ');
+    const ia = a.length - 1 - [...a].reverse().findIndex(v => v != null), ult = a[ia];
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${[5, 10].map(an => `<line x1="${X(an * 52 / 4)}" x2="${X(an * 52 / 4)}" y1="0" y2="${H}" stroke="rgba(255,255,255,.08)"/>`).join('')}<polygon points="0,${H} ${P(a)} ${X(ia)},${H}" fill="${col}" opacity=".16"/>${b.length ? `<polyline points="${P(b)}" fill="none" stroke="rgba(220,224,230,.6)" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>` : ''}<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>${ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3.2" fill="#fff"/>` : ''}</svg>`; }
+  function chispaViejo(a, b, col) { const W = 200, H = 40, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
     let mn = Math.min(...all), mx = Math.max(...all); if (mx - mn < 1e-6) { mx += 1; mn -= 1; }
     const P = arr => arr.map((v, i) => v == null ? null : (i / (n - 1) * W).toFixed(1) + ',' + (H - 2 - (v - mn) / (mx - mn) * (H - 4)).toFixed(1)).filter(Boolean).join(' ');
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${b.length ? `<polyline points="${P(b)}" fill="none" stroke="rgba(220,224,230,.55)" stroke-width="1.3" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>` : ''}<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; }
@@ -755,12 +767,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const d = R.def || {}, H = R.hist, B = d.propuesta && R.base ? R.base.slice(0, H.length) : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
     const fv = (v, u) => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u || '');
     const filas = TAB.map(T => { let v = null; try { v = T.v(I); } catch (e) { /* */ } if (v == null || !isFinite(v)) return '';
-      const a = serie(H, T.v, 4), b = B ? serie(B, T.v, 4) : [], vb = b.filter(x => x != null).pop(), v0 = a.find(x => x != null);
+      const a = serie(H, T.v, 4), b = B ? serie(B, T.v, 4) : [], vb = b.filter(x => x != null).pop(), v0 = a.length > 13 ? a[13] : null; /* cambio frente al año 1 (semana 52: el modelo ya se asentó), no frente a la primera semana */
       const dl = v0 != null && v0 !== 0 ? (v - v0) / Math.abs(v0) * 100 : 0, bien = dl * T.mejor > 0.5, mal = dl * T.mejor < -0.5;
       const extra = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? `<div class="su-tc">${Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0).map(([k, c]) => `<i style="flex:${c}" class="c-${k}" title="${k}: ${c}"></i>`).join('')}</div><small class="su-tl">${Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0).map(([k, c]) => `${{ colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }[k] || k} ${c}`).join(' · ')}</small>` : '';
-      return `<div class="su-tf" data-k="${T.k}"><div class="su-th"><span>${T.n}</span><b class="${bien ? 'bien' : mal ? 'mal' : ''}">${fv(v, T.u)}</b></div>
-        <div class="su-tg">${chispaT(a, b, col)}<div class="su-tb"><button type="button" class="i" title="Por qué, cómo y dónde se mide">ⓘ</button>${T.ver ? '<button type="button" class="v">Ver</button>' : ''}</div></div>${B && vb != null ? `<small class="su-ts">sin propuesta: ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
-    tab.innerHTML = `<div class="gs-sub">TABLERO ECOCÉNTRICO · EN VIVO</div><div id="su-eco"></div>${filas}`;
+      return `<figure class="su-tf" data-k="${T.k}"><div class="su-th"><span>${T.n}</span><b class="${bien ? 'bien' : mal ? 'mal' : ''}">${fv(v, T.u)}</b>${v0 != null && Math.abs(dl) >= 0.5 ? `<em class="${bien ? 'bien' : mal ? 'mal' : ''}">${dl > 0 ? '▲' : '▼'} ${Math.abs(dl) < 10 ? Math.abs(dl).toFixed(1) : Math.round(Math.abs(dl))} %</em>` : ''}</div>
+        ${chispaT(a, b, col)}<div class="su-ej"><span>año 1</span><span>5</span><span>10</span><span>15</span></div>
+        <div class="su-tp">${B && vb != null ? `<small class="su-ts">sin propuesta: <b>${fv(vb, T.u)}</b></small>` : '<small class="su-ts">desde el año 1</small>'}<div class="su-tb"><button type="button" class="i" title="Por qué, cómo y dónde se mide">ⓘ</button>${T.ver ? '<button type="button" class="v">Ver dónde</button>' : ''}</div></div>${extra}</figure>`; }).join('');
+    tab.innerHTML = `<h5 class="su-tt">Modelo ecocéntrico · en vivo</h5><div id="su-eco"></div>${filas}`;
     tab.querySelectorAll('.su-tf').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
       el.querySelector('.i').onclick = () => abrirFicha(T.n);
       const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
