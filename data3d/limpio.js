@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=93';
+import { iniciarSimUI } from './sim_ui.js?v=94';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -139,7 +139,7 @@ export function iniciarLimpio({ T3 }) {
   { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
     #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
     #lp-red h5{cursor:pointer} #lp-red h5::after{content:' ▾';opacity:.7} #lp-red.cerrado h5::after{content:' ▸'} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}
-    #lp-der #lp-red{position:static;width:auto;flex:none} #lp-der #lp-red h5::after{content:''} #lp-der #lp-red canvas{max-width:100%;margin:0 auto} #lp-der #lp-red p{font-size:10px}`; document.head.appendChild(st);
+    #lp-der #lp-red{position:static;width:auto;flex:none} #lp-der #lp-red h5::after{content:''} #lp-der #lp-red canvas{width:220px!important;max-width:100%;margin:0 auto} /* bola un poco más chica */ #lp-der #lp-red p{font-size:10px}`; document.head.appendChild(st);
     const card = document.createElement('div'); card.id = 'lp-red'; card.className = ''; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
     let movido = false;
     setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }

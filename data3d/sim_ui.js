@@ -76,6 +76,20 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   #su-eco .su-eco-n { font: 400 10px/1.35 system-ui, sans-serif; opacity: .55; margin: 6px 0 0; }
   #su-tab { padding: 10px 12px; border-radius: 14px; background: linear-gradient(180deg, rgba(40,44,52,.8), rgba(20,22,28,.9)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #eef1f4; flex: 1; min-height: 0; overflow-y: auto; } #su-tab:empty { display: none; }
   .su-tt { margin: 0 0 6px; font: 600 10.5px system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #ffd28a; }
+  /* tablero legible (tb2): índice + barras + una fila por indicador, sin cajas dentro de cajas */
+  .tb2-hd { display: flex; gap: 10px; align-items: center; margin: 2px 0 8px; } .tb2-n { display: flex; align-items: baseline; flex: none; } .tb2-n b { font: 600 38px/1 'Barlow Condensed', system-ui, sans-serif; } .tb2-n span { font: 500 12px system-ui, sans-serif; opacity: .5; margin-left: 2px; }
+  .tb2-hd strong { display: block; font: 600 12px system-ui, sans-serif; } .tb2-hd p { margin: 2px 0 0; font: 400 10.5px/1.35 system-ui, sans-serif; opacity: .65; } .tb2-hd p b { opacity: 1; color: #fff; }
+  .tb2-dims { display: grid; gap: 5px; margin-bottom: 4px; } .tb2-d { display: grid; grid-template-columns: 84px 1fr 24px; align-items: center; gap: 8px; font: 500 11px system-ui, sans-serif; }
+  .tb2-d span { opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tb2-d b { font: 600 13px 'Barlow Condensed', system-ui, sans-serif; text-align: right; }
+  .tb2-d i { position: relative; height: 6px; border-radius: 3px; background: rgba(226,243,255,.1); } .tb2-d u { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; } .tb2-d s { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #c8d2dc; border-radius: 1px; }
+  .tb2-ley { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 4px 0 2px; font: 500 10px system-ui, sans-serif; opacity: .6; } .tb2-ley i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; } .tb2-ley i.g { background: #c8d2dc; width: 2px; height: 10px; } .tb2-ley2 i.g { width: 14px; height: 2px; }
+  .tb2-ley i.p { background: repeating-linear-gradient(90deg, rgba(226,243,255,.7) 0 3px, transparent 3px 6px); height: 2px; }
+  .tb2-r { padding: 9px 0 8px; border-top: 1px solid rgba(125,211,252,.14); } .tb2-t { display: flex; align-items: baseline; gap: 8px; } .tb2-t span { flex: 1; font: 600 12px system-ui, sans-serif; }
+  .tb2-t b { font: 600 20px/1 'Barlow Condensed', system-ui, sans-serif; color: #fff; } .tb2-t b.bien { color: #8ee6a8; } .tb2-t b.mal { color: #ff8a80; }
+  .tb2-c { display: flex; align-items: center; gap: 8px; margin: 3px 0 4px; font: 500 10.5px system-ui, sans-serif; } .tb2-c em { font-style: normal; opacity: .65; } .tb2-c em.bien { color: #8ee6a8; opacity: 1; } .tb2-c em.mal { color: #ff8a80; opacity: 1; } .tb2-c small { opacity: .55; font-size: 10px; }
+  .tb2-bt { margin-left: auto; display: flex; gap: 4px; } .tb2-bt button { font: 600 10.5px system-ui, sans-serif; padding: 2px 8px; border-radius: 7px; border: 1px solid rgba(125,211,252,.25); background: rgba(125,211,252,.08); color: #e2f3ff; cursor: pointer; } .tb2-bt button:hover { background: rgba(125,211,252,.18); }
+  .tb2-svg { display: block; height: auto; overflow: visible; }
+  .tb2-cb { display: flex; height: 5px; border-radius: 3px; overflow: hidden; gap: 1px; margin-top: 6px; } .tb2-cb i { display: block; } .tb2-cl { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font: 500 10px system-ui, sans-serif; opacity: .75; } .tb2-cl i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
   figure.su-tf { margin: 8px 0 0; padding: 8px 9px 7px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); } figure.su-tf svg { display: block; width: 100%; height: 64px; margin-top: 4px; }
   .su-th em { font: 600 10.5px system-ui, sans-serif; font-style: normal; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,.07); } .su-th em.bien { color: #8ee6a8; } .su-th em.mal { color: #ff8a80; } .su-th b { font-size: 19px !important; }
   .su-ej { display: flex; justify-content: space-between; font: 500 9px system-ui, sans-serif; opacity: .45; margin-top: 1px; } .su-tp { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; } .su-tp .su-ts b { opacity: 1; color: #fff; }
@@ -644,7 +658,18 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     s += `<polygon points="${poli(E)}" fill="${col}33" stroke="${col}" stroke-width="2"/>`;
     return s + '</svg>';
   }
+  /* ÍNDICE ECOCÉNTRICO legible (pedido: «haz bien los diagramas, no se entienden»): número grande 0–100 y las 5 dimensiones como barras
+     horizontales (0–100, más es mejor) con una marca gris de «sin propuesta» en la misma semana. Reemplaza al radar. */
   function pintarEco() {
+    const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
+    const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, Eb = B && B.eco ? B.eco : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
+    const pc = (v) => Math.round(Math.max(0, Math.min(1, v || 0)) * 100);
+    box.innerHTML = `<div class="tb2-hd"><div class="tb2-n"><b style="color:${col}">${pc(I.eco.indice)}</b><span>/100</span></div><div><strong>Índice ecocéntrico</strong><p>Qué tan sano está Kennedy para la vida no humana. Más es mejor.${Eb ? ` Sin propuesta: <b>${pc(Eb.indice)}</b>.` : ''}</p></div></div>
+      <div class="tb2-dims">${DIMS.map(([k, n]) => { const v = pc(I.eco[k]), vb = Eb && Eb[k] != null ? pc(Eb[k]) : null;
+        return `<div class="tb2-d"><span>${n}</span><i><u style="width:${v}%;background:${col}"></u>${vb != null ? `<s style="left:${vb}%" title="sin propuesta: ${vb}"></s>` : ''}</i><b>${v}</b></div>`; }).join('')}</div>
+      ${Eb ? `<p class="tb2-ley"><i style="background:${col}"></i>con propuesta <i class="g"></i>sin propuesta</p>` : ''}`;
+  }
+  function pintarEcoViejo() {
     const box = document.getElementById('su-eco'), I = ultimo(); if (!box || !I || !I.eco) return;
     const d = R.def || {}, B = d.propuesta && R.base ? R.base[Math.min(R.base.length - 1, R.hist.length - 1)] : null, Eb = B && B.eco ? B.eco : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
     const A = I.abeja, Ab = B && B.abeja;
@@ -762,7 +787,46 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     let mn = Math.min(...all), mx = Math.max(...all); if (mx - mn < 1e-6) { mx += 1; mn -= 1; }
     const P = arr => arr.map((v, i) => v == null ? null : (i / (n - 1) * W).toFixed(1) + ',' + (H - 2 - (v - mn) / (mx - mn) * (H - 4)).toFixed(1)).filter(Boolean).join(' ');
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${b.length ? `<polyline points="${P(b)}" fill="none" stroke="rgba(220,224,230,.55)" stroke-width="1.3" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>` : ''}<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; }
+  /* INDICADORES legibles: por fila el nombre, el valor de ahora y en palabras si MEJORA o EMPEORA frente al año 1; debajo una curva de los
+     15 años sin deformar (la línea punteada es el valor del año 1: arriba o abajo de ella se lee de un vistazo; en «con propuesta» la
+     curva gris es «sin propuesta»). Color de la curva: verde mejora, rojo empeora, gris igual. ⓘ = ficha, Ver = la cámara va al lugar. */
+  const limpiarNombre = (n) => String(n).replace(/^[^\p{L}\d]+/u, '').replace(/\s*\(.*\)\s*$/, '');
+  function curva(a, b, v0, col) {
+    const W = 280, H = 44, n = Math.ceil(FIN / 4), vals = a.concat(b, v0 != null ? [v0] : []).filter(v => v != null); if (vals.length < 2) return '';
+    let mn = Math.min(...vals), mx = Math.max(...vals); if (mx - mn < 1e-6) { mx += 1; mn -= 1; } const pad = (mx - mn) * 0.18; mn -= pad; mx += pad;
+    const X = i => (i / (n - 1) * W).toFixed(1), Y = v => (H - (v - mn) / (mx - mn) * H).toFixed(1);
+    const P = arr => arr.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ');
+    const ia = a.length - 1 - [...a].reverse().findIndex(v => v != null), ult = a[ia];
+    return `<svg class="tb2-svg" viewBox="0 0 ${W} ${H}" width="100%">`
+      + (v0 != null ? `<line x1="0" x2="${W}" y1="${Y(v0)}" y2="${Y(v0)}" stroke="rgba(226,243,255,.35)" stroke-dasharray="3 3"/>` : '')
+      + (b.length ? `<polyline points="${P(b)}" fill="none" stroke="rgba(200,210,220,.55)" stroke-width="1.4"/>` : '')
+      + `<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
+      + (ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3" fill="${col}" stroke="#08101a" stroke-width="1.5"/>` : '') + '</svg>';
+  }
+  const CAUSA_N = { colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }, CAUSA_C = { colision: '#ff6b6b', atropello: '#ffb347', ruido: '#c58cff', hambre_habitat: '#8fa3b5' };
   function pintarTablero() {
+    const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
+    const d = R.def || {}, H = R.hist, B = d.propuesta && R.base ? R.base.slice(0, H.length) : null;
+    const fv = (v, u) => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u || '');
+    const filas = TAB.map(T => { let v = null; try { v = T.v(I); } catch (e) { /* */ } if (v == null || !isFinite(v)) return '';
+      const a = serie(H, T.v, 4), b = B ? serie(B, T.v, 4) : [], vb = b.filter(x => x != null).pop(), v0 = a.length > 13 ? a[13] : null; /* año 1 = semana 52 (el modelo ya se asentó) */
+      const dl = v0 != null && v0 !== 0 ? (v - v0) / Math.abs(v0) * 100 : 0, bien = v0 != null && dl * T.mejor > 0.5, mal = v0 != null && dl * T.mejor < -0.5, est = bien ? 'bien' : mal ? 'mal' : '';
+      const colC = bien ? '#8ee6a8' : mal ? '#ff8a80' : '#cfd8e0';
+      const chip = v0 == null ? '<em>empezando</em>' : !bien && !mal ? '<em>igual que el año 1</em>' : `<em class="${est}">${dl > 0 ? '▲' : '▼'} ${Math.abs(dl) < 10 ? Math.abs(dl).toFixed(1) : Math.round(Math.abs(dl))} % · ${bien ? 'mejora' : 'empeora'}</em>`;
+      const causas = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0) : [];
+      const extra = causas.length ? `<div class="tb2-cb">${causas.map(([k, c]) => `<i style="flex:${c};background:${CAUSA_C[k] || '#888'}"></i>`).join('')}</div><div class="tb2-cl">${causas.map(([k, c]) => `<span><i style="background:${CAUSA_C[k] || '#888'}"></i>${CAUSA_N[k] || k} ${c}</span>`).join('')}</div>` : '';
+      return `<div class="tb2-r" data-k="${T.k}"><div class="tb2-t"><span>${escH(limpiarNombre(T.n))}</span><b class="${est}">${fv(v, T.u)}</b></div>
+        <div class="tb2-c">${chip}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}<span class="tb2-bt"><button type="button" class="i" title="Por qué, cómo y dónde se mide">ⓘ</button>${T.ver ? '<button type="button" class="v">Ver</button>' : ''}</span></div>
+        ${curva(a, b, v0, colC)}${extra}</div>`; }).join('');
+    tab.innerHTML = `<h5 class="su-tt">Modelo ecocéntrico · en vivo</h5><div id="su-eco"></div><p class="tb2-ley tb2-ley2"><i class="p"></i>año 1 · curvas de los 15 años${B ? ' · <i class="g"></i>sin propuesta' : ''}</p>${filas}`;
+    tab.querySelectorAll('.tb2-r').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
+      el.querySelector('.i').onclick = () => abrirFicha(T.n);
+      const bv = el.querySelector('.v'); if (bv) bv.onclick = async () => { const U = ultimo(); const p = U && T.ver(U); if (!p || !window.KEN_OJO) return; const corriaT = !RELOJ.pausaSem; RELOJ.pausarAños(true);
+        await window.KEN_OJO.ir({ x: p.x, z: p.z, titulo: p.t, texto: p.tx, color: T.mejor > 0 ? '#8ee6a8' : '#ff8a80', rapido: true, cenital: true, x0: T.k === 'muertes', animal: p.animal });
+        const bo = document.querySelector('#ojo-t button'); if (bo) bo.addEventListener('click', () => { if (corriaT && !R.go && !R.fin) { const pl = document.querySelector('#lp-anos .play'); if (pl && RELOJ.pausaSem) pl.click(); } }, { once: true }); }; });
+    pintarEco();
+  }
+  function pintarTableroViejo() {
     const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
     const d = R.def || {}, H = R.hist, B = d.propuesta && R.base ? R.base.slice(0, H.length) : null, col = d.propuesta ? '#8ee6a8' : '#ffcf7a';
     const fv = (v, u) => v == null ? '—' : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-CO') : (Math.round(v * 10) / 10).toLocaleString('es-CO')) + (u || '');
