@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=74';
+import { iniciarSimUI } from './sim_ui.js?v=76';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -168,7 +168,7 @@ export function iniciarLimpio({ T3 }) {
     body.lp-corre #su-hist,body.lp-corre #lp-red{opacity:0!important;pointer-events:none!important}
     #lp-ojo{position:fixed;right:16px;top:16px;z-index:45;padding:7px 12px;border-radius:10px;background:rgba(20,22,28,.78);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);color:#eef1f4;font:600 11.5px system-ui,sans-serif;cursor:pointer;display:none} body.lp-corre #lp-ojo{display:block}`; document.head.appendChild(sp);
     const ob = document.createElement('button'); ob.id = 'lp-ojo'; ob.type = 'button'; ob.textContent = '❚❚ Pausar y ver los datos'; ob.onclick = () => alternar(); document.body.appendChild(ob); }
-  const VOBL = { c: [2350, 0, 380], d: [420, 560, 2250] }; let camT = null;
+  const VOBL = { c: [2300, 0, 300], d: [340, 470, 1850] }; let camT = null;
   function irOblicua() { if (!T3.camera || !T3.orbit) return; T3.anim = null; camT = { t0: performance.now(), dur: 2600, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone() }; }
   RELOJ.alDibujar(() => { if (!camT) return; const k = Math.min(1, (performance.now() - camT.t0) / camT.dur), e = k * k * (3 - 2 * k);
     T3.orbit.target.set(camT.c0.x + (VOBL.c[0] - camT.c0.x) * e, camT.c0.y + (VOBL.c[1] - camT.c0.y) * e, camT.c0.z + (VOBL.c[2] - camT.c0.z) * e);
@@ -187,7 +187,7 @@ export function iniciarLimpio({ T3 }) {
     $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
     const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
-    document.body.classList.toggle('lp-corre', corre && !!ESC.activo);
+    document.body.classList.toggle('lp-corre', corre && !!ESC.activo); T3.horaLuz = ESC.activo ? 10.5 : null; { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las ✕ de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
     const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
   });
 

@@ -102,16 +102,16 @@ export function iniciarCielo({ THREE, T3, luzMalla }) {
   const baseDens = T3.scene.fog ? T3.scene.fog.density : 0.000075;
   let ultMalla = -1, tMalla = 0;
   function aplicar(dt) {
-    const min = RELOJ.minutoDia, dia = RELOJ.dia, hora = (min % 1440) / 60; // función pura de la hora y el día del reloj universal (sin hora del sistema de respaldo)
+    const min = T3.horaLuz != null ? T3.horaLuz * 60 : RELOJ.minutoDia, dia = RELOJ.dia, /* T3.horaLuz: modo presentación (data3d/limpio.js) fija la luz a media mañana */ hora = (min % 1440) / 60; // función pura de la hora y el día del reloj universal (sin hora del sistema de respaldo)
     const ha = (hora - NOON) * 15 * Math.PI / 180;
     const [sd, el] = dirAstro(ha, DEC), [md, mel] = dirAstro(ha + Math.PI * 0.92, 0.12); // luna: casi opuesta al sol
     const tarde = hora > NOON ? 1 : 0, P = mezcla(el, tarde);
     // cielo
     U.top.value.copy(P.top); U.mid.value.copy(P.mid); U.bot.value.copy(P.bot); U.uSunDir.value.copy(sd); U.uSunCol.value.copy(P.sol);
     U.uCloudL.value.copy(P.nubL); U.uCloudD.value.copy(P.nubD); U.uHor.value.copy(P.hor); U.uHorA.value = P.hora;
-    U.uCloud.value = nubes(dia, hora); U.uGlow.value = P.glow; U.uStars.value = P.est; U.uMoonDir.value.copy(md); U.uMoon.value = Math.max(0, Math.min(1, mel / 6)) * (0.4 + 0.6 * P.est);
+    U.uCloud.value = T3.horaLuz != null ? 0.14 : nubes(dia, hora); U.uGlow.value = P.glow; U.uStars.value = P.est; U.uMoonDir.value.copy(md); U.uMoon.value = Math.max(0, Math.min(1, mel / 6)) * (0.4 + 0.6 * P.est);
     T3.scene.background && T3.scene.background.copy(P.bot);
-    if (T3.scene.fog) { T3.scene.fog.color.copy(P.fog); T3.scene.fog.density = baseDens * P.dens * (1 + 0.6 * Math.exp(-Math.pow((hora - 6.2) / 0.9, 2))); } // neblina de madrugada
+    if (T3.scene.fog) { T3.scene.fog.color.copy(P.fog); T3.scene.fog.density = baseDens * P.dens * (1 + 0.6 * Math.exp(-Math.pow((hora - 6.2) / 0.9, 2))) * (T3.horaLuz != null ? 0.35 : 1); } // neblina de madrugada
     // luces: de día el sol; de noche la luna (luz fría y suave); la dirección mueve las sombras
     const deDia = el > -3, L = deDia ? sd : md, elL = deDia ? el : mel;
     const dirL = L.clone(); if (dirL.y < 0.07) { dirL.y = 0.07; dirL.normalize(); } // sombras largas pero sin pasar bajo el horizonte
