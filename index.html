@@ -1023,8 +1023,11 @@ async function crearMallaGoogle(T) {
   tiles.setCamera(T.camera);
   tiles.setResolutionFromRenderer(T.camera, T.renderer);
   // carga progresiva: se empieza con poco detalle (aparecen enseguida los edificios en 3D) y se afina por etapas cuando termina cada una
-  T.errMeta = GOOGLE ? (T.movil ? 14 : 4) : REALISTA ? (T.movil ? 16 : 5) : KEN ? (T.movil ? 16 : 6) : (T.movil ? 28 : 14); // modo Kennedy: la foto del suelo es lo que más se ve, se pide más nítida // realista: contexto de Google nítido, como en God's Eye // meta: menor = más nítido (fachadas) pero más descarga
+  T.errMeta = GOOGLE ? (T.movil ? 14 : 4) : REALISTA ? (T.movil ? 16 : 5) : KEN ? (T.movil ? 14 : 4) : (T.movil ? 28 : 14); // modo Kennedy: la foto del suelo es lo que más se ve, se pide más nítida // realista: contexto de Google nítido, como en God's Eye // meta: menor = más nítido (fachadas) pero más descarga
   tiles.errorTarget = 56;
+  /* NITIDEZ: caché más grande (la de fábrica, ~0,4 GB, botaba las teselas nítidas en la vista oblicua y quedaba borroso), varias teselas procesándose a la vez */
+  if (tiles.lruCache) { tiles.lruCache.minSize = T.movil ? 900 : 3000; tiles.lruCache.maxSize = T.movil ? 1600 : 6000; if ('maxBytesSize' in tiles.lruCache) { tiles.lruCache.minBytesSize = (T.movil ? 0.35 : 1.2) * 2 ** 30; tiles.lruCache.maxBytesSize = (T.movil ? 0.5 : 1.8) * 2 ** 30; } }
+  if (tiles.parseQueue) tiles.parseQueue.maxJobs = T.movil ? 2 : 6;
   T.tilesErr = 0; T.tilesT0 = performance.now(); T.mallaMostrada = false;
   tiles.addEventListener('load-error', (e) => { // antes los errores de Google se perdían en silencio
     T.tilesErr++;
@@ -1275,8 +1278,8 @@ function actualizarMallaIn(T, tl, dt) {
   /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
      sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
   const abierta = KEN ? $('loader').classList.contains('hidden') : true, meta = abierta ? T.errMeta : Math.max(T.errMeta, 14); /* antes de abrir: nitidez media */
-  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : panelOk ? 6 : 2;
-  if (tl.errorTarget > meta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
+  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 24 : panelOk ? 6 : 2;
+  if (tl.errorTarget > meta && tl.stats.downloading + tl.stats.parsing < (abierta ? 10 : 1) && tl.stats.visible > 3) /* abierta: se afina aunque queden algunas descargas (en la vista oblicua siempre hay alguna y nunca llegaba a la nitidez final) */ tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
     T.dbgN = (T.dbgN || 0) + 1; T.dbgT = (T.dbgT || 0) + dt; if (T.dbgT > 1) { T.dbgFps = T.dbgN / T.dbgT; T.dbgN = 0; T.dbgT = 0; console.log('[debug] fps ' + T.dbgFps.toFixed(1) + ' · triángulos ' + (T.renderer.info.render.triangles / 1e6).toFixed(2) + ' M · teselas ' + s.visible + ' · descargando ' + s.downloading); }
