@@ -13,18 +13,18 @@ export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* 
   g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('color', new THREE.BufferAttribute(C, 3)); g.setAttribute('tam', new THREE.BufferAttribute(S, 1));
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, fog: true,
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uEsc: { value: 1 } }]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uEsc: { value: 1 }, uOp: { value: T3.opArboles ?? 1 } }]), /* uOp: opacidad de las copas (T3.opArboles) */
     vertexShader: `attribute float tam; varying vec3 vC; uniform float uEsc;
       #include <fog_pars_vertex>
       void main(){ vC = color; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition;
         gl_PointSize = clamp(tam * uEsc / -mvPosition.z, 1.5, 34.0);
         #include <fog_vertex>
       }`,
-    fragmentShader: `varying vec3 vC;
+    fragmentShader: `varying vec3 vC; uniform float uOp;
       #include <fog_pars_fragment>
       void main(){ vec2 d = gl_PointCoord - 0.5; float r2 = dot(d, d) * 4.0; if (r2 > 1.0) discard;
         float a = exp(-r2 * 2.6);                       // mancha gaussiana suave
-        gl_FragColor = vec4(vC * (0.85 + 0.2 * (1.0 - r2)), a);
+        gl_FragColor = vec4(vC * (0.85 + 0.2 * (1.0 - r2)), a * uOp);
         #include <colorspace_fragment>
         #include <fog_fragment>
       }`,
@@ -70,6 +70,7 @@ export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* 
   const api = {
     pts, visible: true,
     ver: (on) => { api.visible = on; pts.visible = on; },
+    opacidad: (o) => { mat.uniforms.uOp.value = o; },
     invalidar: () => { ult = { x: 1e9, z: 1e9 }; }, /* rehacer las copas en el próximo cuadro (talas del plan parcial) */
     update: (cam) => {
       mat.uniforms.uEsc.value = T3.renderer.domElement.height / (2 * Math.tan(cam.fov * Math.PI / 360));
