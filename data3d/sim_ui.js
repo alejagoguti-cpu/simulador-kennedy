@@ -139,7 +139,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     setTimeout(() => mostrarInd(), 400);
     R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null);
+    setTimeout(apagarSintaxis, 1600); setTimeout(apagarSintaxis, 3200);
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); if (H && rb && rb.classList.contains('on') !== H.ruido) rb.click(); pintarHistoria(); focoHistoria(5);
+      apagarSintaxis();
       // sin propuesta (plan parcial): capa «Flujo de carros» prendida para ver las vías internas de Bavaria y Boyacá congestionadas
       if (R.def && R.def.par != null && !R.def.propuesta) { const fv = document.querySelector('#gs-fc button[data-v="1"]'); if (fv && !fv.classList.contains('on')) fv.click(); }
       // el indicador del par se prende solo, bajo y transparente para no tapar la vista
@@ -563,6 +565,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const ciudad = (on, dur = 1) => { metaCiu = on ? 0.45 : 1; durCiu = dur; };
   const FOCO_CIU = { on: (c, o) => { ciudad(true, o && o.dur ? o.dur : 1); return Promise.resolve(true); }, off: (o) => ciudad(false, o && o.dur ? o.dur : 1), get activo() { return metaCiu < 1; }, get nivel() { return (1 - kCiu) / 0.55; } };
   setInterval(() => { if (window.KEN_FOCO !== FOCO_CIU) window.KEN_FOCO = FOCO_CIU; }, 500);
+  /* la sintaxis espacial (líneas de colores de integración/elección) empieza y se mantiene apagada al escoger una simulación: otros
+     módulos la prendían solos al cambiar de escenario; se puede prender a mano en el panel izquierdo */
+  function apagarSintaxis() { const b = document.querySelector('#gs-capa button[data-c=""]'); if (b && !b.classList.contains('on')) b.click(); }
+  setTimeout(apagarSintaxis, 3000);
   function focoHistoria(dur = 5) { const H = HISTORIA[R.def && R.def.par]; if (!H || !window.KEN_FOCO) return;
     window.KEN_FOCO.on([...H.capas, ...(H.ruido ? ['ruido'] : []), ...(H.capas.includes('biotica') ? ['especies'] : []), 'indicadores', ...(R.def && !R.def.propuesta ? ['plan_parcial', 'bavaria'] : ['bavaria', 'bavaria_distrito'])], { dur }); } // sin propuesta: Bavaria y su plan parcial también en color
 
