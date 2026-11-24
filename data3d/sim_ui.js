@@ -81,11 +81,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .tb3-k { display: block; font: 600 10px system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; opacity: .6; } .tb3-hd strong { display: block; font: 600 22px/1.05 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; margin: 1px 0 2px; }
   .tb3-hd p { margin: 0; font: 400 10.5px/1.35 system-ui, sans-serif; opacity: .7; } .tb3-hd p b { color: #fff; }
   .tb3-st { margin-top: 12px !important; display: flex; align-items: baseline; justify-content: space-between; gap: 6px; } .tb3-st span { font: 500 9.5px system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: #c3cace; opacity: .75; }
-  .tb3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tb3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; grid-auto-flow: row dense; } /* dense: la tarjeta ancha no deja huecos */
   .tb3-t { position: relative; padding: 8px 9px 6px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: background .2s; min-width: 0; }
   .tb3-t:hover { background: rgba(255,255,255,.1); } .tb3-t.ancho { grid-column: 1 / -1; } .tb3-t::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; border-radius: 0 2px 2px 0; background: rgba(255,255,255,.18); } .tb3-t.bien::before { background: #8ee6a8; } .tb3-t.mal::before { background: #ff8a80; }
   .tb3-h { display: flex; align-items: center; gap: 4px; } .tb3-h span { flex: 1; min-width: 0; font: 500 10.5px system-ui, sans-serif; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tb3-h .v { flex: none; width: 20px; height: 20px; padding: 0; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #fff; font: 600 12px/18px system-ui, sans-serif; cursor: pointer; } .tb3-h .v:hover { background: rgba(255,255,255,.18); }
+  .tb3-h .v { flex: none; height: 20px; padding: 0 7px; font-size: 10px !important; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #fff; font: 600 12px/18px system-ui, sans-serif; cursor: pointer; } .tb3-h .v:hover { background: rgba(255,255,255,.18); }
   .tb3-t > b { display: block; font: 600 22px/1.05 'Barlow Condensed', system-ui, sans-serif; margin-top: 2px; } .tb3-t > em { display: block; font: 600 10px system-ui, sans-serif; font-style: normal; opacity: .6; } .tb3-t > em.bien { color: #8ee6a8; opacity: 1; } .tb3-t > em.mal { color: #ff8a80; opacity: 1; }
   .tb3-s { display: block; width: 100%; height: 30px; margin-top: 4px; overflow: visible; } .tb3-t > small { display: block; font: 500 9.5px system-ui, sans-serif; opacity: .55; margin-top: 2px; }
   /* tablero legible (tb2): índice + barras + una fila por indicador, sin cajas dentro de cajas */
@@ -851,7 +851,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const causas = T.k === 'muertes' && I.muertes && I.muertes.porCausa ? Object.entries(I.muertes.porCausa).filter(([, c]) => c > 0) : [];
       const extra = causas.length ? `<div class="tb2-cb">${causas.map(([k, c]) => `<i style="flex:${c};background:${CAUSA_C[k] || '#888'}"></i>`).join('')}</div><div class="tb2-cl">${causas.map(([k, c]) => `<span><i style="background:${CAUSA_C[k] || '#888'}"></i>${CAUSA_N[k] || k} ${c}</span>`).join('')}</div>` : '';
       return `<div class="tb3-t ${est}${causas.length ? ' ancho' : ''}" data-k="${T.k}" title="Toca para ver por qué, cómo y dónde se mide">
-        <div class="tb3-h"><span>${escH(CORTO[T.k] || limpiarNombre(T.n))}</span>${T.ver ? '<button type="button" class="v" title="Ver dónde pasa">⌖</button>' : ''}</div>
+        <div class="tb3-h"><span>${escH(CORTO[T.k] || limpiarNombre(T.n))}</span>${T.ver ? '<button type="button" class="v" title="Ver dónde pasa">Ver</button>' : ''}</div>
         <b style="color:${colC}">${fv(v, T.u)}</b>${flecha}${miniCurva(a, b, v0, colC)}${B && vb != null ? `<small>sin propuesta ${fv(vb, T.u)}</small>` : ''}${extra}</div>`; }).join('');
     tab.innerHTML = `<h5 class="su-tt">Modelo ecocéntrico · en vivo</h5><div id="su-eco"></div><h5 class="su-tt tb3-st">Indicadores <span>frente al año 1 · toca uno para saber más</span></h5><div class="tb3-grid">${filas}</div>`;
     tab.querySelectorAll('.tb3-t').forEach(el => { const T = TAB.find(x => x.k === el.dataset.k);
