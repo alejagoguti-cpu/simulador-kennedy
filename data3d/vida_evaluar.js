@@ -1,11 +1,12 @@
 /* ============ MODO «EVALUAR» · sin cherry picking ============
    Corre en segundo plano (Web Worker: data3d/sim_vida_worker.js; si el navegador no deja, por bloques con setTimeout) 30 corridas con
-   semillas FIJAS 1..30 de B, C y A (Kennedy hoy), 100 años cada una, con los parámetros congelados al pulsar y las MISMAS reglas de colapso.
-   Muestra TODAS las corridas: supervivencia, mediana y rango de años hasta el colapso, causas, trayectorias tenues + mediana, y la lista
+   semillas FIJAS 1..30 de A, B y C, 10 años cada una (el mismo periodo), con los parámetros congelados al pulsar y las MISMAS 3 reglas de game over.
+   Muestra TODAS las corridas: % que cierra por cada regla, semana mediana de cierre, supervivencia, zona peor abastecida (corridas + mediana),
+   tiempo de resolución de solicitudes (B y C), alimento por mercado en C, y la lista
    completa de semillas (cada una se puede ver en el mapa). */
-import { REGLAS, EVENTOS, P_RECORTE, P_RESTAURA, ARRANQUE, AÑO, corrida, resumen } from './sim_vida.js?v=1';
-const R_CORRIDAS = 30, AÑOS = 100;
-const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOM = { A: 'Kennedy hoy', B: 'Nodo central', C: 'Clúster rotativo' };
+import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=7';
+const R_CORRIDAS = 30, AÑOS = 10; // el mismo periodo para A, B y C
+const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOM = Object.fromEntries(Object.entries(ESCENARIOS).map(([k, v]) => [k, v.n]));
 const NREG = Object.fromEntries(REGLAS.map(R => [R.k, R.n.toLowerCase()]));
 const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
 let el = null, RES = null, CLAVE = '', foco = 'C', trayEsc = 'C', trabajo = 0, cb = null;
@@ -43,23 +44,22 @@ function armar() {
   el = document.createElement('div'); el.id = 'vev'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Evaluar sin cherry picking');
   el.innerHTML = `<div class="caja"><div class="cab"><h3>Evaluar sin cherry picking<small>${R_CORRIDAS} corridas por escenario · semillas fijas 1 a ${R_CORRIDAS} · ${AÑOS} años · las mismas reglas para todos</small></h3><button type="button" class="x" data-x aria-label="Cerrar">×</button></div>
   <div class="sec"><h4>Declarado antes de correr</h4><div class="decl" data-decl></div>
-    <details><summary>Reglas de colapso (iguales para A, B y C)</summary><ol>${REGLAS.map(R => `<li><b>${R.n}:</b> ${R.txt}, ${R.sem} semanas seguidas.</li>`).join('')}</ol>
-      <p class="nota">Las reglas empiezan a contar en el año ${ARRANQUE / AÑO} (tiempo de montaje de la propuesta). Colapsa la primera vez que se cumple alguna.</p></details>
-    <details><summary>Perturbaciones al azar y su probabilidad</summary><ul class="ev">${EVENTOS.map(E => `<li><b>${E.n}</b>: ${fmt(E.pAño * 100)} % por año${E.dur ? `, dura ${E.dur[0]} a ${E.dur[1]} semanas` : ''} — ${E.ef}.</li>`).join('')}
-      <li><b>Cambio de administración</b> (cada 4 años): ${fmt(P_RECORTE * 100)} % de probabilidad de cortar el programa de formación en B y en C; si se corta, vuelve con ${fmt(P_RESTAURA * 100)} % por año.</li></ul></details>
+    <details open><summary>Reglas de game over (iguales para A, B y C)</summary><ol>${REGLAS.map(R => `<li><b>${R.n}:</b> ${R.txt}, ${R.sem} semanas seguidas.</li>`).join('')}</ol>
+      <p class="nota">Cuentan desde la semana 1. La corrida cierra la primera vez que se cumple alguna y se registra el motivo y la semana.</p></details>
+    <details><summary>El único evento al azar</summary><ul class="ev">${EVENTOS.map(E => `<li><b>${E.n}</b>: ${fmt(E.pAño * 100)} % por año${E.dur ? `, dura ${E.dur[0]} a ${E.dur[1]} semanas` : ''} — ${E.ef}.</li>`).join('')}</ul><p class="nota">Los mismos cierres para A, B y C (misma semilla). Si el interruptor «Cierre de vía» está apagado, se sortean igual pero no tienen efecto.</p></details>
     <div class="bar" aria-hidden="true"><i data-bar></i></div><p class="nota" data-prog>Preparando…</p></div>
   <div class="sec"><h4>Resultado de todas las corridas</h4><div class="cards" data-cards></div></div>
   <div class="sec"><h4>Supervivencia · % de corridas que siguen funcionando</h4><div class="graf"><canvas data-c="sup" role="img" aria-label="Supervivencia de las corridas por año"></canvas><div class="tip" data-tip="sup"></div></div>
-    <div class="ley">${['C', 'B', 'A'].map(k => `<span><i class="${k === 'A' ? 'd' : ''}" style="--c:${COL[k]}"></i>${k} · ${NOM[k]}</span>`).join('')}</div></div>
-  <div class="sec"><h4>Hogares con huerta · las ${R_CORRIDAS} corridas y su mediana</h4><div class="tabs" role="group" aria-label="Escenario" data-tabs>${['C', 'B', 'A'].map(k => `<button type="button" data-tr="${k}" style="--c:${COL[k]}">${k} · ${NOM[k]}</button>`).join('')}</div>
+    <div class="ley">${['A', 'B', 'C'].map(k => `<span><i class="${k === 'A' ? 'd' : ''}" style="--c:${COL[k]}"></i>${k} · ${NOM[k]}</span>`).join('')}</div></div>
+  <div class="sec"><h4>Zona peor abastecida (peor semana de cada año) · las ${R_CORRIDAS} corridas y su mediana</h4><div class="tabs" role="group" aria-label="Escenario" data-tabs>${['A', 'B', 'C'].map(k => `<button type="button" data-tr="${k}" style="--c:${COL[k]}">${k} · ${NOM[k]}</button>`).join('')}</div>
     <div class="graf"><canvas data-c="tray" role="img" aria-label="Trayectorias de hogares con huerta"></canvas><div class="tip" data-tip="tray"></div></div>
-    <div class="ley"><span><i style="--c:#cfd5d9"></i>mediana</span><span><i style="--c:rgba(207,213,217,.35)"></i>cada corrida</span><span><i class="d" style="--c:#ff8a80"></i>umbral de colapso: 500 hogares</span><span>× = año en que colapsó esa corrida</span></div></div>
-  <div class="sec"><h4>Todas las corridas · toca una para verla en el mapa</h4><div class="tabs" role="group" aria-label="Escenario" data-tabs2>${['C', 'B', 'A'].map(k => `<button type="button" data-rr="${k}" style="--c:${COL[k]}">${k}</button>`).join('')}</div><div class="runs" data-runs></div></div>
+    <div class="ley"><span><i style="--c:#cfd5d9"></i>mediana</span><span><i style="--c:rgba(207,213,217,.35)"></i>cada corrida</span><span><i class="d" style="--c:#ff8a80"></i>umbral: 80 % de lo que necesita</span><span>× = semana en que cerró esa corrida</span></div></div>
+  <div class="sec" data-sec-merc><h4>C · alimento que recibe cada mercado (kg/semana, media del último año, 30 corridas)</h4><div data-merc></div></div>
+  <div class="sec"><h4>Todas las corridas · toca una para verla en el mapa</h4><div class="tabs" role="group" aria-label="Escenario" data-tabs2>${['A', 'B', 'C'].map(k => `<button type="button" data-rr="${k}" style="--c:${COL[k]}">${k}</button>`).join('')}</div><div class="runs" data-runs></div></div>
   <div class="sec leer"><h4>Cómo leerlo y por qué no hay cherry picking</h4>
-    <p>Cada corrida es un futuro posible: las sequías, bloqueos, recortes y demás llegan al azar con las probabilidades de arriba. Una sola corrida no dice nada; lo que cuenta es <b>cuántas de las ${R_CORRIDAS} siguen funcionando</b> con el paso de los años.</p>
-    <p>No hay cherry picking porque: <b>1)</b> las semillas son fijas y declaradas (1 a ${R_CORRIDAS}), no se escogen las que «salen bien»; <b>2)</b> las reglas de colapso se fijan antes de correr y no cambian; <b>3)</b> se muestran todas las corridas, también las que colapsan; <b>4)</b> Kennedy hoy (A) se mide con las mismas reglas y vive exactamente los mismos eventos (misma semilla).</p>
-    <p>Kennedy hoy no «colapsa»: <b>nunca llega a funcionar como red</b> (pocos hogares con huerta, todo depende de Corabastos), por eso no pasa las reglas apenas empiezan a contar. Los parámetros quedan congelados al pulsar «Evaluar»: si mueves un control, vuelve a evaluar.</p>
-    <p class="nota">Lo que más pesa en C es un supuesto [SUP]: que con vocerías rotativas los mismos hogares forman nuevos promotores. Se puede bajar en el panel («Formación entre vecinos») para ver desde dónde C deja de sostenerse.</p></div></div>`;
+    <p>Cada corrida es un futuro posible: los cierres de vía llegan al azar con la probabilidad de arriba. Una sola corrida no dice nada; lo que cuenta es <b>cuántas de las ${R_CORRIDAS} cierran, por qué regla y en qué semana</b>.</p>
+    <p>No hay cherry picking porque: <b>1)</b> las semillas son fijas y declaradas (1 a ${R_CORRIDAS}); <b>2)</b> las reglas y los supuestos se fijan antes de correr y no se ajustan después; <b>3)</b> se muestran todas las corridas; <b>4)</b> A, B y C parten igual y viven exactamente los mismos cierres (misma semilla).</p>
+    <p>La primera comparación es A contra B; C se muestra al lado. Los parámetros quedan congelados al pulsar «Evaluar»: si mueves un control, vuelve a evaluar.</p></div></div>`;
   document.body.appendChild(el);
   el.addEventListener('click', (ev) => { if (ev.target === el || ev.target.closest('[data-x]')) { cerrar(); return; }
     const b = ev.target.closest('button'); if (!b) return;
@@ -73,17 +73,17 @@ function armar() {
 const cerrar = () => { el.classList.remove('on'); };
 
 export function abrirEvaluar({ PAR, esc, verCorrida }) {
-  if (!el) armar(); cb = verCorrida; foco = trayEsc = esc === 'B' ? 'B' : 'C';
+  if (!el) armar(); cb = verCorrida; foco = trayEsc = esc === 'A' ? 'A' : esc === 'C' ? 'C' : 'B';
   el.classList.add('on'); el.querySelector('[data-x]').focus();
   const congelado = JSON.parse(JSON.stringify(PAR)), clave = JSON.stringify(congelado);
-  el.querySelector('[data-decl]').innerHTML = `<div>Corridas por escenario<b>${R_CORRIDAS}</b></div><div>Semillas (fijas)<b>1 a ${R_CORRIDAS}</b></div><div>Horizonte<b>${AÑOS} años</b></div><div>Reglas de colapso<b>${REGLAS.length}, fijas</b></div>`;
+  el.querySelector('[data-decl]').innerHTML = `<div>Corridas por escenario<b>${R_CORRIDAS}</b></div><div>Semillas (fijas)<b>1 a ${R_CORRIDAS}</b></div><div>Horizonte<b>${AÑOS} años</b></div><div>Reglas de game over<b>${REGLAS.length}, 4 semanas seguidas</b></div><div>Cierre de vía<b>${congelado.P1.cierres === false ? 'apagado' : 'encendido'}</b></div>`;
   if (clave === CLAVE && RES && RES.listo) { pintar(); return; }
-  CLAVE = clave; RES = { listo: false }; const id = ++trabajo, escs = [foco, foco === 'C' ? 'B' : 'C', 'A'];
+  CLAVE = clave; RES = { listo: false }; const id = ++trabajo, escs = ['A', 'B', 'C'];
   progreso(0, escs.length * R_CORRIDAS); pintar();
   const recibir = (d) => { if (d.id !== id) return; if (d.tipo === 'progreso') progreso(d.hecho, d.total);
     if (d.tipo === 'escenario') { RES[d.e] = { corridas: d.corridas, resumen: d.resumen }; pintar(); }
     if (d.tipo === 'fin') { RES.listo = true; el.querySelector('[data-prog]').textContent = `Listo: ${escs.length * R_CORRIDAS} corridas de ${AÑOS} años con los parámetros de este momento.`; pintar(); } };
-  let w = null; try { w = new Worker(new URL('./sim_vida_worker.js?v=1', import.meta.url), { type: 'module' }); } catch (e) { w = null; }
+  let w = null; try { w = new Worker(new URL('./sim_vida_worker.js?v=6', import.meta.url), { type: 'module' }); } catch (e) { w = null; }
   if (w) { w.onmessage = (ev) => { recibir(ev.data); if (ev.data.tipo === 'fin') w.terminate(); };
     w.onerror = () => { w.terminate(); porBloques(id, escs, congelado, recibir); }; w.postMessage({ id, escs, R: R_CORRIDAS, años: AÑOS, PAR: congelado }); }
   else porBloques(id, escs, congelado, recibir);
@@ -100,13 +100,16 @@ function progreso(h, t) { el.querySelector('[data-bar]').style.width = (h / t * 
 function pintar() {
   el.querySelectorAll('[data-tr]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tr === trayEsc)));
   el.querySelectorAll('[data-rr]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rr === foco)));
-  el.querySelector('[data-cards]').innerHTML = ['C', 'B', 'A'].map(k => { const r = RES && RES[k] && RES[k].resumen; if (!r) return `<div class="card" style="--c:${COL[k]}"><h5>${k} · ${NOM[k]}</h5><p>calculando…</p></div>`;
-    const top = Object.entries(r.causas).sort((a, b) => b[1] - a[1]), c = RES[k].corridas, rec = c.filter(x => x.rec != null), recM = rec.length ? rec.reduce((s, x) => s + x.rec, 0) / rec.length : null;
-    return `<div class="card" style="--c:${COL[k]}"><h5>${k} · ${NOM[k]}</h5><div class="big">${fmt(r.sup[AÑOS])} %<small>sigue funcionando a los ${AÑOS} años</small></div>
-      <p>Colapsan <b>${r.colapsan} de ${r.R}</b>${r.colapsan ? ` · entre el año <b>${fmt(r.min, 1)}</b> y el <b>${fmt(r.max, 1)}</b>` : ''}</p>
-      <p>Mediana de años hasta el colapso: <b>${isFinite(r.mediana) ? fmt(r.mediana, 1) : `más de ${AÑOS}`}</b></p>
-      <p>Causa más frecuente: <b>${top.length ? top.slice(0, 2).map(([q, n]) => `${NREG[q]} (${n})`).join(', ') : 'ninguna'}</b></p>
-      ${recM != null && k !== 'A' ? `<p>Tras una perturbación vuelve a su nivel en <b>${fmt(recM)} semanas</b> en promedio</p>` : ''}</div>`; }).join('');
+  el.querySelector('[data-cards]').innerHTML = ['A', 'B', 'C'].map(k => { const r = RES && RES[k] && RES[k].resumen; if (!r) return `<div class="card" style="--c:${COL[k]}"><h5>${k} · ${NOM[k]}</h5><p>calculando…</p></div>`;
+    const c = RES[k].corridas, rec = c.filter(x => x.rec != null), recM = rec.length ? rec.reduce((s, x) => s + x.rec, 0) / rec.length : null;
+    return `<div class="card" style="--c:${COL[k]}"><h5>${k} · ${NOM[k]}${k === 'C' ? ' <small style="font-weight:400;color:#949da3">(después de A vs B)</small>' : ''}</h5><div class="big">${fmt(r.colapsan / r.R * 100)} %<small>de las corridas cierra en ${AÑOS} años</small></div>
+      <p>Por regla: ${REGLAS.map(Q => `${Q.n.toLowerCase()} <b>${fmt(r.porRegla[Q.k])} %</b>`).join(' · ')}</p>
+      <p>Semana mediana de cierre: <b>${r.semCierre != null ? `${fmt(r.semCierre)} (año ${fmt(Math.floor((r.semCierre - 1) / AÑO) + 1)})` : 'ninguna cierra'}</b>${r.colapsan ? ` · rango año ${fmt(r.min + 1 / AÑO, 1)} a ${fmt(r.max + 1 / AÑO, 1)}` : ''}</p>
+      ${r.resM != null ? `<p>Solicitudes: se resuelven en <b>${fmt(r.resM, 1)} semanas</b> (media) · p90 <b>${fmt(r.resP, 1)}</b> (mediana de las corridas)</p>` : '<p>Sin sistema de solicitudes (cada quien resuelve solo).</p>'}
+      ${r.cora && k !== 'A' ? `<p>Corabastos: <b>${fmt(r.cora.desm)}</b> bodegas desmontadas junto a La Vaca · borde recuperado <b>${fmt(r.cora.borde)} m²</b> (mediana a los ${AÑOS} años)</p>` : ''}
+      ${recM != null ? `<p>Tras un cierre de vía, todas las zonas vuelven a 95 % en <b>${fmt(recM)} semanas</b> en promedio</p>` : ''}</div>`; }).join('');
+  { const d = RES && RES.C && RES.C.resumen && RES.C.resumen.merc, box = el.querySelector('[data-merc]');
+    box.innerHTML = d ? `<div class="runs">${MERCADOS.map((m, k) => ({ m, kg: d[k] })).sort((a, b) => b.kg - a.kg).map(x => `<button type="button" disabled style="--c:${COL.C};cursor:default"><b>${x.m.n}</b> · ${fmt(x.kg)} kg/sem de ${fmt(x.m.cap * 7)}</button>`).join('')}</div>` : '<p class="nota">calculando…</p>'; }
   graficaSup(); graficaTray(); runs();
 }
 function lienzo(k) { const c = el.querySelector(`canvas[data-c="${k}"]`), r = c.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); c.width = Math.max(1, r.width * dpr); c.height = Math.max(1, r.height * dpr);
@@ -115,7 +118,7 @@ const M = { l: 44, r: 92, t: 10, b: 24 };
 function ejes(g, W, H, yMax, yfmt, nY = 4) {
   g.font = '10.5px system-ui, sans-serif'; g.fillStyle = '#949da3'; g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 1;
   for (let i = 0; i <= nY; i++) { const v = yMax * i / nY, y = M.t + (H - M.t - M.b) * (1 - i / nY); g.beginPath(); g.moveTo(M.l, y + 0.5); g.lineTo(W - M.r, y + 0.5); g.stroke(); g.textAlign = 'right'; g.fillText(yfmt(v), M.l - 6, y + 3.5); }
-  g.textAlign = 'center'; for (let a = 0; a <= AÑOS; a += 20) g.fillText(a === 0 ? 'año 0' : String(a), M.l + (W - M.l - M.r) * a / AÑOS, H - 7);
+  g.textAlign = 'center'; for (let a = 0; a <= AÑOS; a += AÑOS > 40 ? 20 : 5) g.fillText(a === 0 ? 'año 0' : String(a), M.l + (W - M.l - M.r) * a / AÑOS, H - 7);
 }
 const X = (W, a) => M.l + (W - M.l - M.r) * a / AÑOS, Yv = (H, v, max) => M.t + (H - M.t - M.b) * (1 - v / max);
 function graficaSup() { const { g, W, H } = lienzo('sup'); ejes(g, W, H, 100, (v) => fmt(v) + ' %');
@@ -126,23 +129,22 @@ function graficaSup() { const { g, W, H } = lienzo('sup'); ejes(g, W, H, 100, (v
   etq.sort((a, b) => a[1] - b[1]); for (let i = 1; i < etq.length; i++) if (etq[i][1] - etq[i - 1][1] < 13) etq[i][1] = etq[i - 1][1] + 13;
   g.textAlign = 'left'; g.font = '600 11px system-ui, sans-serif'; etq.forEach(([k, y, v]) => { g.fillStyle = COL[k]; g.fillRect(W - M.r + 6, y - 4, 8, 2); g.fillStyle = '#e9ecee'; g.fillText(`${k} ${fmt(v)} %`, W - M.r + 18, y + 4); });
 }
-function graficaTray() { const { g, W, H } = lienzo('tray'), d = RES && RES[trayEsc]; let max = 600;
-  if (d) for (const c of d.corridas) for (const v of c.act) if (v > max) max = v; max = Math.ceil(max / 500) * 500;
-  ejes(g, W, H, max, (v) => fmt(v)); if (!d) return;
-  g.strokeStyle = '#ff8a80'; g.setLineDash([4, 4]); g.lineWidth = 1.2; g.beginPath(); g.moveTo(M.l, Yv(H, 500, max)); g.lineTo(W - M.r, Yv(H, 500, max)); g.stroke(); g.setLineDash([]);
+function graficaTray() { const { g, W, H } = lienzo('tray'), d = RES && RES[trayEsc], max = 100, v100 = (v) => Math.min(100, v * 100);
+  ejes(g, W, H, max, (v) => fmt(v) + ' %'); if (!d) return;
+  g.strokeStyle = '#ff8a80'; g.setLineDash([4, 4]); g.lineWidth = 1.2; g.beginPath(); g.moveTo(M.l, Yv(H, 80, max)); g.lineTo(W - M.r, Yv(H, 80, max)); g.stroke(); g.setLineDash([]);
   g.lineWidth = 1; g.strokeStyle = 'rgba(207,213,217,.22)';
-  for (const c of d.corridas) { g.beginPath(); c.act.forEach((v, a) => { const x = X(W, a + 1), y = Yv(H, v, max); a ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
-  g.strokeStyle = '#ff8a80'; g.lineWidth = 1.4; for (const c of d.corridas) if (c.colapso) { const a = c.colapso.año, i = Math.min(AÑOS - 1, Math.max(0, Math.floor(a))), x = X(W, a), y = Yv(H, c.act[i], max); g.beginPath(); g.moveTo(x - 3, y - 3); g.lineTo(x + 3, y + 3); g.moveTo(x + 3, y - 3); g.lineTo(x - 3, y + 3); g.stroke(); }
-  g.strokeStyle = COL[trayEsc]; g.lineWidth = 2.4; g.beginPath(); d.resumen.medAct.forEach((v, a) => { const x = X(W, a + 1), y = Yv(H, v, max); a ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
-  const ym = Yv(H, d.resumen.medAct[AÑOS - 1], max); g.fillStyle = '#e9ecee'; g.font = '600 11px system-ui, sans-serif'; g.textAlign = 'left'; g.fillText(`mediana ${fmt(d.resumen.medAct[AÑOS - 1])}`, W - M.r + 6, ym + 4);
-  g.fillStyle = '#ff8a80'; g.font = '10.5px system-ui, sans-serif'; g.fillText('umbral 500', W - M.r + 6, Yv(H, 500, max) + (Math.abs(Yv(H, 500, max) - ym) < 14 ? 16 : 4));
+  for (const c of d.corridas) { g.beginPath(); c.zmin.forEach((v, a) => { const x = X(W, a + 1), y = Yv(H, v100(v), max); a ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
+  g.strokeStyle = '#ff8a80'; g.lineWidth = 1.4; for (const c of d.corridas) if (c.colapso) { const a = c.colapso.año, i = Math.min(AÑOS - 1, Math.max(0, Math.floor(a))), x = X(W, a), y = Yv(H, v100(c.zmin[i]), max); g.beginPath(); g.moveTo(x - 3, y - 3); g.lineTo(x + 3, y + 3); g.moveTo(x + 3, y - 3); g.lineTo(x - 3, y + 3); g.stroke(); }
+  g.strokeStyle = COL[trayEsc]; g.lineWidth = 2.4; g.beginPath(); d.resumen.medZ.forEach((v, a) => { const x = X(W, a + 1), y = Yv(H, v100(v), max); a ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  const ym = Yv(H, v100(d.resumen.medZ[AÑOS - 1]), max); g.fillStyle = '#e9ecee'; g.font = '600 11px system-ui, sans-serif'; g.textAlign = 'left'; g.fillText(`mediana ${fmt(v100(d.resumen.medZ[AÑOS - 1]))} %`, W - M.r + 6, ym + 4);
+  g.fillStyle = '#ff8a80'; g.font = '10.5px system-ui, sans-serif'; g.fillText('umbral 80 %', W - M.r + 6, Yv(H, 80, max) + (Math.abs(Yv(H, 80, max) - ym) < 14 ? 16 : 4));
 }
 function hover(k) { const c = el.querySelector(`canvas[data-c="${k}"]`), tip = el.querySelector(`[data-tip="${k}"]`);
   const mover = (ev) => { if (!RES) return; const r = c.getBoundingClientRect(), x = ev.clientX - r.left, a = Math.round((x - M.l) / (r.width - M.l - M.r) * AÑOS); if (a < 0 || a > AÑOS) { tip.style.display = 'none'; return; }
     let h = `<b>Año ${a}</b>`;
-    if (k === 'sup') ['C', 'B', 'A'].forEach(q => { const s = RES[q] && RES[q].resumen; if (s) h += `<br><span style="color:${COL[q]}">■</span> ${q}: ${fmt(s.sup[a])} % funcionando`; });
-    else { const d = RES[trayEsc]; if (!d) return; const i = Math.max(0, a - 1), vs = d.corridas.map(c2 => c2.act[i]).sort((p, q) => p - q); h += `<br>mediana ${fmt(d.resumen.medAct[i])} hogares<br>rango ${fmt(vs[0])} – ${fmt(vs[vs.length - 1])}<br>${d.corridas.filter(c2 => !c2.colapso || c2.colapso.año > a).length} de ${d.corridas.length} funcionando`; }
+    if (k === 'sup') ['A', 'B', 'C'].forEach(q => { const s = RES[q] && RES[q].resumen; if (s) h += `<br><span style="color:${COL[q]}">■</span> ${q}: ${fmt(s.sup[a])} % funcionando`; });
+    else { const d = RES[trayEsc]; if (!d) return; const i = Math.max(0, a - 1), vs = d.corridas.map(c2 => c2.zmin[i]).sort((p, q) => p - q); h += `<br>mediana ${fmt(d.resumen.medZ[i] * 100)} %<br>rango ${fmt(vs[0] * 100)} – ${fmt(vs[vs.length - 1] * 100)} %<br>${d.corridas.filter(c2 => !c2.colapso || c2.colapso.año > a).length} de ${d.corridas.length} funcionando`; }
     tip.innerHTML = h; tip.style.display = 'block'; const tw = tip.offsetWidth; tip.style.left = Math.min(r.width - tw - 4, Math.max(4, x + 12)) + 'px'; tip.style.top = '8px'; };
   c.addEventListener('pointermove', mover); c.addEventListener('pointerdown', mover); c.addEventListener('pointerleave', () => { tip.style.display = 'none'; }); }
 function runs() { const d = RES && RES[foco], box = el.querySelector('[data-runs]'); if (!d) { box.innerHTML = '<p class="nota">calculando…</p>'; return; }
-  box.innerHTML = d.corridas.map(c => `<button type="button" data-seed="${c.seed}" data-e="${foco}" style="--c:${c.colapso ? '#ff8a80' : COL[foco]}"><b>Semilla ${c.seed}</b> · ${c.colapso ? `colapsó en el año ${fmt(c.colapso.año, 1)} (${c.colapso.causas.map(q => NREG[q]).join(', ')})` : `sigue a los ${AÑOS} años`}</button>`).join(''); }
+  box.innerHTML = d.corridas.map(c => `<button type="button" data-seed="${c.seed}" data-e="${foco}" style="--c:${c.colapso ? '#ff8a80' : COL[foco]}"><b>Semilla ${c.seed}</b> · ${c.colapso ? `cerró en la semana ${fmt(c.colapso.semana)} (${c.colapso.causas.map(q => NREG[q]).join(', ')})` : `sigue a los ${AÑOS} años`}</button>`).join(''); }

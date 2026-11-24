@@ -140,6 +140,22 @@ function modeloPatoVuelo() {
 
 /* ------------------------------------------------------------------ geometría de los cuerpos de agua ------------------------------------------------------------------ */
 const dentro = (x, z, v) => { let ins = false; for (let i = 0, j = v.length - 1; i < v.length; j = i++) { if (((v[i][1] > z) !== (v[j][1] > z)) && (x < (v[j][0] - v[i][0]) * (z - v[i][1]) / (v[j][1] - v[i][1]) + v[i][0])) ins = !ins; } return ins; };
+/* dentroC(x, z, c): lo mismo que dentro(x, z, c.pts), exacto, con un índice de franjas en z (se calcula una vez por cuerpo de agua).
+   Un lado (i, j) solo cambia la paridad si (zi > z) !== (zj > z), es decir min(zi, zj) <= z < max(zi, zj): basta con evaluar, con la
+   MISMA expresión, los lados cuyo rango en z toca la franja de z (la paridad no depende del orden). Fuera de [zmin, zmax) no hay ninguno. */
+function indicePoli(v) {
+  const n = v.length; let z0 = Infinity, z1 = -Infinity; for (const p of v) { if (p[1] < z0) z0 = p[1]; if (p[1] > z1) z1 = p[1]; }
+  const NB = Math.max(1, Math.min(1024, Math.ceil(n / 3))), h = (z1 - z0) / NB || 1, B = Array.from({ length: NB }, () => []);
+  const fr = (t) => Math.max(0, Math.min(NB - 1, Math.floor((t - z0) / h)));
+  for (let i = 0, j = n - 1; i < n; j = i++) { const a = Math.min(v[i][1], v[j][1]), b = Math.max(v[i][1], v[j][1]); if (a === b) continue; for (let k = fr(a), k1 = fr(b); k <= k1; k++) B[k].push(i, j); }
+  return { z0, z1, fr, B: B.map(L => Int32Array.from(L)) };
+}
+function dentroC(x, z, c) {
+  const I = c._ix || (c._ix = indicePoli(c.pts)), v = c.pts; if (!(z >= I.z0 && z <= I.z1)) return false;
+  const L = I.B[I.fr(z)]; let ins = false;
+  for (let m = 0; m < L.length; m += 2) { const i = L[m], j = L[m + 1]; if (((v[i][1] > z) !== (v[j][1] > z)) && (x < (v[j][0] - v[i][0]) * (z - v[i][1]) / (v[j][1] - v[i][1]) + v[i][0])) ins = !ins; }
+  return ins;
+}
 function distBorde(x, z, v) { let m = 1e9; for (let i = 0; i < v.length; i++) { const a = v[i], b = v[(i + 1) % v.length], dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz || 1e-9, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / l2)); const q = Math.hypot(x - (a[0] + t * dx), z - (a[1] + t * dz)); if (q < m) m = q; } return m; }
 
 export function crearAves(T3, W, lw) {
@@ -159,7 +175,7 @@ export function crearAves(T3, W, lw) {
   const punto = (c, margen, maxMargen) => {
     for (let t = 0; t < 80; t++) {
       const x = c.x0 + R() * (c.x1 - c.x0), z = c.z0 + R() * (c.z1 - c.z0);
-      if (!dentro(x, z, c.pts)) continue;
+      if (!dentroC(x, z, c)) continue;
       const d = distBorde(x, z, c.pts); if (d >= margen && d <= (maxMargen || 1e9)) return [x, z];
     }
     return null;
@@ -168,7 +184,7 @@ export function crearAves(T3, W, lw) {
   const nido = (c) => {
     for (let t = 0; t < 60; t++) {
       const x = c.x0 - 200 + R() * (c.x1 - c.x0 + 400), z = c.z0 - 200 + R() * (c.z1 - c.z0 + 400);
-      if (dentro(x, z, c.pts)) continue;
+      if (dentroC(x, z, c)) continue;
       const d = distBorde(x, z, c.pts); if (d >= 40 && d <= 180) return [x, z];
     }
     return [c.cx + 300, c.cz];
@@ -189,7 +205,11 @@ export function crearAves(T3, W, lw) {
   ];
   const T = {}; TIPOS.forEach((t, i) => { T[t.id] = i; });
   const aves = [];
-  const agregar = (tipo, c, x, z, extra) => aves.push({ tipo, c, x, z, h: R() * 6.28, th: R() * 6.28, tt: R() * 4, v: 0, pausa: R() * 3, ph: R() * 6.28, esc: TIPOS[tipo].esc * (0.92 + R() * 0.16), dab: 0, sigDab: 8 + R() * 30, k: 0, pez: false, ...extra });
+  // todas las aves con los mismos campos en el mismo orden (los que no usa quedan undefined = igual que no tenerlos para todo lo que los
+  // lee): el paso de la lógica no paga accesos megamórficos. Mismo orden de llamadas a R() que antes.
+  const agregar = (tipo, c, x, z, extra) => aves.push(Object.assign({ tipo, c, x, z, h: R() * 6.28, th: R() * 6.28, tt: R() * 4, v: 0, pausa: R() * 3, ph: R() * 6.28, esc: TIPOS[tipo].esc * (0.92 + R() * 0.16), dab: 0, sigDab: 8 + R() * 30, k: 0, pez: false,
+    vel: undefined, sigPesca: undefined, fase: undefined, tf: undefined, vuelo: undefined, pesca: undefined, est: undefined, t: undefined, ca: undefined, cr: undefined, alt: undefined, dir: undefined,
+    fr: undefined, yv: undefined, dx: undefined, dz: undefined, pit: undefined, rol: undefined, px: x, pz: z /* = posición: el dibujo interpola entre px y x (iguales) */, py: undefined, n3: undefined, fuera: undefined }, extra));
   let totalNad = 0;
   const nadadores = (c, id, n, margen, vmin, vr) => { for (let i = 0; i < n; i++) { const p = punto(c, margen); if (p) { agregar(T[id], c, p[0], p[1], { vel: vmin + R() * vr }); totalNad++; } } };
   const zancudas = (c, id, n, mx) => { for (let i = 0; i < n; i++) { const p = punto(c, 0.8, mx); if (p) agregar(T[id], c, p[0], p[1], { vel: 0.1 + R() * 0.1, sigPesca: 4 + R() * 25, fase: 0, tf: 0 }); } };
@@ -322,49 +342,63 @@ export function crearAves(T3, W, lw) {
   };
   const api = { grp, lista: aves, total: aves.length, nadando: totalNad, cuerpos: cuerpos.length, burro: cuerpos.find(c => c.burro) || null, anillo, punto, dentro, distBorde,
     porTipo: TIPOS.map((t, i) => t.id + ':' + aves.filter(b => b.tipo === i).length).join(' ') };
-  api.update = (dt, now) => {
+  /* TIEMPO (data3d/reloj.js): step(dt, t) es la lógica (posición, rumbo, estados, pesca) con paso fijo y azar determinista;
+     dibujar(alfa, tAnim, dtAnim) solo lee ese estado: interpola la posición, y el cabeceo, el balanceo en el agua y las ondas
+     salen del tiempo de animación del reloj (se detienen en pausa). */
+  api.step = (dt, tSeg) => {
+    const now = tSeg; // la garza pescadora sube y baja con el tiempo simulado
+    for (const b of aves) {
+      const t = TIPOS[b.tipo];
+      b.px = b.x; b.pz = b.z; b.py = b.yv; // estado al empezar el paso (el dibujo interpola)
+      if (b.pesca) { volarPescadora(b, dt, now); continue; }
+      if (b.vuelo) { // órbita elíptica sobre el humedal, con alabeo hacia el centro
+        b.ca += b.dir * (b.vel / b.cr) * dt;
+        b.x = b.c.cx + Math.cos(b.ca) * b.cr; b.z = b.c.cz + Math.sin(b.ca) * b.cr * 0.6;
+        b.h = Math.atan2(-Math.sin(b.ca) * b.dir, Math.cos(b.ca) * 0.6 * b.dir); continue;
+      }
+      const pescando = b.fase > 0;
+      b.pausa -= dt;
+      if (b.pausa <= 0 && b.dab <= 0 && !pescando) {
+        b.tt -= dt; if (b.tt <= 0) { b.th = b.h + (R() - 0.5) * 1.8; b.tt = 2 + R() * 6; if (R() < (t.mov === 'camina' ? 0.6 : 0.2)) b.pausa = 1.5 + R() * (t.mov === 'camina' ? 9 : 4); }
+        b.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, giro(b.h, b.th)));
+        const nx = b.x + Math.sin(b.h) * b.vel * dt, nz = b.z + Math.cos(b.h) * b.vel * dt;
+        if ((++b.n3 || (b.n3 = 1)) % 3 === 0 || b.fuera) { b.fuera = !dentroC(nx, nz, b.c); }
+        if (b.fuera) { b.th = b.h + Math.PI * (0.7 + R() * 0.6); b.h += 0.15; b.fuera = false; } else { b.x = nx; b.z = nz; }
+      }
+      if (t.mov === 'nada') {
+        if (b.tipo !== T.focha && b.tipo !== T.tingua) { // los patos meten la cabeza al agua (pico y cola arriba) de vez en cuando
+          b.sigDab -= dt; if (b.sigDab <= 0 && b.dab <= 0) { b.dab = 2.2; b.sigDab = 12 + R() * 35; }
+          else if (b.dab > 0) b.dab = Math.max(0, b.dab - dt);
+        }
+      } else { // garzas de la orilla: se quedan quietas al acecho, dan la estocada y se tragan el pez
+        b.sigPesca -= dt;
+        if (b.sigPesca <= 0 && !pescando) { b.fase = 1; b.tf = 0; b.sigPesca = 14 + R() * 30; }
+        if (pescando) {
+          b.tf += dt; const tf = b.tf;
+          if (tf > 1.35 && !b.pez && tf < 2.0) { b.pez = true; anillo(b.x + Math.sin(b.h) * 0.4, b.z + Math.cos(b.h) * 0.4); }
+          if (tf > 3.4) { b.fase = 0; b.pez = false; }
+          else if (tf > 3.0) b.pez = false; // se lo traga
+        }
+      }
+    }
+  };
+  api.hash = () => { let h = 0x811c9dc5; for (const b of aves) { h = Math.imul((h ^ (Math.round(b.x * 1000) | 0)) >>> 0, 0x01000193) >>> 0; h = Math.imul((h ^ (Math.round(b.z * 1000) | 0)) >>> 0, 0x01000193) >>> 0; } return h; };
+  api.dibujar = (alfa = 1, now = 0, dtAnim = 0) => {
     nPez = 0;
     for (const b of aves) {
       const t = TIPOS[b.tipo];
+      const li = b.px !== undefined && Math.abs(b.x - b.px) + Math.abs(b.z - b.pz) < 60, x = li ? b.px + (b.x - b.px) * alfa : b.x, z = li ? b.pz + (b.z - b.pz) * alfa : b.z;
       let y = b.c.y, pitch = 0, roll = 0;
-      if (b.pesca) {
-        volarPescadora(b, dt, now); y = b.yv; pitch = b.pit; roll = b.rol;
-      } else if (b.vuelo) { // órbita elíptica sobre el humedal, con alabeo hacia el centro
-        b.ca += b.dir * (b.vel / b.cr) * dt;
-        b.x = b.c.cx + Math.cos(b.ca) * b.cr; b.z = b.c.cz + Math.sin(b.ca) * b.cr * 0.6;
-        b.h = Math.atan2(-Math.sin(b.ca) * b.dir, Math.cos(b.ca) * 0.6 * b.dir);
-        y = b.alt + Math.sin(now * 0.4 + b.ph) * 2.5; roll = -b.dir * 0.3; pitch = Math.sin(now * (b.fr || 3) + b.ph) * 0.05;
-      } else {
-        const pescando = b.fase > 0;
-        b.pausa -= dt;
-        if (b.pausa <= 0 && b.dab <= 0 && !pescando) {
-          b.tt -= dt; if (b.tt <= 0) { b.th = b.h + (R() - 0.5) * 1.8; b.tt = 2 + R() * 6; if (R() < (t.mov === 'camina' ? 0.6 : 0.2)) b.pausa = 1.5 + R() * (t.mov === 'camina' ? 9 : 4); }
-          b.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, giro(b.h, b.th)));
-          const nx = b.x + Math.sin(b.h) * b.vel * dt, nz = b.z + Math.cos(b.h) * b.vel * dt;
-          if ((++b.n3 || (b.n3 = 1)) % 3 === 0 || b.fuera) { b.fuera = !dentro(nx, nz, b.c.pts); }
-          if (b.fuera) { b.th = b.h + Math.PI * (0.7 + R() * 0.6); b.h += 0.15; b.fuera = false; } else { b.x = nx; b.z = nz; }
-        }
-        if (t.mov === 'nada') {
-          y = b.c.y + 0.012 + Math.sin(now * 1.7 + b.ph) * 0.008; roll = Math.sin(now * 1.3 + b.ph) * 0.03;
-          if (b.tipo !== T.focha && b.tipo !== T.tingua) { // los patos meten la cabeza al agua (pico y cola arriba) de vez en cuando
-            b.sigDab -= dt; if (b.sigDab <= 0 && b.dab <= 0) { b.dab = 2.2; b.sigDab = 12 + R() * 35; }
-            if (b.dab > 0) { b.dab -= dt; pitch = 0.9 * Math.sin(Math.min(1, (2.2 - b.dab) / 0.5) * Math.PI / 2) * Math.min(1, b.dab / 0.5); }
-          }
-        } else {
-          y = b.c.y;
-          // garzas de la orilla: se quedan quietas al acecho, dan la estocada y se tragan el pez
-          b.sigPesca -= dt;
-          if (b.sigPesca <= 0 && !pescando) { b.fase = 1; b.tf = 0; b.sigPesca = 14 + R() * 30; }
-          if (pescando) {
-            b.tf += dt; const tf = b.tf;
-            pitch = tf < 1.0 ? 0.12 * (tf / 1.0) : tf < 1.5 ? 0.12 + 0.75 * Math.sin((tf - 1.0) / 0.5 * Math.PI / 2) : tf < 2.0 ? 0.87 - 0.75 * ((tf - 1.5) / 0.5) : 0.12 * (1 - (tf - 2.0) / 1.0);
-            if (tf > 1.35 && !b.pez && tf < 2.0) { b.pez = true; anillo(b.x + Math.sin(b.h) * 0.4, b.z + Math.cos(b.h) * 0.4); }
-            if (tf > 3.4) { b.fase = 0; b.pez = false; }
-            else if (tf > 3.0) b.pez = false; // se lo traga
-          }
-        }
+      if (b.pesca) { y = b.py != null ? b.py + (b.yv - b.py) * alfa : b.yv; pitch = b.est === 'orbita' ? Math.sin(now * (b.fr || 3) + b.ph) * 0.05 : b.est === 'aprox' ? 0.12 : b.est === 'pesca' ? 0.35 : 0; roll = b.rol; }
+      else if (b.vuelo) { y = b.alt + Math.sin(now * 0.4 + b.ph) * 2.5; roll = -b.dir * 0.3; pitch = Math.sin(now * (b.fr || 3) + b.ph) * 0.05; }
+      else if (t.mov === 'nada') {
+        y = b.c.y + 0.012 + Math.sin(now * 1.7 + b.ph) * 0.008; roll = Math.sin(now * 1.3 + b.ph) * 0.03;
+        if (b.dab > 0) { const dab = Math.max(0, b.dab - alfa); pitch = 0.9 * Math.sin(Math.min(1, (2.2 - dab) / 0.5) * Math.PI / 2) * Math.min(1, dab / 0.5); }
+      } else if (b.fase > 0) { // estocada de la garza: el cabeceo sale del tiempo de pesca (interpolado dentro del paso)
+        const tf = b.tf + alfa;
+        pitch = tf < 1.0 ? 0.12 * (tf / 1.0) : tf < 1.5 ? 0.12 + 0.75 * Math.sin((tf - 1.0) / 0.5 * Math.PI / 2) : tf < 2.0 ? 0.87 - 0.75 * ((tf - 1.5) / 0.5) : Math.max(0, 0.12 * (1 - (tf - 2.0) / 1.0));
       }
-      d.position.set(b.x, y, b.z); d.rotation.set(pitch, b.h, roll); d.scale.setScalar(b.esc); d.updateMatrix();
+      d.position.set(x, y, z); d.rotation.set(pitch, b.h, roll); d.scale.setScalar(b.esc); d.updateMatrix();
       mallas[b.tipo].setMatrixAt(b.k, d.matrix);
       if (b.pez) { // el pez cuelga del pico
         if (b.vuelo) ponerPez(d.matrix, 0, -0.01, 0.5); else ponerPez(d.matrix, 0, 1.0, 0.47);
@@ -372,12 +406,14 @@ export function crearAves(T3, W, lw) {
     }
     mallas.forEach(m => { m.instanceMatrix.needsUpdate = true; });
     peces.count = nPez; peces.instanceMatrix.needsUpdate = true;
-    for (const m of anillos) {
+    for (const m of anillos) { // ondas en el agua: decorativas, con el tiempo de animación del reloj
       if (!m.visible) continue;
-      const u = m.userData; u.t += dt;
+      const u = m.userData; u.t += dtAnim;
       if (u.t > 1.6) { m.visible = false; continue; }
       const k = u.t / 1.6; m.scale.setScalar(0.6 + k * 5); m.material.opacity = 0.75 * (1 - k) * (1 - k);
     }
   };
+  // compatibilidad (modo pájaro): un paso y un dibujo
+  api.update = (dt, now) => { api.step(dt, now); api.dibujar(1, now, dt); };
   return api;
 }

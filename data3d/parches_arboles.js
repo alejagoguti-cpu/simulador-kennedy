@@ -19,6 +19,7 @@ export const ESPECIES = {
   raque: { n: 'Raque', sci: 'Vallea stipularis', fl: ['f129'], alto: 3.2, hoja: '#5f8c4a', flor: '#d0517a', modelo: 'arbolpeq', fauna: 1, estrato: 2 },
   mortino: { n: 'Mortiño', sci: 'Hesperomeles goudotiana', fl: ['f213'], alto: 2.4, hoja: '#557f45', flor: '#f6eef4', modelo: 'arbolpeq', fauna: 1, estrato: 2 }
 };
+const TONO_LEJOS = 0.8; // brillo de la foto lejana: iguala al árbol escaneado iluminado por el sol de la escena
 const ESTRATO = [['caucho', 'caucho', 'aliso'], ['sauco', 'sauco', 'chicala', 'chicala', 'arrayan'], ['chilco', 'chilco', 'tibar', 'raque', 'mortino']];
 // fauna que llega a cada parche (las aves que comen frutos, néctar e insectos de estos árboles; abejas a las flores)
 export const FAUNA_PARCHE = { copeton: 2, mirla: 2, colibri: 2, torcaza: 1, cucarachero: 1, chamon: 0.5, abeja: 3, lagartija: 0.5, caracol: 0.5 };
@@ -63,7 +64,7 @@ export function calcularParches(HB, PQ, lw, movil = false) {
 
 export async function crearParches3D({ T3, P }) {
   const THREE = T3.THREE, MOV = innerWidth < 760 || matchMedia('(pointer:coarse)').matches;
-  const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/libs/meshopt_decoder.module.js')]);
+  const [{ GLTFLoader }, { MeshoptDecoder }, { mergeGeometries }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/libs/meshopt_decoder.module.js'), import('three/addons/utils/BufferGeometryUtils.js')]);
   const grupo = new THREE.Group(); grupo.name = 'parches_arboles'; grupo.visible = false; T3.scene.add(grupo);
   const Y = (T3.sueloY != null ? T3.sueloY : 0.35);
   const ld = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), L = (n) => ld.loadAsync('data3d/models/' + n + '.glb').catch(() => null);
@@ -76,21 +77,62 @@ export async function crearParches3D({ T3, P }) {
   /* DENSIDAD (slider «Densidad de árboles» de SIM-03): cada árbol tiene una clave fija k en [0, 1); las instancias se ordenan por k y se dibujan
      solo las que tienen k < densidad (árbol, sus flores y su pradera van juntos) */
   const kA = (t) => { const h = Math.sin(t.x * 12.9898 + t.z * 78.233) * 43758.5453; return h - Math.floor(h); };
-  const todos = P.flatMap(p => p.arboles).map(t => (t.k = kA(t), t)).sort((a, b) => a.k - b.k), O = new THREE.Object3D(), FL = [], DENS = [];
+  const todos = P.flatMap(p => p.arboles).map(t => (t.k = kA(t), t)).sort((a, b) => a.k - b.k), O = new THREE.Object3D(), DENS = [];
+  /* NIVELES DE DETALLE (fluidez): los ~2.000 árboles escaneados (3 a 10 mil triángulos cada uno) ya no se dibujan todos en cada cuadro.
+     Cerca de la cámara (< CERCA m) va el modelo escaneado de siempre (con sombra y flores); más lejos, una «foto» del mismo árbol de la misma
+     especie (cruz de 2 planos + lámina vista desde arriba: 6 triángulos), tomada al cargar con el mismo material y tinte. */
+  const CERCA = MOV ? 180 : 300, ESP = [], C = new THREE.Color();
+  const foto = (partes, ancho) => { // fotos del árbol normalizado (1 m de alto): de lado y desde arriba
+    const lado = Math.max(1, ancho) * 1.08, s = new THREE.Scene(), r = T3.renderer, c0 = new THREE.Color(); r.getClearColor(c0); const a0 = r.getClearAlpha(), rt0 = r.getRenderTarget();
+    s.add(new THREE.HemisphereLight(0xdfeaff, 0x6a7a55, 1.4)); const sol = new THREE.DirectionalLight(0xfff1d6, 2.6); sol.position.set(30, 60, 40); s.add(sol);
+    partes.forEach(p => s.add(new THREE.Mesh(p.geo, p.mat)));
+    const toma = (cam) => { const rt = new THREE.WebGLRenderTarget(256, 256, { samples: 4 }); r.setRenderTarget(rt); r.setClearColor(0x000000, 0); r.clear(); r.render(s, cam); return rt.texture; };
+    const cL = new THREE.OrthographicCamera(-lado / 2, lado / 2, lado / 2, -lado / 2, 0.01, 50); cL.position.set(0, lado / 2, 10); cL.lookAt(0, lado / 2, 0);
+    const cT = new THREE.OrthographicCamera(-lado / 2, lado / 2, lado / 2, -lado / 2, 0.01, 50); cT.position.set(0, 10, 0); cT.up.set(0, 0, -1); cT.lookAt(0, 0, 0);
+    const tex = toma(cL), texTop = toma(cT); r.setRenderTarget(rt0); r.setClearColor(c0, a0); return { tex, texTop, lado }; };
   for (const [sp, E] of Object.entries(ESPECIES)) {
-    const lista = todos.filter(t => t.sp === sp); if (!lista.length || !NORM[E.modelo]) continue; const N = NORM[E.modelo];
+    const lista = todos.filter(t => t.sp === sp); if (!lista.length || !NORM[E.modelo]) continue; const N = NORM[E.modelo], partes = [], cerca = [];
     for (const pt of N.partes) { const mat = pt.mat.clone(); mat.side = THREE.DoubleSide; if (mat.transparent) { mat.transparent = false; mat.alphaTest = 0.45; } mat.metalness = 0; mat.roughness = 1; mat.envMapIntensity = 0;
         if (pt.hoja) { /* la textura escaneada manda; solo un tinte suave hacia el verde de cada especie (antes el color multiplicaba la textura y las copas salían negras) */
           const c = new THREE.Color(E.hoja), mx = Math.max(c.r, c.g, c.b) || 1; mat.color = new THREE.Color(1, 1, 1).lerp(new THREE.Color(c.r / mx, c.g / mx, c.b / mx), 0.3).multiplyScalar(1.12); }
         if (mat.map) { mat.emissiveMap = mat.map; mat.emissive = new THREE.Color(1, 1, 1); mat.emissiveIntensity = pt.hoja ? 0.22 : 0.18; } /* las caras a la sombra no se ven negras */
-      const im = new THREE.InstancedMesh(pt.geo, mat, lista.length); im.castShadow = !MOV; im.receiveShadow = false;
-      lista.forEach((t, i) => { O.position.set(t.x, Y, t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h); O.updateMatrix(); im.setMatrixAt(i, O.matrix); }); grupo.add(im); DENS.push([im, lista.map(t => t.k)]); }
-    if (E.flor) lista.forEach(t => { const r = t.h * N.ancho * 0.3; for (let k = 0; k < (MOV ? 10 : 22); k++) { const a = k * 2.399 + t.rot, rr = r * (0.4 + 0.6 * ((k * 37) % 10) / 10); FL.push([t.x + Math.cos(a) * rr, Y + t.h * (0.55 + 0.4 * ((k * 53) % 10) / 10), t.z + Math.sin(a) * rr, E.flor, t.k]); } });
+      partes.push({ geo: pt.geo, mat });
+      const im = new THREE.InstancedMesh(pt.geo, mat, lista.length); im.castShadow = !MOV; im.receiveShadow = false; im.count = 0; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(im); cerca.push(im); }
+    // flores: racimos de color sobre la copa (amarillo del chicalá, crema del sauco y del chilco, rojo del tíbar, rosa del raque); solo en los árboles cercanos
+    if (E.flor) lista.forEach(t => { const r = t.h * N.ancho * 0.3; t.fl = []; for (let k = 0; k < (MOV ? 10 : 22); k++) { const a = k * 2.399 + t.rot, rr = r * (0.4 + 0.6 * ((k * 37) % 10) / 10); t.fl.push([t.x + Math.cos(a) * rr, Y + t.h * (0.55 + 0.4 * ((k * 53) % 10) / 10), t.z + Math.sin(a) * rr]); } });
+    // lejos: la foto del mismo árbol (cruz de 2 planos de lado + lámina horizontal con la foto desde arriba), sin sombra
+    const F = foto(partes, N.ancho), L = F.lado;
+    const gCruz = mergeGeometries([0, Math.PI / 2].map(a => new THREE.PlaneGeometry(L, L).translate(0, L / 2, 0).rotateY(a)).concat([new THREE.PlaneGeometry(L, L).rotateX(-Math.PI / 2).translate(0, 0.62, 0)]).map(g => { g.deleteAttribute('normal'); return g; }));
+    { const n = gCruz.attributes.position.count, top = new Float32Array(n); for (let i = 8; i < n; i++) top[i] = 1; gCruz.setAttribute('aTop', new THREE.BufferAttribute(top, 1)); }
+    const mLej = new THREE.MeshBasicMaterial({ map: F.tex, alphaTest: 0.42, side: THREE.DoubleSide, color: new THREE.Color(TONO_LEJOS, TONO_LEJOS, TONO_LEJOS) });
+    mLej.onBeforeCompile = (sh) => { sh.uniforms.mapTop = { value: F.texTop };
+      sh.vertexShader = 'attribute float aTop;\nvarying float vTop;\n' + sh.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\nvTop = aTop;');
+      sh.fragmentShader = 'uniform sampler2D mapTop;\nvarying float vTop;\n' + sh.fragmentShader.replace('#include <map_fragment>', 'vec4 sampledDiffuseColor = vTop > 0.5 ? texture2D( mapTop, vMapUv ) : texture2D( map, vMapUv );\ndiffuseColor *= sampledDiffuseColor;'); };
+    mLej.customProgramCacheKey = () => 'parcheLejos';
+    const lejos = new THREE.InstancedMesh(gCruz, mLej, lista.length); lejos.castShadow = false; lejos.receiveShadow = false; lejos.count = 0; lejos.frustumCulled = false; lejos.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(lejos);
+    ESP.push({ E, lista, cerca, lejos });
   }
-  // flores: racimos de color sobre la copa (amarillo del chicalá, crema del sauco y del chilco, rojo del tíbar, rosa del raque)
-  FL.sort((a, b) => a[4] - b[4]);
-  if (FL.length) { const im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: '#3a3a3a', toneMapped: true }), FL.length), C = new THREE.Color();
-    FL.forEach((f, i) => { O.position.set(f[0], f[1], f[2]); O.rotation.set(0, 0, 0); O.scale.setScalar(1); O.updateMatrix(); im.setMatrixAt(i, O.matrix); im.setColorAt(i, C.set(f[3])); }); grupo.add(im); DENS.push([im, FL.map(f => f[4])]); }
+  const nFl = todos.reduce((a, t) => a + (t.fl ? t.fl.length : 0), 0);
+  const flores = nFl ? new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: '#3a3a3a', toneMapped: true }), nFl) : null;
+  if (flores) { flores.count = 0; flores.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(flores); }
+  // reparto cerca / lejos: se rehace al moverse la cámara unos metros (o al cambiar la densidad); el resto de los cuadros no cuesta nada
+  let EDAD = null; // fn(k) -> factor de altura 0..1 (null = todos adultos, como antes)
+  let dens = 1; // última densidad pedida por el slider (la leen los indicadores en 3D: solo cuentan los árboles con k < dens)
+  const ult = { x: 1e9, y: 1e9, z: 1e9, d: -1 };
+  const repartir = (forzar) => {
+    const cp = T3.camera.position, gy = grupo.position.y;
+    if (!forzar && Math.abs(cp.x - ult.x) + Math.abs(cp.y - ult.y) + Math.abs(cp.z - ult.z) < (T3.orbit ? Math.max(8, cp.distanceTo(T3.orbit.target) * 0.02) : 8) && ult.d === dens) return;
+    ult.x = cp.x; ult.y = cp.y; ult.z = cp.z; ult.d = dens; let nf = 0; const R2 = CERCA * CERCA;
+    for (const S of ESP) { let nc = 0, nl = 0;
+      for (const t of S.lista) { if (t.k >= dens) continue; const fe = EDAD ? EDAD(t.k) : 1; if (fe <= 0) continue; /* edad(fn): data3d/cambio_50.js escala cada árbol por su edad (0 = aún no sembrado) */ O.position.set(t.x, Y, t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h * fe); O.updateMatrix();
+        const dx = t.x - cp.x, dy = Y + gy + t.h * 0.5 - cp.y, dz = t.z - cp.z;
+        if (dx * dx + dy * dy + dz * dz < R2) { for (const im of S.cerca) im.setMatrixAt(nc, O.matrix); nc++;
+          if (flores && t.fl) { C.set(S.E.flor); for (const f of t.fl) { O.position.set(f[0], f[1], f[2]); O.rotation.set(0, 0, 0); O.scale.setScalar(1); O.updateMatrix(); flores.setMatrixAt(nf, O.matrix); flores.setColorAt(nf, C); nf++; } } }
+        else S.lejos.setMatrixAt(nl++, O.matrix); }
+      for (const im of S.cerca) { im.count = nc; im.instanceMatrix.needsUpdate = true; if (nc) im.computeBoundingSphere(); }
+      S.lejos.count = nl; S.lejos.instanceMatrix.needsUpdate = true; }
+    if (flores) { flores.count = nf; flores.instanceMatrix.needsUpdate = true; if (flores.instanceColor) flores.instanceColor.needsUpdate = true; if (nf) flores.computeBoundingSphere(); }
+  };
   // pradera del parche: una mancha verde clara bajo cada árbol; juntas dibujan la forma del parche sobre el suelo (se lee desde arriba)
   { const im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#7cc35a', transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 }), todos.length);
     todos.forEach((t, i) => { const r = ESPECIES[t.sp].estrato === 0 ? 6.5 : ESPECIES[t.sp].estrato === 1 ? 5 : 3.6; O.position.set(t.x, Y + 0.18, t.z); O.rotation.set(0, 0, 0); O.scale.set(r, 1, r); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
@@ -114,9 +156,8 @@ export async function crearParches3D({ T3, P }) {
     for (const p of P.slice(0, 40)) { rc.set(P0.set(p.c[0], Y + 150, p.c[1]), ab); const hit = rc.intersectObject(tl.group, true)[0]; if (hit && Math.abs(hit.point.y - Y) < 30) ys.push(hit.point.y - Y); }
     if (ys.length > 8) { ys.sort((a, b) => a - b); grupo.position.y = ys[Math.floor(ys.length * 0.3)]; hecho = true; } };
   setInterval(apoyar, 2000);
-  const cuadro = () => { requestAnimationFrame(cuadro); if (!grupo.visible) return; const y = T3.camera.position.y; UA.uA.value = Math.max(0, Math.min(1, (y - 220) / 300)); };
+  const cuadro = () => { requestAnimationFrame(cuadro); if (!grupo.visible) return; repartir(false); const y = T3.camera.position.y; UA.uA.value = Math.max(0, Math.min(1, (y - 220) / 300)); };
   requestAnimationFrame(cuadro);
   const n = todos.length, porEsp = Object.fromEntries(Object.keys(ESPECIES).map(k => [k, todos.filter(t => t.sp === k).length]));
-  let dens = 1; // última densidad pedida por el slider (la leen los indicadores en 3D: solo cuentan los árboles con k < dens)
-  return { grupo, ver(on) { grupo.visible = !!on; }, get dens() { return dens; }, densidad(d) { dens = d; for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } }, n, parches: P.length, porEsp };
+  return { grupo, ver(on) { grupo.visible = !!on; }, edad(fn) { EDAD = fn || null; repartir(true); }, get dens() { return dens; }, densidad(d) { dens = d; for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } repartir(true); }, n, parches: P.length, porEsp };
 }

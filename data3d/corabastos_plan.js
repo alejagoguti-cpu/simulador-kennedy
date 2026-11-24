@@ -5,6 +5,7 @@
    - transporte: camiones grandes con cita a un patio de transferencia interno; salida en vehículos pequeños; residuos a E4
    - agentes humanos (del Excel de E3), interacciones bióticas que llegan al borde restaurado, sostenibilidad y tren vs. vehículos
    Bodegas y su distancia al humedal: data3d/corabastos.json (tools/corabastos_build.py). Todo son hipótesis de diseño. */
+import { RELOJ } from './reloj.js?v=5';
 
 const USOS = {
   quitar: { n: 'Bodegas que se desmontan', c: '#ef4444', d: 'Las más cercanas al humedal La Vaca (a menos de 120 m).', din: 'Se desmontan por fases y su suelo pasa a la franja de restauración del borde del humedal; sus comerciantes se reubican en las bodegas que se conservan o en los nodos barriales.' },
@@ -197,9 +198,11 @@ export async function iniciarPlanCorabastos({ THREE, T3, lw, OX, OZ, Y0 = 2.0 })
   cvs.addEventListener('pointerup', e => { if (!pd || Math.hypot(e.clientX - pd[0], e.clientY - pd[1]) > 6 || !resalte.visible || plan.visible) return; const r = cvs.getBoundingClientRect(); v2.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(v2, T3.camera); if (ray.ray.intersectPlane(plano, hit) && dentro(sitio, hit.x, hit.z)) abrir(); });
 
   /* ---------- bucle ---------- */
-  const m4 = new THREE.Object3D(), v = new THREE.Vector3(); let ult = performance.now();
-  const bucle = () => {
-    const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+  /* TIEMPO: figuras ilustrativas del plan (no agentes del mundo simulado): tiempo de animación del reloj universal (data3d/reloj.js;
+     se detienen en pausa, hasta ×8), azar con semilla y dibujo en el bucle maestro. */
+  const m4 = new THREE.Object3D(), v = new THREE.Vector3(), azar = RELOJ.azar('corabastos_plan');
+  const bucle = (info) => {
+    const ahora = performance.now(), dt = Math.min(1, info.dtAnim);
     if (resalte.visible) mRes.opacity = 0.14 + 0.1 * Math.sin(ahora / 400);
     const cam = T3.camera, W_ = innerWidth, H_ = innerHeight;
     const poner = (el, x, y, z) => { v.set(x, y, z).project(cam); const fuera = v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05; el.style.display = fuera ? 'none' : 'flex'; if (!fuera) { el.style.left = ((v.x + 1) / 2 * W_).toFixed(1) + 'px'; el.style.top = ((1 - v.y) / 2 * H_).toFixed(1) + 'px'; } };
@@ -207,13 +210,12 @@ export async function iniciarPlanCorabastos({ THREE, T3, lw, OX, OZ, Y0 = 2.0 })
     if (plan.visible) {
       for (const e of ETQ) { const s = PUNTO[e.k], c = centro(s.pts); poner(e.d, c[0], s.y + 8, c[1]); e.d.classList.toggle('sel', sel === e.k); }
       for (const k of ORDEN) for (const m of PUNTO[k].ms) m.material.opacity = sel && sel !== k ? 0.1 : (k === 'quitar' ? 0.12 : 0.4);
-      for (const M of MOV) { const f = M.f; for (let i = 0; i < M.d.length; i++) { M.d[i] += f.v * dt * 6; const [x, z, a] = enRuta(f.ruta, f.C, M.d[i]); m4.position.set(x, Y0, z); m4.rotation.set(0, a, 0); m4.scale.setScalar(1.4); m4.updateMatrix(); M.im.setMatrixAt(i, m4.matrix); } M.im.instanceMatrix.needsUpdate = true; }
-      for (const h of HUM) { h.L.forEach((a, i) => { if (a.pausa > 0) a.pausa -= dt; else { const dx = a.obj[0] - a.x, dz = a.obj[1] - a.z, d = Math.hypot(dx, dz); if (d < 1) { a.pausa = 3 + Math.random() * 10; a.obj = destino(h.t.a[Math.floor(Math.random() * h.t.a.length)]); } else { const s = Math.min(d, 1.4 * dt * 6); a.x += dx / d * s; a.z += dz / d * s; a.r = Math.atan2(dx, dz); } } m4.position.set(a.x, Y0, a.z); m4.rotation.set(0, a.r || 0, 0); m4.scale.setScalar(2.2); m4.updateMatrix(); h.im.setMatrixAt(i, m4.matrix); }); h.im.instanceMatrix.needsUpdate = true; }
-      let n = 0; for (const A2 of ARCOS) for (let j = 0; j < 2 && n < NPU; j++) { const u = ((ahora / 1000) * 0.18 + j * 0.5 + n * 0.071) % 1, P = A2.P[Math.floor(u * (A2.P.length - 1))]; pp[n * 3] = P.x; pp[n * 3 + 1] = P.y; pp[n * 3 + 2] = P.z; pc[n * 3] = A2.col.r; pc[n * 3 + 1] = A2.col.g; pc[n * 3 + 2] = A2.col.b; n++; }
+      for (const M of MOV) { const f = M.f; for (let i = 0; i < M.d.length; i++) { M.d[i] += f.v * dt; const [x, z, a] = enRuta(f.ruta, f.C, M.d[i]); m4.position.set(x, Y0, z); m4.rotation.set(0, a, 0); m4.scale.setScalar(1.4); m4.updateMatrix(); M.im.setMatrixAt(i, m4.matrix); } M.im.instanceMatrix.needsUpdate = true; }
+      for (const h of HUM) { h.L.forEach((a, i) => { if (a.pausa > 0) a.pausa -= dt; else { const dx = a.obj[0] - a.x, dz = a.obj[1] - a.z, d = Math.hypot(dx, dz); if (d < 1) { a.pausa = 3 + azar() * 10; a.obj = destino(h.t.a[Math.floor(azar() * h.t.a.length)]); } else { const s = Math.min(d, 1.4 * dt); a.x += dx / d * s; a.z += dz / d * s; a.r = Math.atan2(dx, dz); } } m4.position.set(a.x, Y0, a.z); m4.rotation.set(0, a.r || 0, 0); m4.scale.setScalar(2.2); m4.updateMatrix(); h.im.setMatrixAt(i, m4.matrix); }); h.im.instanceMatrix.needsUpdate = true; }
+      let n = 0; for (const A2 of ARCOS) for (let j = 0; j < 2 && n < NPU; j++) { const u = (info.tAnim * 0.18 + j * 0.5 + n * 0.071) % 1, P = A2.P[Math.floor(u * (A2.P.length - 1))]; pp[n * 3] = P.x; pp[n * 3 + 1] = P.y; pp[n * 3 + 2] = P.z; pc[n * 3] = A2.col.r; pc[n * 3 + 1] = A2.col.g; pc[n * 3 + 2] = A2.col.b; n++; }
       pg.setDrawRange(0, n); pg.attributes.position.needsUpdate = true; pg.attributes.color.needsUpdate = true;
     }
-    requestAnimationFrame(bucle);
   };
-  requestAnimationFrame(bucle);
+  RELOJ.alDibujar(bucle);
   return { ver: (on) => { resalte.visible = on; if (!on) cerrar(); }, abrir };
 }

@@ -7,6 +7,7 @@
    3. LO LLEVAN A CASA: los vecinos implementan huertas en techos y patios; cada casa se apoya en la huerta del parque más cercana
       (plántulas, compost, dudas) y lleva ahí lo que cosecha para el mercado del barrio.
    Datos: huertas_barrio.json (parques y lotes), colegios.json, estrategias.json (E8: techos), bavaria.json. */
+import { RELOJ } from './reloj.js?v=5';
 export async function crearRedProduccion({ T3, lw, cj }) {
   const THREE = T3.THREE, MOV = matchMedia('(pointer:coarse)').matches, RMQ = matchMedia('(prefers-reduced-motion: reduce)');
   const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
@@ -66,8 +67,8 @@ export async function crearRedProduccion({ T3, lw, cj }) {
     g.setAttribute('position', new THREE.BufferAttribute(A, 3)); g.setAttribute('color', new THREE.BufferAttribute(Cc, 3));
     const p = new THREE.Points(g, new THREE.PointsMaterial({ size: tam, sizeAttenuation: false, vertexColors: true, transparent: true, depthWrite: false, toneMapped: false })); p.renderOrder = 11; grupo.add(p); return { L, n, N, A, g, p }; });
   const V = new THREE.Vector3();
-  const animar = () => { const t = RMQ.matches ? 0.5 : performance.now() / 7000; for (const F of flujos) { if (!F.L.length) continue; for (let i = 0; i < F.N; i++) { const cv = F.L[i % F.L.length][0], f = (t + Math.floor(i / F.L.length) / F.n + (i % 5) * 0.05) % 1; cv.getPoint(f, V); F.A[i * 3] = V.x; F.A[i * 3 + 1] = V.y; F.A[i * 3 + 2] = V.z; } F.g.attributes.position.needsUpdate = true; } };
-  let raf = 0; const loop = () => { animar(); raf = grupo.visible ? requestAnimationFrame(loop) : 0; };
+  const animar = () => { const t = RMQ.matches ? 0.5 : RELOJ.tAnim / 7; /* tiempo de animación del reloj universal: se detiene en pausa */ for (const F of flujos) { if (!F.L.length) continue; for (let i = 0; i < F.N; i++) { const cv = F.L[i % F.L.length][0], f = (t + Math.floor(i / F.L.length) / F.n + (i % 5) * 0.05) % 1; cv.getPoint(f, V); F.A[i * 3] = V.x; F.A[i * 3 + 1] = V.y; F.A[i * 3 + 2] = V.z; } F.g.attributes.position.needsUpdate = true; } };
+  // se dibuja en el bucle maestro del reloj universal (sin requestAnimationFrame propio): flujos y etiquetas solo con la capa visible
 
   // los tres pasos se pueden resaltar desde la leyenda
   const PASO = { 1: [N1, N2, flujos[0].p, faro], 2: [N3, D3, flujos[1].p, D2], 3: [N4, D4, flujos[2].p] };
@@ -78,7 +79,7 @@ export async function crearRedProduccion({ T3, lw, cj }) {
   const st = document.createElement('style');
   st.textContent = `.rp-et{position:fixed;left:0;top:0;z-index:5;pointer-events:none;font:500 11px/1.25 var(--ui-sans,Inter,system-ui,sans-serif);color:#eef1f2;padding:5px 9px;border-radius:9px;background:var(--ui-glass,rgba(14,16,20,.6));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));backdrop-filter:blur(14px) saturate(1.6);-webkit-backdrop-filter:blur(14px) saturate(1.6);white-space:nowrap;display:none}
 .rp-et i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}.rp-et small{display:block;color:#b3bbc0;font-weight:400;font-size:10px;margin-top:1px}
-#rp-ley{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:6;width:min(600px,calc(100vw - 32px));box-sizing:border-box;padding:10px;border-radius:16px;background:var(--ui-glass,rgba(14,16,20,.6));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));box-shadow:var(--ui-glass-sh,none);backdrop-filter:var(--ui-glass-fx,blur(24px));-webkit-backdrop-filter:var(--ui-glass-fx,blur(24px));color:#e9ecee;font:400 11.5px/1.4 var(--ui-sans,Inter,system-ui,sans-serif);display:none}
+#rp-ley{position:fixed;left:50%;bottom:132px;transform:translateX(-50%);z-index:6;width:min(600px,calc(100vw - 32px));box-sizing:border-box;padding:10px;border-radius:16px;background:var(--ui-glass,rgba(14,16,20,.6));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));box-shadow:var(--ui-glass-sh,none);backdrop-filter:var(--ui-glass-fx,blur(24px));-webkit-backdrop-filter:var(--ui-glass-fx,blur(24px));color:#e9ecee;font:400 11.5px/1.4 var(--ui-sans,Inter,system-ui,sans-serif);display:none}
 #rp-ley ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #rp-ley button{all:unset;box-sizing:border-box;display:block;width:100%;height:100%;padding:9px 10px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:background .2s,border-color .2s}
 #rp-ley button:hover,#rp-ley button[aria-pressed=true]{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}#rp-ley button:focus-visible{outline:2px solid #fff;outline-offset:1px}
@@ -96,14 +97,15 @@ export async function crearRedProduccion({ T3, lw, cj }) {
 <li><button type="button" data-p="3" aria-pressed="false"><b><span class="n">3</span>Lo llevan a casa</b><span class="d"><em>${nTE.toLocaleString('es-CO')} techos</em> y patios con huerta, apoyados en la huerta más cercana.</span></button></li></ol>`;
   document.body.appendChild(ley);
   let sel = 0; ley.addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (!b) return; sel = sel === +b.dataset.p ? 0 : +b.dataset.p; resaltar(sel); ley.querySelectorAll('[data-p]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.p === sel))); });
-  let rafE = 0; const P2v = new THREE.Vector3();
-  const etiquetas = () => { const cam = T3.camera, W = innerWidth, H = innerHeight; for (const e of ET) { P2v.set(e.p[0], e.p[1], e.p[2]).project(cam); const ok = P2v.z < 1 && Math.abs(P2v.x) < 0.95 && Math.abs(P2v.y) < 0.95; e.d.style.display = ok ? 'block' : 'none'; if (ok) e.d.style.transform = `translate(${((P2v.x + 1) / 2 * W).toFixed(1)}px,${((1 - P2v.y) / 2 * H).toFixed(1)}px) translate(-50%,-120%)`; } rafE = requestAnimationFrame(etiquetas); };
+  const P2v = new THREE.Vector3();
+  const etiquetas = () => { const cam = T3.camera, W = innerWidth, H = innerHeight; for (const e of ET) { P2v.set(e.p[0], e.p[1], e.p[2]).project(cam); const ok = P2v.z < 1 && Math.abs(P2v.x) < 0.95 && Math.abs(P2v.y) < 0.95; e.d.style.display = ok ? 'block' : 'none'; if (ok) e.d.style.transform = `translate(${((P2v.x + 1) / 2 * W).toFixed(1)}px,${((1 - P2v.y) / 2 * H).toFixed(1)}px) translate(-50%,-120%)`; } };
+  RELOJ.alDibujar(() => { if (!grupo.visible) return; animar(); etiquetas(); });
   const volar = () => { if (!T3.orbit) return; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of HU.map(h => h.c).concat([BAV])) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, o = T3.orbit, p0 = T3.camera.position.clone(), t0 = o.target.clone(), p1 = new THREE.Vector3(cx, 2450, cz + 500), t1 = new THREE.Vector3(cx, 0, cz + 120), ini = performance.now();
     const f = () => { const k = Math.min(1, (performance.now() - ini) / 1500), e = k * k * (3 - 2 * k); T3.camera.position.lerpVectors(p0, p1, e); o.target.lerpVectors(t0, t1, e); o.update(); if (k < 1) requestAnimationFrame(f); }; f(); };
   return {
     clusters: CL.length, huertas: HU.length, techos: nTE, colegios: nCO,
-    ver(on) { on = !!on; if (on === grupo.visible) return; grupo.visible = on; ley.style.display = on ? 'block' : 'none'; cancelAnimationFrame(rafE);
-      if (on) { etiquetas(); volar(); if (!raf) loop(); } else ET.forEach(e => { e.d.style.display = 'none'; }); }
+    ver(on) { on = !!on; if (on === grupo.visible) return; grupo.visible = on; ley.style.display = on ? 'block' : 'none';
+      if (on) { etiquetas(); volar(); animar(); } else ET.forEach(e => { e.d.style.display = 'none'; }); }
   };
 }

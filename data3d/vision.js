@@ -8,6 +8,7 @@
    04 Bordes de humedal La Vaca y El Burro: matriz vegetal nativa
    Todo unido en una red densa: Bavaria ↔ Corabastos, Bavaria → parques → huertas → tiendas de barrio → Corabastos, humedales ↔ parques.
    Se arma la primera vez que se prende (no pesa en la carga inicial) y al apagarlo todo vuelve como estaba. */
+import { RELOJ } from './reloj.js?v=5';
 export async function crearVision({ THREE, T3, lw, OX, OZ, movil = false }) {
   const J = (u) => (window.cargarJSON || ((x) => fetch(x).then(r => r.json())))(u);
   const [BV, CO, ES, PQ, GS] = await Promise.all(['data3d/bavaria.json?v=3', 'data3d/corabastos.json?v=3', 'data3d/estrategias.json?v=5', 'data3d/parques.json', 'data3d/giro_sim.json'].map(u => J(u).catch(() => null)));
@@ -250,13 +251,13 @@ body.vision #gs-der,body.vision #hid-red,body.vision .es-et,body.vision #bt-pan,
     for (const e of ETQ) e.d.style.display = 'none';
   }
   const v = new THREE.Vector3();
-  const bucle = (t) => {
-    requestAnimationFrame(bucle); if (!on) return;
-    for (let i = 0; i < elegidas.length; i++) { const e = elegidas[i]; e.f = (e.f + e.v * 0.016) % 1; const P = e.cv.P, k = Math.min(P.length - 1, Math.floor(e.f * (P.length - 1))); pp[i * 3] = P[k][0]; pp[i * 3 + 1] = P[k][1]; pp[i * 3 + 2] = P[k][2]; }
+  const bucle = (info) => { // dibujo en el bucle maestro: los pulsos avanzan con el tiempo de animación del reloj (se detienen en pausa)
+    if (!on) return; const t = info.tAnim * 1000;
+    for (let i = 0; i < elegidas.length; i++) { const e = elegidas[i]; e.f = (e.f + e.v * info.dtAnim) % 1; const P = e.cv.P, k = Math.min(P.length - 1, Math.floor(e.f * (P.length - 1))); pp[i * 3] = P[k][0]; pp[i * 3 + 1] = P[k][1]; pp[i * 3 + 2] = P[k][2]; }
     gP.attributes.position.needsUpdate = true;
     if (brillos) brillos.material.opacity = 0.55 + 0.35 * Math.sin(t / 380);
     for (const e of ETQ) { v.copy(e.v).project(T3.camera); const fuera = v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05; e.d.style.display = fuera ? 'none' : 'block'; if (!fuera) { e.d.style.left = ((v.x + 1) / 2 * innerWidth).toFixed(1) + 'px'; e.d.style.top = ((1 - v.y) / 2 * innerHeight).toFixed(1) + 'px'; } }
   };
-  requestAnimationFrame(bucle);
+  RELOJ.alDibujar(bucle);
   return { ver, get on() { return on; }, arcos: curvas.length };
 }

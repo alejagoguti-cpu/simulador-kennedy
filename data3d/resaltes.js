@@ -2,6 +2,7 @@
    Al pasar a la propuesta las huertas (parques, lotes y cubiertas) se van abriendo año a año; cada una que se abre dispara un anillo verde
    que se expande sobre ella y una columna tenue que se desvanece en ~3,5 s, así se ve dónde va creciendo la red.
    Uso: const R = resaltes(T3); R.pulso(x, y, z, radio) */
+import { RELOJ } from './reloj.js?v=5';
 let API = null;
 export function resaltes(T3) {
   if (API) return API;
@@ -17,9 +18,8 @@ export function resaltes(T3) {
   const g = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), t0 = new Float32Array(MAX).fill(-1e4); g.setAttribute('t0', new THREE.InstancedBufferAttribute(t0, 1));
   const im = new THREE.InstancedMesh(g, mat, MAX); im.frustumCulled = false; im.renderOrder = 14; im.count = MAX; T3.scene.add(im);
   const O = new THREE.Object3D(); O.scale.set(0, 0, 0); O.updateMatrix(); for (let i = 0; i < MAX; i++) im.setMatrixAt(i, O.matrix);
-  let k = 0, ini = performance.now();
-  const cuadro = () => { requestAnimationFrame(cuadro); U.uT.value = (performance.now() - ini) / 1000; };
-  requestAnimationFrame(cuadro);
+  let k = 0;
+  RELOJ.alDibujar((info) => { U.uT.value = info.tAnim; }); // tiempo de animación del reloj universal: el pulso se detiene en pausa
   API = {
     pulso(x, y, z, radio = 30) { const i = k++ % MAX; O.position.set(x, y + 0.6, z); O.scale.set(radio * 2, 1, radio * 2); O.updateMatrix(); im.setMatrixAt(i, O.matrix); im.instanceMatrix.needsUpdate = true;
       t0[i] = U.uT.value + (i % 7) * 0.05; g.attributes.t0.needsUpdate = true; },

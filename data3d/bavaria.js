@@ -5,7 +5,7 @@
    - ladrillo: bloques de ladrillo con cubierta plana gris y ventanas por piso
    - oficina: edificio administrativo de varios pisos con franjas de ventanas
    - tanque de agua elevado blanco (fuste y depósito) */
-export function construirBavaria({ THREE, T3, lw, D, liviano }) {
+export function construirBavaria({ THREE, T3, lw, D, liviano, plan }) { // plan: data3d/plan_bavaria.json (escenario D: qué se demuele y en qué etapa)
   const grupo = new THREE.Group(); grupo.name = 'bavaria';
   const sombras = !liviano;
   let semilla = 1977; const rnd = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
@@ -30,7 +30,7 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
   // ---- acumuladores: muros con textura (posición + uv) y ventanas ----
   const ML = { p: [], uv: [], i: [] }, MB = { p: [], uv: [], i: [] }, MV = { p: [], i: [] }, MC = { p: [], i: [], c: [] }, MVg = MV;
   // anexos que el plan del distrito Bavaria Común propone retirar (D1: 27, D2: 20; data3d/bavaria_distrito.js): van en un grupo aparte para poder quitarlos
-  const DEMOLER = new Set([20, 27]), XL = { p: [], uv: [], i: [] }, XB = { p: [], uv: [], i: [] }, XV = { p: [], i: [] }, XC = { p: [], i: [], c: [] };
+  const DEMOLER = new Set([20, 27]);
   const quad = (A, q, uvs) => { const b = A.p.length / 3; for (const v of q) A.p.push(...v); if (uvs) A.uv.push(...uvs); A.i.push(b, b + 1, b + 2, b, b + 2, b + 3); };
   const muros = (W, y0, y1, s0 = 0, A = ML) => { // W: anillo en el mundo [[x,z]...]
     let s = s0;
@@ -102,22 +102,44 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
   };
 
   const colTecho = (e) => { if (!e.col) return null; const k = e.col.map(v => v / 255), l = 0.3 * k[0] + 0.59 * k[1] + 0.11 * k[2], s = l < 0.45 ? 1.25 : 1.05; return k.map(v => Math.min(1, Math.pow(v * s, 2.2))); }; // a lineal; las oscuras se levantan un poco
-  const silos = (W, h) => { // fila de silos cilíndricos de concreto blanco sobre los lados largos, con la cubierta encima
+  const silos = (W, h, S_ = silosC) => { // fila de silos cilíndricos de concreto blanco sobre los lados largos, con la cubierta encima
     let L0 = 0, a0 = W[0], b0 = W[1];
     for (let k = 0; k < W.length; k++) { const a = W[k], b = W[(k + 1) % W.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l > L0) { L0 = l; a0 = a; b0 = b; } }
     const ux = (b0[0] - a0[0]) / L0, uz = (b0[1] - a0[1]) / L0, sg = ccw(W) > 0 ? 1 : -1, nx = uz * sg, nz = -ux * sg, r = 3.1, n = Math.floor(L0 / (2 * r + 0.4));
-    for (let j = 0; j < n; j++) { const t = (j + 0.5) * L0 / n; silosC.push([a0[0] + ux * t + nx * r * 0.55, h / 2 - 1, a0[1] + uz * t + nz * r * 0.55, r, h + 2]); }
+    for (let j = 0; j < n; j++) { const t = (j + 0.5) * L0 / n; S_.push([a0[0] + ux * t + nx * r * 0.55, h / 2 - 1, a0[1] + uz * t + nz * r * 0.55, r, h + 2]); }
   };
   const silosC = [];
+  // ---- Plan parcial (escenario D): cada manzana del plan es un rectángulo del predio; lo que cae dentro se demuele en su etapa ----
+  // (solo se arma la estructura: la animación y el momento los maneja data3d/plan_bavaria.js; fuera de D todo queda como siempre)
+  // zonas del plan aprobado (data3d/plan_bavaria.json «demoler»: manzanas, parques, bosque, vías y alamedas con su año, en el marco mundo)
+  const RECT = plan && plan.demoler ? plan.demoler.flatMap(z => z.p.map(o => { const W = o.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of W) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); } return { W, x0, x1, z0, z1, e: z.anio }; })) : [];
+  const etapaEn = (x, z, mg = 0) => { let r0 = 0; for (const r of RECT) { if (x < r.x0 - mg || x > r.x1 + mg || z < r.z0 - mg || z > r.z1 + mg || (r0 && r.e >= r0)) continue; if (dentro(r.W, x, z)) r0 = r.e; } return r0; };
+  // edificio cerrado: se demuele entero en la primera etapa cuyo rectángulo lo cubre con >= 40 m² (o >= 15 % de su huella); los esqueletos se quitan pieza por pieza
+  const etapaEd = D.edif.map((e) => {
+    if (!RECT.length || e.s === 'esqueleto') return 0;
+    const W = e.p.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (const q of W) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
+    let tot = 0; const por = {};
+    for (let x = x0; x <= x1; x += 2) for (let z = z0; z <= z1; z += 2) if (dentro(W, x, z)) { tot++; const k = etapaEn(x, z); if (k) por[k] = (por[k] || 0) + 1; }
+    let mejor = 0; for (const k in por) if ((por[k] >= 10 || por[k] >= 0.15 * tot) && (!mejor || +k < mejor)) mejor = +k;
+    return mejor;
+  });
+  const propios = []; // edificios con su propio grupo (los que el plan demuele y los que quita Bavaria Común)
   D.edif.forEach((e, ie) => {
-    const W = e.p.map(p => lw(p[0], p[1])), X = DEMOLER.has(ie), ML_ = X ? XL : ML, MB_ = X ? XB : MB, MC_ = X ? XC : MC, MV_ = X ? XV : MV;
-    if (e.s === 'esqueleto') { esqueleto(W, e.h); return; }
-    const tc = colTecho(e), claro = e.col && (0.3 * e.col[0] + 0.59 * e.col[1] + 0.11 * e.col[2]) > 140;
-    if (e.s === 'silos') { muros(W, -1, e.h, 0, MB_); silos(W, e.h); cubierta(W, e.h, MC_, tc); return; }
-    if (e.s === 'blanco') { muros(W, -1, e.h, 0, MB_); ventanas(W, e.h, 3.6, 0, 1.8, true, MV_); cubierta(W, e.h, MC_, tc); return; } // nave de cuatro pisos con hileras de ventanas
-    muros(W, -1, e.h, 0, claro ? MB_ : ML_);
-    if (e.s === 'oficina') { ventanas(W, e.h, 3.4, 0, 1.9, true, MV_); cubierta(W, e.h, MC_, tc); }
-    else { ventanas(W, e.h, 4.2, 2.4, 1.7, false, MV_); cubierta(W, e.h, MC_, tc); }
+    const W = e.p.map(p => lw(p[0], p[1])), et = etapaEd[ie], X = DEMOLER.has(ie);
+    const own = (X || et > 0) ? { L: { p: [], uv: [], i: [] }, B: { p: [], uv: [], i: [] }, V: { p: [], i: [] }, C: { p: [], i: [], c: [] }, S: [] } : null;
+    const ML_ = own ? own.L : ML, MB_ = own ? own.B : MB, MC_ = own ? own.C : MC, MV_ = own ? own.V : MV, SL = own ? own.S : silosC;
+    const dibujar = () => {
+      if (e.s === 'esqueleto') { esqueleto(W, e.h); return; }
+      const tc = colTecho(e), claro = e.col && (0.3 * e.col[0] + 0.59 * e.col[1] + 0.11 * e.col[2]) > 140;
+      if (e.s === 'silos') { muros(W, -1, e.h, 0, MB_); silos(W, e.h, SL); cubierta(W, e.h, MC_, tc); return; }
+      if (e.s === 'blanco') { muros(W, -1, e.h, 0, MB_); ventanas(W, e.h, 3.6, 0, 1.8, true, MV_); cubierta(W, e.h, MC_, tc); return; } // nave de cuatro pisos con hileras de ventanas
+      muros(W, -1, e.h, 0, claro ? MB_ : ML_);
+      if (e.s === 'oficina') { ventanas(W, e.h, 3.4, 0, 1.9, true, MV_); cubierta(W, e.h, MC_, tc); }
+      else { ventanas(W, e.h, 4.2, 2.4, 1.7, false, MV_); cubierta(W, e.h, MC_, tc); }
+    };
+    dibujar();
+    if (own) { let sx = 0, sz = 0; for (const q of W) { sx += q[0]; sz += q[1]; } propios.push({ ie, etapa: et, own, X, cx: sx / W.length, cz: sz / W.length, h: e.h, r: Math.sqrt(Math.abs(ccw(W)) / 2 / Math.PI) }); }
   });
 
   const malla = (A, mat, uv, G = grupo) => {
@@ -129,18 +151,31 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
     const m = new THREE.Mesh(gg, mat); m.castShadow = sombras; m.receiveShadow = sombras; G.add(m);
   };
   malla(ML, matLadrillo, true); malla(MB, matPintado, true); malla(MV, matVidrio); malla(MC, matCubierta);
-  { const dem = new THREE.Group(); dem.name = 'bavaria_demoler'; malla(XL, matLadrillo, true, dem); malla(XB, matPintado, true, dem); malla(XV, matVidrio, false, dem); malla(XC, matCubierta, false, dem); grupo.add(dem); grupo.userData.demoler = dem; }
-  if (silosC.length) { const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 20), matPintado, silosC.length), d = new THREE.Object3D(); silosC.forEach((s, k) => { d.position.set(s[0], s[1], s[2]); d.scale.set(s[3], s[4], s[3]); d.updateMatrix(); im.setMatrixAt(k, d.matrix); }); im.castShadow = sombras; im.receiveShadow = sombras; grupo.add(im); }
+  const dem = new THREE.Group(); dem.name = 'bavaria_demoler'; grupo.add(dem); grupo.userData.demoler = dem; // anexos que quita Bavaria Común (bavaria_distrito.js la apaga)
+  const mSilo = new THREE.CylinderGeometry(1, 1, 1, 20), dS = new THREE.Object3D();
+  const silosMalla = (L, G) => { const im = new THREE.InstancedMesh(mSilo, matPintado, L.length); L.forEach((s, k) => { dS.position.set(s[0], s[1], s[2]); dS.scale.set(s[3], s[4], s[3]); dS.updateMatrix(); im.setMatrixAt(k, dS.matrix); }); im.castShadow = sombras; im.receiveShadow = sombras; G.add(im); };
+  for (const q of propios) { // cada edificio propio en su grupo (para poder bajarlo en su etapa del plan o retirarlo con Bavaria Común)
+    const g = new THREE.Group(); g.name = 'bavaria_edif_' + q.ie; q.g = g; const o = q.own;
+    malla(o.L, matLadrillo, true, g); malla(o.B, matPintado, true, g); malla(o.V, matVidrio, false, g); malla(o.C, matCubierta, false, g);
+    if (o.S.length) silosMalla(o.S, g);
+    (q.X ? dem : grupo).add(g); delete q.own;
+  }
+  if (silosC.length) silosMalla(silosC, grupo);
 
   const instancias = (L, mat, tinte) => {
-    if (!L.length) return;
+    if (!L.length) return null;
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, L.length), d = new THREE.Object3D(), c = new THREE.Color();
     L.forEach((b, k) => { d.position.set(b[0], b[1], b[2]); d.rotation.set(0, b[6], 0); d.scale.set(b[3], b[4], b[5]); d.updateMatrix(); im.setMatrixAt(k, d.matrix); if (tinte) im.setColorAt(k, c.setHex(tinte).multiplyScalar(0.85 + rnd() * 0.3)); });
-    im.castShadow = sombras; im.receiveShadow = sombras; grupo.add(im);
+    im.castShadow = sombras; im.receiveShadow = sombras; grupo.add(im); return im;
   };
-  instancias(cajasL, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 }), 0xa45434); // pilastras de ladrillo
-  instancias(cajasC, matConcreto, 0xd8d4cc);
-
+  const imL = instancias(cajasL, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 }), 0xa45434); // pilastras de ladrillo
+  const imC = instancias(cajasC, matConcreto, 0xd8d4cc);
+  // esqueletos dentro de una manzana del plan: cada pilastra, viga y columna se baja en la etapa de su manzana (1 = en pie, 0 = en el suelo)
+  const ESQ = [[cajasL, imL], [cajasC, imC]].filter(x => x[1]).map(([L, im]) => { const por = {}; L.forEach((b, k) => { const e = etapaEn(b[0], b[2], 3); if (e) (por[e] = por[e] || []).push(k); }); return { L, im, por }; });
+  const dE = new THREE.Object3D(), puntosEsq = {};
+  for (const s of ESQ) for (const e in s.por) { const A = puntosEsq[e] = puntosEsq[e] || []; s.por[e].forEach((k, j) => { if (j % 6 === 0) A.push([s.L[k][0], s.L[k][2]]); }); }
+  const ponerEsq = (e, f) => { for (const s of ESQ) { const ks = s.por[e]; if (!ks) continue; for (const k of ks) { const b = s.L[k], h = Math.max(1e-3, b[4] * f); dE.position.set(b[0], b[1] - b[4] / 2 + h / 2, b[2]); dE.rotation.set(0, b[6], 0); dE.scale.set(b[3], h, b[5]); dE.updateMatrix(); s.im.setMatrixAt(k, dE.matrix); } s.im.instanceMatrix.needsUpdate = true; } };
+  grupo.userData.demol = { edificios: propios.filter(q => q.etapa > 0), etapasEsq: Object.keys(puntosEsq).map(Number), puntosEsq, ponerEsq, etapaEn };
   // ---- torres de agua (las dos del predio): fuste blanco que se abre en curva hacia el depósito, base pintada de verde ----
   const perfil = [];
   for (let k = 0; k <= 24; k++) { const y = k / 24 * 40, t = y / 40, r = 2.3 - 0.7 * Math.sin(Math.PI * Math.min(1, t * 1.25)) * (t < 0.8 ? 1 : 0) + Math.pow(Math.max(0, t - 0.62) / 0.38, 2.2) * 3.6; perfil.push(new THREE.Vector2(Math.max(1.5, r), y)); }

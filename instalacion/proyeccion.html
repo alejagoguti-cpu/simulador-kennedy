@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kennedy Reacciona · proyección</title>
+<!-- Salida limpia para el proyector: fondo negro (= sin luz sobre la maqueta blanca), sin textos ni menús.
+     Vista cenital ortográfica del rectángulo de instalacion/config.json. Teclas: F pantalla completa · P presentación · G cuadrícula · C calibración.
+     En calibración: arrastrar esquinas · 1-4 elige esquina (0 = todas) · flechas mueven (Mayús = 10 px) · + / - escala · [ ] rota · R restablece · E exporta JSON. -->
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { cursor: none; }
+  body.calib { cursor: crosshair; }
+  #lienzo { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .esq { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 2px solid #fff; box-sizing: border-box;
+         display: none; touch-action: none; cursor: grab; background: rgba(255,255,255,.08); }
+  .esq.sel { background: #fff; }
+  body.calib .esq { display: block; }
+  body.espejo .esq { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<div class="esq" data-i="0"></div><div class="esq" data-i="1"></div><div class="esq" data-i="2"></div><div class="esq" data-i="3"></div>
+<script type="module">
+import { crearEnlace } from './enlace.js';
+
+const Q = new URLSearchParams(location.search);
+const ESPEJO = Q.get('espejo') === '1';          // vista previa pasiva (consola): sigue la hora de la proyección, no calibra ni manda telemetría
+if (ESPEJO) document.body.classList.add('espejo');
+const cfg = await (await fetch('./config.json', { cache: 'no-cache' })).json();
+const LC = cfg.coordenadas.LC, R = cfg.rectangulo;
+const W = +(Q.get('w') || cfg.proyector.ancho_px), H = +(Q.get('h') || cfg.proyector.alto_px);
+const cv = document.getElementById('lienzo'), ctx = cv.getContext('2d', { alpha: false });
+cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+
+// ---------- geometría: mundo (x este, z sur, m) -> píxel del rectángulo ----------
+const rot = (R.rotacion_grados || 0) * Math.PI / 180, cR = Math.cos(rot), sR = Math.sin(rot);
+const kx = W / R.ancho_m, ky = H / R.alto_m;
+function aPx(x, z) { const dx = x - R.centro_m[0], dz = z - R.centro_m[1]; return [(dx * cR + dz * sR) * kx + W / 2, (-dx * sR + dz * cR) * ky + H / 2]; }
+const hm = (s) => { const [h, m] = s.split(':').map(Number); return h * 3600 + m * 60; };
+
+// ---------- estado (la proyección es la única fuente de tiempo) ----------
+const A = { corriendo: true, vel: cfg.reloj.velocidad_inicio || 1, modo: 'presentacion', escenario: 'A', capas: { movilidad: true, red: true }, demanda: true,
+  brillo: cfg.estilo.brillo, punto_px: cfg.estilo.punto_px, estela_s: cfg.estilo.estela_s, red_intensidad: cfg.estilo.red_intensidad };
+let tDia = hm(cfg.reloj.hora_inicio);
+const DIA = 86400;
+// mismo mapeo que el simulador (index.html tGrabacion): a las 06:30 del reloj la grabación va en el segundo 1.000, en bucle
+const T0_RELOJ = 6 * 3600 + 30 * 60, T0_GRAB = 1000;
+// demanda por hora: el MISMO perfil del simulador (index.html DEMANDA_H, dato estimado: perfil típico de Bogotá; la grabación SUMO es de hora pico = 100 %)
+const DEMANDA_H = [0.06, 0.04, 0.03, 0.03, 0.08, 0.32, 0.78, 0.95, 0.82, 0.62, 0.58, 0.62, 0.72, 0.7, 0.62, 0.66, 0.82, 1.0, 0.97, 0.78, 0.52, 0.36, 0.22, 0.12];
+const demandaEn = (seg) => { const h = (seg / 3600) % 24, a = Math.floor(h), f = h - a; return DEMANDA_H[a] + (DEMANDA_H[(a + 1) % 24] - DEMANDA_H[a]) * f; };
+const sale = (id, pD) => pD >= 0.999 || (Math.imul(id ^ 0x5bd1e995, 0x85ebca6b) >>> 0) / 4294967296 <= pD; // misma selección por id que el simulador
+
+// ---------- datos: red vial y grabación SUMO ----------
+const NET = await (await fetch('../data3d/net.json')).json();
+const TI = await (await fetch('../data3d/traf/index.json')).json();
+const NS = TI.NS, PER = TI.dur + 1, steps = new Array(NS);
+let trozos = 0;
+const tGrab = () => ((T0_GRAB + (tDia - T0_RELOJ)) % PER + PER) % PER;
+async function cargarTrozo(k) { // formato RTF1 (igual que index.html cargarTrozoTrafico)
+  const r = await fetch('../data3d/traf/c' + String(k).padStart(2, '0') + '.bin'); if (!r.ok) throw new Error('trozo ' + k);
+  const dv = new DataView(await r.arrayBuffer()); if (dv.getUint32(0, true) !== 0x31465452) throw new Error('formato');
+  let o = 4; const ns = dv.getUint16(o, true); o += 2; const t0 = Math.round(dv.getFloat32(o, true)); o += 4; const S = TI.scale; let prev = new Map();
+  for (let s = 0; s < ns; s++) {
+    const n = dv.getUint16(o, true); o += 2; const pid = o, pdx = o + 2 * n, pdy = o + 4 * n; o += 6 * n;
+    const ids = new Int32Array(n), xs = new Float32Array(n), zs = new Float32Array(n), cur = new Map(); let id = 0;
+    for (let i = 0; i < n; i++) {
+      id += dv.getUint16(pid + 2 * i, true); const p = prev.get(id);
+      const xi = p ? p[0] + dv.getInt16(pdx + 2 * i, true) : dv.getUint16(pdx + 2 * i, true), yi = p ? p[1] + dv.getInt16(pdy + 2 * i, true) : dv.getUint16(pdy + 2 * i, true);
+      cur.set(id, [xi, yi]); ids[i] = id; xs[i] = xi / S - LC[0]; zs[i] = LC[1] - yi / S; // directamente al mundo
+    }
+    steps[t0 + s] = { ids, xs, zs }; prev = cur;
+  }
+  trozos++;
+}
+(async () => { const k0 = Math.floor(tGrab() / TI.chunk); await cargarTrozo(k0).catch(console.warn);
+  for (let d = 1; d < TI.n; d++) for (const k of [k0 + d, k0 - d]) if (k >= 0 && k < TI.n) await cargarTrozo(k).catch(console.warn); })();
+function buscar(ids, id) { let a = 0, b = ids.length - 1; while (a <= b) { const m = (a + b) >> 1, v = ids[m]; if (v === id) return m; if (v < id) a = m + 1; else b = m - 1; } return -1; }
+
+// red vial en píxeles (solo lo que cae en el rectángulo) + rejilla de tramos para asignar vehículos a su vía
+const TIPOS = ['major', 'mid', 'local'], MARG = 60;
+const RED = [];
+for (const [tipo, pts] of NET.edges) {
+  const q = pts.map(p => aPx(p[0] - LC[0], LC[1] - p[1]));
+  if (q.every(([x, y]) => x < -MARG || x > W + MARG || y < -MARG || y > H + MARG)) continue;
+  RED.push([TIPOS.indexOf(tipo), q]);
+}
+const CEL = 24, rejilla = new Map();
+RED.forEach(([t, q]) => { for (let i = 0; i < q.length - 1; i++) { const [ax, ay] = q[i], [bx, by] = q[i + 1], L = Math.hypot(bx - ax, by - ay), n = Math.max(1, Math.ceil(L / (CEL / 2)));
+  const vis = new Set(); for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n, key = Math.floor(x / CEL) * 4096 + Math.floor(y / CEL); if (vis.has(key)) continue; vis.add(key);
+    let l = rejilla.get(key); if (!l) rejilla.set(key, l = []); l.push(t, ax, ay, bx, by); } } });
+function viaDe(x, y) { // jerarquía de la vía más cercana (≤ 12 m)
+  const lim = 12 * kx; let best = lim * lim, t = -1; const cx = Math.floor(x / CEL), cy = Math.floor(y / CEL);
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const l = rejilla.get((cx + i) * 4096 + cy + j); if (!l) continue;
+    for (let s = 0; s < l.length; s += 5) { const ax = l[s + 1], ay = l[s + 2], dx = l[s + 3] - ax, dy = l[s + 4] - ay, L2 = dx * dx + dy * dy || 1;
+      const u = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)), ex = ax + u * dx - x, ey = ay + u * dy - y, d2 = ex * ex + ey * ey; if (d2 < best) { best = d2; t = l[s]; } } }
+  return t;
+}
+
+// ---------- capas fijas pre-dibujadas ----------
+function lienzoAux() { const c = document.createElement('canvas'); c.width = W; c.height = H; return [c, c.getContext('2d')]; }
+function trazarRed(g, anchos, color) {
+  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = color;
+  for (let t = 2; t >= 0; t--) { g.lineWidth = anchos[t]; g.beginPath(); for (const [tt, q] of RED) { if (tt !== t) continue; g.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length; i++) g.lineTo(q[i][0], q[i][1]); } g.stroke(); }
+}
+const [cvRed, gRed] = lienzoAux();
+trazarRed(gRed, [2.6 * kx, 1.6 * kx, 0.9 * kx].map(v => Math.max(1, v)), 'rgb(150,156,162)');
+const BAV = (await (await fetch('../data3d/bavaria.json')).json()).sitio.map(p => aPx(p[0] - LC[0], LC[1] - p[1]));
+const [cvGrid, gG] = lienzoAux();
+{ // cuadrícula de prueba: bordes del rectángulo, rejilla de 100 m (500 m más marcada), calles, predio de Bavaria, centro, norte y marcas de esquina (sin texto)
+  gG.fillStyle = '#000'; gG.fillRect(0, 0, W, H);
+  trazarRed(gG, [2.2, 1.4, 0.8], 'rgba(255,255,255,.55)');
+  const paso = 100, ext = Math.hypot(R.ancho_m, R.alto_m);
+  for (let m = -Math.ceil(ext / paso) * paso; m <= ext; m += paso) {
+    const fuerte = Math.round(m) % 500 === 0; gG.strokeStyle = fuerte ? 'rgba(90,200,255,.7)' : 'rgba(90,200,255,.28)'; gG.lineWidth = fuerte ? 2 : 1;
+    // líneas en coordenadas del rectángulo (u, v en metros desde el centro)
+    gG.beginPath(); const x = m * kx + W / 2, y = m * ky + H / 2; gG.moveTo(x, 0); gG.lineTo(x, H); gG.moveTo(0, y); gG.lineTo(W, y); gG.stroke();
+  }
+  gG.setLineDash([10, 8]); gG.strokeStyle = 'rgba(255,200,90,.9)'; gG.lineWidth = 2; gG.beginPath(); BAV.forEach(([x, y], i) => i ? gG.lineTo(x, y) : gG.moveTo(x, y)); gG.closePath(); gG.stroke(); gG.setLineDash([]);
+  gG.strokeStyle = '#fff'; gG.lineWidth = 6; gG.strokeRect(3, 3, W - 6, H - 6);
+  gG.lineWidth = 2; gG.beginPath(); gG.moveTo(W / 2 - 40, H / 2); gG.lineTo(W / 2 + 40, H / 2); gG.moveTo(W / 2, H / 2 - 40); gG.lineTo(W / 2, H / 2 + 40); gG.stroke();
+  gG.beginPath(); gG.arc(W / 2, H / 2, 14, 0, Math.PI * 2); gG.stroke();
+  const L = 70, esq = [[0, 0, 1, 1], [W, 0, -1, 1], [W, H, -1, -1], [0, H, 1, -1]];
+  gG.fillStyle = '#fff'; gG.lineWidth = 10;
+  esq.forEach(([x, y, sx, sy], i) => { gG.beginPath(); gG.moveTo(x + sx * L * 2, y + sy * 5); gG.lineTo(x + sx * 5, y + sy * 5); gG.lineTo(x + sx * 5, y + sy * L * 2); gG.stroke();
+    for (let k = 0; k <= i; k++) { gG.beginPath(); gG.arc(x + sx * (36 + k * 18), y + sy * 36, 5, 0, Math.PI * 2); gG.fill(); } }); // 1, 2, 3 o 4 puntos = esquina 1..4
+  // norte: flecha cerca del borde superior, apuntando al norte real (z negativo)
+  const nx = -sR, ny = -cR; const cx = W / 2, cy = 90; gG.beginPath(); gG.moveTo(cx + nx * 34, cy + ny * 34); gG.lineTo(cx - ny * 12 - nx * 14, cy + nx * 12 - ny * 14); gG.lineTo(cx + ny * 12 - nx * 14, cy - nx * 12 - ny * 14); gG.closePath(); gG.fill();
+}
+
+// ---------- calibración: 4 esquinas (homografía CSS matrix3d) ----------
+const CLAVE = 'kennedy-reacciona.calibracion.v1';
+function esquinasBase() { const iw = innerWidth, ih = innerHeight, s = Math.min(iw / W, ih / H), w = W * s / iw, h = H * s / ih, x = (1 - w) / 2, y = (1 - h) / 2; return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]; }
+let calib = { esquinas: esquinasBase(), base: true }, sel = 0; // sel: 0 = todas, 1..4 = una esquina
+if (!ESPEJO) try { const g = JSON.parse(localStorage.getItem(CLAVE)); if (g && g.esquinas && g.esquinas.length === 4) calib = { esquinas: g.esquinas, base: false }; } catch { }
+function homografia(src, dst) {
+  const M = [], b = [];
+  for (let i = 0; i < 4; i++) { const [x, y] = src[i], [X, Y] = dst[i];
+    M.push([x, y, 1, 0, 0, 0, -X * x, -X * y]); b.push(X); M.push([0, 0, 0, x, y, 1, -Y * x, -Y * y]); b.push(Y); }
+  for (let c = 0; c < 8; c++) { let p = c; for (let r = c + 1; r < 8; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r; [M[c], M[p]] = [M[p], M[c]]; [b[c], b[p]] = [b[p], b[c]];
+    for (let r = 0; r < 8; r++) { if (r === c) continue; const f = M[r][c] / M[c][c]; for (let k = c; k < 8; k++) M[r][k] -= f * M[c][k]; b[r] -= f * b[c]; } }
+  const h = b.map((v, i) => v / M[i][i]); return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+}
+const asas = [...document.querySelectorAll('.esq')];
+function aplicarCalib() {
+  const iw = innerWidth, ih = innerHeight, dst = (ESPEJO || calib.base ? esquinasBase() : calib.esquinas).map(([x, y]) => [x * iw, y * ih]);
+  const h = homografia([[0, 0], [W, 0], [W, H], [0, H]], dst);
+  cv.style.transform = `matrix3d(${h[0]},${h[3]},0,${h[6]},${h[1]},${h[4]},0,${h[7]},0,0,1,0,${h[2]},${h[5]},0,${h[8]})`;
+  asas.forEach((a, i) => { a.style.left = dst[i][0] + 'px'; a.style.top = dst[i][1] + 'px'; a.classList.toggle('sel', sel === 0 || sel === i + 1); });
+}
+let tGuardar = 0;
+function guardarCalib() { calib.base = false; aplicarCalib(); clearTimeout(tGuardar); tGuardar = setTimeout(() => { try { localStorage.setItem(CLAVE, JSON.stringify({ esquinas: calib.esquinas })); } catch { } }, 250); }
+function opCalib(op, v = {}) {
+  if (calib.base) calib.esquinas = esquinasBase();
+  const E = calib.esquinas, iw = innerWidth, ih = innerHeight, idx = sel === 0 ? [0, 1, 2, 3] : [sel - 1];
+  const cx = E.reduce((s, p) => s + p[0], 0) / 4 * iw, cy = E.reduce((s, p) => s + p[1], 0) / 4 * ih;
+  if (op === 'mover') idx.forEach(i => { E[i][0] += (v.dx || 0) / iw; E[i][1] += (v.dy || 0) / ih; });
+  else if (op === 'escala') E.forEach(p => { p[0] = (cx + (p[0] * iw - cx) * v.f) / iw; p[1] = (cy + (p[1] * ih - cy) * v.f) / ih; });
+  else if (op === 'rotar') { const a = v.grados * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); E.forEach(p => { const x = p[0] * iw - cx, y = p[1] * ih - cy; p[0] = (cx + x * c - y * s) / iw; p[1] = (cy + x * s + y * c) / ih; }); }
+  else if (op === 'esquina') { sel = v.i | 0; aplicarCalib(); return; }
+  else if (op === 'restablecer') { calib = { esquinas: esquinasBase(), base: true }; try { localStorage.removeItem(CLAVE); } catch { } aplicarCalib(); return; }
+  else if (op === 'cargar' && Array.isArray(v.esquinas) && v.esquinas.length === 4) calib.esquinas = v.esquinas.map(p => [+p[0], +p[1]]);
+  guardarCalib();
+}
+function exportarCalib() {
+  const iw = innerWidth, ih = innerHeight, E = calib.base ? esquinasBase() : calib.esquinas;
+  const datos = { version: 1, fecha: new Date().toISOString(), rectangulo: R, maqueta: cfg.maqueta, resolucion: [W, H], ventana: [iw, ih], esquinas_norm: E, esquinas_px: E.map(([x, y]) => [Math.round(x * iw * 10) / 10, Math.round(y * ih * 10) / 10]) };
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' })); a.download = 'calibracion_kennedy_reacciona.json'; a.click();
+}
+asas.forEach((a, i) => {
+  a.addEventListener('pointerdown', (e) => { if (A.modo !== 'calibracion') return; a.setPointerCapture(e.pointerId); sel = i + 1; if (calib.base) { calib.esquinas = esquinasBase(); calib.base = false; } aplicarCalib(); });
+  a.addEventListener('pointermove', (e) => { if (!a.hasPointerCapture(e.pointerId)) return; calib.esquinas[i] = [e.clientX / innerWidth, e.clientY / innerHeight]; guardarCalib(); });
+});
+addEventListener('resize', aplicarCalib);
+aplicarCalib();
+
+function ponerModo(m) { A.modo = m; document.body.classList.toggle('calib', m === 'calibracion' && !ESPEJO); aplicarCalib(); }
+if (!ESPEJO) addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => { }); else document.exitFullscreen(); }
+  else if (k === 'p') ponerModo('presentacion'); else if (k === 'g') ponerModo('cuadricula'); else if (k === 'c') ponerModo('calibracion');
+  if (A.modo !== 'calibracion') return;
+  const d = e.shiftKey ? 10 : 1;
+  if (/^[0-4]$/.test(k)) opCalib('esquina', { i: +k });
+  else if (k === 'arrowleft') opCalib('mover', { dx: -d }); else if (k === 'arrowright') opCalib('mover', { dx: d });
+  else if (k === 'arrowup') opCalib('mover', { dy: -d }); else if (k === 'arrowdown') opCalib('mover', { dy: d });
+  else if (k === '+' || k === '=') opCalib('escala', { f: 1 + 0.002 * d }); else if (k === '-') opCalib('escala', { f: 1 / (1 + 0.002 * d) });
+  else if (k === ']') opCalib('rotar', { grados: 0.1 * d }); else if (k === '[') opCalib('rotar', { grados: -0.1 * d });
+  else if (k === 'r') opCalib('restablecer'); else if (k === 'e') exportarCalib();
+  else return;
+  e.preventDefault();
+});
+
+// ---------- órdenes de la consola ----------
+let espejoRef = null; // espejo: última telemetría {tDia, en}
+function aplicarParche(p) {
+  for (const [k, v] of Object.entries(p || {})) {
+    if (k === 'capas') Object.assign(A.capas, v);
+    else if (k === 'modo') ponerModo(v);
+    else if (k in A) A[k] = v;
+  }
+}
+const enlace = crearEnlace({ escuchar: ESPEJO ? ['orden', 'telemetria'] : ['orden'], alMensaje(ev, m) {
+  if (ev === 'telemetria') { espejoRef = { tDia: m.tDia, en: performance.now() }; tDia = m.tDia; if (m.ajustes) aplicarParche(m.ajustes); return; } // solo llega al espejo
+  if (m.tipo === 'ajustes') aplicarParche(m.parche);
+  else if (m.tipo === 'accion' && !ESPEJO) {
+    if (m.accion === 'reiniciar') { tDia = hm(cfg.reloj.hora_inicio); }
+    else if (m.accion === 'hora') tDia = ((+m.valor % DIA) + DIA) % DIA;
+    else if (m.accion === 'calib') opCalib(m.op, m);
+    else if (m.accion === 'exportar') exportarCalib();
+  }
+} });
+if (!ESPEJO) { const g = await enlace.ajustesGuardados(); if (g) aplicarParche(g); }
+
+// ---------- dibujo ----------
+const COL = [[40, 90, 255], [55, 140, 255], [70, 200, 255], [175, 245, 255]];   // por velocidad: detenido · lento · medio · rápido (cian-azul)
+const UMB = [1, 5, 10];                                                          // m/s
+const caminos = () => Array.from({ length: 4 }, () => Array.from({ length: 8 }, () => new Path2D()));
+let vis = { n: 0, x: new Float32Array(4000), y: new Float32Array(4000), v: new Float32Array(4000) }; // vehículos dentro del rectángulo en este cuadro
+let fps = 0, cuadros = 0, tFps = performance.now(), tPrev = performance.now();
+window.__kr = { A, get tDia() { return tDia; }, get fps() { return fps; }, get trozos() { return trozos; }, get n() { return vis.n; }, calib: () => calib };
+
+function dibujarMovilidad() {
+  const tg = tGrab(), k = Math.floor(tg), f = tg - k, S = steps[k], S1 = steps[(k + 1) % NS];
+  vis.n = 0; if (!S) return;
+  const pD = A.demanda ? demandaEn(tDia) : 1, E = Math.max(0, Math.min(7, Math.round(A.estela_s))), Pp = caminos(), cab = [0, 1, 2, 3].map(() => new Path2D()), halo = [0, 1, 2, 3].map(() => new Path2D());
+  const r = A.punto_px;
+  for (let i = 0; i < S.ids.length; i++) {
+    const id = S.ids[i]; if (!sale(id, pD)) continue;
+    let x = S.xs[i], z = S.zs[i], v = 0;
+    const j = S1 ? buscar(S1.ids, id) : -1;
+    if (j >= 0) { const x1 = S1.xs[j], z1 = S1.zs[j]; v = Math.hypot(x1 - x, z1 - z); if (v < 60) { x += (x1 - x) * f; z += (z1 - z) * f; } else v = 0; }
+    const [px, py] = aPx(x, z);
+    if (px < -MARG || px > W + MARG || py < -MARG || py > H + MARG) continue;
+    const b = v < UMB[0] ? 0 : v < UMB[1] ? 1 : v < UMB[2] ? 2 : 3;
+    if (px >= 0 && px <= W && py >= 0 && py <= H && vis.n < 4000) { vis.x[vis.n] = px; vis.y[vis.n] = py; vis.v[vis.n] = v; vis.n++; }
+    cab[b].moveTo(px + r, py); cab[b].arc(px, py, r, 0, 6.2832);
+    halo[b].moveTo(px + r * 2.4, py); halo[b].arc(px, py, r * 2.4, 0, 6.2832);
+    if (b === 0 || E === 0) continue;
+    let ax = px, ay = py; // estela: posiciones grabadas de los segundos anteriores (solo sobre la trayectoria real)
+    for (let e = 0; e < E; e++) {
+      const Se = steps[((k - e) % NS + NS) % NS]; if (!Se) break; const q = e === 0 ? i : buscar(Se.ids, id); if (q < 0) break;
+      const [bx, by] = aPx(Se.xs[q], Se.zs[q]); if (Math.abs(bx - ax) + Math.abs(by - ay) > 80 * kx) break;
+      Pp[b][e].moveTo(ax, ay); Pp[b][e].lineTo(bx, by); ax = bx; ay = by;
+    }
+  }
+  ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  for (let b = 1; b < 4; b++) { const [cr, cg, cb] = COL[b], base = (0.45 + 0.18 * b) * A.brillo;
+    for (let e = 0; e < E; e++) { ctx.strokeStyle = `rgba(${cr},${cg},${cb},${Math.min(1, base * (1 - e / E) * 0.8)})`; ctx.lineWidth = r * (1.25 - 0.12 * e); ctx.stroke(Pp[b][e]); } }
+  for (let b = 0; b < 4; b++) { const [cr, cg, cb] = COL[b], al = Math.min(1, (b === 0 ? 0.55 : 0.75 + 0.08 * b) * A.brillo);
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${al * 0.14})`; ctx.fill(halo[b]);   // halo suave
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${al})`; ctx.fill(cab[b]); }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function cuadro(now) {
+  const dt = Math.min(0.25, (now - tPrev) / 1000); tPrev = now;
+  if (ESPEJO && espejoRef && A.corriendo) tDia = (espejoRef.tDia + (now - espejoRef.en) / 1000 * A.vel) % DIA;
+  else if (A.corriendo) tDia = (tDia + dt * A.vel) % DIA;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  if (A.modo === 'presentacion') {
+    if (A.capas.red) { ctx.globalAlpha = A.red_intensidad; ctx.drawImage(cvRed, 0, 0); ctx.globalAlpha = 1; }
+    if (A.capas.movilidad) dibujarMovilidad(); else vis.n = 0;
+  } else { ctx.drawImage(cvGrid, 0, 0); vis.n = 0; }
+  cuadros++; if (now - tFps >= 1000) { fps = Math.round(cuadros * 1000 / (now - tFps)); cuadros = 0; tFps = now; }
+  requestAnimationFrame(cuadro);
+}
+requestAnimationFrame(cuadro);
+
+// ---------- telemetría para la consola (4 por segundo) ----------
+if (!ESPEJO) setInterval(() => {
+  let sv = 0, det = 0; const pv = [[0, 0], [0, 0], [0, 0]], sin = [0];
+  for (let i = 0; i < vis.n; i++) { const v = vis.v[i]; sv += v; if (v < UMB[0]) det++; const t = viaDe(vis.x[i], vis.y[i]); if (t >= 0) { pv[t][0]++; pv[t][1] += v; } else sin[0]++; }
+  const kmh = (s, n) => n ? Math.round(s / n * 3.6 * 10) / 10 : null;
+  enlace.enviar('telemetria', { tipo: 'telemetria', tDia, tg: Math.floor(tGrab()), dur: TI.dur, corriendo: A.corriendo, vel: A.vel, modo: A.modo, fps, res: [W, H], trozos, trozosTotal: TI.n,
+    n: vis.n, vMedia: kmh(sv, vis.n), detenidos: vis.n ? Math.round(det / vis.n * 1000) / 10 : null, demanda: A.demanda ? Math.round(demandaEn(tDia) * 1000) / 10 : 100,
+    porVia: { arterial: { n: pv[0][0], v: kmh(pv[0][1], pv[0][0]) }, intermedia: { n: pv[1][0], v: kmh(pv[1][1], pv[1][0]) }, local: { n: pv[2][0], v: kmh(pv[2][1], pv[2][0]) }, sinVia: sin[0] },
+    esquinas: calib.base ? esquinasBase() : calib.esquinas, calibGuardada: !calib.base, ventana: [innerWidth, innerHeight], ajustes: A });
+}, 250);
+</script>
+</body>
+</html>

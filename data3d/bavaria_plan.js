@@ -6,6 +6,7 @@
    - convención de AGENTES HUMANOS (figuras que se mueven entre los espacios de su rol)
    - convención de INTERACCIONES BIÓTICAS que llegan al predio (arcos animados con los colores de la red biótica)
    Ubicación del programa: sobre la imagen satelital y las huellas de OSM (data3d/bavaria.json). Todo son hipótesis de diseño. */
+import { RELOJ } from './reloj.js?v=5';
 
 const PROGRAMA = [ // e: índice del edificio en bavaria.json; z: zona abierta de bavaria.json
   { k: 'mercado', n: 'Mercado de proximidad', c: '#f59e0b', e: 2, d: 'Edificio central: se recupera la estructura de ladrillo y se le pone cubierta nueva.', din: 'Puestos pequeños con cupos rotativos y tope de volumen: los productores locales venden directo a los vecinos y arman pedidos por barrio. Ningún productor ni comprador depende solo de Bavaria.' },
@@ -220,9 +221,12 @@ export async function iniciarPlanBavaria({ THREE, T3, lw, OX, OZ, Y0 = 2.0 }) {
   });
 
   /* ---------- bucle ---------- */
-  const m4 = new THREE.Object3D(), v = new THREE.Vector3(); let ult = performance.now();
-  const bucle = () => {
-    const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+  /* TIEMPO: las figuras del plan (vehículos, personas y pulsos) son una ilustración del programa, no agentes del mundo simulado:
+     se mueven con el tiempo de animación del reloj universal (data3d/reloj.js; se detienen en pausa, hasta ×8) y con azar con semilla.
+     Se dibujan en el bucle maestro (sin requestAnimationFrame propio). */
+  const m4 = new THREE.Object3D(), v = new THREE.Vector3(), azar = RELOJ.azar('bavaria_plan');
+  const bucle = (info) => {
+    const ahora = performance.now(), dt = Math.min(1, info.dtAnim);
     if (resalte.visible) { mRes.opacity = 0.16 + 0.1 * Math.sin(ahora / 400); }
     // etiqueta del resaltado y del programa
     const W_ = innerWidth, H_ = innerHeight, cam = T3.camera;
@@ -232,16 +236,15 @@ export async function iniciarPlanBavaria({ THREE, T3, lw, OX, OZ, Y0 = 2.0 }) {
       for (const e of ETQ) { const s = PUNTO[e.p.k]; if (s) poner(e.d, s.c[0], s.y + 6, s.c[1]); e.d.classList.toggle('sel', sel === e.p.k); }
       for (const p of PROGRAMA) { const s = PUNTO[p.k]; if (s && s.m && s.m.material) s.m.material.opacity = sel && sel !== p.k ? 0.14 : (p.z ? 0.55 : p.bosque ? 0.85 : 0.38); }
       // vehículos y personas en sus rutas
-      for (const M of MOV) { const f = M.f; for (let i = 0; i < M.d.length; i++) { M.d[i] += f.v * dt * 6; const [x, z, a] = enRuta(f.ruta, f.C, M.d[i]); m4.position.set(x, Y0, z); m4.rotation.set(0, a, 0); m4.scale.setScalar(f.tipo === 'persona' ? 1.6 : 1.4); m4.updateMatrix(); M.im.setMatrixAt(i, m4.matrix); } M.im.instanceMatrix.needsUpdate = true; }
+      for (const M of MOV) { const f = M.f; for (let i = 0; i < M.d.length; i++) { M.d[i] += f.v * dt; const [x, z, a] = enRuta(f.ruta, f.C, M.d[i]); m4.position.set(x, Y0, z); m4.rotation.set(0, a, 0); m4.scale.setScalar(f.tipo === 'persona' ? 1.6 : 1.4); m4.updateMatrix(); M.im.setMatrixAt(i, m4.matrix); } M.im.instanceMatrix.needsUpdate = true; }
       // agentes humanos
-      for (const h of HUM) { h.L.forEach((a, i) => { if (a.pausa > 0) a.pausa -= dt; else { const dx = a.obj[0] - a.x, dz = a.obj[1] - a.z, d = Math.hypot(dx, dz); if (d < 1) { a.pausa = 3 + Math.random() * 10; a.obj = destino(h.t.a[Math.floor(Math.random() * h.t.a.length)]); } else { const s = Math.min(d, 1.4 * dt * 6); a.x += dx / d * s; a.z += dz / d * s; a.r = Math.atan2(dx, dz); } } m4.position.set(a.x, Y0, a.z); m4.rotation.set(0, a.r || 0, 0); m4.scale.setScalar(2.2); m4.updateMatrix(); h.im.setMatrixAt(i, m4.matrix); }); h.im.instanceMatrix.needsUpdate = true; }
+      for (const h of HUM) { h.L.forEach((a, i) => { if (a.pausa > 0) a.pausa -= dt; else { const dx = a.obj[0] - a.x, dz = a.obj[1] - a.z, d = Math.hypot(dx, dz); if (d < 1) { a.pausa = 3 + azar() * 10; a.obj = destino(h.t.a[Math.floor(azar() * h.t.a.length)]); } else { const s = Math.min(d, 1.4 * dt); a.x += dx / d * s; a.z += dz / d * s; a.r = Math.atan2(dx, dz); } } m4.position.set(a.x, Y0, a.z); m4.rotation.set(0, a.r || 0, 0); m4.scale.setScalar(2.2); m4.updateMatrix(); h.im.setMatrixAt(i, m4.matrix); }); h.im.instanceMatrix.needsUpdate = true; }
       // pulsos de las interacciones bióticas
-      let n = 0; for (const A of ARCOS) for (let j = 0; j < 2 && n < NPU; j++) { const u = ((ahora / 1000) * 0.18 + j * 0.5 + n * 0.071) % 1, P = A.P[Math.floor(u * (A.P.length - 1))]; pp[n * 3] = P.x; pp[n * 3 + 1] = P.y; pp[n * 3 + 2] = P.z; pc[n * 3] = A.col.r; pc[n * 3 + 1] = A.col.g; pc[n * 3 + 2] = A.col.b; n++; }
+      let n = 0; for (const A of ARCOS) for (let j = 0; j < 2 && n < NPU; j++) { const u = (info.tAnim * 0.18 + j * 0.5 + n * 0.071) % 1, P = A.P[Math.floor(u * (A.P.length - 1))]; pp[n * 3] = P.x; pp[n * 3 + 1] = P.y; pp[n * 3 + 2] = P.z; pc[n * 3] = A.col.r; pc[n * 3 + 1] = A.col.g; pc[n * 3 + 2] = A.col.b; n++; }
       pulsosG.setDrawRange(0, n); pulsosG.attributes.position.needsUpdate = true; pulsosG.attributes.color.needsUpdate = true;
     }
-    requestAnimationFrame(bucle);
   };
-  requestAnimationFrame(bucle);
+  RELOJ.alDibujar(bucle);
   return {
     entrada: { id: 'E1', n: 'Bavaria Común', c: '#ef4444', n_lotes: 1, area: 712000 },
     ver: (on) => { resalte.visible = on; if (!on) cerrar(); },

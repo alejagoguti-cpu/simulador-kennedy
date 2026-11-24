@@ -6,7 +6,7 @@
      (huertas de barrio, techos, Bavaria) con su área; el panel muestra hoy -> propuesta.
    · Indicadores: tabla HOY -> CON LA PROPUESTA en el panel de la derecha, con la razón de cada cambio (escenarios_sim.js).
    Al cambiar a la propuesta sale una tarjeta corta que resume qué cambió en cada capa. */
-import { SEM, AÑO, SIMST } from './sim_modelos.js?v=3';
+import { SEM, AÑO, SIMST } from './sim_modelos.js?v=7';
 export function iniciarCapasEscenario({ T3, ES }) {
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const pro = () => T3.escenario === 'proyecto';
@@ -24,7 +24,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
   opacity:0;transform:translateY(-6px);transition:opacity .35s,transform .35s;pointer-events:none}
 #ci-toast.on{opacity:1;transform:none;pointer-events:auto}#ci-toast h4{margin:0 0 6px;font-size:12.5px;font-weight:600}#ci-toast ul{margin:0;padding:0 0 0 14px}#ci-toast li{margin:2px 0}#ci-toast li b{color:#fff}
 #ci-toast button{all:unset;cursor:pointer;position:absolute;right:10px;top:8px;color:#b3bbc0;font-size:15px}
-@media(max-width:760px){#ci-toast{left:8px;right:8px;width:auto;top:auto;bottom:140px}}
+@media(max-width:760px){#ci-toast{left:8px;right:8px;width:auto;top:auto;bottom:84px;max-height:34vh;overflow:auto;font-size:11px}}
 @media(prefers-reduced-motion:reduce){#ci-toast{transition:none}}`;
   document.head.appendChild(css);
 
@@ -110,10 +110,10 @@ export function iniciarCapasEscenario({ T3, ES }) {
          de día 0 dB; solo afecta la parte de camiones que sigue entrando, con el peso de cercanía a Corabastos. [SUP]
      · «Ruido promedio» = promedio de los niveles de todas las celdas de vía. Bandas: verde < 55, amarillo 55–65, naranja 65–70, rojo > 70 dB.
      Todo se precalcula una vez (flujo) y se rehace en milisegundos al mover un control; el mapa solo se repinta cuando algo cambia. */
-  const LREF = [0, 60, 68, 74], BANDA = [55, 65, 70], BANDA_N = ['Verde · tranquilo', 'Amarillo · moderado', 'Naranja · ruidoso', 'Rojo · muy ruidoso'], BANDA_C = ['#3fbf6f', '#f2d338', '#f28c28', '#e0412f'];
+  const LREF = [0, 60, 68, 74], BANDA = [55, 65, 70], BANDA_N = ['Amarillo claro · tranquilo', 'Amarillo · moderado', 'Naranja · ruidoso', 'Rojo · muy ruidoso'], BANDA_C = ['#fff7b3', '#ffd646', '#f57c00', '#d32f2f'];
   RM.LREF = LREF; RM.BANDA = BANDA; RM.BANDA_C = BANDA_C; RM.aj = { vel: 50, hor: 0 }; RM.vista = 'auto'; RM.niv = null; RM.fl = null; RM.densPre = 1; RM.arbPre = null;
   let pArb = 0; const precargarArboles = () => { if (pArb || window.KEN_PARCHES || typeof T3.lw !== 'function') return; pArb = 1; // los árboles de los parches se calculan aparte para que el panel dé lo mismo en «hoy» y en «propuesta» (la capa 3D solo se crea con la propuesta)
-    Promise.all([import('./parches_arboles.js?v=7'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {
+    Promise.all([import('./parches_arboles.js?v=9'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {
       const kA = (t) => { const h = Math.sin(t.x * 12.9898 + t.z * 78.233) * 43758.5453; return h - Math.floor(h); }; // la misma clave de densidad de parches_arboles.js
       RM.arbPre = m.calcularParches(HB, PQ, T3.lw, matchMedia('(pointer:coarse)').matches).flatMap(p => p.arboles).map(t => ({ x: t.x, z: t.z, k: kA(t) })); RM.ver++; }).catch(e => { pArb = 0; console.warn('árboles del ruido:', e); }); };
   RM.vistaEf = () => RM.vista === 'auto' ? (pro() ? 'pro' : 'hoy') : RM.vista;
@@ -158,7 +158,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
     const nv = RM.niveles(); if (nv) { const d = nv.dif; p.tot = d; p.pct = (1 - Math.pow(10, d / 10)) * 100; c.tot = pro() ? d : 0; c.pct = pro() ? p.pct : 0; } // el número total viene del modelo en dB absolutos (el mismo del panel de ruido)
     return { ahora: c, pleno: p }; };
 
-  /* ---------- panel de ruido: calles de Kennedy hoy vs. propuesta, con controles que cambian el mapa ---------- */
+  /* ---------- panel de ruido: calles de Estado actual vs. propuesta, con controles que cambian el mapa ---------- */
   const mas = (v, d = 1) => { const u = d > 1 ? 0.004 : 0.049; return (v < -u ? '−' : v > u ? '+' : '') + fmt(Math.abs(v), d); };
   const traduce = (d) => { const a = Math.abs(d); if (a < 0.05) return 'Sin cambio: las calles suenan igual que hoy.';
     const pct = (1 - Math.pow(10, -a / 10)) * 100, fuerte = Math.pow(2, -a / 10) * 100, que = a < 1 ? 'un cambio casi imperceptible para el oído' : a < 3 ? 'un cambio que se nota poco' : a < 6 ? 'un cambio que se nota con claridad' : 'un cambio muy notorio';
@@ -240,7 +240,8 @@ export function iniciarCapasEscenario({ T3, ES }) {
     const fila = (n, hoy, prop, mejor, por, raw) => { const ir = IR[ii++]; let br = '';
       if (raw && pro() && raw.every(v => isFinite(v) && v >= 0)) { const m = Math.max(raw[0], raw[1], 1e-9), w = (v) => Math.max(2, v / m * 100).toFixed(1); br = `<i class="br"><b style="width:${w(raw[0])}%;background:#8fb0c9"></b><b style="width:${w(raw[1])}%;background:${CP}"></b></i>`; }
       return `<div class="r"><span>${n}</span><b>${hoy}</b><strong class="${pro() ? (mejor ? 'bien' : 'mal') : ''}">${pro() ? prop : '–'}</strong>${br}<small>${por}${ir ? ` <button type="button" class="ci-ir" data-ir="${ir}">Ver en el mapa →</button>` : ''}</small></div>`; };
-    x.innerHTML = `<div class="h"><span>Indicadores · ${2026 + Math.floor(t / AÑO) + 1}</span><span><i class="lg" style="background:#8fb0c9"></i>hoy → <i class="lg" style="background:${CP}"></i>propuesta ${pro() ? e : ''}</span></div>` +
+    const tReal = Math.max(0, Math.floor(SIMST.t)); // semana real del reloj (sin tope): la vista viva R devuelve siempre el estado actual, sin importar el índice
+    x.innerHTML = `<div class="h"><span>Indicadores · Año ${Math.floor(tReal / AÑO) + 1}</span><span><i class="lg" style="background:#8fb0c9"></i>hoy → <i class="lg" style="background:${CP}"></i>propuesta ${pro() ? e : ''}</span></div>` +
       fila('Hogares con huerta', fmt(A.act[t]), fmt(P.act[t]), true, 'Bavaria forma promotores que abren y acompañan huertas.', [A.act[t], P.act[t]]) +
       fila('Dependencia de Corabastos', fmt(A.dep[t] * 100) + ' %', fmt(P.dep[t] * 100) + ' %', true, 'Huertas y compras directas a la región abastecen tiendas y comedores.', [A.dep[t], P.dep[t]]) +
       fila('Vehículos en la Av. Ciudad de Cali', '100 %', ru ? fmt(100 - ru.veh) + ' %' : '–', true, 'Menos viajes de carga y de compra hacia Corabastos.', ru ? [100, 100 - ru.veh] : null) +

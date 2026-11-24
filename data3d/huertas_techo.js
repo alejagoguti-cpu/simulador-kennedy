@@ -80,7 +80,17 @@ export function crearHuertasTecho(THREE, T3, opt = {}) {
   const api = { grupo, n: 0, camas: 0 };
   api.actualizar = (cam) => { for (const c of cercanas) { const v = Math.hypot(c.x - cam.position.x, c.z - cam.position.z, c.y - cam.position.y) < CERCA; if (c.m.visible !== v) c.m.visible = v; } };
 
+  /* rendimiento: armar las terrazas cuesta ~10 s de hilo principal y casi nunca se ven (con la propuesta las reemplaza la hidroponía).
+     agregar() solo cuenta y guarda la lista; la geometría se arma, igual que antes y en el mismo orden, en el primer cuadro en que el grupo
+     está visible (antes de dibujarlo: actualizar() y el dibujo del reloj corren antes del render). */
+  const PEND = [];
+  const armarPendientes = () => { if (!PEND.length || !grupo.visible || !grupo.parent) return; const L = PEND.splice(0); for (const lista of L) armar(lista); };
+  if (window.KEN_RELOJ && window.KEN_RELOJ.alDibujar) window.KEN_RELOJ.alDibujar(armarPendientes);
+  const actualizar0 = api.actualizar; api.actualizar = (cam) => { armarPendientes(); actualizar0(cam); };
   api.agregar = (lista) => {
+    for (const R of lista) { const W = R.W, n = W.length; if (n < 3) continue; let area = 0; for (let i = 0; i < n; i++) { const a = W[i], b = W[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; } if (Math.abs(area) / 2 < 60) continue; api.n++; }
+    T3.counts.huertasTecho = api.n; PEND.push(lista); };
+  const armar = (lista) => {
     const B = { piso: [], cultivo: [], seto: [], partes: [], plantas: [], vidrio: [] };
     const add = (mat, g, col) => B[mat].push(preparar(g, col));
     let cx0 = 0, cz0 = 0, cy0 = 0;
@@ -90,7 +100,7 @@ export function crearHuertasTecho(THREE, T3, opt = {}) {
       if (B.plantas.length) cerrarPlantas();
       let area = 0; for (let i = 0; i < n; i++) { const a = W[i], b = W[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
       const sgn = area > 0 ? 1 : -1; area = Math.abs(area) / 2; if (area < 60) continue;
-      api.n++; cx0 = W.reduce((s, q) => s + q[0], 0) / n; cz0 = W.reduce((s, q) => s + q[1], 0) / n; cy0 = y;
+      cx0 = W.reduce((s, q) => s + q[0], 0) / n; cz0 = W.reduce((s, q) => s + q[1], 0) / n; cy0 = y;
       const semilla = Math.abs(Math.round(W[0][0] * 13 + W[0][1] * 7)); sem = 1 + (semilla % 2147483646);
       // piso de grava (triangulado por el contorno real)
       let tri = []; try { tri = THREE.ShapeUtils.triangulateShape(W.map(q => new THREE.Vector2(q[0], q[1])), []); } catch (e) {}
@@ -183,7 +193,6 @@ export function crearHuertasTecho(THREE, T3, opt = {}) {
       if (mat === 'vidrio') m.renderOrder = 2;
       grupo.add(m);
     }
-    T3.counts.huertasTecho = api.n;
   };
   return api;
 }

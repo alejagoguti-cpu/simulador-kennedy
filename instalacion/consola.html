@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kennedy Reacciona · consola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../data3d/ui_sobrio.css">
+<style>
+  :root { color-scheme: dark; --cian: #6fd3ff; --ok: #8fe3a8; --mal: #ff8a7a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: radial-gradient(1200px 700px at 70% -10%, #1b2330 0%, #0b0d10 55%, #07080a 100%) fixed; color: var(--ui-tx); font: 400 13px/1.45 var(--ui-sans); }
+  header { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: flex-end; justify-content: space-between; padding: 22px 24px 8px; }
+  header h1 { margin: 0; font: 300 22px/1.1 var(--ui-sans); letter-spacing: .14em; text-transform: uppercase; }
+  header h1 b { font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--ui-tx2); font-size: 12px; letter-spacing: .02em; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill { font: 500 10.5px var(--ui-mono); letter-spacing: .06em; padding: 5px 9px; border-radius: 99px; border: 1px solid var(--ui-bd); background: var(--ui-bg2); color: var(--ui-tx2); white-space: nowrap; }
+  .pill i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ui-tx3); margin-right: 6px; vertical-align: 0; }
+  .pill.ok i { background: var(--ok); box-shadow: 0 0 8px var(--ok); } .pill.mal i { background: var(--mal); }
+  main { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(280px, 340px); gap: 14px; padding: 12px 24px 28px; align-items: start; }
+  .pan { background: var(--ui-bg); border: 1px solid var(--ui-bd); border-radius: 12px; padding: 14px 16px 16px; box-shadow: 0 12px 32px rgba(0,0,0,.28);
+         -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1); }
+  .col { display: grid; gap: 14px; min-width: 0; }
+  h2 { margin: 0 0 10px; font: 500 9.5px var(--ui-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ui-tx3); display: flex; justify-content: space-between; gap: 8px; }
+  h2 em { font-style: normal; letter-spacing: .04em; text-transform: none; color: var(--ui-tx3); }
+  .reloj { display: flex; align-items: baseline; gap: 10px; margin: 2px 0 12px; }
+  .reloj b { font: 300 40px/1 var(--ui-sans); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .reloj small { color: var(--ui-acc-tx); font: 500 12px var(--ui-mono); }
+  .fila { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; align-items: center; }
+  .fila > label { color: var(--ui-tx2); font-size: 11.5px; min-width: 66px; }
+  button, .btn { height: 30px; padding: 0 11px; border-radius: 7px; background: var(--ui-bg2); border: 1px solid var(--ui-bd); color: var(--ui-tx2);
+           font: 500 11.5px var(--ui-sans); cursor: pointer; transition: background .15s, color .15s, border-color .15s; display: inline-flex; align-items: center; gap: 6px; }
+  button:hover:not(:disabled), .btn:hover { color: var(--ui-tx); border-color: var(--ui-bd2); }
+  button.on { background: var(--ui-acc-bg); color: var(--ui-acc-tx); border-color: rgba(226,165,91,.42); }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 3px; }
+  input[type=range] { flex: 1; min-width: 100px; accent-color: var(--ui-acc); }
+  input[type=time] { height: 30px; background: var(--ui-bg2); border: 1px solid var(--ui-bd); border-radius: 7px; color: var(--ui-tx); padding: 0 8px; font: 400 12px var(--ui-mono); color-scheme: dark; }
+  .val { font: 400 11px var(--ui-mono); color: var(--ui-acc-tx); min-width: 38px; text-align: right; }
+  .sw { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 2px 9px 0; background: none; border: 0; border-bottom: 1px solid var(--ui-bd);
+        border-radius: 0; height: auto; color: var(--ui-tx); font: 400 12.5px var(--ui-sans); text-align: left; }
+  .sw small { display: block; color: var(--ui-tx3); font-size: 10.5px; margin-top: 2px; }
+  .sw::after { content: ""; flex: none; width: 28px; height: 15px; border-radius: 8px; background: radial-gradient(circle at 7.5px 50%, #b9bfc3 4.6px, transparent 5.2px), rgba(255,255,255,.11); transition: background .2s; }
+  .sw.on::after { background: radial-gradient(circle at 20.5px 50%, #1b1207 4.6px, transparent 5.2px), var(--ui-acc); }
+  .sw:disabled { opacity: .42; }
+  .esc { display: grid; gap: 6px; }
+  .esc button { height: auto; padding: 8px 10px; justify-content: flex-start; text-align: left; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .esc button small { color: var(--ui-tx3); font-size: 10.5px; font-weight: 400; }
+  .previa { position: relative; aspect-ratio: 16 / 9; width: 100%; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--ui-bd); }
+  .previa iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+  .ind { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .k { background: var(--ui-bg2); border: 1px solid var(--ui-bd); border-radius: 9px; padding: 10px 12px; min-width: 0; }
+  .k span { display: block; color: var(--ui-tx2); font-size: 11px; }
+  .k b { display: block; font: 300 24px/1.2 var(--ui-sans); font-variant-numeric: tabular-nums; margin: 3px 0 4px; }
+  .k b small { font: 400 11px var(--ui-mono); color: var(--ui-tx3); margin-left: 4px; }
+  .tag { display: inline-block; font: 500 9px var(--ui-mono); letter-spacing: .08em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--ui-bd); color: var(--ui-tx3); }
+  .tag.sim { color: var(--cian); border-color: rgba(111,211,255,.3); } .tag.est { color: var(--ui-acc-tx); border-color: rgba(226,165,91,.35); } .tag.calc { color: var(--ui-tx2); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  th { text-align: left; font: 500 9.5px var(--ui-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ui-tx3); padding: 4px 0; border-bottom: 1px solid var(--ui-bd); }
+  td { padding: 6px 0; border-bottom: 1px solid var(--ui-bd); font-variant-numeric: tabular-nums; }
+  td:not(:first-child), th:not(:first-child) { text-align: right; }
+  .nota { color: var(--ui-tx3); font-size: 11px; line-height: 1.5; margin: 10px 0 0; }
+  .nota b { color: var(--ui-tx2); font-weight: 500; }
+  .pad { display: grid; grid-template-columns: repeat(3, 38px); gap: 4px; justify-content: start; }
+  .pad button { width: 38px; padding: 0; justify-content: center; font-family: var(--ui-mono); }
+  .datos { font: 400 11px var(--ui-mono); color: var(--ui-tx2); margin: 0; line-height: 1.7; }
+  @media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .centro { grid-column: 1 / -1; order: -1; } }
+  @media (max-width: 720px) { main { grid-template-columns: minmax(0, 1fr); padding: 10px 16px 24px; } header { padding: 18px 16px 6px; } .reloj b { font-size: 34px; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1><b>Kennedy</b> reacciona</h1>
+    <p>Laboratorio de sistemas urbanos vivos · consola del nivel 1 · maqueta de Bavaria</p>
+  </div>
+  <div class="pills">
+    <span class="pill" id="p-rele"><i></i>relé</span>
+    <span class="pill" id="p-bc"><i></i>BroadcastChannel</span>
+    <span class="pill" id="p-proy"><i></i>proyección</span>
+    <span class="pill" id="p-fps">— fps</span>
+  </div>
+</header>
+<main>
+  <div class="col">
+    <section class="pan">
+      <h2>Reloj <em>única fuente: la proyección</em></h2>
+      <div class="reloj"><b id="hora">--:--:--</b><small id="velTxt">1×</small></div>
+      <div class="fila"><button id="b-ini">Iniciar</button><button id="b-pau">Pausar</button><button id="b-rei">Reiniciar</button></div>
+      <div class="fila"><label>Velocidad</label><span class="seg" id="velSeg"></span></div>
+      <div class="fila"><input type="range" id="vel" min="1" max="60" step="1" value="1"><span class="val" id="velVal">1×</span></div>
+      <div class="fila"><label>Hora del día</label><input type="time" id="horaIn" step="60" value="17:30"><button id="b-hora">Ir</button></div>
+    </section>
+    <section class="pan">
+      <h2>Escenarios</h2>
+      <div class="esc">
+        <button class="on" id="e-A">A · Referencia<small>Grabación SUMO del simulador tal como está</small></button>
+        <button disabled>B · Transformación Bavaria<small>Próximamente: falta portar el modelo de escenarios del simulador</small></button>
+        <button disabled>C · Perturbación<small>Próximamente: sin datos todavía</small></button>
+      </div>
+    </section>
+    <section class="pan">
+      <h2>Capas</h2>
+      <button class="sw on" id="c-mov">Movilidad<small>Reproducción de simulación SUMO</small></button>
+      <button class="sw on" id="c-red">Red vial<small>data3d/net.json, gris tenue</small></button>
+      <button class="sw on" id="c-dem">Demanda por hora<small>Perfil estimado del simulador; apagado = 100 % (hora pico)</small></button>
+      <button class="sw" disabled>Ruido<small>Próximamente</small></button>
+      <button class="sw" disabled>Ecología<small>Próximamente</small></button>
+      <button class="sw" disabled>Sintaxis espacial<small>Próximamente</small></button>
+    </section>
+  </div>
+
+  <div class="col centro">
+    <section class="pan">
+      <h2>Vista previa <em>espejo de la proyección, sin calibrar</em></h2>
+      <div class="previa"><iframe id="previa" title="vista previa" src="about:blank"></iframe></div>
+    </section>
+    <section class="pan">
+      <h2>Indicadores en vivo <em>dentro del rectángulo de la maqueta</em></h2>
+      <div class="ind">
+        <div class="k"><span>Vehículos en el rectángulo</span><b id="i-n">—</b><span class="tag sim">simulado · SUMO</span></div>
+        <div class="k"><span>Velocidad media</span><b id="i-v">—<small>km/h</small></b><span class="tag sim">simulado · SUMO</span></div>
+        <div class="k"><span>Detenidos (&lt; 1 m/s)</span><b id="i-d">—<small>%</small></b><span class="tag sim">simulado · SUMO</span></div>
+        <div class="k"><span>Demanda aplicada</span><b id="i-dem">—<small>%</small></b><span class="tag est">estimado</span></div>
+      </div>
+      <table>
+        <thead><tr><th>Por jerarquía vial</th><th>Vehículos</th><th>Vel. media km/h</th></tr></thead>
+        <tbody>
+          <tr><td>Arterial</td><td id="v-a-n">—</td><td id="v-a-v">—</td></tr>
+          <tr><td>Intermedia</td><td id="v-m-n">—</td><td id="v-m-v">—</td></tr>
+          <tr><td>Local</td><td id="v-l-n">—</td><td id="v-l-v">—</td></tr>
+        </tbody>
+      </table>
+      <p class="nota"><b>Fuente.</b> Movilidad = <b>reproducción de simulación SUMO</b> del simulador (data3d/traf, bucle de 1.499 s, una posición por segundo; segundo actual <span id="i-tg">—</span>). Velocidad = desplazamiento grabado en 1 s. La jerarquía vial se asigna por cercanía (≤ 12 m) a net.json. La grabación <b>no trae el tipo de vehículo</b> (carro, moto, camión): no se distingue. La demanda por hora es el perfil <b>estimado</b> que usa el simulador (index.html, DEMANDA_H).</p>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="pan">
+      <h2>Proyector</h2>
+      <div class="fila"><span class="seg" id="modoSeg">
+        <button data-m="presentacion">Presentación</button><button data-m="cuadricula">Cuadrícula</button><button data-m="calibracion">Calibración</button></span></div>
+      <p class="nota">En la ventana de la proyección: <b>F</b> pantalla completa · <b>P</b> · <b>G</b> · <b>C</b>. En calibración se pueden arrastrar las 4 esquinas con el ratón.</p>
+    </section>
+    <section class="pan">
+      <h2>Calibración <em id="calEst">—</em></h2>
+      <div class="fila"><label>Esquina</label><span class="seg" id="esqSeg">
+        <button data-i="0" class="on">Todas</button><button data-i="1">1</button><button data-i="2">2</button><button data-i="3">3</button><button data-i="4">4</button></span></div>
+      <div class="fila" style="gap:14px;align-items:flex-start">
+        <div class="pad">
+          <span></span><button data-d="0,-1" title="arriba">↑</button><span></span>
+          <button data-d="-1,0" title="izquierda">←</button><button id="pasoBtn" title="paso">1</button><button data-d="1,0" title="derecha">→</button>
+          <span></span><button data-d="0,1" title="abajo">↓</button><span></span>
+        </div>
+        <div style="display:grid;gap:4px">
+          <div class="fila" style="margin:0"><label>Escala</label><button id="esc-">−</button><button id="esc+">+</button></div>
+          <div class="fila" style="margin:0"><label>Rotación</label><button id="rot-">⟲</button><button id="rot+">⟳</button></div>
+        </div>
+      </div>
+      <div class="fila"><button id="calRes">Restablecer</button><button id="calExp">Exportar JSON</button><label class="btn" for="calImp" style="min-width:0">Importar JSON</label><input type="file" id="calImp" accept="application/json,.json" hidden></div>
+      <p class="nota">Esquinas 1–4 = arriba-izquierda, arriba-derecha, abajo-derecha, abajo-izquierda (en la cuadrícula se reconocen por 1 a 4 puntos). La calibración se guarda en el navegador de la proyección.</p>
+    </section>
+    <section class="pan">
+      <h2>Estilo de luz</h2>
+      <div class="fila"><label>Brillo</label><input type="range" id="s-brillo" min="0.2" max="1.6" step="0.05"><span class="val" id="s-brillo-v"></span></div>
+      <div class="fila"><label>Punto</label><input type="range" id="s-punto" min="1.5" max="8" step="0.1"><span class="val" id="s-punto-v"></span></div>
+      <div class="fila"><label>Estela</label><input type="range" id="s-estela" min="0" max="7" step="1"><span class="val" id="s-estela-v"></span></div>
+      <div class="fila"><label>Red vial</label><input type="range" id="s-red" min="0" max="0.8" step="0.02"><span class="val" id="s-red-v"></span></div>
+    </section>
+    <section class="pan">
+      <h2>Maqueta y salida <em>config.json</em></h2>
+      <p class="datos" id="cfgTxt">—</p>
+    </section>
+  </div>
+</main>
+<script type="module">
+import { crearEnlace } from './enlace.js';
+const $ = (id) => document.getElementById(id);
+const cfg = await (await fetch('./config.json', { cache: 'no-cache' })).json();
+const R = cfg.rectangulo, M = cfg.maqueta;
+$('cfgTxt').innerHTML = `Rectángulo ${R.ancho_m} × ${R.alto_m} m · rotación ${R.rotacion_grados}°<br>Centro (mundo) ${R.centro_m.join(', ')} m<br>Maqueta 1:${M.escala} → ${M.ancho_cm} × ${M.alto_cm} cm<br>Salida ${cfg.proyector.ancho_px} × ${cfg.proyector.alto_px} px · ${(cfg.proyector.ancho_px / R.ancho_m).toFixed(2)} px/m`;
+$('horaIn').value = cfg.reloj.hora_inicio;
+
+let tel = null, telEn = 0, sel = 0, paso = 1;
+const est = { ...cfg.estilo, demanda: true, capas: { movilidad: true, red: true } };
+const enlace = crearEnlace({ escuchar: ['telemetria'], alMensaje: (ev, m) => { tel = m; telEn = performance.now(); pintarTel(); }, alCambiarEstado: (s) => {
+  $('p-rele').className = 'pill ' + (s.rele ? 'ok' : 'mal'); $('p-rele').lastChild.textContent = s.rele ? 'relé conectado' : (s.base ? 'relé sin conexión' : 'relé no disponible (https)');
+  $('p-bc').className = 'pill ' + (s.bc ? 'ok' : ''); } });
+window.__kc = { enlace, get tel() { return tel; } };
+const orden = (parche) => enlace.enviar('orden', { tipo: 'ajustes', parche });
+const accion = (accion, extra = {}) => enlace.enviar('orden', { tipo: 'accion', accion, ...extra });
+
+// vista previa (espejo): misma página de la proyección, sin calibración ni telemetría
+const qs = new URLSearchParams(location.search); qs.set('espejo', '1'); qs.set('w', '960'); qs.set('h', '540');
+$('previa').src = 'proyeccion.html?' + qs.toString();
+
+// reloj
+$('b-ini').onclick = () => orden({ corriendo: true });
+$('b-pau').onclick = () => orden({ corriendo: false });
+$('b-rei').onclick = () => accion('reiniciar');
+const PRE = [1, 5, 10, 30, 60];
+$('velSeg').innerHTML = PRE.map(v => `<button data-v="${v}">${v}×</button>`).join('');
+const ponerVel = (v) => { v = Math.max(1, Math.min(60, Math.round(v))); orden({ vel: v }); pintarVel(v); };
+function pintarVel(v) { $('vel').value = v; $('velVal').textContent = v + '×'; $('velTxt').textContent = v + '×'; [...$('velSeg').children].forEach(b => b.classList.toggle('on', +b.dataset.v === v)); }
+$('velSeg').onclick = (e) => { if (e.target.dataset.v) ponerVel(+e.target.dataset.v); };
+$('vel').oninput = (e) => ponerVel(+e.target.value);
+$('b-hora').onclick = () => { const [h, m] = $('horaIn').value.split(':').map(Number); if (isFinite(h)) accion('hora', { valor: h * 3600 + (m || 0) * 60 }); };
+
+// capas
+const sw = (id, fn) => { $(id).onclick = () => { const on = !$(id).classList.contains('on'); $(id).classList.toggle('on', on); fn(on); }; };
+sw('c-mov', (on) => orden({ capas: { movilidad: on } }));
+sw('c-red', (on) => orden({ capas: { red: on } }));
+sw('c-dem', (on) => orden({ demanda: on }));
+
+// modo del proyector
+$('modoSeg').onclick = (e) => { if (e.target.dataset.m) { orden({ modo: e.target.dataset.m }); pintarModo(e.target.dataset.m); } };
+const pintarModo = (m) => [...$('modoSeg').children].forEach(b => b.classList.toggle('on', b.dataset.m === m));
+pintarModo('presentacion');
+
+// calibración remota
+$('esqSeg').onclick = (e) => { if (e.target.dataset.i == null) return; sel = +e.target.dataset.i; [...$('esqSeg').children].forEach(b => b.classList.toggle('on', b === e.target)); accion('calib', { op: 'esquina', i: sel }); };
+document.querySelectorAll('.pad [data-d]').forEach(b => b.onclick = () => { const [dx, dy] = b.dataset.d.split(',').map(Number); accion('calib', { op: 'mover', dx: dx * paso, dy: dy * paso }); });
+$('pasoBtn').onclick = () => { paso = paso === 1 ? 10 : 1; $('pasoBtn').textContent = paso; };
+$('esc-').onclick = () => accion('calib', { op: 'escala', f: 1 / (1 + 0.002 * paso) });
+$('esc+').onclick = () => accion('calib', { op: 'escala', f: 1 + 0.002 * paso });
+$('rot-').onclick = () => accion('calib', { op: 'rotar', grados: -0.1 * paso });
+$('rot+').onclick = () => accion('calib', { op: 'rotar', grados: 0.1 * paso });
+$('calRes').onclick = () => { if (confirm('¿Restablecer la calibración de la proyección?')) accion('calib', { op: 'restablecer' }); };
+$('calExp').onclick = () => {
+  if (!tel) return alert('Todavía no llega la telemetría de la proyección.');
+  const [iw, ih] = tel.ventana, E = tel.esquinas;
+  const d = { version: 1, fecha: new Date().toISOString(), rectangulo: R, maqueta: M, resolucion: tel.res, ventana: tel.ventana, esquinas_norm: E, esquinas_px: E.map(([x, y]) => [Math.round(x * iw * 10) / 10, Math.round(y * ih * 10) / 10]) };
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' })); a.download = 'calibracion_kennedy_reacciona.json'; a.click();
+};
+$('calImp').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const d = JSON.parse(await f.text()); const E = d.esquinas_norm || d.esquinas; if (!Array.isArray(E) || E.length !== 4) throw 0; accion('calib', { op: 'cargar', esquinas: E }); }
+  catch { alert('El archivo no tiene 4 esquinas válidas (esquinas_norm).'); }
+  e.target.value = '';
+};
+
+// estilo de luz
+for (const [id, clave, fmt] of [['s-brillo', 'brillo', v => v.toFixed(2)], ['s-punto', 'punto_px', v => v.toFixed(1) + ' px'], ['s-estela', 'estela_s', v => v + ' s'], ['s-red', 'red_intensidad', v => Math.round(v * 100) + ' %']]) {
+  const el = $(id), out = $(id + '-v'); el.value = est[clave]; out.textContent = fmt(+el.value);
+  el.oninput = () => { out.textContent = fmt(+el.value); orden({ [clave]: +el.value }); };
+}
+
+// estado guardado en el relé (si la consola se recarga, retoma los ajustes)
+const g = await enlace.ajustesGuardados();
+if (g) {
+  if (g.vel) pintarVel(g.vel); if (g.modo) pintarModo(g.modo);
+  if (g.capas) { if ('movilidad' in g.capas) $('c-mov').classList.toggle('on', g.capas.movilidad); if ('red' in g.capas) $('c-red').classList.toggle('on', g.capas.red); }
+  if ('demanda' in g) $('c-dem').classList.toggle('on', g.demanda);
+  for (const [id, k] of [['s-brillo', 'brillo'], ['s-punto', 'punto_px'], ['s-estela', 'estela_s'], ['s-red', 'red_intensidad']]) if (k in g) { $(id).value = g[k]; $(id).oninput(); }
+} else pintarVel(cfg.reloj.velocidad_inicio || 1);
+
+// telemetría
+const hms = (s) => { s = Math.floor(((s % 86400) + 86400) % 86400); return [s / 3600 | 0, (s / 60 | 0) % 60, s % 60].map(v => String(v).padStart(2, '0')).join(':'); };
+const num = (v) => v == null ? '—' : v.toLocaleString('es-CO');
+function pintarTel() {
+  const t = tel;
+  $('i-n').textContent = num(t.n);
+  $('i-v').firstChild.textContent = t.vMedia == null ? '—' : t.vMedia.toLocaleString('es-CO', { minimumFractionDigits: 1 });
+  $('i-d').firstChild.textContent = t.detenidos == null ? '—' : t.detenidos.toLocaleString('es-CO');
+  $('i-dem').firstChild.textContent = t.demanda.toLocaleString('es-CO');
+  const pv = t.porVia; [['a', 'arterial'], ['m', 'intermedia'], ['l', 'local']].forEach(([k, n]) => { $(`v-${k}-n`).textContent = num(pv[n].n); $(`v-${k}-v`).textContent = pv[n].v == null ? '—' : pv[n].v.toLocaleString('es-CO', { minimumFractionDigits: 1 }); });
+  $('i-tg').textContent = `${t.tg} de ${t.dur}` + (t.trozos < t.trozosTotal ? ` · cargando ${t.trozos}/${t.trozosTotal}` : '');
+  $('p-fps').textContent = t.fps + ' fps · ' + t.res.join('×');
+  $('calEst').textContent = t.calibGuardada ? 'guardada' : 'sin calibrar';
+  pintarModo(t.modo); if (+$('vel').value !== t.vel) pintarVel(t.vel);
+  $('b-ini').classList.toggle('on', t.corriendo); $('b-pau').classList.toggle('on', !t.corriendo);
+}
+(function bucle() {
+  const viva = tel && performance.now() - telEn < 2000;
+  $('p-proy').className = 'pill ' + (viva ? 'ok' : 'mal'); $('p-proy').lastChild.textContent = viva ? 'proyección en vivo' : 'sin proyección';
+  if (tel) $('hora').textContent = hms(tel.tDia + (tel.corriendo ? (performance.now() - telEn) / 1000 * tel.vel : 0));
+  requestAnimationFrame(bucle);
+})();
+</script>
+</body>
+</html>

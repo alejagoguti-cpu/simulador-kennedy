@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e11">
+<title>Bavaria Común · Kennedy</title>
+<meta name="description" content="Bavaria Común (Kennedy, Bogotá): de qué dependen las proyecciones, qué falta calibrar y armonizar, la comparación de la vocería rotativa y la red distribuida, sobre el simulador 3D de Kennedy.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="data3d/ui_sobrio.css?v=l17">
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "3d-tiles-renderer": "https://unpkg.com/3d-tiles-renderer@0.3.45/src/index.js",
+  "3d-tiles-renderer/plugins": "https://unpkg.com/3d-tiles-renderer@0.3.45/src/plugins/index.js"
+} }
+</script>
+<style>
+/* Relato en scroll: la Kennedy fotorrealista queda fija detrás; las tarjetas de vidrio (las del simulador) suben con la frase del guion. */
+:root{
+ --bg:#0b0e11; --tx:#eef0ef; --tx2:#c3cace; --tx3:#8d969c; --acc:#e2a55b;
+ --merc:#4FB98C; --cora:#5FB3D9; --bav:#B79BE8; --mod:#C9E86A; --asa:#E58A6B; --voz:#F4C95D; --res1:#E89A4F; --res2:#5FC7C0;
+ --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+ --curva:cubic-bezier(.2,.75,.2,1);
+ --vidrio:var(--ui-glass,linear-gradient(160deg,rgba(38,42,50,.55),rgba(8,10,14,.7))); --vidrio-bd:var(--ui-glass-bd,rgba(255,255,255,.16));
+ --vidrio-sh:var(--ui-glass-sh,0 22px 50px rgba(0,0,0,.34)); --vidrio-fx:var(--ui-glass-fx,blur(24px) saturate(1.9) brightness(.88));
+ color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+.vidrio{background:var(--vidrio);border:1px solid var(--vidrio-bd);box-shadow:var(--vidrio-sh);-webkit-backdrop-filter:var(--vidrio-fx);backdrop-filter:var(--vidrio-fx)}
+@media (prefers-reduced-transparency:reduce){.vidrio{background:rgba(12,14,17,.94)}}
+#sim{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none;background:#0b0e11}
+
+#vineta{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 95% at 55% 48%,transparent 55%,rgba(4,6,9,.55) 100%),linear-gradient(180deg,rgba(4,6,9,.45),transparent 16%,transparent 78%,rgba(4,6,9,.5))}
+#etiquetas{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.et{position:absolute;transform:translate(-50%,-100%);font:500 12px/1.2 var(--sans);color:var(--tx);white-space:nowrap;padding:4px 10px 4px 5px;border-radius:999px;background:rgba(9,12,15,.8);box-shadow:0 4px 14px rgba(0,0,0,.45);transition:opacity .45s var(--curva);opacity:0}
+.et::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:9px;background:linear-gradient(rgba(255,255,255,.35),transparent)}
+.et .pin{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:7px;vertical-align:-4px}
+.et.titulo{font:600 13px var(--sans);padding:7px 14px;letter-spacing:.01em;box-shadow:0 0 0 1px rgba(255,255,255,.22),0 8px 24px rgba(0,0,0,.5)}
+.et.titulo::after{display:none}
+.et.titulo small{display:block;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:2px}
+.et.regla{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#1a1206;background:var(--voz);padding:7px 14px;box-shadow:0 0 30px rgba(244,201,93,.45)}
+.et.regla::after{display:none}
+.et.alerta{background:rgba(224,98,63,.92);color:#fff}
+#atrib{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:6px;z-index:5;font:10px var(--sans);color:rgba(255,255,255,.55);pointer-events:none}
+/* carga */
+#loader{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(80% 70% at 50% 45%,rgba(20,26,32,.75),rgba(8,10,13,.96));transition:opacity .9s var(--curva)}
+#loader.hidden{opacity:0;pointer-events:none}
+#loader .c{display:grid;gap:12px;justify-items:center;text-align:center;padding:26px 34px;border-radius:20px;font:500 11px var(--mono);letter-spacing:.2em;color:var(--tx2)}
+#loader .c small{font:400 12.5px var(--sans);letter-spacing:0;color:var(--tx3)}
+#loader .c i{display:block;width:180px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--acc),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:barre 1.6s linear infinite}
+@keyframes barre{from{background-position:-100% 0}to{background-position:200% 0}}
+#loader svg{width:72px;height:72px}
+#loader circle{fill:var(--merc);transform-box:fill-box;transform-origin:center;animation:latido 1.4s var(--curva) infinite}
+#loader line{stroke:rgba(255,255,255,.25);stroke-width:1.2}
+@keyframes latido{50%{transform:scale(1.4);opacity:.5}}
+/* barra */
+.bar{position:fixed;left:max(14px,env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:10;display:flex;align-items:center;gap:14px;padding:7px 14px 7px 14px;border-radius:999px}
+.marca{font:600 13px var(--sans);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.marca::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+.puntos{display:flex;gap:6px}
+.puntos button{width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:none;font:500 10px var(--mono);color:var(--tx3);cursor:pointer;padding:0;transition:background .3s,color .3s}
+.puntos button.on{background:var(--tx);color:#0b0e11;border-color:var(--tx)}
+#pbar{position:fixed;left:0;top:0;height:2px;background:var(--acc);z-index:20;width:0;transition:width .5s var(--curva)}
+/* relato */
+#relato{position:relative;z-index:5}
+.paso{min-height:150vh;display:flex;align-items:flex-start;padding:0 max(16px,env(safe-area-inset-left,0px))}
+.paso.largo{min-height:270vh}
+.tarjeta{position:sticky;top:calc(50vh - 170px);width:min(480px,100%);border-radius:18px;padding:20px 22px 18px;display:grid;gap:12px;opacity:.25;transform:translateY(14px) scale(.98);transition:opacity .7s var(--curva),transform .9s var(--curva)}
+.paso.activo .tarjeta{opacity:1;transform:none}
+.kicker{margin:0;display:flex;align-items:center;gap:10px;font:500 10.5px var(--mono);letter-spacing:.14em;color:var(--acc);text-transform:uppercase}
+.kicker::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(226,165,91,.45),transparent)}
+.frase{margin:0;font-size:clamp(19px,1.45vw,23px);line-height:1.4;font-weight:450;letter-spacing:-.012em;color:var(--tx);text-wrap:pretty}
+.paso.activo .frase .w{display:inline-block;animation:palabra .6s var(--curva) both;animation-delay:calc(var(--i) * 28ms)}
+@keyframes palabra{from{opacity:0;transform:translateY(.45em);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+.lectura{margin:0;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);font:400 13px/1.45 var(--sans);color:var(--tx2);opacity:0;transform:translateY(8px);transition:opacity .6s var(--curva) .45s,transform .6s var(--curva) .45s}
+.paso.activo .lectura{opacity:1;transform:none}
+.lectura::before{content:"Qué se ve";font:500 9.5px/1.9 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);white-space:nowrap}
+.lectura .alt{display:none}
+.paso.sub1 .lectura .uno{display:none}.paso.sub1 .lectura .alt{display:inline}
+.fase{display:flex;gap:6px;font:500 10px var(--mono);letter-spacing:.08em;color:var(--tx3);text-transform:uppercase}
+.fase span{padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);transition:all .4s}
+.fase span.on{background:var(--voz);color:#1a1206;border-color:var(--voz)}
+.portada{min-height:110vh;align-items:flex-end;padding-bottom:14vh}
+.portada .tarjeta{position:relative;top:auto;opacity:1;transform:none;background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0;width:min(720px,100%);gap:14px}
+.portada h1{margin:0;font-size:clamp(46px,6.4vw,96px);line-height:.95;font-weight:300;letter-spacing:-.04em;text-shadow:0 6px 40px rgba(0,0,0,.6)}
+.portada h1 b{font-weight:600;color:var(--acc)}
+.portada p{margin:0;font-size:clamp(15px,1.25vw,18px);color:var(--tx);max-width:54ch;text-shadow:0 2px 16px rgba(0,0,0,.85)}
+.bajar{display:inline-flex;align-items:center;gap:10px;font:500 11px var(--mono);letter-spacing:.16em;color:var(--tx2);text-transform:uppercase}
+.bajar i{width:20px;height:32px;border:1.5px solid var(--tx2);border-radius:12px;position:relative}
+.bajar i::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;margin-left:-1.5px;border-radius:2px;background:var(--acc);animation:rueda 1.6s var(--curva) infinite}
+@keyframes rueda{60%{transform:translateY(10px);opacity:0}}
+.fin{min-height:60vh}
+/* tablero lateral */
+#tablero{position:fixed;right:max(14px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:9;width:360px;border-radius:18px;padding:14px 16px 14px;font-size:12px;color:var(--tx2);transition:opacity .5s var(--curva),transform .6s var(--curva)}
+#tablero.fuera{opacity:0;transform:translateY(-10px);pointer-events:none}
+.pan{display:none;gap:10px}
+.pan.on{display:grid;animation:entra .55s var(--curva) both}
+@keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pan-h{display:flex;justify-content:space-between;align-items:baseline;font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--tx3)}
+.pan-h b{color:var(--tx);font-weight:500}
+.tag{font:600 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:rgba(244,201,93,.16);color:var(--voz);border:1px solid rgba(244,201,93,.4)}
+.ctrl{display:grid;gap:5px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);transition:background .4s,border-color .4s}
+.ctrl.act{background:rgba(226,165,91,.1);border-color:rgba(226,165,91,.38)}
+.ctrl-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;color:var(--tx);font-size:12.5px;font-weight:500}
+.ctrl-h b{font:500 11px var(--mono);color:var(--acc);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ctrl input{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;margin:0;cursor:pointer;--a:0%;--b:0%}
+.ctrl input::-webkit-slider-runnable-track{height:4px;border-radius:3px;background:linear-gradient(90deg,rgba(255,255,255,.14) var(--a),rgba(244,201,93,.55) var(--a),rgba(244,201,93,.55) var(--b),rgba(255,255,255,.14) var(--b))}
+.ctrl input::-moz-range-track{height:4px;border-radius:3px;background:linear-gradient(90deg,rgba(255,255,255,.14) var(--a),rgba(244,201,93,.55) var(--a),rgba(244,201,93,.55) var(--b),rgba(255,255,255,.14) var(--b))}
+.ctrl input::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--tx);margin-top:-5.5px;box-shadow:0 0 0 4px rgba(226,165,91,.25)}
+.ctrl input::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--tx);box-shadow:0 0 0 4px rgba(226,165,91,.25)}
+.ctrl .ext{display:flex;justify-content:space-between;font:400 9.5px var(--mono);color:var(--tx3)}
+svg.graf{width:100%;height:auto;display:block}
+svg.graf text{font:400 9px var(--mono);fill:var(--tx3)}
+svg.graf .eje{stroke:rgba(255,255,255,.18);stroke-width:1}
+svg.graf .rej{stroke:rgba(255,255,255,.06);stroke-width:1}
+.ley{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11.5px;color:var(--tx2)}
+.ley span{display:inline-flex;align-items:center;gap:6px}
+.ley i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.ley .pin{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.ley.col{flex-direction:column;gap:7px}
+.nota{font:400 10.5px/1.45 var(--sans);color:var(--tx3);margin:0}
+.fuente{display:grid;gap:5px;padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+.fuente .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;color:var(--tx);font-weight:500;font-size:12.5px}
+.fuente .t em{font:500 9.5px var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase}
+.fuente .u{font:400 10.5px var(--mono);color:var(--tx3)}
+.barra{position:relative;height:12px;border-radius:4px;background:rgba(255,255,255,.05);overflow:hidden}
+.barra i{position:absolute;top:0;bottom:0;border-radius:4px}
+.pasos3{display:flex;gap:5px;flex-wrap:wrap}
+.pasos3 span{font:500 10px var(--mono);letter-spacing:.04em;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--tx3);transition:all .4s}
+.pasos3 span.on{color:#0c1a18;background:var(--res2);border-color:var(--res2)}
+.anio{display:flex;align-items:baseline;gap:10px}
+.anio b{font:300 38px/1 var(--sans);letter-spacing:-.02em;color:var(--tx);font-variant-numeric:tabular-nums}
+.anio span{font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--tx3)}
+.medidor{display:grid;gap:4px}
+.medidor .t{display:flex;justify-content:space-between;align-items:baseline;color:var(--tx);font-size:12.5px;font-weight:500}
+.medidor .t em{font:500 9.5px var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:999px}
+.medidor .barra{height:9px;overflow:visible}
+.medidor .barra i{left:0}
+.medidor .barra u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;opacity:.8;border-radius:1px}
+.medidor .r{font:400 10px/1.35 var(--sans);color:var(--tx3)}
+.pregunta{margin:2px 0 0;font:500 15px/1.35 var(--sans);color:var(--tx);letter-spacing:-.01em}
+/* tarjetas cortas: solo rótulos de 2 a 6 palabras, la escena manda */
+.tarjeta.corta{width:min(380px,100%);padding:16px 20px 18px;gap:8px;top:calc(50vh - 90px)}
+.corta .alt{display:none}.paso.sub1 .corta .uno{display:none}.paso.sub1 .corta .alt{display:block}
+.corta .rot{margin:0 0 6px;font:500 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--acc)}
+.corta .frase{font-size:clamp(24px,2.1vw,32px);line-height:1.12;font-weight:400;letter-spacing:-.025em}
+.paso.activo .corta .rot .w{display:inline-block;animation:palabra .6s var(--curva) both;animation-delay:calc(var(--i) * 90ms)}
+.paso.activo .corta .frase .w{animation-delay:calc(var(--i) * 90ms + 120ms)}
+/* abajo a la derecha (esquema, sectores y red en el tiempo): la red queda libre arriba */
+#tablero.abajo{top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(880px,calc(100vw - 540px));padding:12px 16px}
+#tablero.abajo .ley.col{flex-direction:row;flex-wrap:wrap;gap:6px 16px}
+#tablero.abajo #pan-vida.on{grid-template-columns:170px 1fr;column-gap:18px;align-items:center}
+#tablero.abajo #pan-vida .pan-h,#tablero.abajo #pan-vida .nota{grid-column:1/-1}
+#tablero.abajo #pan-vida .anio{flex-direction:column;align-items:flex-start;gap:4px}
+#tablero.abajo #medidores{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+#tablero.abajo #pan-vida .pregunta{grid-column:1/-1;font-size:16px}
+@media (prefers-reduced-motion:reduce){.paso.activo .frase .w,.bajar i::after,#loader circle{animation:none}.tarjeta{transition:none}}
+@media (max-width:1100px){#tablero{width:310px}.tarjeta{width:min(420px,100%)}}
+@media (max-width:760px){
+ .bar{left:8px;top:calc(8px + env(safe-area-inset-top,0px));padding:5px 8px 5px 12px;gap:8px}
+ .marca{font-size:12px}
+ .puntos button{width:19px;height:19px;font-size:9px}
+ #tablero{left:8px;right:8px;width:auto;top:calc(48px + env(safe-area-inset-top,0px));padding:10px 12px;max-height:40vh;overflow:hidden;font-size:11px}
+ #tablero.abajo{top:calc(48px + env(safe-area-inset-top,0px));bottom:auto;width:auto;padding:10px 12px}
+ #tablero.abajo #pan-vida.on{grid-template-columns:1fr}
+ #tablero.abajo #pan-vida .anio{flex-direction:row;align-items:baseline}
+ #tablero.abajo #medidores{gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .medidor .t em{display:none}
+ .medidor .t{font-size:11px}
+ svg.graf{max-height:96px}
+ #tablero.abajo #pan-vida .pregunta{font-size:13px}
+ #tablero.solo-escritorio{opacity:0;pointer-events:none}
+ .pan{gap:7px}
+ .ctrl{padding:5px 8px;gap:2px}.ctrl .ext{display:none}.ctrl-h{font-size:11.5px}
+ .nota,.oculta-movil{display:none}
+ .anio b{font-size:28px}
+ .pregunta{font-size:13px}
+ .paso{align-items:flex-end;padding:0 10px}
+ .tarjeta{top:auto;bottom:10px;padding:13px 15px;gap:9px}
+ .frase{font-size:16px}
+ .tarjeta.corta{top:auto;padding:12px 16px 14px}
+ .tarjeta.corta .frase{font-size:22px}
+ .corta .rot{font-size:10.5px}
+ .lectura{font-size:12px;grid-template-columns:1fr;gap:2px;padding:8px 10px}
+ .portada{padding-bottom:10vh}
+ .portada .tarjeta{bottom:auto}
+ .et{font-size:10.5px}
+ .et.titulo{font-size:11.5px;padding:5px 10px}
+ #atrib{right:auto;left:12px;bottom:4px}
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="c vidrio"><svg viewBox="0 0 72 72" aria-hidden="true"><line x1="36" y1="36" x2="12" y2="18"/><line x1="36" y1="36" x2="62" y2="20"/><line x1="36" y1="36" x2="54" y2="60"/><line x1="36" y1="36" x2="14" y2="56"/><line x1="12" y1="18" x2="62" y2="20"/><line x1="54" y1="60" x2="14" y2="56"/><circle cx="36" cy="36" r="5"/><circle cx="12" cy="18" r="4" style="animation-delay:.2s"/><circle cx="62" cy="20" r="4" style="animation-delay:.4s"/><circle cx="54" cy="60" r="4" style="animation-delay:.6s"/><circle cx="14" cy="56" r="4" style="animation-delay:.8s"/></svg>SIMULADOR DE KENNEDY<i></i><small id="carga-t">Abriendo el simulador…</small><small>La primera carga tarda unos 25 segundos.</small></div></div>
+<iframe id="sim" src="index.html?medio=1&amp;ao=0" title="Simulador de Kennedy" tabindex="-1" aria-hidden="true"></iframe>
+<div id="vineta" aria-hidden="true"></div>
+<div id="etiquetas" aria-hidden="true"></div>
+<div id="atrib">Google</div>
+<i id="pbar" aria-hidden="true"></i>
+
+<header class="bar vidrio">
+  <div class="marca">Bavaria Común</div>
+  <nav class="puntos" id="puntos" aria-label="Frases"></nav>
+</header>
+
+<aside id="tablero" class="vidrio fuera" aria-live="polite">
+  <!-- 1 y 2 · proyección -->
+  <div class="pan" id="pan-proy">
+    <div class="pan-h"><span>Proyección de la producción</span><span class="tag" id="tag-cal" hidden>por calibrar</span></div>
+    <div class="ctrl" data-k="r"><div class="ctrl-h"><span>Rendimiento de los cultivos</span><b id="v-r"></b></div><input type="range" min="0" max="1000" aria-label="Rendimiento de los cultivos"><div class="ext"><span>3 kg/m²·año</span><span>10 kg/m²·año</span></div></div>
+    <div class="ctrl" data-k="s"><div class="ctrl-h"><span>Superficie disponible</span><b id="v-s"></b></div><input type="range" min="0" max="1000" aria-label="Superficie disponible"><div class="ext"><span>menos sitios</span><span>más sitios</span></div></div>
+    <div class="ctrl" data-k="k"><div class="ctrl-h"><span>Ritmo de incorporación de módulos</span><b id="v-k"></b></div><input type="range" min="0" max="1000" aria-label="Ritmo de incorporación de módulos"><div class="ext"><span>lento</span><span>rápido</span></div></div>
+    <svg class="graf" id="curva" viewBox="0 0 320 150" role="img" aria-label="Curva de comida producida en el tiempo">
+      <line class="rej" x1="36" y1="37" x2="306" y2="37"/><line class="rej" x1="36" y1="74" x2="306" y2="74"/>
+      <line class="eje" x1="36" y1="112" x2="306" y2="112"/><line class="eje" x1="36" y1="10" x2="36" y2="112"/>
+      <text x="36" y="126" text-anchor="middle">0</text><text x="171" y="126" text-anchor="middle">5</text><text x="306" y="126" text-anchor="end">10 años</text>
+      <text x="40" y="9">comida producida</text>
+      <path id="c-banda" fill="rgba(244,201,93,.18)" stroke="none"/>
+      <path id="c-lo" fill="none" stroke="rgba(244,201,93,.55)" stroke-width="1" stroke-dasharray="3 3"/>
+      <path id="c-hi" fill="none" stroke="rgba(244,201,93,.55)" stroke-width="1" stroke-dasharray="3 3"/>
+      <path id="c-ref" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2" stroke-dasharray="2 3"/>
+      <path id="c-main" fill="none" stroke="#C9E86A" stroke-width="2.4" stroke-linecap="round"/>
+      <line id="c-cur" x1="36" x2="36" y1="12" y2="112" stroke="rgba(255,255,255,.3)" stroke-width="1"/>
+      <circle id="c-pt" r="4" fill="#fff"/>
+      <text id="c-lab" x="300" y="30" text-anchor="end" style="fill:#F4C95D;font-weight:600" opacity="0">por calibrar</text>
+    </svg>
+    <div class="ley"><span><i style="background:#F4C95D"></i>colegios</span><span><i style="background:#3FCB6B"></i>parques</span><span><i style="background:#B8F04A"></i>cubiertas compartidas</span><span style="margin-left:auto;font-family:var(--mono);color:var(--tx)">año <b id="anio-p">0</b> · <b id="nmod">0</b> módulos</span></div>
+    <p class="nota" id="nota-proy">Valores ilustrativos: el rendimiento usa el rango de los supuestos del proyecto (3 a 10 kg/m² al año). Los sitios son reales (colegios, parques y zonas del modelo); los módulos se suman de Bavaria hacia afuera, como en el simulador.</p>
+  </div>
+  <!-- 3 · residuos -->
+  <div class="pan" id="pan-res">
+    <div class="pan-h"><span>Orgánicos · dos fuentes</span><span class="tag">por armonizar</span></div>
+    <div class="fuente"><div class="t"><span>Fuente 1 · contenedores UAESP</span><em style="color:var(--res1)">puntos</em></div><div class="u" id="u1"></div><div class="barra"><i id="b1" style="background:var(--res1)"></i></div></div>
+    <div class="fuente"><div class="t"><span>Fuente 2 · estimación por persona</span><em style="color:var(--res2)">zonas</em></div><div class="u" id="u2"></div><div class="barra"><i id="b2" style="background:var(--res2)"></i></div></div>
+    <div class="pasos3" id="pasos3"><span>misma unidad</span><span>misma zona</span><span>mismo periodo</span></div>
+    <p class="nota">Barras en escala relativa, sin cifras: hoy las dos fuentes no se pueden sumar ni comparar directamente. Armonizar es llevarlas a la misma unidad, zona y periodo antes de usarlas en el modelo.</p>
+  </div>
+  <!-- 4 · esquema -->
+  <div class="pan" id="pan-esq">
+    <div class="pan-h"><span>Esquema de la red</span><b id="esq-h">B frente a C</b></div>
+    <div class="ley col" id="ley-esq"></div>
+    <p class="nota" id="nota-esq">B y C tienen la misma capacidad total; cambia cómo se organiza. En la comparación adicional los nodos son idénticos y solo cambia la regla de vocería.</p>
+  </div>
+  <!-- 5 · sectores -->
+  <div class="pan" id="pan-sect">
+    <div class="pan-h"><span>Red distribuida en Kennedy</span><b>8 sectores</b></div>
+    <div class="ley col" id="ley-sect"></div>
+    <p class="nota">Sectores: los 35 mercados del simulador agrupados por cercanía. Cada zona del modelo (134) se colorea según el mercado que la surte en el escenario C. Organizaciones: registro comunal del IDPAC en Kennedy.</p>
+  </div>
+  <!-- 6 · vida -->
+  <div class="pan" id="pan-vida">
+    <div class="pan-h"><span>La red en el tiempo</span><span class="tag">ilustrativo</span></div>
+    <div class="anio"><b id="anio-v">Año 0</b><span>la simulación corre<br>semana a semana</span></div>
+    <div id="medidores"></div>
+    <p class="pregunta">¿Qué condiciones necesita la red para sostenerse?</p>
+    <p class="nota">Los tres medidores son las reglas del simulador (cada una cierra la simulación si se cumple 4 semanas seguidas). Aquí se mueven solo para mostrar qué se medirá: los resultados los dará la simulación.</p>
+  </div>
+</aside>
+
+<main id="relato"></main>
+
+<script>{const m=(t)=>{const e=document.getElementById('carga-t');if(e&&!document.getElementById('loader').classList.contains('hidden'))e.textContent='No se pudo abrir: '+t+'. Recarga la página.';};addEventListener('error',(e)=>m(e.message||'error'));addEventListener('unhandledrejection',(e)=>m(String(e.reason&&e.reason.message||e.reason)));}</script>
+<script type="module" src="data3d/lamina17_avance.js?v=5"></script>
+</body>
+</html>

@@ -8,6 +8,7 @@
      Cada visita une la planta visitada con la anterior: la red de interacciones que conecta los edificios.
    Para que cargue rápido: las instalaciones se calculan una vez y se dibujan solo las cercanas a lo que mira la cámara
    (instancias), los techos lejanos conservan su capa verde. */
+import { RELOJ, hashNum } from './reloj.js?v=5';
 export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   const grupo = new THREE.Group(); grupo.name = 'huertas-hidroponicas'; grupo.visible = false; T3.scene.add(grupo);
   const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
@@ -150,29 +151,30 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   // caseta del ascensor y la escalera: volumen de 4,4 x 3,4 m y 3,2 m de alto, con su puerta metálica de salida a la cubierta y alero
   const gCaseta = new THREE.BoxGeometry(4.4, 3.2, 3.4).translate(0, 1.6, 0), gPuerta = mergeGeometries([new THREE.BoxGeometry(1.0, 2.1, 0.08).translate(0, 1.05, 1.72), new THREE.BoxGeometry(4.8, 0.14, 3.9).translate(0, 3.27, 0)]);
   const matCaseta = new THREE.MeshStandardMaterial({ color: 0xd9d3c7, roughness: 0.9 }), matPuerta = new THREE.MeshStandardMaterial({ color: 0x5b6168, roughness: 0.5, metalness: 0.5 });
-  const capa = (k, partes) => partes.map(([g, m, sombra]) => { const im = new THREE.InstancedMesh(g, m, CAP[k]); im.count = 0; im.castShadow = !!sombra && !movil; im.frustumCulled = false; grupo.add(im); return im; });
-  const IM = {
-    rack: capa('rack', [[gRack, matPVC, true], [gRackMetal, matMetal], [gRackPl, matPlanta]]),
-    torre: capa('torre', [[gTorre, matPVC, true], [gTorrePl, matMata]]),
+  const capa = (k, partes) => partes.map(([g, m, sombra, det]) => { const im = new THREE.InstancedMesh(g, m, CAP[k]); im.count = 0; im.castShadow = !!sombra && !movil; im.frustumCulled = false; im.userData.det = !!det; grupo.add(im); return im; });
+  const IM = { // det: plantas (detalle chico): solo hasta CERCA_PL m de la cámara (más lejos se ven de menos de un píxel; la cubierta verde ya da el color)
+    rack: capa('rack', [[gRack, matPVC, true], [gRackMetal, matMetal], [gRackPl, matPlanta, false, true]]),
+    torre: capa('torre', [[gTorre, matPVC, true], [gTorrePl, matMata, false, true]]),
     tunel: capa('tunel', [[gTunel, matTunel], [gTunelArcos, matMetal]]),
     tanque: capa('tanque', [[gTanque, matTanque, true]]),
-    jard: capa('jard', [[gJard, matJard], [gJardPl, matMata]]),
+    jard: capa('jard', [[gJard, matJard], [gJardPl, matMata, false, true]]),
     caseta: capa('caseta', [[gCaseta, matCaseta, true], [gPuerta, matPuerta, true]])
   };
   const o3 = new THREE.Object3D(), foco = new THREE.Vector3();
-  let ultimo = null, sucioFrac = false, tFrac = 0;
-  let extra = 0;
-  function recalcular() {
-    if (T3.floresExtra && T3.floresExtra.length > extra) { for (const f of T3.floresExtra.slice(extra)) { const i = FLORES.length; FLORES.push(f); const kk = clave(f[0], f[2]); if (!FC.has(kk)) FC.set(kk, []); FC.get(kk).push(i); } extra = T3.floresExtra.length; } // flores de la huerta del Tintal
+  let ultimo = null, sucioFrac = false, tFrac = 0, dUlt = 0; const CERCA_PL = movil ? 300 : 450;
+  function recalcular() { // solo dibujo: qué instalaciones cercanas a la cámara se instancian (no toca la simulación)
     const c = T3.orbit ? T3.orbit.target : foco.set(0, 0, 0), R = (movil ? 420 : 750) + Math.min(900, T3.camera.position.distanceTo(c) * 0.5);
-    if (ultimo && ultimo.distanceTo(c) < R * 0.12) return; ultimo = (ultimo || new THREE.Vector3()).copy(c);
-    const r2 = R * R;
+    const cp = T3.camera.position, dCam = cp.distanceTo(c);
+    const soloZoom = !!ultimo && ultimo.distanceTo(c) < R * 0.12; /* acercarse o alejarse solo cambia qué plantas se dibujan: centro y radio (los lee el enjambre) quedan como antes */
+    if (soloZoom && Math.abs(dCam - dUlt) < Math.max(25, dUlt * 0.15)) return; if (!soloZoom) ultimo = (ultimo || new THREE.Vector3()).copy(c); dUlt = dCam;
+    const r2 = R * R, rp2 = CERCA_PL * CERCA_PL;
     for (const k of Object.keys(IM)) {
-      let n = 0; const lista = INST[k].filter(p => ORD.get(p[5]) <= frac && (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2 < r2).sort((a, b) => ((a[0] - c.x) ** 2 + (a[2] - c.z) ** 2) - ((b[0] - c.x) ** 2 + (b[2] - c.z) ** 2));
-      for (const p of lista) { if (n >= CAP[k]) break; o3.position.set(p[0], p[1], p[2]); o3.rotation.set(0, p[3], 0); o3.updateMatrix(); for (const im of IM[k]) im.setMatrixAt(n, o3.matrix); n++; }
-      for (const im of IM[k]) { im.count = n; im.instanceMatrix.needsUpdate = true; }
+      let n = 0, np = 0; const lista = INST[k].filter(p => ORD.get(p[5]) <= frac && (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2 < r2).sort((a, b) => ((a[0] - c.x) ** 2 + (a[2] - c.z) ** 2) - ((b[0] - c.x) ** 2 + (b[2] - c.z) ** 2));
+      for (const p of lista) { if (n >= CAP[k]) break; o3.position.set(p[0], p[1], p[2]); o3.rotation.set(0, p[3], 0); o3.updateMatrix(); const pl = (p[0] - cp.x) ** 2 + (p[1] - cp.y) ** 2 + (p[2] - cp.z) ** 2 < rp2;
+        for (const im of IM[k]) { if (!im.userData.det) im.setMatrixAt(n, o3.matrix); else if (pl) im.setMatrixAt(np, o3.matrix); } n++; if (pl) np++; }
+      for (const im of IM[k]) { im.count = im.userData.det ? np : n; im.instanceMatrix.needsUpdate = true; }
     }
-    centro.copy(c); radio = Math.min(R, movil ? 260 : 420);
+    if (!soloZoom) { centro.copy(c); radio = Math.min(R, movil ? 260 : 420); }
   }
   const centro = new THREE.Vector3(); let radio = 400;
 
@@ -212,18 +214,33 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     copeton: [ala(0.085, 0.045, 0), new THREE.MeshStandardMaterial({ color: 0x6e5238, side: THREE.DoubleSide, roughness: 0.8 }), 14]
   };
   const matAlaMar = [new THREE.MeshStandardMaterial({ map: texAlaMar, alphaTest: 0.3, side: THREE.DoubleSide }), new THREE.MeshStandardMaterial({ map: texAlaBla, alphaTest: 0.3, side: THREE.DoubleSide })];
-  const AG = [], MESH = {};
+  const NOM = 'huertas_hidro', AG = [], MESH = {};
   for (const [k, e] of Object.entries(ESP)) {
     const cuerpo = new THREE.InstancedMesh(cuerpos[k], new THREE.MeshStandardMaterial({ vertexColors: true, roughness: k === 'colibri' ? 0.25 : 0.7, metalness: k === 'colibri' ? 0.45 : 0 }), e.cant);
     const alas = k === 'mariposa' ? matAlaMar.map(m => [0, 1].map(() => new THREE.InstancedMesh(ALAS[k][0], m, e.cant))) : [[0, 1].map(() => new THREE.InstancedMesh(ALAS[k][0], ALAS[k][1], e.cant))];
     for (const m of [cuerpo, ...alas.flat()]) { m.frustumCulled = false; grupo.add(m); }
     MESH[k] = { cuerpo, alas };
-    for (let i = 0; i < e.cant; i++) AG.push({ e: k, i, x: 0, y: -999, z: 0, vx: 0, vy: 0, vz: 0, st: 'nuevo', t: rnd() * 3, flor: -1, prev: -1, fase: rnd() * 6, var: k === 'mariposa' ? (rnd() < 0.6 ? 0 : 1) : 0, vis: 0 });
+    for (let i = 0; i < e.cant; i++) { const g = AG.length; AG.push({ e: k, i, g, n: 0, x: 0, y: -999, z: 0, vx: 0, vy: 0, vz: 0, st: 'nuevo', t: RELOJ.azarDe(NOM, g, 0x7000001) * 3, flor: -1, prev: -1, dest: -1, fase: RELOJ.azarDe(NOM, g, 0x7000002) * 6, var: k === 'mariposa' ? (RELOJ.azarDe(NOM, g, 0x7000003) < 0.6 ? 0 : 1) : 0, vis: 0 }); }
   }
-  const florCerca = (x, z, R) => { // flor al azar a menos de R m (o cualquiera del área visible)
-    const out = [], c0 = Math.floor(x / CELDA), r0 = Math.floor(z / CELDA), nc = Math.ceil(R / CELDA);
-    for (let i = -nc; i <= nc; i++) for (let j = -nc; j <= nc; j++) { const l = FC.get((c0 + i) + ',' + (r0 + j)); if (l) for (const f of l) { const F = FLORES[f]; if ((F[0] - x) ** 2 + (F[2] - z) ** 2 < R * R) out.push(f); } }
-    return out.length ? out[Math.floor(rnd() * out.length)] : -1;
+  /* SIMULACIÓN INDEPENDIENTE DE LA CÁMARA: los CANT polinizadores de cada especie viven en TODAS las cubiertas abiertas (ORD <= fracción), no
+     alrededor de lo que se mira. El estado depende solo de (semilla, t, fracción abierta): el azar sale de RELOJ.azarDe(nombre, agente, n) con un
+     contador n por agente. La cámara solo decide cuáles se dibujan (cuadro()). Solo cuentan las flores de las cubiertas y balcones de este módulo
+     (las del Tintal, T3.floresExtra, llegan según la carga y no entran). Costo medido: ver el informe (meta < 0,3 ms por paso). */
+  const N0 = FLORES.length, FORD = FLORES.map(F => ORD.has(F[4]) ? ORD.get(F[4]) : 2);
+  let fracSim = -1, ABIERTAS = []; const ACT = {}, bufF = [];
+  const az = (a) => RELOJ.azarDe(NOM, a.g, a.n++);
+  function reconstruir() { // cuando cambia la fracción abierta: flores de las cubiertas abiertas (en orden de índice) y cuántos polinizadores de cada especie están activos
+    ABIERTAS = []; for (let i = 0; i < N0; i++) if (FORD[i] <= fracSim) ABIERTAS.push(i);
+    for (const [k, e] of Object.entries(ESP)) ACT[k] = Math.ceil(e.cant * fracSim - 1e-9);
+  }
+  const florCerca = (x, z, R, a) => { // flor abierta al azar a menos de R m (-1 si no hay): muestreo por rechazo en la rejilla (costo fijo, sin recorrer todas las flores)
+    const c0 = Math.floor(x / CELDA), r0 = Math.floor(z / CELDA), nc = Math.ceil(R / CELDA), R2 = R * R, w = 2 * nc + 1;
+    for (let intento = 0; intento < 12; intento++) {
+      const l = FC.get((c0 - nc + Math.floor(az(a) * w)) + ',' + (r0 - nc + Math.floor(az(a) * w))); if (!l) continue;
+      const f = l[Math.floor(az(a) * l.length)]; if (f >= N0 || FORD[f] > fracSim) continue;
+      const F = FLORES[f]; if ((F[0] - x) ** 2 + (F[2] - z) ** 2 < R2) return f;
+    }
+    return -1;
   };
   // red de visitas: aristas recientes entre flores consecutivas de un mismo individuo (color de la especie)
   const MAXA = movil ? 160 : 520, red = new Float32Array(MAXA * 6), redC = new Float32Array(MAXA * 6), aristas = [];
@@ -241,51 +258,52 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     }
     a.prev = a.flor; a.flor = f;
   }
-  function moverA(a, dt, cam) {
+  function moverA(a, dt) {
     const e = ESP[a.e];
-    if (a.st === 'nuevo') { // aparece en una flor al azar del área visible
-      const f = florCerca(centro.x, centro.z, radio); if (f < 0) return;
-      const F = FLORES[f]; a.x = F[0] + (rnd() - 0.5) * 20; a.y = F[1] + 6 + rnd() * 10; a.z = F[2] + (rnd() - 0.5) * 20; a.flor = -1; a.dest = f; a.st = 'vuela'; return;
+    if (a.st === 'nuevo') { // aparece junto a una flor abierta al azar (de cualquier cubierta abierta, la mire o no la cámara)
+      if (!ABIERTAS.length) return;
+      const f = ABIERTAS[Math.floor(az(a) * ABIERTAS.length)];
+      const F = FLORES[f]; a.x = F[0] + (az(a) - 0.5) * 20; a.y = F[1] + 6 + az(a) * 10; a.z = F[2] + (az(a) - 0.5) * 20; a.x0 = a.x; a.y0 = a.y; a.z0 = a.z; a.flor = -1; a.dest = f; a.st = 'vuela'; return;
     }
     if (a.st === 'liba') {
-      a.t -= dt; const F = FLORES[a.flor]; if (!F) { a.st = 'nuevo'; return; }
+      a.t -= dt; const F = FLORES[a.flor]; if (!F || FORD[a.flor] > fracSim) { a.st = 'nuevo'; return; }
       if (F[5] !== undefined) { a.vx = -F[5] * 0.01; a.vz = -F[6] * 0.01; a.vy = 0; } // de frente a la planta
       const r = a.e === 'colibri' ? 0.18 : a.e === 'copeton' ? 0.05 : 0.07; // el colibrí se cierne frente a la flor; abejas y mariposas se posan
       a.x += (F[0] + Math.cos(a.fase) * r - a.x) * Math.min(1, dt * 6); a.y += (F[1] + (a.e === 'copeton' ? -0.2 : 0) + Math.sin(a.fase * 3) * 0.01 - a.y) * Math.min(1, dt * 6); a.z += (F[2] + Math.sin(a.fase) * r - a.z) * Math.min(1, dt * 6);
       if (a.t <= 0) { // siguiente flor: casi siempre cerca (misma huerta o el balcón de al lado); a veces otro edificio
-        const lejos = rnd() < 0.22, f = florCerca(a.x, a.z, lejos ? e.salto * 2.5 : e.salto); if (f < 0) { a.st = 'nuevo'; return; }
+        const lejos = az(a) < 0.22, f = florCerca(a.x, a.z, lejos ? e.salto * 2.5 : e.salto, a); if (f < 0) { a.st = 'nuevo'; return; }
         a.dest = f; a.st = 'vuela';
       }
       return;
     }
     // vuelo hacia la flor de destino (con arco y, para mariposas, aleteo errático)
-    const F = FLORES[a.dest]; if (!F) { a.st = 'nuevo'; return; }
-    const dx = F[0] - a.x, dy = F[1] + (a.e === 'colibri' ? 0 : 0.06) - a.y, dz = F[2] - a.z, d = Math.hypot(dx, dy, dz);
-    if (d < 0.25) { visitar(a, a.dest); a.st = 'liba'; a.t = e.liba[0] + rnd() * (e.liba[1] - e.liba[0]); return; }
+    const F = FLORES[a.dest]; if (!F || FORD[a.dest] > fracSim) { a.st = 'nuevo'; return; }
+    const dx = F[0] - a.x, dy = F[1] + (a.e === 'colibri' ? 0 : 0.06) - a.y, dz = F[2] - a.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (d < 0.25) { visitar(a, a.dest); a.st = 'liba'; a.t = e.liba[0] + az(a) * (e.liba[1] - e.liba[0]); return; }
     const sube = Math.min(6, d * 0.15) * Math.min(1, d / 20), v = e.v * (a.e === 'mariposa' ? 0.7 + 0.5 * Math.sin(a.fase * 0.7) : 1);
     let tx = dx / d * v, ty = (dy + sube) / Math.max(1, d) * v, tz = dz / d * v;
     if (a.e === 'mariposa') { tx += Math.sin(a.fase * 1.9) * 0.9; ty += Math.cos(a.fase * 2.3) * 0.8; tz += Math.cos(a.fase * 1.7) * 0.9; }
     if (a.e === 'abeja' || a.e === 'abejorro') { tx += Math.sin(a.fase * 5) * 0.4; tz += Math.cos(a.fase * 4) * 0.4; }
     const k = Math.min(1, dt * (a.e === 'colibri' ? 7 : 3.5));
     a.vx += (tx - a.vx) * k; a.vy += (ty - a.vy) * k; a.vz += (tz - a.vz) * k;
-    const paso = Math.min(d, Math.hypot(a.vx, a.vy, a.vz) * dt) / Math.max(1e-6, Math.hypot(a.vx, a.vy, a.vz) * dt);
+    const vel = Math.sqrt(a.vx * a.vx + a.vy * a.vy + a.vz * a.vz) * dt, paso = Math.min(d, vel) / Math.max(1e-6, vel);
     a.x += a.vx * dt * paso; a.y += a.vy * dt * paso; a.z += a.vz * dt * paso;
   }
   const q = new THREE.Quaternion(), qa = new THREE.Quaternion(), eu = new THREE.Euler(), pos = new THREE.Vector3(), esc = new THREE.Vector3(), M4 = new THREE.Matrix4(), Mala = new THREE.Matrix4();
   const Q_VUELTA = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI), vAla = new THREE.Vector3(), eAla = new THREE.Vector3(), M5 = new THREE.Matrix4(), OCULTO = new THREE.Matrix4().makeScale(0, 0, 0);
-  function dibujarA(a, dt, cam) {
+  function dibujarA(a, alfa, cam, tAnim) { // solo lee: posición interpolada entre pasos; el aleteo sale del tiempo de animación del reloj
     const m = MESH[a.e], e = ESP[a.e];
-    a.fase += dt * (a.st === 'liba' ? 1.3 : 1);
+    const li = a.x0 !== undefined && Math.abs(a.x - a.x0) + Math.abs(a.z - a.z0) < 80, x = li ? a.x0 + (a.x - a.x0) * alfa : a.x, y = li ? a.y0 + (a.y - a.y0) * alfa : a.y, z = li ? a.z0 + (a.z - a.z0) * alfa : a.z;
     // tamaño real de cerca; de lejos se agrandan para seguir viéndose (como un marcador), sin pasar de 25 veces
-    const dist = Math.hypot(a.x - cam.position.x, a.y - cam.position.y, a.z - cam.position.z), base = { colibri: 0.1, abeja: 0.016, abejorro: 0.022, mariposa: 0.07, copeton: 0.16 }[a.e];
+    const dist = Math.hypot(x - cam.position.x, y - cam.position.y, z - cam.position.z), base = { colibri: 0.1, abeja: 0.016, abejorro: 0.022, mariposa: 0.07, copeton: 0.16 }[a.e];
     const s = Math.min(25, Math.max(a.e === 'colibri' || a.e === 'copeton' ? 1.4 : 2.2, dist * 0.007 / base)); // de cerca un poco más grandes que en la realidad para poder verlos
     const yaw = Math.atan2(-a.vz, a.vx), cabeceo = a.st === 'liba' ? (a.e === 'colibri' ? 0.35 : 0) : Math.atan2(a.vy, Math.hypot(a.vx, a.vz)) * 0.5;
-    eu.set(0, yaw, cabeceo, 'YZX'); q.setFromEuler(eu); pos.set(a.x, a.y, a.z); esc.set(s, s, s); M4.compose(pos, q, esc);
+    eu.set(0, yaw, cabeceo, 'YZX'); q.setFromEuler(eu); pos.set(x, y, z); esc.set(s, s, s); M4.compose(pos, q, esc);
     m.cuerpo.setMatrixAt(a.i, M4);
     // aleteo: colibrí y abeja muy rápido (borroso), mariposa lento y amplio, copetón con pausas
     const posado = a.st === 'liba' && (a.e === 'mariposa' || a.e === 'copeton' || a.e === 'abeja' || a.e === 'abejorro');
     const f = ALAS[a.e][2], amp = posado ? (a.e === 'mariposa' ? 0.5 + 0.4 * Math.sin(a.fase * 2) : 0.05) : a.e === 'mariposa' ? 1.1 : 0.9;
-    const angA = posado && a.e === 'mariposa' ? 1.2 + 0.3 * Math.sin(a.fase * 2) : Math.sin(performance.now() / 1000 * f * 6.283 + a.i) * amp;
+    const angA = posado && a.e === 'mariposa' ? 1.2 + 0.3 * Math.sin(tAnim * 2.6 + a.i) : Math.sin(tAnim * f * 6.283 + a.i) * amp;
     m.alas.forEach((par, vi) => par.forEach((im, lado) => {
       const vis = a.e !== 'mariposa' || vi === a.var;
       eu.set((lado ? -1 : 1) * angA, 0, 0); qa.setFromEuler(eu); if (lado) qa.multiply(Q_VUELTA);
@@ -316,21 +334,33 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     + '<div class="hr-k"><div><strong id="hid-v">0</strong><small>visitas a flores</small></div><div><strong id="hid-x">0</strong><small>vuelos entre edificios</small></div><div><strong id="hid-e">0</strong><small>edificios conectados</small></div></div>'
     + '<div class="hr-l">' + Object.values(ESP).map(e => `<div class="hr-r" title="${e.rol}"><i style="background:${e.c}"></i><span>${e.n}<small>${e.sci}</small></span><u><b style="width:${(e.cant / maxC * 100).toFixed(0)}%;background:${e.c}"></b></u><em>${e.cant}</em></div>`).join('') + '</div>';
   document.body.appendChild(panel);
-  let tUlt = performance.now(), tRec = 0, tPanel = 0;
-  function cuadro() {
-    requestAnimationFrame(cuadro);
+  /* TIEMPO (data3d/reloj.js): los polinizadores se mueven en los pasos del reloj (1 s simulado) y se dibujan aparte, interpolados.
+     La lógica NO mira la cámara: todos los polinizadores activos se simulan en todas las cubiertas abiertas (ver SIMULACIÓN INDEPENDIENTE
+     DE LA CÁMARA arriba). Solo corre mientras la propuesta está visible (grupo.visible lo fija el escenario, que es una entrada del reloj). */
+  const CODST = { nuevo: 0, vuela: 1, liba: 2 };
+  RELOJ.registrar({ nombre: NOM, orden: 40,
+    step: (dt) => {
+      if (!grupo.visible) return;
+      if (frac !== fracSim) { fracSim = frac; reconstruir(); }
+      for (const a of AG) {
+        if (a.i >= ACT[a.e]) { a.st = 'nuevo'; continue; } // todavía no hay tantos polinizadores como cubiertas abiertas lo permiten
+        a.x0 = a.x; a.y0 = a.y; a.z0 = a.z; a.fase += dt * (a.st === 'liba' ? 1.3 : 1); moverA(a, dt);
+      } },
+    hash: () => { let h = hashNum(0x811c9dc5, conteo.visitas); h = hashNum(h, conteo.cruces); h = hashNum(h, conteo.edificios.size); h = hashNum(h, fracSim);
+      for (const a of AG) { h = hashNum(h, CODST[a.st]); if (a.st === 'nuevo') continue; h = hashNum(h, a.x); h = hashNum(h, a.y); h = hashNum(h, a.z); h = hashNum(h, a.flor); h = hashNum(h, a.dest); h = hashNum(h, a.t); h = hashNum(h, a.n); }
+      return h >>> 0; } }, { ponerAlDia: false });
+  let tRec = 0, tPanel = 0;
+  function cuadro(info) {
     if (!grupo.visible) return;
-    const ahora = performance.now(), dt = Math.min(0.05, (ahora - tUlt) / 1000); tUlt = ahora;
+    const ahora = performance.now(), dt = info.dtReal;
     if (sucioFrac && ahora - tFrac > 330) { sucioFrac = false; tFrac = ahora; ultimo = null; tRec = 0.6; recalcular(); } // cambió la fracción de cubiertas: se recalcula aquí, no en cada paso
     else if ((tRec -= dt) <= 0) { tRec = 0.6; recalcular(); }
     const cam = T3.camera;
     const hi = {}; // por especie: mayor índice tocado en este cuadro (para subir solo ese tramo de matrices)
-    for (const a of AG) {
-      // el que quedó lejos del área visible reaparece cerca
-      if (a.st !== 'nuevo' && (a.x - centro.x) ** 2 + (a.z - centro.z) ** 2 > (radio * 1.6) ** 2) a.st = 'nuevo';
-      const lejos = (a.x - cam.position.x) ** 2 + (a.z - cam.position.z) ** 2 > 450 * 450;
-      if (lejos && a.st !== 'nuevo') { if (!a.oculto) { a.oculto = true; const m = MESH[a.e]; m.cuerpo.setMatrixAt(a.i, OCULTO); for (const par of m.alas) for (const im of par) im.setMatrixAt(a.i, OCULTO); if (a.i > (hi[a.e] ?? -1)) hi[a.e] = a.i; } continue; }
-      a.oculto = false; moverA(a, dt, cam); dibujarA(a, dt, cam); if (a.i > (hi[a.e] ?? -1)) hi[a.e] = a.i;
+    for (const a of AG) { // la cámara solo decide qué se dibuja: lejos de ella (o sin nacer) la matriz queda oculta
+      a.oculto = a.st !== 'nuevo' && (a.x - cam.position.x) ** 2 + (a.z - cam.position.z) ** 2 > 450 * 450;
+      if (a.oculto || a.st === 'nuevo') { if (!a.hecho0) { a.hecho0 = true; const m = MESH[a.e]; m.cuerpo.setMatrixAt(a.i, OCULTO); for (const par of m.alas) for (const im of par) im.setMatrixAt(a.i, OCULTO); if (a.i > (hi[a.e] ?? -1)) hi[a.e] = a.i; } continue; }
+      a.hecho0 = false; dibujarA(a, info.alfa, cam, info.tAnim); if (a.i > (hi[a.e] ?? -1)) hi[a.e] = a.i;
     }
     // sube a la GPU solo si hubo agentes visibles (o recién ocultos), con el tramo 0..índice mayor; el resto de matrices no cambió
     for (const k in MESH) { const m = MESH[k], h = hi[k]; if (h === undefined) continue; const n = (h + 1) * 16;
@@ -338,20 +368,20 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     // aristas de la red: se desvanecen en ~40 s; las que cruzan de un edificio a otro, más brillantes
     let n = 0;
     for (const r of aristas) {
-      r.t += dt; const k = Math.max(0, 1 - r.t / 40) * (r.cruza ? 1 : 0.55); if (k <= 0) continue;
+      r.t += info.dtAnim; const k = Math.max(0, 1 - r.t / 40) * (r.cruza ? 1 : 0.55); if (k <= 0) continue;
       red.set([r.a[0], r.a[1], r.a[2], r.b[0], r.b[1], r.b[2]], n * 6); for (let j = 0; j < 2; j++) { redC[n * 6 + j * 3] = r.c.r * k; redC[n * 6 + j * 3 + 1] = r.c.g * k; redC[n * 6 + j * 3 + 2] = r.c.b * k; } n++;
     }
     gRed.setDrawRange(0, n * 2); gRed.attributes.position.needsUpdate = true; gRed.attributes.color.needsUpdate = true;
     if ((tPanel -= dt) <= 0) { tPanel = 0.5; const f = (v) => v.toLocaleString('es-CO'), s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; }; s('hid-v', f(conteo.visitas)); s('hid-x', f(conteo.cruces)); s('hid-e', f(conteo.edificios.size)); }
   }
-  requestAnimationFrame(cuadro);
+  RELOJ.alDibujar(cuadro);
   T3.hidroAgentes = AG; T3.hidroMesh = MESH; // para depurar
   const total = Object.fromEntries(Object.entries(INST).map(([k, v]) => [k, v.length]));
   return {
     grupo, total, flores: FLORES.length, techos: ORD.size,
     // f en [0, 1]: fracción de cubiertas con huerta; las que se abren en este paso disparan un pulso de luz (data3d/resaltes.js)
     fraccion(f) { f = Math.max(0, Math.min(1, f)); if (Math.abs(f - frac) < 0.002) return; const antes = frac; frac = f; uFrac.value = f;
-      if (f > antes && grupo.visible) import('./resaltes.js?v=1').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
+      if (f > antes && grupo.visible) import('./resaltes.js?v=4').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
       sucioFrac = true; if (grupo.visible && performance.now() - tFrac > 330) { tFrac = performance.now(); sucioFrac = false; ultimo = null; recalcular(); } }, // tope ~3 veces/s; el resto lo hace el tick de cuadro()
     get frac() { return frac; },
     centros: () => [...ORD].map(([ti, o]) => [TCEN.get(ti), o]), // [centro, orden] de cada cubierta con huerta

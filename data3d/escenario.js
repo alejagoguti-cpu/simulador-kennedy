@@ -1,4 +1,4 @@
-/* ============ ESCENARIO: KENNEDY HOY / CON LA PROPUESTA ============
+/* ============ ESCENARIO: ESTADO ACTUAL / CON LA PROPUESTA ============
    Un solo selector arriba al centro (abajo en celular).
    - Hoy: Kennedy como es.
    - Con la propuesta (en revisión): por ahora SOLO un punto por cada lugar de las 5 estrategias, sin polígonos ni redes:
@@ -7,6 +7,7 @@
      Lo de la propuesta anterior (estrategias E1-E9 en polígonos, huertas en techos/balcones/Bavaria, naves retiradas, sintaxis con
      pasajes, camiones a furgonetas, fauna de huertas, carga desplazada e indicadores) queda APAGADO con T3.PROP; el código sigue
      en sus módulos por si se retoma. */
+import { RELOJ } from './reloj.js?v=5';
 export function iniciarEscenario({ T3, say = () => {} }) {
   const CHOY = '#8fb0c9', CPRO = '#e2a55b';
   // qué de la propuesta anterior se usa (todo apagado mientras se redefine)
@@ -69,7 +70,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
   el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
-      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span><kbd>H</kbd></button>
+      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Estado actual<small>el territorio actual</small></span><kbd>H</kbd></button>
       <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span><kbd>P</kbd></button></div>
     <div class="ley" id="esc-ley"></div><div class="nom" id="esc-nom" aria-live="polite"></div>`;
   document.body.appendChild(el);
@@ -122,9 +123,9 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* ---------- Bavaria Común: al escogerla se abre el distrito (data3d/bavaria_distrito.js) ---------- */
   let DIST = null, pDist = null;
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
-  function distritoBavaria() {
+  function distritoBavaria(pre = false) {
     const pro = T3.escenario === 'proyecto', on = pro && solo === 'bav';
-    if (pro && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=20'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
+    if ((pro || pre) && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=24'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
     if (DIST) { DIST.ver(on); if (DIST.verHuertas) DIST.verHuertas(pro && solo !== 'col'); } // las huertas de enseñanza de Bavaria se ven SIEMPRE con la propuesta, aunque se mire otra estrategia
   }
@@ -133,7 +134,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('col-cerrar', () => { const sp = $ley().querySelector('[data-s="col"]'); if (solo === 'col' && sp) sp.click(); });
   function redColegios() {
     const on = T3.escenario === 'proyecto' && solo === 'col';
-    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=5').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
+    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=8').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
     if (RED) { RED.ver(on); if (on && !redOn) Promise.resolve(RED.listo).then(() => { if (RED.on) RED.general(); }); if (!RED.pintados) { RED.pintados = true; Promise.resolve(RED.listo).then(() => PUNTOS.filter(p => p.s.id === 'col').forEach((p, i) => { const c = RED.colorDe(i); if (c) p.d.style.setProperty('--c', c); })); } } // cada colegio con el color de su grupo // vista de toda la red cuando llegan los datos
     redOn = on;
   }
@@ -147,28 +148,60 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* ---------- Av. Ciudad de Cali: con la propuesta baja su tráfico (data3d/alivio_cali.js); el conteo corre también en «hoy» ---------- */
   let CALI = null, HBAR = null, pHBar = null;
   /* huertas de barrio (lotes baldíos y parques vecinales): bancales reales, solo con la propuesta (data3d/huertas_barrio.js) */
-  const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
-    pHBar = Promise.all([import('./huertas_barrio.js?v=7'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
+  const huertasBarrio = (on, pre = false) => { if (HBAR) { HBAR.ver(on); return; } if ((!on && !pre) || pHBar) return pHBar;
+    pHBar = Promise.all([import('./huertas_barrio.js?v=10'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
       .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
   /* parches de árboles nativos en parques y junto a las huertas de parque (data3d/parches_arboles.js): solo con la propuesta */
   let PARCH = null, pParch = null;
-  const parchesArboles = (on) => { if (PARCH) { PARCH.ver(on); return; } if (!on || pParch) return;
-    pParch = Promise.all([import('./parches_arboles.js?v=7'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
+  const parchesArboles = (on, pre = false) => { if (PARCH) { PARCH.ver(on); return; } if ((!on && !pre) || pParch) return pParch;
+    pParch = Promise.all([import('./parches_arboles.js?v=9'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
       .then(p => { PARCH = p; window.KEN_PARCHES = p; PARCH.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parches de árboles:', e)); };
   /* parque humedal de Corabastos: donde se desmontan las bodegas junto al humedal La Vaca (data3d/corabastos_parque.js): solo con la propuesta */
   /* mercados campesinos de barrio en los parques (data3d/mercados_barrio.js): solo con la propuesta */
   let MERC = null, pMerc = null;
-  const mercadosBarrio = (on) => { if (MERC) { MERC.ver(on); return; } if (!on || pMerc) return;
-    pMerc = import('./mercados_barrio.js?v=1').then(m => m.crearMercados({ T3, cj })).then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
+  const mercadosBarrio = (on, pre = false) => { if (MERC) { MERC.ver(on); return; } if ((!on && !pre) || pMerc) return pMerc;
+    pMerc = import('./mercados_red.js?v=7').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
-  const parqueCorabastos = (on) => { if (PCORA) { PCORA.ver(on); return; } if (!on || pPCora) return;
-    pPCora = import('./corabastos_parque.js?v=3').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
-  import('./escenarios_sim.js?v=27').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
-  Promise.all([import('./alivio_cali.js?v=5'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
+  const parqueCorabastos = (on, pre = false) => { if (PCORA) { PCORA.ver(on); return; } if ((!on && !pre) || pPCora) return pPCora;
+    pPCora = import('./corabastos_parque.js?v=9').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
+  /* RENDIMIENTO: lo pesado de la propuesta (huertas de barrio, parches de árboles, mercados, parque de Corabastos, distrito Bavaria y huertas
+     hidropónicas) se armaba la primera vez que se tocaba B o C y congelaba la página 1–3 s justo al hacer click. Ahora se arma escondido,
+     uno por uno, en los ratos libres después de la carga (mientras se lee la ayuda); al escoger el escenario solo se prende. */
+  {
+    const libre = (ms) => new Promise(r => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 900 }) : r()), ms));
+    const pasos = [
+      () => { huertasBarrio(false, true); return pHBar; },
+      () => { parchesArboles(false, true); return pParch; },
+      () => { mercadosBarrio(false, true); return pMerc; },
+      () => { parqueCorabastos(false, true); return pPCora; },
+      () => { distritoBavaria(true); return pDist; },
+      () => (T3.EST && T3.EST.hidroponia ? T3.EST.hidroponia(T3.escenario !== 'hoy', true) : null)
+    ];
+    /* también se compilan sus sombreadores (antes se compilaban al prenderlos: otro tirón): se prende todo un instante solo para el compilador */
+    const compilar = (objs) => { const r = T3.renderer; if (!r || !r.compileAsync || !objs.length) return; const ocultos = [];
+      for (const o of objs) o.traverse(x => { if (!x.visible) { ocultos.push(x); x.visible = true; } });
+      try { r.compileAsync(T3.scene, T3.camera).catch(() => {}); } catch (e) {} for (const x of ocultos) x.visible = false; };
+    (async () => {
+      if (document.documentElement.classList.contains('limpio')) return; // vista limpia: no hay escenarios B y C que precargar
+      await libre(2500);
+      for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
+    })();
+  }
+  import('./escenarios_sim.js?v=51').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  import('./cambio_50.js?v=7').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
+  import('./plan_bavaria.js?v=10').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
+  import('./trafico_plan.js?v=3').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio
+  import('./metro_l1.js?v=2').then(m => m.iniciarMetro({ T3 })).catch(e => console.warn('Metro de Bogotá, Línea 1:', e)); // viaducto, estaciones 2-6 y trenes de la Línea 1 (proyecto real, en todos los escenarios)
+  import('./picos_zonas.js?v=6').then(m => m.iniciarPicosZonas({ T3 })).catch(e => console.warn('picos por zona:', e)); // picos en el piso: comida, huertas y red por zona, cambian con los años // qué cambia entre el año 0 y el 50 (árboles que crecen, balizas, orilla del humedal, comparar año 0 ↔ ahora)
+  Promise.all([import('./alivio_cali.js?v=9'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
+  /* viajes de abastecimiento (data3d/viajes_mercados.js): la simulación EVALÚA adónde van los carros y camiones que iban a Corabastos (mercados de
+     barrio, plazoletas y Bavaria) según los mercados abiertos cada año; el tráfico que se quita cerca de Corabastos sale de este modelo. Se carga
+     siempre (el reloj lo pone al día); panel, rutas y vehículos solo con la propuesta */
+  import('./viajes_mercados.js?v=9').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;
-    pRProd = import('./red_produccion.js?v=2').then(m => m.crearRedProduccion({ T3, lw, cj })).then(r => { RPROD = r; window.KEN_RPROD = r; RPROD.ver(T3.escenario === 'proyecto' && solo === 'red'); }).catch(e => console.warn('red de producción:', e)); };
+    pRProd = import('./red_produccion.js?v=5').then(m => m.crearRedProduccion({ T3, lw, cj })).then(r => { RPROD = r; window.KEN_RPROD = r; RPROD.ver(T3.escenario === 'proyecto' && solo === 'red'); }).catch(e => console.warn('red de producción:', e)); };
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
     d.style.setProperty('--c', s.c); d.innerHTML = `<b class="pin">${svg(s.id, 15)}</b><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
@@ -184,18 +217,19 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     new Promise(r => { const mira = (k) => { const E = T3.EST; if (E && E.lugar) { const a = E.lugar('E4'), b = E.lugar('E8'); if (a) poner('res', a.c[0], a.c[1]); if (b) poner('red', b.c[0], b.c[1]); r(); } else if (k < 40) setTimeout(() => mira(k + 1), 500); else r(); }; mira(0); })
   ]).then(() => { PUNTOS.forEach(p => { if (!p.d.querySelector('span').textContent) p.d.classList.add('chico'); }); });
   // los puntos se dibujan en pantalla (siempre del mismo tamaño), sobre la posición 3D a 2 m del suelo
-  let raf = 0; const V = new T3.THREE.Vector3();
-  function cuadro() {
-    raf = requestAnimationFrame(cuadro); const cam = T3.camera, W = innerWidth, H = innerHeight;
+  let puntosOn = false; const V = new T3.THREE.Vector3();
+  function cuadro(info) { // se dibuja en el bucle maestro del reloj universal (data3d/reloj.js)
+    if (!puntosOn) return; const cam = T3.camera, W = innerWidth, H = innerHeight;
     const cp = cam.position;
-    if (GCOL && GCOL.visible && !RMQ.matches) GCOL.userData.mv.opacity = 0.34 + 0.14 * Math.sin(performance.now() / 420); // los colegios «respiran»
+    if (GCOL && GCOL.visible && !RMQ.matches) GCOL.userData.mv.opacity = 0.34 + 0.14 * Math.sin(info.tAnim * 2.4); // (tiempo de animación del reloj: se detiene en pausa) los colegios «respiran»
     for (const p of PUNTOS) { if (!p.vis) { if (p.d.style.display !== 'none') p.d.style.display = 'none'; continue; }
       if (p.s.id === 'col') p.d.classList.toggle('cerca', Math.hypot(cp.x - p.x, cp.y, cp.z - p.z) < 1600); // el nombre del colegio solo de cerca
       V.set(p.x, 2 + (T3.alzaVia ? T3.alzaVia(p.x, p.z) : 0), p.z).project(cam);
       const ok = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05; p.d.style.display = ok ? 'flex' : 'none';
       if (ok) p.d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px)`; }
   }
-  function verPuntos(on) { cancelAnimationFrame(raf); if (on) cuadro(); else PUNTOS.forEach(p => { p.d.style.display = 'none'; }); }
+  RELOJ.alDibujar(cuadro);
+  function verPuntos(on) { puntosOn = !!on; if (on) cuadro({ tAnim: RELOJ.tAnim }); else PUNTOS.forEach(p => { p.d.style.display = 'none'; }); }
   // tocar una estrategia de la leyenda: se prende SOLO esa y la cámara va a sus puntos; tocarla otra vez vuelve a mostrar todas.
   // Los colegios no se muestran con todas (son más de cien): solo cuando se escogen.
   function filtrar() {
@@ -227,26 +261,29 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = hu && !EST; // camas de tierra en terrazas solo si no hay hidroponía
     if (T3.torres && T3.torres.huertas) T3.torres.huertas(hu);
     const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); // las parcelas viejas (en diagonal) ya no: las reemplazan las huertas de enseñanza del distrito
-    const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = !hu; // con la propuesta las bodegas junto al humedal se desmontan
+    const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (window.KEN_PCORA && window.KEN_PCORA.aplicarVis) window.KEN_PCORA.aplicarVis(); else if (co && co.userData.quitadas) co.userData.quitadas.visible = !hu; // con la propuesta las bodegas junto al humedal se desmontan por fases (data3d/corabastos_parque.js, según sim_vida.js)
     parqueCorabastos(hu); // y en su lugar queda el parque humedal (agua y árboles nativos)
-    mercadosBarrio(hu); // mercados campesinos de barrio en los parques
+    mercadosBarrio(hu); // red de mercados: de barrio y plazoletas en parques grandes, abren año a año
+    if (window.KEN_VIAJES) { window.KEN_VIAJES.ver(hu); window.KEN_VIAJES.panel(hu); } // viajes de abastecimiento hacia mercados y Bavaria
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
     if (CALI) CALI.ver(pro && !solo);
     huertasBarrio(hu); parchesArboles(hu); redProduccion(pro && solo === 'red'); distritoBavaria(); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
-    T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
+    if (T3.escenario !== e) RELOJ.entrada('escenario', e); // bitácora de entradas del usuario que cambian la corrida (fase 2: reproducirla)
+    T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Estado actual';
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
     limpiarAnterior(); verPuntos(e === 'proyecto'); resaltarColegios();
     const re = document.getElementById('ruido-esc'); if (re) re.textContent = nombre();
     window.dispatchEvent(new CustomEvent('escenario', { detail: e }));
   }
-  const nombre = () => T3.escenario === 'proyecto' ? 'CON LA PROPUESTA' : 'KENNEDY HOY';
-  function cambiar(e) { if (e === T3.escenario) return; el.classList.remove('barre'); void el.offsetWidth; el.classList.add('barre'); aplicar(e); say(e === 'proyecto' ? 'Con la propuesta: las 5 estrategias' : 'Kennedy hoy: el territorio como es', 3000); }
+  const nombre = () => T3.escenario === 'proyecto' ? 'CON LA PROPUESTA' : 'ESTADO ACTUAL';
+  function cambiar(e) { if (e === T3.escenario) return; el.classList.remove('barre'); void el.offsetWidth; el.classList.add('barre'); aplicar(e); say(e === 'proyecto' ? 'Con la propuesta: las 5 estrategias' : 'Estado actual: el territorio como es', 3000); }
   el.querySelectorAll('.sw button').forEach(b => b.onclick = () => cambiar(b.dataset.e));
   addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName || '')) return; const k = ev.key.toLowerCase(); if (k === 'h') cambiar('hoy'); else if (k === 'p') cambiar('proyecto'); }); // atajos: H = hoy, P = propuesta
   window.KEN_ESC = { poner: cambiar, nombre, get e() { return T3.escenario; } };
+  RELOJ.manejar('escenario', (e) => cambiar(e)); // reproducir la entrada «escenario» (RELOJ.programar) justo antes del mismo paso, en cualquier modo
   // arranque en «hoy»; los módulos que terminan de cargar después se vuelven a apagar
   aplicar('hoy');
   let n = 0; const rep = setInterval(() => { n++; limpiarAnterior(); if (n >= 8) clearInterval(rep); }, 2500);

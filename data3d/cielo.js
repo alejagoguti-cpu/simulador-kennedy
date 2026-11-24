@@ -1,11 +1,12 @@
 /* ============ CIELO Y LUZ DE 24 HORAS (modo Kennedy) ============
-   Sigue el reloj de la simulación (T3.reloj.t, minutos del día; data3d/giro_sim.js).
+   Función pura de la hora y el día del reloj universal (data3d/reloj.js: minuto del día interpolado y día); se dibuja en el bucle maestro.
    Sol: posición real sobre Bogotá (latitud 4,63° N) con la declinación de noviembre (≈ −16°): elevación y azimut por la fórmula
    astronómica (ángulo horario). Sale ≈ 5:40, mediodía solar ≈ 11:45, se pone ≈ 17:50.
    Todo se gradúa por la elevación del sol con fotogramas clave (noche cerrada, crepúsculo astronómico, hora azul, salida o puesta,
    hora dorada, día): colores del cielo, franja cálida del horizonte del lado del sol, nubes (cobertura que cambia y que crece en
    las tardes, como en Bogotá; iluminadas, rosadas al atardecer, oscuras de noche), estrellas, luna, sol y luz de cielo, niebla,
    exposición, agua y brillo de la foto 3D de Google. La tarde es un poco más rosada que la mañana. */
+import { RELOJ } from './reloj.js?v=5';
 const LAT = 4.63 * Math.PI / 180, DEC = -16 * Math.PI / 180, NOON = 11.75;
 
 // fotogramas clave por elevación del sol (grados)
@@ -101,16 +102,16 @@ export function iniciarCielo({ THREE, T3, luzMalla }) {
   const baseDens = T3.scene.fog ? T3.scene.fog.density : 0.000075;
   let ultMalla = -1, tMalla = 0;
   function aplicar(dt) {
-    const R = T3.reloj, min = R ? R.t : (new Date().getHours() * 60 + new Date().getMinutes()), dia = R ? R.dia || 1 : 1, hora = (min % 1440) / 60;
+    const min = T3.horaLuz != null ? T3.horaLuz * 60 : RELOJ.minutoDia, dia = RELOJ.dia, /* T3.horaLuz: modo presentación (data3d/limpio.js) fija la luz a media mañana */ hora = (min % 1440) / 60; // función pura de la hora y el día del reloj universal (sin hora del sistema de respaldo)
     const ha = (hora - NOON) * 15 * Math.PI / 180;
     const [sd, el] = dirAstro(ha, DEC), [md, mel] = dirAstro(ha + Math.PI * 0.92, 0.12); // luna: casi opuesta al sol
     const tarde = hora > NOON ? 1 : 0, P = mezcla(el, tarde);
     // cielo
     U.top.value.copy(P.top); U.mid.value.copy(P.mid); U.bot.value.copy(P.bot); U.uSunDir.value.copy(sd); U.uSunCol.value.copy(P.sol);
     U.uCloudL.value.copy(P.nubL); U.uCloudD.value.copy(P.nubD); U.uHor.value.copy(P.hor); U.uHorA.value = P.hora;
-    U.uCloud.value = nubes(dia, hora); U.uGlow.value = P.glow; U.uStars.value = P.est; U.uMoonDir.value.copy(md); U.uMoon.value = Math.max(0, Math.min(1, mel / 6)) * (0.4 + 0.6 * P.est);
+    U.uCloud.value = T3.horaLuz != null ? 0.14 : nubes(dia, hora); U.uGlow.value = P.glow; U.uStars.value = P.est; U.uMoonDir.value.copy(md); U.uMoon.value = Math.max(0, Math.min(1, mel / 6)) * (0.4 + 0.6 * P.est);
     T3.scene.background && T3.scene.background.copy(P.bot);
-    if (T3.scene.fog) { T3.scene.fog.color.copy(P.fog); T3.scene.fog.density = baseDens * P.dens * (1 + 0.6 * Math.exp(-Math.pow((hora - 6.2) / 0.9, 2))); } // neblina de madrugada
+    if (T3.scene.fog) { T3.scene.fog.color.copy(P.fog); T3.scene.fog.density = baseDens * P.dens * (1 + 0.6 * Math.exp(-Math.pow((hora - 6.2) / 0.9, 2))) * (T3.horaLuz != null ? 0.35 : 1); } // neblina de madrugada
     // luces: de día el sol; de noche la luna (luz fría y suave); la dirección mueve las sombras
     const deDia = el > -3, L = deDia ? sd : md, elL = deDia ? el : mel;
     const dirL = L.clone(); if (dirL.y < 0.07) { dirL.y = 0.07; dirL.normalize(); } // sombras largas pero sin pasar bajo el horizonte
@@ -130,8 +131,7 @@ export function iniciarCielo({ THREE, T3, luzMalla }) {
     if (T3.roofU && T3.roofU.uNoche) { T3.roofU.uNoche.value = T3.noche; T3.roofU.uLuces.value = luces; }
     return { hora, el };
   }
-  let ult = performance.now();
-  const bucle = () => { const a = performance.now(), dt = Math.min(0.2, (a - ult) / 1000); ult = a; if (T3.vision) { requestAnimationFrame(bucle); return; } /* modo Visión: la luz la pone data3d/vision.js */ try { aplicar(dt); } catch (e) { console.warn('cielo:', e); } requestAnimationFrame(bucle); };
-  requestAnimationFrame(bucle);
+  // se dibuja en el bucle maestro, después de los pasos del reloj (sin requestAnimationFrame propio)
+  RELOJ.alDibujar((info) => { if (T3.vision) return; /* modo Visión: la luz la pone data3d/vision.js */ aplicar(Math.min(0.2, info.dtReal)); });
   return { aplicar, U, luzMalla, refrescar: () => { ultMalla = -1; tMalla = 0; } };
 }

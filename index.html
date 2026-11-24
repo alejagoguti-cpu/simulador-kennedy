@@ -17,6 +17,9 @@
 <title>Simulador · Kennedy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="icon" href="logo_kennedy.png" type="image/png"><link rel="apple-touch-icon" href="logo_kennedy_180.png">
+<!-- MODO SIMPLE por defecto (data3d/modo_simple.js): esconde los paneles de detalle; «Ver todo» lo quita. Con ?modo=completo o ?reloj=quieto (pruebas) arranca en modo completo -->
+<link id="ms-css" rel="stylesheet" href="data3d/modo_simple.css?v=8">
+<script>/* VISTA LIMPIA por defecto (data3d/limpio.js): solo el territorio y el panel del reloj. ?modo=simple: modo simple anterior · ?modo=completo: todo */ if (/[?&]modo=simple/.test(location.search)) document.documentElement.classList.add('ms-simple'); else if (!/[?&](modo=completo|reloj=quieto)/.test(location.search)) document.documentElement.classList.add('limpio');</script>
 <script type="importmap">
 { "imports": {
   "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -138,7 +141,7 @@
   @media(max-width:820px){#hud-b{display:none}#hud-l{max-width:210px}}
   #hud-r{display:none}
   /* pagina limpia: solo quedan Dia/Noche y JUGAR */
-  #hud-l,#hud-b,#hud-r,#trafficHud,#modebadge,#b-trees,#b-water,#b-aves,#b-home,#b-pie{display:none!important}
+  #hud-l,#hud-b,#hud-r,#modebadge,#b-trees,#b-water,#b-aves,#b-home,#b-pie{display:none!important} /* (el control de tiempo universal #trafficHud sí se ve: es el único control de pausa, velocidad y hora) */
   #hud-c{left:50%;right:auto;transform:translateX(-50%);bottom:26px;background:none;border:none;box-shadow:none;backdrop-filter:none;padding:0;gap:14px;align-items:stretch;flex-wrap:nowrap;max-width:94vw}
   #hud-c button{font-family:inherit;letter-spacing:.18em;text-transform:uppercase;font-size:12px;font-weight:700;border-radius:0;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:14px 26px;background:rgba(8,16,26,.72);backdrop-filter:blur(10px);border:none;color:#dbeafe;box-shadow:inset 0 0 0 1px rgba(125,211,252,.35)}
   #hud-c button:hover{background:rgba(14,40,64,.85);color:#fff}
@@ -244,6 +247,12 @@
 <div id="toast"></div>
 
 <script type="module">
+/* RELOJ UNIVERSAL (data3d/reloj.js): una sola fuente de verdad del tiempo. El único requestAnimationFrame maestro (flight) llama
+   RELOJ.cuadro(): corre los pasos fijos de 1 s simulado que tocan (tráfico, agentes, fauna, aves, semanas) y después los dibujos registrados.
+   El control de tiempo (pausa, velocidad, fecha y hora) está en data3d/reloj_ui.js. */
+import { RELOJ, vistaT3 } from './data3d/reloj.js?v=5';
+import { crearControlTiempo } from './data3d/reloj_ui.js?v=9';
+crearControlTiempo(); // control de tiempo único (pausa, velocidad, fecha y hora) dentro de #trafficHud
 // caché de JSON compartida: cada archivo se descarga y se lee UNA vez aunque lo pidan varios módulos (giro_sim.json, trees.json, estrategias.json…)
 window.cargarJSON = window.cargarJSON || ((c) => (u) => c[u] || (c[u] = fetch(u).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })))({});
 /* ARRANQUE EN PARALELO: lo que necesita la portada para abrir con todo cargado se pide YA, todo a la vez. Antes se pedía en cadena (los usos de
@@ -530,7 +539,7 @@ async function init3D() {
     render(gl, args) {
       const m = Array.isArray(args) ? args : (args && (args.defaultProjectionData?.mainMatrix || args.mainMatrix));
       if (m) this.camera.projectionMatrix = new THREE.Matrix4().fromArray(m);
-      waterU.uTime.value = performance.now() / 1000;
+      waterU.uTime.value = RELOJ.tAnim; // agua: tiempo de animación del reloj universal (se detiene en pausa)
       try { this.renderer.resetState(); } catch (e) { try { this.renderer.state.reset(); } catch (_) {} }
       this.renderer.clearDepth();
       this.renderer.render(this.scene, this.camera);
@@ -594,7 +603,7 @@ let gpuCompilando = false, gpuRevisar = 0;
 function compilandoGPU(cam) {
   if (gpuCompilando) return true;
   const r = T3 && T3.renderer; if (!r || !r.compileAsync) return false;
-  const ahora = performance.now(); if (ahora < gpuRevisar) return false; gpuRevisar = ahora + 350;
+  const ahora = performance.now(); if (ahora < gpuRevisar) return false; gpuRevisar = ahora + 1200; /* rendimiento: recorrer toda la escena 3 veces por segundo costaba ~7 % del tiempo */
   let nuevo = false;
   T3.scene.traverseVisible(o => { if (nuevo || !o.material) return; const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) if (!r.properties.get(m).currentProgram) { nuevo = true; break; } });
   if (!nuevo) return false;
@@ -619,6 +628,7 @@ function marcarPaso(k) {
   if (n === PASOS.length) setTimeout(() => $('cvMini').classList.remove('on'), 1600);
 }
 function abrirPortada() {
+  RELOJ.arrancar(); // el reloj universal empieza a correr cuando la portada se abre (mientras carga, el tiempo no pasa)
   if ($('loader').classList.contains('hidden')) return;
   $('loader').classList.add('hidden');
   if (T3 && T3.llegada) { const L = T3.llegada; T3.llegada = null; T3.camera.position.copy(L.p0); T3.orbit.target.copy(L.c0); setTimeout(() => { T3.anim = { t: 0, dur: 4.8, p0: L.p0, c0: L.c0, p1: L.p1, c1: L.c1 }; }, 600); } /* vuelo corto al humedal, empieza cuando ya se ve la ciudad */ /* vuelo de llegada al humedal El Burro */
@@ -753,7 +763,7 @@ $('b-night').onclick = e => {
   night = !night;
   e.currentTarget.classList.toggle('on', night);
   e.currentTarget.innerHTML = night ? ICONO_SOL + 'Día' : ICONO_LUNA + 'Noche';
-  if (mode === 'todo' && T3 && T3.reloj) { T3.reloj.t = night ? 20 * 60 + 30 : 6 * 60; say(night ? '🌙 La simulación salta a las 20:30' : '🌅 La simulación salta al amanecer (6:00)'); return; } // Kennedy: el cielo sigue la hora
+  if (mode === 'todo' && T3 && KEN) { RELOJ.irAMinuto(night ? 20 * 60 + 30 : 6 * 60); say(night ? '🌙 La simulación avanza hasta las 20:30' : '🌅 La simulación avanza hasta el amanecer (6:00)'); return; } // Kennedy: el cielo sigue la hora del reloj universal; el reloj AVANZA hasta esa hora (no salta)
   if (mode === 'todo') { todoNight(night); say(night ? '🌙 Noche TODO 3D' : '☀️ Día TODO 3D'); return; }
   if (mode === 'splat' && SPLAT && SPLAT.canvas) { SPLAT.canvas.classList.toggle('splat-night', night); say(night ? '🌙 Noche en el humedal' : '☀️ Día en el humedal'); return; }
   map.setPaintProperty('sat', 'raster-brightness-min', night ? -0.22 : 0);
@@ -781,7 +791,9 @@ addEventListener('keypress', e => {
 
 let acc = 0;
 function flight(ms) {
-  if (PAJARO && PAJARO.activo) { if (SIM) SIM.update(0); requestAnimationFrame(flight); return; } // (SIM.update oculta el HUD del simulador mientras se juega) // el modo pájaro dibuja con su propio bucle (también el de WebXR)
+  RELOJ.avanzarCuadro(ms); // ÚNICO bucle maestro: el reloj universal corre los pasos fijos que tocan (lógica); abajo se dibujan los sistemas registrados (RELOJ.dibujar) y el resto solo dibuja
+  if (RELOJ.saltando) { requestAnimationFrame(flight); return; } // salto «+2 h» (RELOJ.saltar): la lógica corre por lotes fuera del cuadro y la escena NO se dibuja hasta terminar
+  if (PAJARO && PAJARO.activo) { RELOJ.dibujar(); if (SIM) SIM.update(0); requestAnimationFrame(flight); return; } // (SIM.update oculta el HUD del simulador mientras se juega) // el modo pájaro dibuja con su propio bucle (también el de WebXR)
   if (mode === 'splat' && SPLAT) { splatKeys(); requestAnimationFrame(flight); return; }
   if (mode === 'todo' && T3) {
     const now = performance.now();
@@ -816,10 +828,11 @@ function flight(ms) {
     if (k['KeyZ']) o.target.applyAxisAngle(new T3.THREE.Vector3(0, 1, 0), 0); // reservado
     if (cam.position.y < 3) cam.position.y = 3;
     o.update();
+    RELOJ.dibujar(); // dibujos de los sistemas del reloj (agentes, fauna, cielo, agua…): solo leen el estado, con la cámara ya movida
     updateAves();
     updatePeatones(dt);
     if (KEN && !T3.anim) { const tg = T3.orbit.target, cx = Math.max(-2600, Math.min(6000, tg.x)), cz = Math.max(-4800, Math.min(3700, tg.z)), ddx = cx - tg.x, ddz = cz - tg.z; if (ddx || ddz) { tg.x += ddx; tg.z += ddz; T3.camera.position.x += ddx; T3.camera.position.z += ddz; } } /* no salir de Kennedy al desplazarse */
-    if (T3.trees && T3.trees.visible !== false) { if (KEN) { if (!T3.trees._cfg) { T3.trees.umbral = 120; T3.trees.minMs = 250; T3.trees.quieto = true; /* rendimiento: re-subir ~90 mil árboles solo al desplazarse 120 m */ T3.trees._cfg = 1; } const fw = new T3.THREE.Vector3(); cam.getWorldDirection(fw); fw.y = 0; fw.normalize(); T3.trees.update({ position: T3.orbit.target, cam: cam.position, dir: fw }); } else T3.trees.update(cam); } /* Kennedy: alrededor del punto que se mira: girar no recalcula los árboles */
+    if (T3.trees && T3.trees.visible !== false) { if (KEN) { T3.trees.minMs = T3.anim ? 900 : 250; /* en los vuelos de cámara los árboles cercanos se recalculan menos seguido (cada recálculo recorre ~90 mil) */ if (!T3.trees._cfg) { T3.trees.umbral = 120; T3.trees.quieto = true; /* rendimiento: re-subir ~90 mil árboles solo al desplazarse 120 m */ T3.trees._cfg = 1; } const fw = new T3.THREE.Vector3(); cam.getWorldDirection(fw); fw.y = 0; fw.normalize(); T3.trees.update({ position: T3.orbit.target, cam: cam.position, dir: fw, dist: cam.position.distanceTo(T3.orbit.target) }); } else T3.trees.update(cam); } /* Kennedy: alrededor del punto que se mira: girar no recalcula los árboles */
     if (T3.arbolesSplat && T3.arbolesSplat.visible) T3.arbolesSplat.update(cam); // con Foto real los árboles son los de la foto: no se recalculan
     if (T3.huertas) T3.huertas.actualizar(cam); // plantas 3D de las terrazas cercanas
     if (T3.torres) T3.torres.actualizar(cam); // huertas de los balcones cercanos
@@ -830,7 +843,7 @@ function flight(ms) {
       for (const e of T3.edificios) { const v = Math.hypot(e.cx - cam.position.x, e.cz - cam.position.z) - e.r < lim; if (e.mesh.visible !== v) e.mesh.visible = v; }
     }
     if (!TRAF && T3.fleet && T3.extraCars) { if (T3.mundoTick) T3.mundoTick(dt); T3.fleet.begin(); T3.extraCars(T3.fleet); T3.fleet.end(cam.position.x, cam.position.z); } // sin simulación de tráfico: los carros de la avenida del humedal circulan desde el inicio
-    T3.waterU.value = performance.now() / 1000;
+    T3.waterU.value = RELOJ.tAnim; // agua y cielo: tiempo de animación del reloj universal (se detiene en pausa)
     if (T3.skyU) T3.skyU.uTime.value = T3.waterU.value;
     T3.sun.position.copy(o.target).add(T3.sunOff);
     if (KEN && !LIVIANO && !T3.anim) { const dd = cam.position.distanceTo(o.target), el = Math.max(0, Math.min(1, (cam.position.y - o.target.y) / (dd || 1))), sc = T3.sun.shadow.camera,
@@ -848,13 +861,43 @@ function flight(ms) {
     { /* GIRO FLUIDO: mientras la cámara se mueve no se calcula la oclusión ambiental (el paso más caro de la imagen); al soltar (0,3 s) vuelve */
       const e = cam.matrixWorld.elements, fm = e[12] + e[13] * 3.1 + e[14] * 7.3 + e[8] * 101 + e[9] * 203 + e[10] * 307, ahora = performance.now();
       if (Math.abs(fm - (T3._movF || 0)) > 0.01) T3._movT = ahora; T3._movF = fm;
-      if (T3.ao) { const mov = KEN && ahora - (T3._movT || 0) < 300; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
+      if (T3.ao) { const mov = (KEN && ahora - (T3._movT || 0) < 300) || T3.aoLento; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
+    }
+    { /* RESOLUCIÓN ADAPTABLE: si al mover la cámara la imagen baja de ~25 cuadros/s, se dibuja con menos píxeles (hasta 70 %) y, con la cámara
+         quieta, vuelve la resolución completa. Equipo lento (quieta y < 12 cuadros/s varios segundos): sin oclusión ambiental (?ao=1 la mantiene) */
+      const R = T3.renderer, ahora = performance.now(), A = T3._res || (T3._res = { base: R.getPixelRatio(), esc: 1, n: 0, t0: ahora + 15000, lentos: 0 });
+      const ponerRes = (e) => { A.esc = e; R.setPixelRatio(A.base * e); if (T3.composer) T3.composer.setPixelRatio(A.base * e); };
+      const mov = ahora - (T3._movT || 0) < 400 || !!T3.anim;
+      if (ahora >= A.t0 && !MEDIO) { A.n++; /* (la lámina 17, ?medio=1, mueve la cámara siempre: ahí no se baja la resolución, se vería borrosa) */
+        if (ahora - A.t0 >= 1000) { const fps = A.n * 1000 / (ahora - A.t0); A.n = 0; A.t0 = ahora; A.fps = Math.round(fps * 10) / 10;
+          if (mov && fps < 25 && A.esc > 0.85) ponerRes(0.85); else if (mov && fps > 45 && A.esc < 1) ponerRes(1); /* un solo escalón (85 %) y solo moviendo la cámara: antes bajaba hasta 70 % y cada cambio rehacía los búferes */
+          if (!mov && T3.ao && !T3.aoLento && !/[?&]ao=1\b/.test(location.search)) { A.lentos = fps < 12 ? A.lentos + 1 : 0; if (A.lentos >= 4) T3.aoLento = true; }
+          /* EQUIPO LENTO (también con la cámara quieta): si sigue por debajo de 20 cuadros/s 4 s seguidos se baja un escalón de calidad
+             (1: sin oclusión ambiental y sombras de 2048 px; la resolución y los carros nunca se tocan); ?calidad=alta lo evita */
+          if (!mov && !T3.anim && !/[?&]calidad=alta\b/.test(location.search)) { A.lentos2 = fps < 20 ? (A.lentos2 || 0) + 1 : 0;
+            if (A.lentos2 >= 4 && (T3.nivelBajo || 0) < 3) { A.lentos2 = 0; const nv = T3.nivelBajo = (T3.nivelBajo || 0) + 1;
+              if (nv === 1) { T3.aoLento = true; const sh = T3.sun && T3.sun.shadow; if (sh && sh.mapSize.x > 2048) { sh.mapSize.set(2048, 2048); if (sh.map) { sh.map.dispose(); sh.map = null; } R.shadowMap.needsUpdate = true; } }
+              /* la resolución y los carros NO se tocan (se veía borroso y faltaban carros) */
+              console.info('[rendimiento] calidad bajada al nivel', nv, '(' + Math.round(fps) + ' cuadros/s)'); } } } }
+      if (!mov && A.esc < 1 && ahora - (T3._movT || 0) > 1200) ponerRes(1);
     }
     if (T3.seguidor) T3.seguidor.update(dt); // seguir un agente (data3d/seguir.js): la cámara lo acompaña
     { /* materiales transparentes de doble cara: un solo pase (evita el doble dibujo y las búsquedas de programa por cuadro); se revisa cada 2 s y al cambiar de escenario */
       const t2 = performance.now(); if (t2 - (T3._fspT || 0) > 2000 || T3._fspEsc !== T3.escenario) { T3._fspT = t2; T3._fspEsc = T3.escenario;
         T3.scene.traverse(o => { const ms = o.material; if (!ms) return; for (const m of Array.isArray(ms) ? ms : [ms]) if (m.transparent && m.side === T3.THREE.DoubleSide && !m.userData._fsp) { m.userData._fsp = 1; m.forceSinglePass = true; } }); } }
-    if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
+    { /* RENDIMIENTO · OBJETOS DIMINUTOS: las piezas sueltas (huertas de terraza y de barrio, parches, distrito Bavaria…: ~1.500 dibujos con la
+         propuesta) que desde la cámara miden menos de ~5 píxeles no se mandan a dibujar (ni a la sombra). Se usa la capa 2 de three.js, no
+         .visible, así no se pisa lo que cada módulo prende o apaga. Se revisa 4 veces por segundo; la lista se rehace cada 3 s. */
+      const ahora = performance.now(), C = T3._chico || (T3._chico = { t: 0, tl: 0, L: [] }), CHICOS = new Set(['huertasTecho', 'huertas-barrio', 'parches_arboles', 'bavaria_huertas', 'bavaria_distrito', 'biblioteca-tintal', 'parque_corabastos', 'huertas-hidroponicas', 'torresBalcones', 'canchas']);
+      if (ahora - C.tl > 3000) { C.tl = ahora; C.L.length = 0; const tilesG = T3.tiles && T3.tiles.group;
+        T3.scene.traverse(o => { if (!o.isMesh || o.frustumCulled === false || (o.layers.mask !== 1 && o.layers.mask !== 4)) return; /* solo los de la capa normal */ let top = o; while (top.parent && top.parent !== T3.scene) top = top.parent; if (top === tilesG || !CHICOS.has(top.name)) return; /* solo piezas fijas de la propuesta: nunca carros, peatones ni fauna */
+          const g = o.geometry; if (!g) return; if (!g.boundingSphere) { try { o.isInstancedMesh ? o.computeBoundingSphere() : g.computeBoundingSphere(); } catch (e) { return; } }
+          const bs = o.isInstancedMesh ? o.boundingSphere : g.boundingSphere; if (!bs || !isFinite(bs.radius)) return;
+          const c = bs.center.clone().applyMatrix4(o.matrixWorld), r = bs.radius * o.matrixWorld.getMaxScaleOnAxis(); if (r > 120) return;
+          C.L.push([o, c.x, c.y, c.z, r]); }); }
+      if (ahora - C.t > 250) { C.t = ahora; const p = cam.position, f = T3.gpuDebil ? 0.008 : 0.005;
+        for (const [o, x, y, z, r] of C.L) { const d = Math.hypot(x - p.x, y - p.y, z - p.z), chico = r < d * f; if (chico) { if (o.layers.mask === 1) o.layers.mask = 4; } else if (o.layers.mask === 4) o.layers.mask = 1; } }
+    }    if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
     requestAnimationFrame(flight); return;
   }
   acc = Math.min(acc + ms, 60);
@@ -906,7 +949,8 @@ function tick() {
 }
 /* ============ MODO TODO 3D (datos propios de Kennedy, mundo local) ============ */
 let LIVIANO = new URLSearchParams(location.search).get('liviano') === '1'; // sin edificios, sombras ni tráfico (gafas VR, celulares, equipos modestos)
-let MEDIO = false; // con LIVIANO: conserva los edificios (Quest sola)
+let MEDIO = new URLSearchParams(location.search).get('medio') === '1'; // con LIVIANO: conserva los edificios (Quest sola); ?medio=1 (lamina17.html): versión ligera con edificios, para que cargue rápido y no se trabe
+if (MEDIO) LIVIANO = true;
 const QUEST = /OculusBrowser|Quest|Pico/i.test(navigator.userAgent);
 if (QUEST) { LIVIANO = true; MEDIO = true; } // gafas independientes: versión ligera (sin sombras ni tráfico pesado) pero CON los edificios del entorno del humedal desde que abre la página
 // REALISTA (por defecto): el mundo es la malla fotorrealista de Google completa, como Google Earth en 3D; sobre ella solo van carros, peatones y aves.
@@ -1000,7 +1044,7 @@ async function crearMallaGoogle(T) {
   // la foto ya trae su luz y sus sombras: se muestra tal cual (emisiva), sin que el sol de la escena la aplaste ni la queme
   // máscara de huellas del modelo: donde hay un edificio propio se recorta lo que Google levanta (su versión "derretida") y queda solo su foto del suelo
   T.maskU = { uGrade: { value: REALISTA && !GOOGLE ? new THREE.Vector4(1.2, 0.9, 1.22, 1) : new THREE.Vector4(1, 1, 1, 0) }, uTint: { value: REALISTA && !GOOGLE ? new THREE.Vector3(1.04, 1.0, 0.93) : new THREE.Vector3(1, 1, 1) }, // saturación, contraste, brillo, quitar bruma · tinte
-    uMask: { value: null }, uOn: { value: 0 }, uLC: { value: new THREE.Vector2(LC.x, LC.y) }, uDim: { value: new THREE.Vector2(1 / MASK.XM, 1 / MASK.YM) }, uCut: { value: 2.5 }, uEmpuje: { value: KEN ? 18 : 0 }, uMonte: { value: KEN ? 1 : 0 }, uVis: { value: 0 }, uGradZ: { value: -1 }, // uGradZ: radio de la gradación (si < 0 usa el de la zona); el recorte siempre se limita a la zona // Kennedy: la foto de Google va siempre DETRÁS de lo propio (ver project_vertex)
+    uMask: { value: null }, uOn: { value: 0 }, uLC: { value: new THREE.Vector2(LC.x, LC.y) }, uDim: { value: new THREE.Vector2(1 / MASK.XM, 1 / MASK.YM) }, uCut: { value: 2.5 }, uEmpuje: { value: KEN ? 18 : 0 }, uMonte: { value: KEN ? 1 : 0 }, uVis: { value: 0 }, uGradZ: { value: -1 }, uPlanOn: { value: 0 }, uPlanTex: { value: null }, uPlanBox: { value: new THREE.Vector4(0, 0, 0, 0) }, /* escenario D: plan parcial de Bavaria (data3d/plan_bavaria.js): lienzo con el año en que cada sitio se construye o pavimenta; ahí se quita lo que Google levanta (árboles, bodegas) */ // uGradZ: radio de la gradación (si < 0 usa el de la zona); el recorte siempre se limita a la zona // Kennedy: la foto de Google va siempre DETRÁS de lo propio (ver project_vertex)
     uZona: { value: new THREE.Vector3(ZONA.x - LC.x, LC.y - ZONA.y, ZON ? (KEN ? Math.max(ZONA.r, 2400) : ZONA.r) : 1e9) } }; // Kennedy: el recorte llega también a Corabastos y Bavaria (en celular el radio de carga es menor) // fuera de la zona: malla de Google tal cual
   const recorte = (m) => {
     m.onBeforeCompile = (sh) => {
@@ -1013,7 +1057,7 @@ async function crearMallaGoogle(T) {
         // la cámara (la imagen no cambia: mismo punto en pantalla), así los edificios, carros, árboles y animales propios quedan siempre encima
         .replace('#include <project_vertex>', '#include <project_vertex>\nif (uEmpuje > 0.0) { float dl = max(length(mvPosition.xyz), 1.0); vec4 pE = projectionMatrix * vec4(mvPosition.xyz * (1.0 + uEmpuje / dl), 1.0); gl_Position.z = min(pE.z / pE.w, 0.99999) * gl_Position.w; }');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vWPm; uniform sampler2D uMask; uniform float uOn, uCut; uniform vec2 uLC, uDim; uniform vec4 uGrade; uniform vec3 uTint, uZona; uniform float uMonte, uEmpuje, uVis, uGradZ;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vWPm; uniform sampler2D uMask; uniform float uOn, uCut; uniform vec2 uLC, uDim; uniform vec4 uGrade; uniform vec3 uTint, uZona; uniform float uMonte, uEmpuje, uVis, uGradZ; uniform float uPlanOn; uniform sampler2D uPlanTex; uniform vec4 uPlanBox;')
         // gradación tipo render de maqueta (Umbra): quita la bruma gris de la foto aérea, sube saturación y contraste y la calienta un poco
         .replace('#include <opaque_fragment>', `{
           vec3 c = max(outgoingLight - uGrade.w * vec3(0.030, 0.036, 0.048), 0.0) / (1.0 - uGrade.w * 0.04);
@@ -1042,13 +1086,14 @@ async function crearMallaGoogle(T) {
         }
         #include <opaque_fragment>`)
         .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+          if (uPlanOn > 0.0 && vWPm.y > 0.9) { vec2 tP = (vWPm.xz - uPlanBox.xy) * uPlanBox.zw; if (tP.x >= 0.0 && tP.y >= 0.0 && tP.x < 1.0 && tP.y < 1.0) { float aP = floor(texture2D(uPlanTex, tP).r * 255.0 / 20.0 + 0.5); if (aP > 0.5 && aP < uPlanOn) discard; } } // plan parcial (escenario D): lo que el plan construye o pavimenta queda limpio de árboles y bodegas de la malla de Google (el bosque conservado no se toca)
           if (uOn > 0.5 && vWPm.y > 0.9 && distance(vWPm.xz, uZona.xy) < uZona.z) { // recorte de edificios de Google solo donde están los propios
             vec2 mu = vec2((vWPm.x + uLC.x) * uDim.x, 1.0 - (uLC.y - vWPm.z) * uDim.y);
             float mk = texture2D(uMask, mu).r; // 1 libre · 0,39 edificio genérico (corte en uCut) · 0 modelo detallado: Corabastos, Bavaria (corte a 0,9 m)
             if (mu.x > 0.0 && mu.x < 1.0 && mu.y > 0.0 && mu.y < 1.0 && mk < 0.5 && (vWPm.y > uCut || mk < 0.2 || (mk < 0.3 && vWPm.y > 2.5))) discard; // 0,24: torre propia
           }`);
     };
-    m.customProgramCacheKey = () => 'recorteHuellasG';
+    m.customProgramCacheKey = () => 'recorteHuellasG2';
     m.needsUpdate = true;
   };
   T.tilesCargadas = 0;
@@ -1256,6 +1301,10 @@ async function initTodoReal() {
     REFL = null; // agua analítica, sin espejo físico (evita manchas negras)
     const renderer = new THREE.WebGLRenderer({ antialias: !MOVIL || QUEST, powerPreference: 'high-performance' });
     renderer.setPixelRatio(MOVIL ? 1 : Math.min(devicePixelRatio, 1.25));
+    /* TARJETA GRÁFICA DÉBIL (integrada Intel/AMD de portátil, o sin aceleración): arranca en calidad liviana —sin oclusión ambiental, sombras de
+       2048 px y resolución 1:1— en vez de trabarse primero y bajar después. ?calidad=alta la ignora; ?calidad=baja la fuerza. */
+    const GPU_DEBIL = (() => { const q = location.search; if (/[?&]calidad=alta\b/.test(q)) return false; if (/[?&]calidad=baja\b/.test(q)) return true;
+      try { const gl = renderer.getContext(), e = gl.getExtension('WEBGL_debug_renderer_info'), s = e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : ''; return /Intel|UHD|Iris|Radeon\(TM\) Graphics|Vega \d|Mali|Adreno|PowerVR|SwiftShader|llvmpipe|Microsoft Basic/i.test(s) && !/NVIDIA|GeForce|RTX|GTX|Radeon RX|Arc A/i.test(s); } catch (e) { return false; } })();
     renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = !LIVIANO; // gafas y celulares: sin sombras (cuestan demasiado)
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1316,7 +1365,7 @@ async function initTodoReal() {
     const sun = new THREE.DirectionalLight(DIA.solColor, DIA.sol);
     sun.position.set(4000, 5000, 2000);
     sun.castShadow = !LIVIANO;
-    sun.shadow.mapSize.set(KEN && !MEDIO ? 4096 : 2048, KEN && !MEDIO ? 4096 : 2048); // sombras nítidas alrededor del pájaro (el sol sigue a la cámara)
+    sun.shadow.mapSize.set(KEN && !MEDIO && !GPU_DEBIL ? 4096 : 2048, KEN && !MEDIO && !GPU_DEBIL ? 4096 : 2048); // sombras nítidas alrededor del pájaro (el sol sigue a la cámara)
     const SR = MEDIO ? 320 : 600; sun.shadow.camera.left = -SR; sun.shadow.camera.right = SR;
     sun.shadow.camera.top = SR; sun.shadow.camera.bottom = -SR;
     sun.shadow.camera.near = 100; sun.shadow.camera.far = 7000;
@@ -1326,7 +1375,9 @@ async function initTodoReal() {
     let suelo = null;
     try { suelo = (await import('./data3d/materiales.js')).crearMaterialesSuelo(renderer); } catch (e) { console.warn('materiales:', e); }
     T3 = { THREE, renderer, scene, camera, orbit, hemi, sun, skyU, liviano: LIVIANO, movil: MOVIL, night: false, anim: null, last: 0, counts: {},
-      waterU: { value: 0 }, sunOff: new THREE.Vector3(0.42, 0.62, 0.35).normalize().multiplyScalar(2600), suelo };
+      waterU: { value: 0 }, sunOff: new THREE.Vector3(0.42, 0.62, 0.35).normalize().multiplyScalar(2600), suelo, reloj: vistaT3(RELOJ) /* vista del reloj universal (minuto del día, día, play, vel) para cielo, biótica, tablero, orígenes */ };
+    window.KEN_T3 = T3; T3.lw = lw; T3.LC = LC; // depuración · lw (modelo -> mundo) desde el principio: el metro y otros módulos lo usan antes de que cargue el tráfico
+    if (GPU_DEBIL) { T3.gpuDebil = true; T3.aoLento = true; T3.nivelBajo = 1; console.info('[rendimiento] tarjeta gráfica integrada: calidad liviana desde el inicio (?calidad=alta para la completa)'); }
     { let ok; T3.pArboles = new Promise(r => ok = r); T3.arbolesOk = ok; }
     T3.esperaArboles = () => Promise.race([T3.pArboles, new Promise(r => setTimeout(r, KEN ? 1500 : 15000))]); // Kennedy: los edificios y el tráfico no esperan a los árboles
     { // suelo base neutro desde el primer cuadro (debajo de todo; la foto de Google lo cubre cuando llega)
@@ -1359,8 +1410,8 @@ async function initTodoReal() {
     T3.realista = REALISTA; // real3d.js: carros a tamaño real, apoyados en el asfalto y con sombra de contacto
     if (REALISTA && !LIVIANO && new URLSearchParams(location.search).get('ao') !== '0') crearPostproceso(T3).catch(e => console.warn('postproceso:', e)); // luz tipo render (oclusión ambiental)
     if (KEN) { T3.kenFill = 0.62; setTimeout(function capaSombra() { if (!T3.scene || !T3.THREE) return setTimeout(capaSombra, 500); const TH = T3.THREE, m = new TH.Mesh(new TH.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), new TH.ShadowMaterial({ opacity: 0.42, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.position.set(1700, 0.42, -200); m.receiveShadow = true; m.renderOrder = 1; m.name = 'capa-sombras'; T3.scene.add(m); }, 500); } /* sombras de edificios y árboles sobre la foto del suelo */
-    if (KEN) import('./data3d/ui_sobrio.js?v=14').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
-    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=77'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
+    if (KEN) import('./data3d/ui_sobrio.js?v=19').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
+    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=80'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
     // el tráfico empieza a bajar YA (antes esperaba a edificios, vías y árboles): son pocos KB por trozo
     const pTraf = QUEST ? Promise.resolve(null) : buildTraffic(THREE).then(() => { marcarPaso('trafico'); return null; }, e => e); // Kennedy: también, con la simulación SUMO (miles de carros)
     if (QUEST) marcarPaso('trafico');
@@ -1371,7 +1422,10 @@ async function initTodoReal() {
     // antigua fábrica de Bavaria: modelo propio (data3d/bavaria.js); sus cajas genéricas se quitan
     const pBav = GOOGLE ? Promise.resolve(null) : window.cargarJSON('data3d/bavaria.json?v=3').catch(() => null);
     const enPoli = (W, x, y) => { let c = false; for (let i = 0, j = W.length - 1; i < W.length; j = i++) { const a = W[i], b = W[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
-    const deBavaria = (BV, b) => { if (!BV) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } x /= n; y /= n; return BV.edif.some(e => enPoli(e.p, x, y)); };
+    // rendimiento: caja de cada polígono (con 1 m de margen) para descartar rápido; fuera de la caja enPoli siempre da falso (mismo resultado)
+    const CAJAS = new WeakMap(), cajaDe = (W) => { let c = CAJAS.get(W); if (!c) { let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity; for (const q of W) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; } c = [x0 - 1, x1 + 1, y0 - 1, y1 + 1]; CAJAS.set(W, c); } return c; };
+    const enPoliC = (W, x, y) => { const c = cajaDe(W); return x >= c[0] && x <= c[1] && y >= c[2] && y <= c[3] && enPoli(W, x, y); };
+    const deBavaria = (BV, b) => { if (!BV) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } x /= n; y /= n; return BV.edif.some(e => enPoliC(e.p, x, y)); };
     // bodegas de Corabastos: modelo propio (data3d/corabastos.js); sus cajas genéricas se quitan
     const pCora = GOOGLE ? Promise.resolve(null) : window.cargarJSON('data3d/corabastos.json?v=3').catch(() => null);
     const deCora = (CO, b) => { if (!CO) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } x /= n; y /= n;
@@ -1382,11 +1436,12 @@ async function initTodoReal() {
     T3.pUsos = KEN ? window.cargarJSON('data3d/usos_edif.json?v=1').then(D => { const M = new Map(); for (const k in D) { const a = D[k], c = +k; for (let i = 0; i < a.length; i += 2) M.set(a[i] * 100003 + a[i + 1], c); } T3.usosMapa = M; return M; }).catch(() => null) : Promise.resolve(null); /* usos del suelo por edificio (data3d/usos_suelo.js) */
     const deInem = (IN, b) => { if (!IN) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } x /= n; y /= n; return IN.has(Math.floor(x / 6) + '_' + Math.floor(y / 6)); };
     const pConj = KEN ? window.cargarJSON('data3d/conjuntos.json?v=3').catch(() => null) : Promise.resolve(null); // conjuntos de cubierta roja (data3d/conjuntos.js)
-    const deConj = (CJ, b) => { if (!CJ) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } x /= n; y /= n; return CJ.barras.some(r => { const dx = x - r.c[0], dy = y - r.c[1], u = dx * Math.cos(r.a) + dy * Math.sin(r.a), w = -dx * Math.sin(r.a) + dy * Math.cos(r.a); return Math.abs(u) < r.L / 2 + 2 && Math.abs(w) < r.W / 2 + 2; }); };
+    const RADIO = new WeakMap(), radioDe = (r) => { let R = RADIO.get(r); if (R == null) { R = Math.hypot(r.L / 2 + 2, r.W / 2 + 2) + 1; RADIO.set(r, R); } return R; }; // fuera de este radio |u| o |w| ya no cabe (mismo resultado)
+    const deConj = (CJ, b) => { if (!CJ) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } x /= n; y /= n; return CJ.barras.some(r => { if (Math.abs(x - r.c[0]) > radioDe(r) || Math.abs(y - r.c[1]) > radioDe(r)) return false; const dx = x - r.c[0], dy = y - r.c[1], u = dx * Math.cos(r.a) + dy * Math.sin(r.a), w = -dx * Math.sin(r.a) + dy * Math.cos(r.a); return Math.abs(u) < r.L / 2 + 2 && Math.abs(w) < r.W / 2 + 2; }); };
     const deTintal = (TI, b) => { if (!TI) return false; const p = b.pts, n = p.length - 1; let x = 0, y = 0; for (let i = 0; i < n; i++) { x += p[i][0]; y += p[i][1]; } return enPoli(TI.zona_modelo, x / n, y / n); };
     const cargarEdif = async (f) => { const [BV, CO, TI, CJ, IN] = await Promise.all([pBav, pCora, pTin, pConj, pInem, T3.pUsos]); return decodificarEdificios(EI, await (await fetch('data3d/edif/' + f)).arrayBuffer()).filter(b => enZona(b.pts[0][0], b.pts[0][1]) && !deBavaria(BV, b) && !deCora(CO, b) && !deTintal(TI, b) && !deConj(CJ, b) && !deInem(IN, b)); }; // vista realista: solo la zona del proyecto
     const agregarHuellas = () => {}; // la máscara de huellas ya viene precalculada (data3d/edif/mascara*.png)
-    if (!GOOGLE && !(LIVIANO && !MEDIO)) pMalla.then(() => { if (T3.maskU) cargarMascara(T3, LIVIANO ? 'mascara_humedal.png?v=11' : 'mascara.png?v=11'); });
+    if (!GOOGLE && !(LIVIANO && !MEDIO)) pMalla.then(() => { if (T3.maskU) cargarMascara(T3, LIVIANO ? 'mascara_humedal.png?v=12' : 'mascara.png?v=12'); });
     let B = [];
     // edificios 3D propios (huellas y alturas reales) también en la vista fotorrealista: la malla de Google en Kennedy los trae
     // casi planos ("derretidos"); como en las maquetas de Umbra, se levantan volúmenes limpios y el techo toma el color de la foto aérea
@@ -1403,12 +1458,13 @@ async function initTodoReal() {
           try { const L = await cargarEdif(c.f); buildChunks(THREE, L); agregarHuellas(L); } catch (e) { console.warn('edificios', c.f, e); }
           await new Promise(r => setTimeout(r, 0));
         }
+        T3.edifCompletos = true; // todas las celdas de edificios cargadas: la lista de techos altos ya no cambia (huertas hidropónicas deterministas)
       })();
     }
     marcarPaso('edif');
-    if (!GOOGLE && !(LIVIANO && !MEDIO)) pBav.then(BV => BV && window.cargarJSON('data3d/bavaria_arboles.json?v=3').then(BA => { T3.bavArboles = (BA && BA.arboles || []).filter(a => a[4] === 1); }).catch(() => {}).then(() => import('./data3d/bavaria.js?v=8')).then(m => { /* huertas en los claros (no sobre el bosque denso) */ T3.bavaria = m.construirBavaria({ THREE, T3, lw, D: BV, liviano: LIVIANO }); }))
+    if (!GOOGLE && !(LIVIANO && !MEDIO)) pBav.then(BV => BV && window.cargarJSON('data3d/bavaria_arboles.json?v=3').then(BA => { T3.bavArboles = (BA && BA.arboles || []).filter(a => a[4] === 1); }).catch(() => {}).then(() => Promise.all([import('./data3d/bavaria.js?v=10'), window.cargarJSON('data3d/plan_bavaria.json?v=2').catch(() => null)])).then(([m, PLAN_B]) => { /* huertas en los claros (no sobre el bosque denso); PLAN_B: manzanas del plan parcial (escenario D: qué bodegas se demuelen y cuándo) */ T3.bavaria = m.construirBavaria({ THREE, T3, lw, D: BV, liviano: LIVIANO, plan: PLAN_B }); }))
       .catch(e => console.warn('fábrica Bavaria:', e));
-    if (!GOOGLE && !(LIVIANO && !MEDIO)) pCora.then(CO => CO && import('./data3d/corabastos.js?v=2').then(m => { T3.corabastos = m.construirCorabastos({ THREE, T3, lw, D: CO, liviano: LIVIANO }); }))
+    if (!GOOGLE && !(LIVIANO && !MEDIO)) pCora.then(CO => CO && import('./data3d/corabastos.js?v=3').then(m => { T3.corabastos = m.construirCorabastos({ THREE, T3, lw, D: CO, liviano: LIVIANO }); }))
       .catch(e => console.warn('Corabastos:', e));
     const T = await pT;
     const [W, P, N] = await pWPN;
@@ -1426,11 +1482,11 @@ async function initTodoReal() {
     if (!KEN) try { buildPeatones(THREE, N); } catch (e) { console.warn('peatones:', e); }
     T3.avesU = { value: 0 }; T3.avesT = 0;
     // aves 3D (patos, fochas, garzas) repartidas por todos los humedales; si el módulo falla queda el modelo sencillo anterior
-    import('./data3d/aves3d.js').then(m => {
+    import('./data3d/aves3d.js?v=3').then(m => {
       const api = m.crearAves(T3, W, lw);
-      AVES = { grp: api.grp, nuevo: api };
+      AVES = { grp: api.grp, nuevo: api }; registrarAves();
       if (!$('b-aves').classList.contains('on')) api.grp.visible = false;
-    }).catch(e => { console.warn('aves 3D:', e); buildAves(THREE); });
+    }).catch(e => { console.warn('aves 3D:', e); buildAves(THREE); registrarAves(); });
     if (KEN) { const t0 = performance.now(); let tilesN = -1, tilesT = performance.now(), tResto = 0;
       const listo = () => { /* Kennedy: se entra con TODO lo que se ve ya cargado: panel, edificios, vías, árboles, tráfico, cubiertas, Bavaria, El Tintal,
            conjuntos, el carro real y la foto 3D afinada. Para que llegue antes: la foto 3D baja liviana hasta que está el panel y el INEM (24 MB, un sector
@@ -1443,7 +1499,7 @@ async function initTodoReal() {
           : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
           : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
           : !(window.KEN_CARRO_REAL || MOVIL) ? 'Cargando carros…' /* en celular no hay carro real */
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 15000) ? 'Afinando la foto 3D…' : '';
+          : (tResto = tResto || performance.now(), performance.now() - tilesT < 1500 && performance.now() - tResto < 5000) ? 'Afinando la foto 3D…' /* rendimiento: antes esperaba hasta 15 s (27 s en portátiles lentos); la foto termina de afinarse con el simulador abierto */ : '';
         if (!falta || performance.now() - t0 > 150000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
@@ -1485,12 +1541,12 @@ async function initTodoReal() {
       try {
         // árboles de la antigua fábrica de Bavaria (masas de follaje de la imagen satelital): mismos modelos reales que el resto del territorio
         let TT = T;
-        try { const [BA, BV] = await Promise.all([window.cargarJSON('data3d/bavaria_arboles.json?v=3'), pBav]); if (BA && BA.arboles) { const lib = (BV && BV.libres) || []; TT = { ...T, t: T.t.concat(BA.arboles.filter(a => !lib.some(z => enPoli(z, a[0], a[1]))).map(a => [a[0], a[1], a[2], 0, a[4] || 0])) }; } } catch (e) { console.warn('árboles de Bavaria:', e); }
+        try { const [BA, BV] = await Promise.all([window.cargarJSON('data3d/bavaria_arboles.json?v=3'), pBav]); if (BA && BA.arboles) { const lib = (BV && BV.libres) || []; TT = { ...T, t: T.t.concat(BA.arboles.map((a, ib) => [a[0], a[1], a[2], 0, a[4] || 0, ib]).filter(a => !lib.some(z => enPoli(z, a[0], a[1])))) }; } } catch (e) { console.warn('árboles de Bavaria:', e); }
         T3.kenArboles = KEN; // simulador: copas opacas, especies de Bogotá y más árboles 3D reales, como el render de Unreal
         const TIN = await pTin; if (TIN && TIN.zona_modelo) TT = { ...TT, t: TT.t.filter(t => !enPoli(TIN.zona_modelo, t[0], t[1])) }; // sin árboles bajo las palmas de la plaza ni en la huerta de la Biblioteca El Tintal
         T3.trees = await T3.R.buildTrees(T3, ZON ? { ...TT, t: TT.t.filter(t => enZona(t[0], t[1], 100)) } : TT, W, lw, T3.env);
         if (T3.fotoReal && T3.trees && T3.trees.ver) T3.trees.ver(false); // Foto real: los árboles son los de la foto
-        if (T3.splatLejos && T3.trees && T3.trees.pos) setTimeout(() => import('./data3d/arboles_splat.js?v=8').then(m => { T3.arbolesSplat = m.crearArbolesSplat({ THREE, T3, movil: MOVIL, cerca: 230 }); }).catch(e => console.warn('árboles splat:', e)), 6000); /* rendimiento: las copas lejanas se arman 6 s después */ // de cerca árboles reales modelados (tronco y follaje); de lejos copas tipo gaussian splat
+        if (T3.splatLejos && T3.trees && T3.trees.pos) setTimeout(() => import('./data3d/arboles_splat.js?v=9').then(m => { T3.arbolesSplat = m.crearArbolesSplat({ THREE, T3, movil: MOVIL, cerca: 230 }); }).catch(e => console.warn('árboles splat:', e)), 6000); /* rendimiento: las copas lejanas se arman 6 s después */ // de cerca árboles reales modelados (tronco y follaje); de lejos copas tipo gaussian splat
         T3.counts.t = T.t.length;
         say('🌳 Árboles reales 3D cargados', 3000);
       } catch (e) { console.warn('arboles reales:', e); T3.trees = null; try { await buildTreesReal(THREE, T); } catch (e2) { console.warn('trees:', e2); } }
@@ -2075,7 +2131,7 @@ function buildChunks(THREE, B) {
     const L = torresFoto.map(b => ({ W: b.pts.slice(0, -1).map(p => lw(p[0], p[1])), h: b.h, y0: 0.3 }));
     for (const t of L) techosHuerta.push({ W: t.W, y: t.h - 0.45 });
     T3.torresTechos = (T3.torresTechos || []).concat(L.map(t => ({ W: t.W, h: t.h + 0.45 }))); // su losa está 0,45 m bajo el borde // cubiertas de las torres con balcones: también hidropónicas
-    if (!pTorres) pTorres = import('./data3d/torres_balcones.js?v=4').then(m => (T3.torres = m.crearTorres(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('torres con balcones:', e); return null; });
+    if (!pTorres) pTorres = import('./data3d/torres_balcones.js?v=7').then(m => (T3.torres = m.crearTorres(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('torres con balcones:', e); return null; });
     pTorres.then(Tt => { if (Tt) { Tt.agregar(L); Tt.huertas(T3.escenario === 'proyecto'); } }); // huerta de los balcones: solo con la propuesta
   }
   agregarHuertasTecho(techosHuerta);
@@ -2088,7 +2144,7 @@ const HUERTA_H = 16.5; // más de 5 pisos (pisos de 3 m)
 let pHuertas = null;
 function agregarHuertasTecho(L) {
   if (!L.length) return;
-  if (!pHuertas) pHuertas = import('./data3d/huertas_techo.js?v=1').then(m => (T3.huertas = m.crearHuertasTecho(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('huertas en terrazas:', e); return null; });
+  if (!pHuertas) pHuertas = import('./data3d/huertas_techo.js?v=2').then(m => (T3.huertas = m.crearHuertasTecho(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('huertas en terrazas:', e); return null; });
   pHuertas.then(H => { if (H) { H.agregar(L); if (H.grupo && (T3.escenario !== 'proyecto' || T3.conHidro)) H.grupo.visible = false; } }); // huertas en terrazas: solo con la propuesta (y las reemplaza la hidroponía)
 }
 function treeTexture(THREE, variant) {
@@ -2462,6 +2518,7 @@ async function cargarTrozoTrafico(I, k, steps) {
     }
     steps[t0 + s] = { t: t0 + s, ids, xs, ys };
     prev = cur;
+    if (s % 6 === 5) await new Promise(r => setTimeout(r, 0)); /* rendimiento: decodificar el trozo por partes (antes ~200 ms de un tirón: tirón visible cada vez que bajaba uno) */
   }
 }
 async function buildTraffic(THREE) {
@@ -2505,16 +2562,52 @@ async function buildTraffic(THREE) {
     } catch (e) { console.warn('vehículos SUMO:', e); T3.vehSUMO = null; }
   }
   // arranca a las 16:40 (ya hay unos 2.000 carros en la calle) y en marcha; la barra de abajo permite pausar y mover el tiempo
-  TRAF = { steps, NS, NV, dur, maxi, t: tIni, playing: true, vel: 1, pedirTrozo, chunk: I.chunk, bodies, cabins, wheels, dummy: new THREE.Object3D(), head: new Float32Array(maxi * 3),
+  // TIEMPO: TRAF.t (segundo de la grabación) ya no avanza solo: es el tiempo del reloj universal módulo la duración de la grabación (que se repite en bucle).
+  // El tráfico es una grabación SUMO: su posición es una función pura del tiempo del reloj (updateTraffic solo la dibuja); lo que sí lleva estado (el
+  // flujo de carros por vía, color de «Flujo») corre como sistema del reloj con paso fijo.
+  TRAF = { steps, NS, NV, dur, maxi, t: tIni, t0: tIni, periodo: dur + 1, get playing() { return RELOJ.corriendo; }, vel: 1, pedirTrozo, chunk: I.chunk, bodies, cabins, wheels, dummy: new THREE.Object3D(), head: new Float32Array(maxi * 3),
     vis: { n: 0, x: new Float32Array(maxi * 3), z: new Float32Array(maxi * 3), dx: new Float32Array(maxi * 3), dz: new Float32Array(maxi * 3), v: new Float32Array(maxi * 3), id: new Int32Array(maxi * 3), cam: new Uint8Array(maxi * 3) } }; // vis: posición y velocidad de cada carro en este cuadro (detección y seguimiento del simulador)
   T3.counts.cars = NV; T3.TRAF = TRAF; T3.LC = LC; T3.lw = lw; /* lw: modelo -> mundo, para los módulos que se cargan aparte */ /* data3d/origenes.js pasa las posiciones SUMO al mundo */ /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
   if (window.trafficPaint) window.trafficPaint();
   updateTraffic(0);
+  RELOJ.registrar({ nombre: 'trafico_flujo', orden: 20, step: pasoFlujoTrafico, hash: () => { const FC = T3.flujoCarros; let h = 0x811c9dc5; if (FC && FC.acum) for (let i = 0; i < FC.acum.length; i++) h = Math.imul((h ^ (Math.round(FC.acum[i] * 1000) | 0)) >>> 0, 0x01000193) >>> 0; return h; } }, { ponerAlDia: false });
+  // salto «+2 h» sin dibujo: antes de empezar baja TODA la grabación (trafico_flujo lee la posición de cada vehículo en cada paso;
+  // un trozo que falte haría contar cero carros en esos segundos). Si un trozo no baja, se reintenta una vez y se avisa.
+  RELOJ.prepararSalto(async (J) => {
+    const nT = I.n, todos = () => Promise.all(Array.from({ length: nT }, (_, k) => pedirTrozo(k)));
+    await todos(); let falta = 0; for (let s = 0; s < NS; s++) if (!steps[s]) falta++;
+    if (falta) { await todos(); falta = 0; for (let s = 0; s < NS; s++) if (!steps[s]) falta++; }
+    if (falta) J.avisos.push('faltan ' + falta + ' s de la grabación de tráfico');
+  });
+}
+// al terminar un salto la capa gráfica se pone al día con el estado: rumbo de cada carro (sin giro suave desde el rumbo viejo), copias
+// ocultas, colores del flujo de carros, sombras y el tiempo del cuadro (sin un dt enorme)
+RELOJ.alCambiar((que) => {
+  if (que !== 'salto-fin') return;
+  if (TRAF) { if (TRAF.headF) TRAF.headF.fill(NaN); if (TRAF.ocuCop) TRAF.ocuCop.clear(); }
+  if (T3) { T3.last = 0; if (T3.flujoCarros && T3.flujoCarros.visible) T3.flujoCarros.pintar(); if (T3.renderer && T3.renderer.shadowMap) T3.renderer.shadowMap.needsUpdate = true; }
+});
+// segundo de la grabación SUMO que corresponde a un tiempo del reloj (grabación en bucle)
+function tGrabacion(seg) { const P = TRAF.periodo; return ((TRAF.t0 + (seg - RELOJ.T0 * RELOJ.DT)) % P + P) % P; }
+// flujo de carros por vía (capa «Flujo»): cada 5 pasos cuenta los vehículos de la grabación (con la demanda de la hora y las copias desfasadas)
+function pasoFlujoTrafico(dt, t) {
+  if (!TRAF || !T3.flujoCarros || t % 5 !== 0) return;
+  const FC = T3.flujoCarros, V = TRAF.visPaso || (TRAF.visPaso = { n: 0, x: new Float32Array(TRAF.maxi * 3), z: new Float32Array(TRAF.maxi * 3) });
+  const tg = Math.floor(tGrabacion(t * RELOJ.DT)), pD = demandaEn((t % RELOJ.DIA) / 60); TRAF.demandaPaso = pD;
+  const NCOP = KEN && T3.vehSUMO ? Math.max(1, Math.min(3, Math.round(1 + 2.2 * Math.max(0, pD - 0.25) / 0.72))) : 1;
+  if (!FC.listo) FC.precalentar(TRAF, tg, pD); // con el segundo de la grabación y la demanda DE ESTE PASO (no los del cuadro dibujado)
+  V.n = 0;
+  for (let cl = 0; cl < NCOP; cl++) {
+    const ka = (tg + cl * 487) % TRAF.NS, S = TRAF.steps[ka]; if (!S) { if (TRAF.pedirTrozo) TRAF.pedirTrozo(Math.floor(ka / TRAF.chunk)); continue; }
+    for (let i = 0; i < S.ids.length && V.n < V.x.length; i++) { const idc = S.ids[i] + cl * (TRAF.NV + 1); if (pD < 0.999 && (Math.imul(idc ^ 0x5bd1e995, 0x85ebca6b) >>> 0) / 4294967296 > pD) continue; const vx = S.xs[i] - LC.x, vz = LC.y - S.ys[i]; if (T3.alivio && T3.escenario === 'proyecto' && T3.alivio.enVia(vx, vz) && T3.alivio(vx, vz, idc) === 2) continue; V.x[V.n] = vx; V.z[V.n] = vz; V.n++; }
+  }
+  FC.contar(V, 5 * dt);
 }
 /* demanda de tráfico según la hora del reloj de la simulación (perfil típico de Bogotá: picos 6-8 y 17-19, madrugada casi vacía).
    La grabación SUMO es de hora pico (100 %); a cada hora sale solo esa fracción de los vehículos (siempre los mismos por id). */
 const DEMANDA_H = [0.06, 0.04, 0.03, 0.03, 0.08, 0.32, 0.78, 0.95, 0.82, 0.62, 0.58, 0.62, 0.72, 0.7, 0.62, 0.66, 0.82, 1.0, 0.97, 0.78, 0.52, 0.36, 0.22, 0.12]; /* pico más pesado 5-6 p. m. (SDM: NQS > 17.000 veh/h), pico de la mañana 6-8 a. m. */
-function demandaHora() { const r = T3.reloj; if (!r || !(r.t >= 0)) return 1; const h = (r.t / 60) % 24, a = Math.floor(h), f = h - a; return DEMANDA_H[a] + (DEMANDA_H[(a + 1) % 24] - DEMANDA_H[a]) * f; }
+function demandaEn(min) { const h = (min / 60) % 24, a = Math.floor(h), f = h - a; return DEMANDA_H[a] + (DEMANDA_H[(a + 1) % 24] - DEMANDA_H[a]) * f; }
+function demandaHora() { return demandaEn(RELOJ.minutoDia); } // hora del reloj universal (minutos del día)
 /* RUMBO DE LOS CARROS: alineado con el tramo de vía más cercano (sentido según hacia dónde avanza), no con el salto entre
    posiciones grabadas cada segundo (redondeadas a 20 cm: de ahí los carros en diagonal, sobre todo quietos o en la rotonda).
    Quieto: conserva el sentido y se alinea con su carril. El giro es suave (sin saltos). */
@@ -2542,10 +2635,8 @@ function rumboCarro(id, x, z, dx, dz, prev, dt) {
 }
 function updateTraffic(dt) {
   if (!TRAF) return;
-  const pDem = demandaHora(); TRAF.demanda = pDem;
-  if (TRAF.playing) TRAF.t += dt * (TRAF.vel || 1);
-  if (TRAF.t > TRAF.dur) TRAF.t -= (TRAF.dur + 1);
-  if (window.trafficUI) window.trafficUI(TRAF.t, TRAF.dur);
+  const pDem = demandaHora() * (window.KEN_LIMPIO ? window.KEN_LIMPIO.factorCarros() : 1); TRAF.demanda = pDem; /* escenario 1 (data3d/limpio.js): con el metro funcionando bajan los carros */ TRAF.cuadro = ((TRAF.cuadro | 0) + 1) % 3000;
+  TRAF.t = tGrabacion(RELOJ.tVis); // solo LEE el reloj: la posición de cada carro es función del tiempo (misma hora = mismos carros en el mismo sitio)
   const k0 = Math.floor(TRAF.t) % TRAF.NS, k1 = (k0 + 1) % TRAF.NS;
   if (TRAF.pedirTrozo && !TRAF.steps[(k0 + 25) % TRAF.NS]) TRAF.pedirTrozo(Math.floor(((k0 + 25) % TRAF.NS) / TRAF.chunk)); /* pide con 25 s de anticipación */
   const f = TRAF.t - Math.floor(TRAF.t);
@@ -2592,11 +2683,11 @@ function updateTraffic(dt) {
        data3d/escenarios.json) pasa a ser una furgoneta blanca de reparto. V.cam alimenta el mapa de ruido (un camión pesa más). */
     /* HORARIO DE CORABASTOS: la carga llega de noche (los camiones entran de 6 p. m. a 11 p. m. y la venta mayorista abre a las 2 a. m.; boletín
        SIPSA-DANE y reglamento de la central): cerca de Corabastos, de 18:00 a 03:00, uno de cada cinco vehículos es camión (de día, 8 %) [SUP] */
-    const hR = T3.reloj ? (T3.reloj.t / 60) % 24 : 12, uCam = (hR >= 18 || hR < 3) && Math.hypot(x0 - 1132.1, y0 - 948.6) < 2600 ? 0.80 : 0.92;
+    const hR = (RELOJ.minutoDia / 60) % 24, uCam = (hR >= 18 || hR < 3) && Math.hypot(x0 - 1132.1, y0 - 948.6) < 2600 ? 0.80 : 0.92;
     const esCam = ((idc * 2654435761) >>> 0) / 4294967296 >= uCam, aVan = esCam && T3.escenario === 'proyecto' && T3.PROP && T3.PROP.camiones && ((idc * 40503 + 977) % 1000) / 1000 < (T3.retiroCamiones || 0.187);
     V.cam[n] = esCam && !aVan ? 1 : 0;
     if (VS) { // vehículo realista: tipo y color fijos por id (70 % carros, 22 % motos, 8 % camiones), apoyado en el asfalto
-      const id = idc; TRAF.headF[id] = rumboCarro(id, px, pz, dx, dy, TRAF.headF[id], dt); /* recto sobre su vía (no en diagonal), girando suave en las curvas */
+      const id = idc; if (!isFinite(TRAF.headF[id]) || ((id + TRAF.cuadro) % 3) === 0) TRAF.headF[id] = rumboCarro(id, px, pz, dx, dy, TRAF.headF[id], dt * 3); /* rendimiento: el rumbo de cada carro se recalcula 1 de cada 3 cuadros (escalonado) */ /* recto sobre su vía (no en diagonal), girando suave en las curvas */
       if (TRAF.tipo[id] < 0) { const r = ((id * 2654435761) >>> 0) / 4294967296; TRAF.tipo[id] = esCam ? 2 : r < 0.70 ? 0 : r < 0.92 ? 1 : 2; TRAF.obj[id] = {}; } /* de noche cerca de Corabastos hay más camiones (uCam) */
       const yV = (T3.viaY != null ? T3.viaY : 0.62) + 0.02 + (T3.alzaVia ? T3.alzaVia(px, pz) : 0);
       if (aVan) { if (!TRAF.van) TRAF.van = new Map(); let o = TRAF.van.get(id); if (!o) TRAF.van.set(id, o = { _vv: 'van', _vc: 0xeeeeec }); VS.poner(o, 'carro', px, yV, pz, TRAF.headF[id]); n++; continue; }
@@ -2627,7 +2718,6 @@ function updateTraffic(dt) {
   TRAF.vis.n = n;
   if (F && T3.extraCars) T3.extraCars(F); // carros extra de la avenida del humedal (modo pájaro)
   if (F) { F.end((T3.vpos || T3.camera.position).x, (T3.vpos || T3.camera.position).z); n = 0; } // las cajas del tráfico antiguo quedan ocultas
-  if (T3.flujoCarros) { if (!T3.flujoCarros.listo) T3.flujoCarros.precalentar(TRAF); if (TRAF.playing) { TRAF.vis.n = n; T3.flujoCarros.contar(TRAF.vis, dt * (TRAF.vel || 1)); } }
   if (VS) { VS.fin(); n = 0; }
   TRAF.bodies.count = n; TRAF.cabins.count = n; TRAF.wheels.count = n * 4;
   TRAF.bodies.instanceMatrix.needsUpdate = true;
@@ -2708,6 +2798,7 @@ function buildCars(THREE, N) {
   if (cabins.instanceColor) cabins.instanceColor.needsUpdate = true;
   T3.scene.add(bodies, cabins, wheels);
   CARS = { bodies, cabins, wheels, cars, paths, cums, dummy: new THREE.Object3D() };
+  RELOJ.registrar({ nombre: 'carros_maqueta', orden: 25, step: (dt) => { for (const c of cars) { c.dist += c.speed * c.dir * dt; if (c.dist > c.total) c.dist -= c.total; if (c.dist < 0) c.dist += c.total; } }, hash: () => { let h = 0x811c9dc5; for (const c of cars) h = Math.imul((h ^ (Math.round(c.dist * 1000) | 0)) >>> 0, 0x01000193) >>> 0; return h; } }); // carros de la maqueta antigua: paso fijo; updateCars solo dibuja
   T3.counts.cars = NC;
   updateCars(0.016);
 }
@@ -2717,15 +2808,14 @@ function updateCars(dt) {
   const WO = [[1.45, 0.95], [1.45, -0.95], [-1.45, 0.95], [-1.45, -0.95]];
   for (let i = 0; i < CARS.cars.length; i++) {
     const c = CARS.cars[i];
-    c.dist += c.speed * c.dir * dt;
-    if (c.dist > c.total) c.dist -= c.total;
-    if (c.dist < 0) c.dist += c.total;
+    let dist = c.dist - c.speed * c.dir * (1 - RELOJ.alfa); // posición interpolada (un paso detrás del estado)
+    if (dist > c.total) dist -= c.total; if (dist < 0) dist += c.total;
     const pts = CARS.paths[c.pi], cum = CARS.cums[c.pi];
     let s = 0;
-    while (s < cum.length - 2 && cum[s + 1] < c.dist) s++;
+    while (s < cum.length - 2 && cum[s + 1] < dist) s++;
     const a = pts[s], b = pts[s + 1];
     const segL = (cum[s + 1] - cum[s]) || 1;
-    const k = (c.dist - cum[s]) / segL;
+    const k = (dist - cum[s]) / segL;
     let dx = b[0] - a[0], dz = b[1] - a[1];
     const L = Math.hypot(dx, dz) || 1;
     dx /= L; dz /= L;
@@ -2918,10 +3008,11 @@ function crearFlujoCarros(THREE, N, ANCHO, dedupe, yVia, RUTAS) {
     if (mesh.visible && (tPint -= dt) <= 0) { tPint = 0.4; api.pintar(); }
   };
   // al abrir: se recorren los 2 minutos de simulación alrededor de la hora de inicio, así la capa ya sale con color
-  api.precalentar = (TR) => {
+  api.acum = acum; // estado (hash del sistema trafico_flujo)
+  api.precalentar = (TR, tPaso, dPaso) => { // tPaso, dPaso: segundo de la grabación y demanda del paso del reloj (lógica: no depende del dibujo)
     const V = { n: 0, x: new Float32Array(TR.maxi), z: new Float32Array(TR.maxi) }; let usados = 0;
-    const t0 = Math.floor(TR.t);
-    const pD = TR.demanda != null ? TR.demanda : 1;
+    const t0 = Math.floor(tPaso != null ? tPaso : TR.t);
+    const pD = dPaso != null ? dPaso : TR.demanda != null ? TR.demanda : 1;
     for (let t = t0 - TAU; t <= t0 + TAU && usados < TAU; t++) { const S = TR.steps[(t + TR.NS) % TR.NS]; if (!S) continue;
       V.n = 0; for (let i = 0; i < S.ids.length && V.n < TR.maxi; i++) { if (pD < 0.999 && ((S.ids[i] * 2654435761) >>> 0) / 4294967296 > pD) continue; const vx = S.xs[i] - LC.x, vz = LC.y - S.ys[i]; if (T3.alivio && T3.escenario === 'proyecto' && T3.alivio.enVia(vx, vz) && T3.alivio(vx, vz, S.ids[i]) === 2) continue; V.x[V.n] = vx; V.z[V.n] = vz; V.n++; } api.contar(V, 1); usados++; }
     api.listo = usados >= Math.min(5, TAU); /* antes nunca quedaba listo y se recalentaba en cada cuadro con todos los carros: el color no cambiaba */ if (mesh.visible) api.pintar(); return usados;
@@ -3062,7 +3153,7 @@ function buildRoads(THREE, N) {
   }
   // alza de la vía en cualquier punto (para subir carros, motos y peatones al puente)
   if (enAgua) {
-    const CEL = 3, A = new Map(), k = (x, z) => Math.floor(x / CEL) + ',' + Math.floor(z / CEL);
+    const CEL = 3, A = new Map(), k = (x, z) => Math.floor(x / CEL) * 100003 + Math.floor(z / CEL); /* clave numérica: sin crear un texto por carro y por cuadro */
     for (const R of RUTAS) { if (!R || !R.el) continue; const { q, el } = R;
       for (let i = 0; i < q.length; i++) { if (el[i] < 0.02) continue; const r = 12; for (let dx = -r; dx <= r; dx += CEL) for (let dz = -r; dz <= r; dz += CEL) { const kk = k(q[i][0] + dx, q[i][1] + dz); if ((A.get(kk) || 0) < el[i]) A.set(kk, el[i]); } } }
     T3.alzaVia = A.size ? (x, z) => A.get(k(x, z)) || 0 : null;
@@ -3115,7 +3206,7 @@ function vueloLlegada() {
   if (KEN) { /* Kennedy: la cámara espera en lo alto mientras carga; el vuelo hasta el humedal empieza al abrir la portada (abrirPortada) */
     /* inicio un poco alejado (2,3 veces la distancia final, en la misma dirección y algo más alto): durante la portada la cámara ya está ahí,
        así lo que se ve al abrir está cargado; el vuelo corto se acerca al humedal y lo que aparece al acercarse ya estaba dentro de la vista */
-    p1.set(1950, 115, 120); c1.set(2160, 25, -140); /* llegada: cerca del humedal El Burro, vista más horizontal hacia los cerros */
+    p1.set(1740, 330, 700); c1.set(2320, 25, -100); /* llegada: un poco más lejos: todo el humedal El Burro, la glorieta y parte de la fábrica de Bavaria a la derecha */
     const ini = p1.clone().sub(c1).multiplyScalar(2.6).add(c1); ini.y = c1.y + (p1.y - c1.y) * 2.2;
     T3.camera.position.copy(ini); T3.orbit.target.copy(c1); T3.orbit.update(); T3.llegada = { p0: ini.clone(), c0: c1.clone(), p1, c1 }; return;
   }
@@ -3181,6 +3272,7 @@ function buildPeatones(THREE, N) {
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); T3.scene.add(mesh);
   PEAT = { list, mesh, d: new THREE.Object3D(), vx: new Float32Array(list.length), vz: new Float32Array(list.length), vn: 0 }; // vx/vz: peatones dibujados en este cuadro (detección del simulador)
   T3.counts.peatones = list.length;
+  RELOJ.registrar({ nombre: 'peatones_maqueta', orden: 25, step: (dt) => { for (const p of list) { p.s0 = p.s; p.s += p.v * p.dir * dt; if (p.s < 0) { p.s = 0; p.dir = 1; } else if (p.s > p.L) { p.s = p.L; p.dir = -1; } } }, hash: () => { let h = 0x811c9dc5; for (const p of list) h = Math.imul((h ^ (Math.round(p.s * 1000) | 0)) >>> 0, 0x01000193) >>> 0; return h; } });
 }
 function mergeGeoms(THREE, gs) { // une geometrías con los mismos atributos (posición, normal, color)
   const pos = [], nor = [], col = [], idx = []; let off = 0;
@@ -3199,10 +3291,9 @@ function updatePeatones(dt) {
   const cx = (T3.vpos || T3.camera.position).x, cz = (T3.vpos || T3.camera.position).z, R2 = 300 * 300, t = T3.waterU.value, d = PEAT.d, m = PEAT.mesh;
   let n = 0;
   for (const p of PEAT.list) {
-    p.s += p.v * p.dir * dt;
-    if (p.s < 0) { p.s = 0; p.dir = 1; } else if (p.s > p.L) { p.s = p.L; p.dir = -1; }
-    let sg = p.seg; while (sg > 0 && p.cum[sg] > p.s) sg--; while (sg < p.cum.length - 2 && p.cum[sg + 1] < p.s) sg++; p.seg = sg;
-    const a = p.pts[sg], b = p.pts[sg + 1], f = (p.s - p.cum[sg]) / ((p.cum[sg + 1] - p.cum[sg]) || 1);
+    const s0 = p.s0 !== undefined && Math.abs(p.s - p.s0) < 5 ? p.s0 + (p.s - p.s0) * RELOJ.alfa : p.s; // la lógica (paso fijo) está en pasoPeatones; aquí solo se dibuja interpolado
+    let sg = p.seg; while (sg > 0 && p.cum[sg] > s0) sg--; while (sg < p.cum.length - 2 && p.cum[sg + 1] < s0) sg++; p.seg = sg;
+    const a = p.pts[sg], b = p.pts[sg + 1], f = (s0 - p.cum[sg]) / ((p.cum[sg + 1] - p.cum[sg]) || 1);
     const x = a[0] + (b[0] - a[0]) * f, z = a[1] + (b[1] - a[1]) * f, ex = x - cx, ez = z - cz;
     if (ex * ex + ez * ez > R2) continue;
     const paso = Math.sin(t * 7 + p.ph);
@@ -3342,7 +3433,7 @@ function buildAves(THREE) {
 function stepBird(b, dt, now) {
   if (b.kind === 'pato') {
     const dx = b.wx - b.x, dz = b.wz - b.z, L = Math.hypot(dx, dz);
-    if (L < 4) { for (let t = 0; t < 20; t++) { const x = BURRO.x + (Math.random() * 2 - 1) * BURRO.rx, z = BURRO.z + (Math.random() * 2 - 1) * BURRO.rz; if (burroIn(x, z, 0.92)) { b.wx = x; b.wz = z; break; } } }
+    if (L < 4) { for (let t = 0; t < 20; t++) { const x = BURRO.x + (azarAve() * 2 - 1) * BURRO.rx, z = BURRO.z + (azarAve() * 2 - 1) * BURRO.rz; if (burroIn(x, z, 0.92)) { b.wx = x; b.wz = z; break; } } }
     else {
       const nh = Math.atan2(dx, dz);
       let dh = nh - b.heading;
@@ -3361,15 +3452,15 @@ function stepBird(b, dt, now) {
     if (b.state === 'pausa') {
       b.roll *= 0.9;
       if (b.timer <= 0) {
-        const a = Math.atan2(b.x - BURRO.x, b.z - BURRO.z) + (Math.random() - 0.5) * 1.2;
-        const rr = 0.85 + Math.random() * 0.15;
+        const a = Math.atan2(b.x - BURRO.x, b.z - BURRO.z) + (azarAve() - 0.5) * 1.2;
+        const rr = 0.85 + azarAve() * 0.15;
         b.wx = BURRO.x + Math.cos(a) * BURRO.rx * rr;
         b.wz = BURRO.z + Math.sin(a) * BURRO.rz * rr;
-        b.state = 'corre'; b.timer = 0.5 + Math.random() * 0.4;
+        b.state = 'corre'; b.timer = 0.5 + azarAve() * 0.4;
       }
     } else {
       const dx = b.wx - b.x, dz = b.wz - b.z, L = Math.hypot(dx, dz);
-      if (L < 2 || b.timer <= 0) { b.state = 'pausa'; b.timer = 0.8 + Math.random() * 1.6; }
+      if (L < 2 || b.timer <= 0) { b.state = 'pausa'; b.timer = 0.8 + azarAve() * 1.6; }
       else {
         const nh = Math.atan2(dx, dz);
         let dh = nh - b.heading;
@@ -3391,23 +3482,28 @@ function stepBird(b, dt, now) {
     b.roll = -b.dir * 0.35;
   }
 }
+/* AVES: la lógica corre como sistema del reloj universal (paso fijo de 1 s, azar con semilla); updateAves solo DIBUJA el estado
+   (interpola entre el paso anterior y el actual; aleteo y ondas con el tiempo de animación del reloj, que se detiene en pausa) */
+const azarAve = RELOJ.azar('aves_burro');
+let avesSistema = false;
+function registrarAves() {
+  if (avesSistema || !AVES) return; avesSistema = true;
+  if (AVES.nuevo) { const api = AVES.nuevo; RELOJ.registrar({ nombre: 'aves', orden: 30, step: (dt, t) => api.step(dt, t), hash: () => api.hash() }); }
+  else RELOJ.registrar({ nombre: 'aves_modelo_simple', orden: 30, step: (dt, t) => { for (const b of AVES.birds) { b.x0 = b.x; b.z0 = b.z; stepBird(b, dt, t); } } });
+}
 function updateAves() {
   if (!AVES || !AVES.grp.visible) return;
-  const now = performance.now() / 1000;
-  const dt = Math.min(Math.max((now - (T3.avesT || now)), 0.001), 0.1);
-  T3.avesT = now;
-  T3.avesU.value = now;
-  if (AVES.nuevo) { AVES.nuevo.update(dt, now); return; }
-  const d = AVES.dummy;
+  T3.avesU.value = RELOJ.tAnim;
+  if (AVES.nuevo) { AVES.nuevo.dibujar(RELOJ.alfa, RELOJ.tAnim, RELOJ.dtAnim); return; }
+  const d = AVES.dummy, al = RELOJ.alfa;
   for (let i = 0; i < AVES.n; i++) {
-    const b = AVES.birds[i];
-    stepBird(b, dt, now);
-    d.position.set(b.x, b.y, b.z);
+    const b = AVES.birds[i], lerp = b.x0 !== undefined && Math.abs(b.x - b.x0) + Math.abs(b.z - b.z0) < 60, bx = lerp ? b.x0 + (b.x - b.x0) * al : b.x, bz = lerp ? b.z0 + (b.z - b.z0) * al : b.z;
+    d.position.set(bx, b.y, bz);
     d.rotation.set(b.pitch || 0, b.heading, b.roll || 0);
     d.scale.setScalar(b.sc);
     d.updateMatrix();
     AVES.mesh.setMatrixAt(i, d.matrix);
-    d.position.set(b.x, 0.37, b.z);
+    d.position.set(bx, 0.37, bz);
     d.rotation.set(0, 0, 0);
     d.scale.setScalar(b.sc * 1.15);
     d.updateMatrix();
@@ -3445,7 +3541,7 @@ function simTick(dt, pos) {
   if (T3.plants) T3.plants.update({ position: pos });
   if (TRAF) updateTraffic(dt); else updateCars(dt);
   if (!TRAF && T3.fleet && T3.extraCars) { T3.fleet.begin(); T3.extraCars(T3.fleet); T3.fleet.end(pos.x, pos.z); } // versión ligera/media: sin simulación de tráfico, sólo los carros de la avenida
-  T3.waterU.value = performance.now() / 1000;
+  T3.waterU.value = RELOJ.tAnim;
   if (T3.skyU) T3.skyU.uTime.value = T3.waterU.value;
   T3.sun.position.copy(pos).add(T3.sunOff);
   T3.sun.target.position.copy(pos);
@@ -3487,15 +3583,9 @@ $('b-pajaro').onclick = async () => { if (await asegurarPajaro()) PAJARO.abrirMe
     try { if (await asegurarPajaro()) PAJARO.mundoVivo(); } catch (e) { console.warn('carros del inicio:', e); }
   }, 1500);
 }
-{ // barra de abajo: play / pausa y tiempo de la simulación de carros
-  const play = $('trafficPlay'), tiempo = $('trafficTime'), etiqueta = $('trafficLabel');
-  const fmt = (t) => { t = Math.max(0, Math.floor(t)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
-  const pintarBoton = () => { const on = !!(TRAF && TRAF.playing); play.textContent = on ? '❚❚' : '▶'; play.classList.toggle('on', on); play.setAttribute('aria-label', on ? 'Pausar simulación' : 'Reproducir simulación'); };
-  window.trafficPaint = pintarBoton;
-  window.trafficLoading = (pct) => { if (!TRAF) etiqueta.textContent = 'cargando ' + pct + '%'; };
-  window.trafficUI = (t, dur) => { tiempo.max = Math.floor(dur); if (document.activeElement !== tiempo) tiempo.value = Math.floor(t); etiqueta.textContent = fmt(t) + ' / ' + fmt(dur); };
-  play.onclick = () => { if (!TRAF) { say('Cargando las trayectorias de los carros...'); return; } TRAF.playing = !TRAF.playing; pintarBoton(); say(TRAF.playing ? 'Simulación de carros en marcha' : 'Simulación en pausa'); };
-  tiempo.oninput = (e) => { if (!TRAF) return; TRAF.t = Number(e.target.value); TRAF.playing = true; pintarBoton(); window.trafficUI(TRAF.t, TRAF.dur); };
+{ // barra de abajo: el control de tiempo universal vive en data3d/reloj_ui.js (pausa, velocidad, fecha y hora); aqui solo el aviso de carga del trafico
+  window.trafficPaint = () => {};
+  window.trafficLoading = (pct) => { const m = document.getElementById('rt-msg'); if (!TRAF && m) m.textContent = 'Cargando el tráfico ' + pct + '%'; };
 }
 
 /* ============ MODO SPLAT HUMEDAL (tu dron, gaussiano real) ============ */
@@ -3629,24 +3719,26 @@ $('b-hd').onclick = async () => {
 if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   const listoK = () => T3 && T3.ready && T3.net ? Promise.resolve() : new Promise(r => setTimeout(() => r(listoK()), 400));
   // Biblioteca El Tintal (modelo propio) y canchas reales de OpenStreetMap: no dependen de la simulación, se cargan en paralelo
-  listoK().then(() => import('./data3d/tintal.js?v=17')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
-  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=3')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
+  listoK().then(() => import('./data3d/tintal.js?v=18')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
+  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=4')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
   listoK().then(() => import('./data3d/conjuntos.js?v=5')).then(m => m.iniciarConjuntos({ THREE: T3.THREE, T3, lw, Y0: 0.3, movil: MOVIL })).catch(e => console.warn('conjuntos:', e));
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=47'), import('./data3d/estrategias.js?v=22'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=55'), import('./data3d/estrategias.js?v=32'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
       [EST, PLAN, CPLAN] = await Promise.all([
         me.iniciarEstrategias({ THREE: T3.THREE, T3, lw, Y0: 2.0, movil: MOVIL, dentro: (x, z) => enZona(x + LC.x, LC.y - z) /* huertas hidropónicas solo donde está el modelo de edificios */ }).catch(e => { console.warn('estrategias:', e); return null; }),
-        import('./data3d/bavaria_plan.js?v=5').then(m2 => m2.iniciarPlanBavaria({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Bavaria:', e); return null; }),
-        import('./data3d/corabastos_plan.js?v=4').then(m2 => m2.iniciarPlanCorabastos({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Corabastos:', e); return null; })]);
+        import('./data3d/bavaria_plan.js?v=8').then(m2 => m2.iniciarPlanBavaria({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Bavaria:', e); return null; }),
+        import('./data3d/corabastos_plan.js?v=7').then(m2 => m2.iniciarPlanCorabastos({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).catch(e => { console.warn('plan Corabastos:', e); return null; })]);
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
-      // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
+      // selector ESTADO ACTUAL / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=64').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=114').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=98').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
+      ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=1'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3674,40 +3766,40 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
       if (KEN && !document.getElementById('rc-btn')) { /* ruido de los carros y cierre de vía (data3d/ruido_cierre.js, como en el módulo 08) */
-        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=6'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
+        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=14'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
         const b1 = document.createElement('button'); b1.id = 'rc-btn'; b1.textContent = 'Ruido de carros'; b1.title = 'Mapa de ruido en vivo según dónde van los carros'; b1.style.cssText = 'width:100%;margin-top:6px';
-        b1.onclick = async () => { const on = !b1.classList.contains('on'); b1.classList.toggle('on', on); try { const a = await rcApi(); a.ruido.ver(on); T3.rcMod.panelRuido(on); } catch (e) { console.warn('ruido:', e); } };
+        b1.onclick = async () => { const on = !b1.classList.contains('on'); b1.classList.toggle('on', on); try { const a = await rcApi(); a.ruido.ver(on); if (!on) T3.rcMod.panelRuido(false); /* la usuaria: al prender el ruido solo se ve el mapa, sin abrir el panel */ } catch (e) { console.warn('ruido:', e); } };
         const b2 = document.createElement('button'); b2.id = 'ci-open'; b2.textContent = 'Cerrar una vía'; b2.title = 'Cierra una vía crítica y desvía los carros por las calles vecinas'; b2.style.cssText = 'width:100%;margin-top:6px';
         b2.onclick = async () => { const on = !b2.classList.contains('on'); b2.classList.toggle('on', on); try { const a = await rcApi(); T3.rcMod.panelCierre(a, on); } catch (e) { console.warn('cierre:', e); } };
         const ref = document.getElementById('us-btn') || document.getElementById('ar-btn'); (ref || ag.parentElement).insertAdjacentElement('afterend', b2); (ref || ag.parentElement).insertAdjacentElement('afterend', b1);
         /* puntos actuales de recolección de residuos (UAESP): empieza apagado */
         const b3 = document.createElement('button'); b3.id = 'rs-btn'; b3.textContent = 'Recolección de basura'; b3.title = 'Contenedores de recolección de la UAESP en Kennedy y su red'; b3.style.cssText = 'width:100%;margin-top:6px';
-        let pRes = null; b3.onclick = async () => { const on = !b3.classList.contains('on'); b3.classList.toggle('on', on); try { const m = await import('./data3d/residuos.js?v=8'); if (!pRes) pRes = m.crearResiduos({ THREE: T3.THREE, T3 }); const a = await pRes; a.ver(on); m.panelResiduos(a, on); } catch (e) { console.warn('residuos:', e); } };
+        let pRes = null; b3.onclick = async () => { const on = !b3.classList.contains('on'); b3.classList.toggle('on', on); try { const m = await import('./data3d/residuos.js?v=10'); if (!pRes) pRes = m.crearResiduos({ THREE: T3.THREE, T3 }); const a = await pRes; a.ver(on); m.panelResiduos(a, on); } catch (e) { console.warn('residuos:', e); } };
         b2.insertAdjacentElement('afterend', b3);
         /* asambleas existentes: Juntas de Acción Comunal (IDPAC); empieza apagado */
         const b4 = document.createElement('button'); b4.id = 'as-btn'; b4.textContent = 'Asambleas (JAC)'; b4.title = 'Juntas de Acción Comunal de Kennedy: sede, horario y red de vecindad'; b4.style.cssText = 'width:100%;margin-top:6px';
-        let pAs = null; b4.onclick = async () => { const on = !b4.classList.contains('on'); b4.classList.toggle('on', on); try { const m = await import('./data3d/asambleas.js?v=6'); if (!pAs) pAs = m.crearAsambleas({ THREE: T3.THREE, T3 }); const a = await pAs; a.ver(on); m.panelAsambleas(a, on); } catch (e) { console.warn('asambleas:', e); } };
+        let pAs = null; b4.onclick = async () => { const on = !b4.classList.contains('on'); b4.classList.toggle('on', on); try { const m = await import('./data3d/asambleas.js?v=8'); if (!pAs) pAs = m.crearAsambleas({ THREE: T3.THREE, T3 }); const a = await pAs; a.ver(on); m.panelAsambleas(a, on); } catch (e) { console.warn('asambleas:', e); } };
         b3.insertAdjacentElement('afterend', b4);
         /* agua comunitaria: huertas existentes que gestionan agua + propuesta de cisternas de agua lluvia; empieza apagado */
         const b5 = document.createElement('button'); b5.id = 'ag-btn'; b5.textContent = 'Agua comunitaria'; b5.title = 'Huertas comunitarias existentes y propuesta de cisternas de agua lluvia'; b5.style.cssText = 'width:100%;margin-top:6px';
-        let pAg = null; b5.onclick = async () => { const on = !b5.classList.contains('on'); b5.classList.toggle('on', on); try { const m = await import('./data3d/agua.js?v=1'); if (!pAg) pAg = m.crearAgua({ THREE: T3.THREE, T3 }); const a = await pAg; a.ver(on); m.panelAgua(a, on); } catch (e) { console.warn('agua comunitaria:', e); } };
+        let pAg = null; b5.onclick = async () => { const on = !b5.classList.contains('on'); b5.classList.toggle('on', on); try { const m = await import('./data3d/agua.js?v=3'); if (!pAg) pAg = m.crearAgua({ THREE: T3.THREE, T3 }); const a = await pAg; a.ver(on); m.panelAgua(a, on); } catch (e) { console.warn('agua comunitaria:', e); } };
         b4.insertAdjacentElement('afterend', b5);
         /* indicadores en 3D (picos de las láminas: anasoficasca-code.github.io/picos); empieza apagado */
         const b6 = document.createElement('button'); b6.id = 'in-btn'; b6.textContent = 'Indicadores'; b6.title = 'Indicadores del diagnóstico como picos 3D sobre Kennedy'; b6.style.cssText = 'width:100%;margin-top:6px';
-        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=5'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
+        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=12'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
         b5.insertAdjacentElement('afterend', b6);
       }
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
         const fb = document.getElementById('fb-btn'), b = document.createElement('button'); b.id = 'vi-btn'; b.textContent = '✦ Visión'; b.title = 'Ver la propuesta: Bavaria Común, Corabastos, red de huertas y humedales'; b.style.cssText = 'width:100%;margin-top:6px;background:linear-gradient(100deg,#2a1d6b,#5b3fd6);color:#fff;border:1px solid #8b74ff;letter-spacing:.2em';
         let V = null, pV = null;
-        b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=4').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? '✦ Salir de la visión' : '✦ Visión'; } catch (e) { console.warn('visión:', e); say('⚠️ No cargó la visión', 5000); } b.disabled = false; };
+        b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=7').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? '✦ Salir de la visión' : '✦ Visión'; } catch (e) { console.warn('visión:', e); say('⚠️ No cargó la visión', 5000); } b.disabled = false; };
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
-      return import('./data3d/cielo.js?v=8');
+      return import('./data3d/cielo.js?v=12');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=33'), import('./data3d/huertas_barrio.js?v=7'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
-    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=27').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
-    .then(() => import('./data3d/actores.js?v=7')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
+    .then(() => Promise.all([import('./data3d/biotica.js?v=47'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=33').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=4').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
+    .then(() => import('./data3d/actores.js?v=10')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));
 } else import('./data3d/simulador.js?v=6').then(m => {
   SIM = m.crearSimulador({
@@ -3717,7 +3809,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   });
   // propuesta (descentralizar Corabastos): espera la red de vías y el panel del simulador
   const datos = window.cargarJSON('data3d/propuesta.json');
-  const mod = import('./data3d/propuesta.js?v=2');
+  const mod = import('./data3d/propuesta.js?v=5');
   const listo = () => T3 && T3.net && document.querySelector('#gevUI .g-left') ? Promise.resolve() : new Promise(r => setTimeout(() => r(listo()), 400));
   Promise.all([datos, mod, listo()]).then(([d, pm]) => {
     PROP = pm.crearPropuesta({ T3: () => T3, traf: () => TRAF, peat: () => PEAT, sim: SIM, lw, say, datos: d });

@@ -5,7 +5,16 @@
    - T3.alivio(x, z, id): 0 = fuera de la vía · 1 = en la vía y sigue · 2 = en la vía y con la propuesta ya no pasa (index.html lo salta).
      Cuenta, cuadro a cuadro, cuántos vehículos hay en la vía hoy y cuántos quedan con la propuesta (T3.alivio.hoy / .pro, suavizados).
    - En 3D: cinta sobre la vía (roja hoy si se mira el tráfico; verde con la propuesta) y una etiqueta con el cambio en vivo.
-   Datos: data3d/alivio_cali.json (tools/alivio_cali_build.py, OSM). Marco del mundo. */
+   Datos: data3d/alivio_cali.json (tools/alivio_cali_build.py, OSM). Marco del mundo.
+   TIEMPO: la descongestión (alivio.rampa) avanza con los pasos del reloj universal (data3d/reloj.js), en tiempo simulado.
+   MODELO DE VIAJES (data3d/viajes_mercados.js, T3.viajesAbasto): cuando está cargado, la fracción que se quita YA NO es un supuesto:
+     quita = FR × (1 − viajes a Corabastos con la propuesta / hoy), por tipo (carros y motos / camiones) y franja (madrugada 2-6 h / resto),
+     evaluada con la demanda por zonas, la elección logit entre Corabastos, los mercados abiertos y Bavaria y las rutas por la red vial.
+     Ese modelo ya incluye la dependencia del escenario (sim_vida) y los sliders de Corabastos (T3.coraCS); por eso KEEP y KEEP_CAM pasan
+     a ser lo que sigue en el día según el modelo, divididos por los sliders manuales (las fórmulas de los demás módulos, manual × KEEP,
+     dan así el resultado del modelo sin contar dos veces los sliders). Sin el modelo, todo queda como antes (KEEP del escenario × sliders). */
+import { RELOJ, hashNum } from './reloj.js?v=5';
+const RAMPA_SUBE = 25 * 60, RAMPA_BAJA = 6 * 60; // segundos simulados: 25 min para descongestionarse con la propuesta, 6 min para volver a llenarse (a 60× ≈ 25 s y 6 s, como antes)
 export function crearAlivioCali({ T3, D }) {
   const THREE = T3.THREE, KEEP = 0.60, KEEP_CAM = 0.30, ANCHO = 16;
   // índice: tramos en celdas de 40 m
@@ -20,13 +29,17 @@ export function crearAlivioCali({ T3, D }) {
   x0 -= ANCHO; x1 += ANCHO; z0 -= ANCHO; z1 += ANCHO;
   /* TODA LA RED DE CORABASTOS: con la propuesta Corabastos se descentraliza (Bavaria Común, mercados de barrio, Corabastos reducido) y deja de
      atraer viajes de toda la localidad. Cada vía cerca de Corabastos pierde carros según la distancia: plena hasta 600 m, se desvanece a 2,6 km.
-     El cambio no es instantáneo: al pasar a «con la propuesta» la red se va descongestionando durante ~25 s de simulación (alivio.rampa). */
+     El cambio no es instantáneo: al pasar a «con la propuesta» la red se va descongestionando durante 25 min simulados (alivio.rampa, paso del reloj). */
   const CORA = [1132.1, 948.6], R0 = 600, R1 = 2600;
   const pesoCora = (x, z) => { const d = Math.hypot(x - CORA[0], z - CORA[1]); return d <= R0 ? 1 : d >= R1 ? 0 : 1 - (d - R0) / (R1 - R0); };
   const enCali = (x, z) => { if (x < x0 || x > x1 || z < z0 || z > z1) return false; const c = grid.get(cl(x, z)); if (!c) return false;
     for (const [ax, az, bx, bz] of c) { const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1e-9, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)), ex = x - ax - t * dx, ez = z - az - t * dz; if (ex * ex + ez * ez < ANCHO * ANCHO) return true; }
     return false; };
   let cH = 0, cP = 0, kH = 0, kP = 0; // cuenta del cuadro: todos los de la vía (hoy) y los que quedan (propuesta)
+  const KEEP_ESC = { car: KEEP, cam: KEEP_CAM }; // lo que fija el escenario (escenarios_sim.js) si no hay modelo de viajes
+  const modeloViajes = () => { const m = T3.viajesAbasto; return m && m.listo && T3.escenario === 'proyecto' ? m : null; };
+  const keepLeido = (cam) => { const m = modeloViajes(); if (!m) return cam ? KEEP_ESC.cam : KEEP_ESC.car;
+    const k = m.keepDia(cam), M = alivio.manual, man = M ? (cam ? M.keepCam : M.keep) : 1; return man > 0.01 ? k / man : k; };
   const enVia = (x, z) => enCali(x, z) || pesoCora(x, z) > 0;
   const alivio = (x, z, id) => {
     const cali = enCali(x, z), w = cali ? 1 : pesoCora(x, z);
@@ -34,18 +47,23 @@ export function crearAlivioCali({ T3, D }) {
     const cam = ((id * 2654435761) >>> 0) / 4294967296 >= 0.92; // mismo sorteo de camiones que index.html
     cH++; if (cam) kH++;
     // los escenarios (data3d/escenarios_sim.js) cambian KEEP según la dependencia de Corabastos; lejos de Corabastos se quitan menos (w)
-    const M = alivio.manual; // sliders del panel de flujo de carros (data3d/giro_sim.js): mandan sobre el valor del escenario
-    // se combinan: lo que se queda = (sliders de Corabastos del flujo de carros) × (dependencia de Corabastos del escenario, sliders de SIM-01)
-    const quita = (1 - (M ? (cam ? M.keepCam : M.keep) : 1) * (cam ? alivio.KEEP_CAM : alivio.KEEP)) * Math.max(w, pesoCora(x, z));
+    const M = alivio.manual, MV = modeloViajes(); // sliders del panel de flujo de carros (data3d/giro_sim.js): mandan sobre el valor del escenario
+    // con el modelo de viajes: lo que se quita sale de su evaluación (por franja horaria del paso del reloj: RELOJ.t, no depende del dibujo)
+    // sin él: lo que se queda = (sliders de Corabastos del flujo de carros) × (dependencia de Corabastos del escenario, sliders de SIM-01)
+    const quita = (MV ? MV.quita(cam, (RELOJ.t % 86400) / 3600) : 1 - (M ? (cam ? M.keepCam : M.keep) : 1) * (cam ? KEEP_ESC.cam : KEEP_ESC.car)) * Math.max(w, pesoCora(x, z));
     const queda = (Math.imul(id ^ 0x27d4eb2d, 0x165667b1) >>> 0) / 4294967296 >= quita * alivio.rampa;
     if ((Math.imul(id ^ 0x27d4eb2d, 0x165667b1) >>> 0) / 4294967296 >= quita) { cP++; if (cam) kP++; }
     return T3.escenario === 'proyecto' && !queda ? 2 : 1;
   };
-  alivio.rampa = 0; let tRampa = 0;
-  alivio.hoy = 0; alivio.pro = 0; alivio.camHoy = 0; alivio.camPro = 0; alivio.KEEP = KEEP; alivio.KEEP_CAM = KEEP_CAM; alivio.n = D.n; alivio.largo = D.largo_m;
-  alivio.ini = () => { // al empezar cada cuadro de tráfico: se cierra la cuenta del anterior (promedio móvil de ~5 s)
-    { const t = performance.now(), dt = tRampa ? Math.min(0.5, (t - tRampa) / 1000) : 0; tRampa = t; // la red se descongestiona poco a poco (y vuelve a llenarse al pasar a «hoy»)
-      alivio.rampa = T3.escenario === 'proyecto' ? Math.min(1, alivio.rampa + dt / 25) : Math.max(0, alivio.rampa - dt / 6); }
+  alivio.rampa = 0;
+  alivio.hoy = 0; alivio.pro = 0; alivio.camHoy = 0; alivio.camPro = 0; alivio.n = D.n; alivio.largo = D.largo_m;
+  // KEEP / KEEP_CAM: escenarios_sim.js los escribe (dependencia del escenario); con el modelo de viajes se leen del modelo (ver arriba)
+  Object.defineProperty(alivio, 'KEEP', { enumerable: true, set(v) { KEEP_ESC.car = v; }, get() { return keepLeido(false); } });
+  Object.defineProperty(alivio, 'KEEP_CAM', { enumerable: true, set(v) { KEEP_ESC.cam = v; }, get() { return keepLeido(true); } });
+  // la red se descongestiona poco a poco (y vuelve a llenarse al pasar a «hoy»): paso del reloj universal, en segundos simulados
+  RELOJ.registrar({ nombre: 'alivio_cali', orden: 30, step: (dt) => { alivio.rampa = T3.escenario === 'proyecto' ? Math.min(1, alivio.rampa + dt / RAMPA_SUBE) : Math.max(0, alivio.rampa - dt / RAMPA_BAJA); },
+    hash: () => hashNum(0x811c9dc5, alivio.rampa) });
+  alivio.ini = () => { // al empezar cada cuadro de tráfico: se cierra la cuenta del anterior (promedio móvil de ~5 s; es solo el conteo que se muestra)
     if (cH || cP) { const k = 0.02; alivio.hoy += (cH - alivio.hoy) * k; alivio.pro += (cP - alivio.pro) * k; alivio.camHoy += (kH - alivio.camHoy) * k; alivio.camPro += (kP - alivio.camPro) * k; }
     cH = cP = kH = kP = 0; };
   alivio.enVia = enVia;
@@ -86,16 +104,16 @@ export function crearAlivioCali({ T3, D }) {
   document.head.appendChild(css); document.body.appendChild(et);
   const V = new THREE.Vector3(); let on = false, a = 0, tTxt = 0;
   const RMQ = matchMedia('(prefers-reduced-motion: reduce)');
-  function cuadro(t) {
-    requestAnimationFrame(cuadro);
-    a += ((on ? 1 : 0) - a) * 0.06; mat.uniforms.uA.value = a; cinta.visible = a > 0.01; if (!RMQ.matches) mat.uniforms.uT.value = t / 1000;
+  function cuadro(info) { // dibujo (bucle maestro): las flechas avanzan con el tiempo de animación del reloj y se detienen en pausa
+    const t = performance.now();
+    a += ((on ? 1 : 0) - a) * 0.06; mat.uniforms.uA.value = a; cinta.visible = a > 0.01; if (!RMQ.matches) mat.uniforms.uT.value = info.tAnim;
     if (!on) { if (et.style.display !== 'none') et.style.display = 'none'; return; }
     V.set(mid[0], 6 + (T3.alzaVia ? T3.alzaVia(mid[0], mid[1]) : 0), mid[1]).project(T3.camera);
     const vis = V.z < 1 && Math.abs(V.x) < 1 && Math.abs(V.y) < 1; et.style.display = vis ? 'flex' : 'none';
     if (vis) et.style.transform = `translate(${((V.x + 1) / 2 * innerWidth + 10).toFixed(1)}px,${((1 - V.y) / 2 * innerHeight - 18).toFixed(1)}px)`;
     if (t > tTxt) { tTxt = t + 700; const s = document.getElementById('alivio-v');
-      if (s) s.innerHTML = alivio.hoy > 0.5 ? `<em>−${Math.round((1 - alivio.pro / alivio.hoy) * 100)} % vehículos</em> · camiones −${Math.round((1 - alivio.KEEP_CAM) * 100)} %` : `menos viajes a Corabastos`; }
+      if (s) s.innerHTML = alivio.hoy > 0.5 ? `<em>−${Math.round((1 - alivio.pro / alivio.hoy) * 100)} % vehículos</em> · camiones −${Math.round((1 - (modeloViajes() ? modeloViajes().keepDia(true) : alivio.KEEP_CAM)) * 100)} %` : `menos viajes a Corabastos`; }
   }
-  requestAnimationFrame(cuadro);
+  RELOJ.alDibujar(cuadro);
   return { ver(v) { on = !!v; }, get on() { return on; }, cinta, alivio };
 }

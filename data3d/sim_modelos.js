@@ -10,9 +10,13 @@ export const PAR = {
   P2: { frac: 0.4, cap: 6000, mad: 10, sust: 0.2, dist: 1.5 },
   P3: { disp: 400, borde: 20, arboles: 0.4, luz: 0.5, anti: true, rec: 0.02 }
 };
-// escenario de la propuesta (B o C; «Kennedy hoy» es A) y semana que se mira. En el mapa la simulación ya no termina (data3d/sim_vida.js):
+// escenario de la propuesta (B o C; «Estado actual» es A) y semana que se mira. En el mapa la simulación ya no termina (data3d/sim_vida.js):
 // SIMST.t puede pasar de SEM; los modelos de abajo siguen siendo los de 10 años del documento (los usa el tablero). semilla = réplica que se ve en el mapa
-export const SIMST = { esc: 'C', t: SEM - 1, semilla: 1 };
+// SIMST.t (semanas, con fracción) ya NO es un reloj propio: es la escala del MODELO del reloj universal (data3d/reloj.js, RELOJ.semanas:
+// un tic por semana, a la velocidad de años elegida). No se puede escribir; para avanzar se usa el reloj (RELOJ.ponerVelAños / avanzarSemanas).
+import { RELOJ } from './reloj.js?v=5';
+export const SIMST = { esc: 'C', semilla: 1 };
+Object.defineProperty(SIMST, 't', { enumerable: true, get: () => RELOJ.semanas, set: (v) => { console.warn('SIMST.t es del reloj universal: no se escribe (se pidió', v, ')'); } });
 export const avisar = (origen) => dispatchEvent(new CustomEvent('sim-cambio', { detail: { origen } }));
 
 /* ---------------- SIM-01 · red de huertas, abastecimiento, conocimiento y decisión ---------------- */

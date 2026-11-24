@@ -6,7 +6,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   const I = await (await fetch('data3d/indicadores/index.json?v=2')).json();
   const g = new THREE.Group(); g.name = 'indicadores'; g.visible = false; T3.scene.add(g);
   const dec = (b) => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
-  const mallas = new Map(); let alto = 0.3, sel = null, anio = false;
+  const mallas = new Map(); let alto = 0.3, sel = null, anio = false, baseY = 2, opac = 0.9;
   async function malla(f) {
     if (mallas.has(f)) return mallas.get(f);
     const d = await (await fetch('data3d/indicadores/' + f + '?v=1')).json();
@@ -19,20 +19,20 @@ export async function crearIndicadores({ THREE, T3 }) {
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
     const col = new Float32Array(n * 3); for (let k = 0; k < n * 3; k++) col[k] = Math.pow(cu[k] / 255, 2.2); /* rampa de las láminas (sRGB -> lineal) */
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: 0.9, emissive: 0xffffff, emissiveIntensity: 0, toneMapped: false }));
+    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: opac, depthWrite: opac > 0.85, emissive: 0xffffff, emissiveIntensity: 0, toneMapped: false }));
     /* sombreado suave: color propio + algo de luz del sol para leer el relieve */
     m.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', 'outgoingLight = mix(diffuseColor.rgb, outgoingLight, 0.45);\n#include <opaque_fragment>'); };
-    m.frustumCulled = false; m.renderOrder = 3; m.userData = { z, d };
+    m.frustumCulled = false; m.renderOrder = opac < 0.85 ? 20 : 3; m.userData = { z, d };
     const M = { mesh: m, d, z, z0: z.slice(), zP: z.slice(), col0: col.slice(), zs, pos, code: f.replace(/(_2020)?\.json$/, ''), ramp: (I.lista.find(x => x.f === f) || {}).ramp }; mallas.set(f, M); return M;
   }
   function elevar(M) {
-    const p = M.mesh.geometry.attributes.position.array, z = M.z, base = (T3.viaY != null ? T3.viaY : 0.6) + 2;
+    const p = M.mesh.geometry.attributes.position.array, z = M.z, base = (T3.viaY != null ? T3.viaY : 0.6) + baseY;
     for (let k = 0; k < z.length; k++) p[k * 3 + 1] = base + z[k] * alto;
     M.mesh.geometry.attributes.position.needsUpdate = true; M.mesh.geometry.computeVertexNormals(); M.mesh.geometry.computeBoundingSphere();
   }
 
   /* ---------- CON LA PROPUESTA: cada indicador cambia donde actúa la propuesta ----------
-     [SUP] modelo espacial para discutir con el grupo (no viene de las láminas): las láminas son «Kennedy hoy»; con la propuesta el valor de cada punto
+     [SUP] modelo espacial para discutir con el grupo (no viene de las láminas): las láminas son «Estado actual»; con la propuesta el valor de cada punto
      se corrige según su cercanía a lo que cambia:
        · Corabastos descentralizado (los mismos % de carros y camiones de los sliders del flujo de carros, data3d/alivio_cali.js): baja PM, PA, EPO, CV y CCL
        · Bavaria Común (logística y conocimiento nuevos): sube CCL y CO
@@ -48,9 +48,12 @@ export async function crearIndicadores({ THREE, T3 }) {
   let KMERC = null; // los 8 mercados de barrio que reciben la carga de Corabastos (marco del modelo); se pasan al mundo cuando T3.lw existe
   const mercadosMundo = () => { if (MERCADOS.length || !KMERC) return; const f = typeof T3.lw === 'function' ? T3.lw : lw; MERCADOS = KMERC.map(m => f(m.p[0], m.p[1])); };
   fetch('data3d/carga.json?v=1').then(r => r.json()).then(K => { KMERC = K.mercados || []; mercadosMundo(); }).catch(() => {});
-  const leerParches = () => import('./parches_arboles.js?v=7').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
+  const leerParches = () => import('./parches_arboles.js?v=9').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
   const cerca = (L, x, z, r0, r1) => { let w = 0; for (const c of L) { const dx = c[0] - x, dz = c[1] - z; if (Math.abs(dx) > r1 || Math.abs(dz) > r1) continue; const v = caida(Math.hypot(dx, dz), r0, r1); if (v > w) w = v; } return w; };
-  const reduccion = () => { const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
+  /* Con las 12 simulaciones (data3d/sim_ui.js) T3.simInd = {huerta, merc, cora, bav, verde, techo} de 0 a 1 dice cuánto de cada intervención existe en la semana
+     actual del modelo: los picos se recalculan con eso (cada año) en vez de con la propuesta completa. Sin simInd todo vale 1 (la propuesta entera). */
+  const UNO = { huerta: 1, merc: 1, cora: 1, bav: 1, verde: 1, techo: 1, pres: 0, rec: 0 }, SF = () => T3.simInd || UNO, proyecto = () => T3.escenario === 'proyecto' || !!T3.simInd;
+  const reduccion = () => { if (T3.simInd) return { car: 0.6 * T3.simInd.cora, cam: 0.95 * T3.simInd.cora }; const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
 
   /* ---------- COBERTURA DE ÁRBOLES NUEVOS: una rejilla con cada árbol de la propuesta ----------
      Se cuentan (si ya están cargados): los árboles de los parches nativos (data3d/parches_arboles.js, solo los que deja ver el slider «Densidad de
@@ -112,28 +115,42 @@ export async function crearIndicadores({ THREE, T3 }) {
                                  nuevos: Bavaria Común (hasta 0,62), los 8 mercados de barrio (hasta 0,55, radio ~450 m) y las huertas (hasta 0,42, radio ~220 m) */
   function calcularPropuesta(M) {
     mercadosMundo();
-    const t0 = performance.now(), n = M.z0.length, Z = M.zP, r = reduccion(), c = M.code, zs = M.zs || 1;
+    const t0 = performance.now(), n = M.z0.length, Z = M.zP, r = reduccion(), c = M.code, zs = M.zs || 1, s = SF();
     const verde = c === 'SE' || c === 'IC' || c === 'PA' || c === 'EPO', F = verde ? campo() : null;
     if (c === 'CCL' && M.media == null) { let s = 0; for (let k = 0; k < n; k++) s += M.z0[k]; M.media = s / n / zs; }
     const kR = Math.min(1, 0.4 + r.cam); // los mercados nuevos crecen con la carga que deja de ir a Corabastos
     for (let k = 0; k < n; k++) {
       const x = M.pos[k * 3], z = M.pos[k * 3 + 2], v = M.z0[k] / zs;
-      const wC = caida(Math.hypot(x - CORA[0], z - CORA[1]), 600, 2600), wB = caida(Math.hypot(x - BAV[0], z - BAV[1]), 400, 1600);
+      const wC = caida(Math.hypot(x - CORA[0], z - CORA[1]), 600, 2600), wB = s.bav * caida(Math.hypot(x - BAV[0], z - BAV[1]), 400, 1600);
       let u = v;
+      /* [SUP] TENDENCIA (vista de las 12 simulaciones): s.pres = presión urbana acumulada (población, tráfico, ruido, pérdida de verde; sube
+         sola en el estado actual) y s.rec = red ecológica recuperada (interacciones y hábitat que ganan las intervenciones), de 0 a 1.
+         La presión lleva cada lámina hacia lo malo (SE −75 %; IC, PA, EPO, PM +40–60 % de lo que les falta para 1; CCL se concentra en
+         Corabastos); la recuperación reparte soporte ecológico por todo el territorio (+65 % de lo que falta) y baja calor y aire (−25 %),
+         no solo junto a cada huerta o árbol. */
+      const p = s.pres || 0, rc = s.rec || 0;
+      if (p || rc) {
+        if (c === 'SE' || c === 'OC') u = u * (1 - (c === 'SE' ? 0.75 : 0.3) * p) + (1 - u * (1 - 0.75 * p)) * (c === 'SE' ? 0.65 : 0.25) * rc;
+        else if (c === 'IC' || c === 'PA' || c === 'EPO' || c === 'PM' || c === 'CV') { const k = c === 'PM' ? 0.6 : c === 'CV' ? 0.4 : c === 'EPO' ? 0.5 : 0.55; u = (u + (1 - u) * k * p) * (1 - (c === 'IC' || c === 'PA' ? 0.25 : 0.1) * rc); }
+        else if (c === 'CCL') u = u + (1 - u) * 0.45 * p * wC;
+        else if (c === 'CO') u = u * (1 - 0.1 * p) + (1 - u) * 0.2 * rc;
+      }
+      const v0 = v; { const v = u; // los efectos locales de abajo parten del valor ya afectado por la tendencia
       if (c === 'PM') u = v * (1 - 0.9 * r.car * wC);
-      else if (c === 'PA') { const a = leer(F, F.cAr, x, z), t = leer(F, F.cT, x, z); u = v * (1 - 0.6 * r.car * wC) * (1 - 0.15 * a - 0.03 * t); }
-      else if (c === 'EPO') u = v * (1 - 0.45 * r.car * wC) * (1 - 0.1 * leer(F, F.cAr, x, z));
+      else if (c === 'PA') { const a = s.verde * leer(F, F.cAr, x, z), t = s.techo * leer(F, F.cT, x, z); u = v * (1 - 0.6 * r.car * wC) * (1 - 0.15 * a - 0.03 * t); }
+      else if (c === 'EPO') u = v * (1 - 0.45 * r.car * wC) * (1 - 0.1 * s.verde * leer(F, F.cAr, x, z));
       else if (c === 'CV') u = v * (1 - 0.55 * r.cam * wC);
       else if (c === 'CCL') {
         u = v * (1 - 0.95 * r.cam * wC); // Corabastos descentralizado
         const md = M.media, ach = 0.15 + 0.35 * r.cam; if (u > md) u = md + (u - md) * (1 - ach); // los picos rojos se achatan hacia la media
         const sube = (meta, w) => { if (w > 0 && u < meta) u += (meta - u) * w; };
-        sube(0.62, 0.85 * wB); sube(0.55, 0.8 * kR * cerca(MERCADOS, x, z, 60, 450)); sube(0.42, 0.6 * kR * cerca(HUERTA, x, z, 30, 220));
+        sube(0.62, 0.85 * wB); sube(0.55, 0.8 * kR * s.merc * cerca(MERCADOS, x, z, 60, 450)); sube(0.42, 0.6 * kR * s.huerta * cerca(HUERTA, x, z, 30, 220));
       }
-      else if (c === 'IC') { const a = leer(F, F.cI, x, z), t = leer(F, F.cT, x, z), h = cerca(HUERTA, x, z, 40, 300); u = v * Math.max(0.4, 1 - 0.4 * a - 0.2 * t - 0.1 * h); }
-      else if (c === 'SE') { const a = leer(F, F.cS, x, z), t = leer(F, F.cT, x, z), h = cerca(HUERTA, x, z, 40, 300); u = v + (1 - v) * Math.min(1, 0.6 * a + 0.15 * t + 0.2 * h); }
-      else if (c === 'OC') u = v + (1 - v) * 0.45 * cerca(HUERTA, x, z, 80, 600);
+      else if (c === 'IC') { const a = s.verde * leer(F, F.cI, x, z), t = s.techo * leer(F, F.cT, x, z), h = s.huerta * cerca(HUERTA, x, z, 40, 300); u = v * Math.max(0.4, 1 - 0.4 * a - 0.2 * t - 0.1 * h); }
+      else if (c === 'SE') { const a = s.verde * leer(F, F.cS, x, z), t = s.techo * leer(F, F.cT, x, z), h = s.huerta * cerca(HUERTA, x, z, 40, 300); u = v + (1 - v) * Math.min(1, 0.6 * a + 0.15 * t + 0.2 * h); }
+      else if (c === 'OC') u = v + (1 - v) * 0.45 * s.huerta * cerca(HUERTA, x, z, 80, 600);
       else if (c === 'CO') u = v + (1 - v) * 0.5 * wB;
+      }
       Z[k] = Math.max(0, Math.min(1, u)) * zs;
     }
     M.ms = performance.now() - t0; api.ultimoCalculo = { code: c, vertices: n, ms: +M.ms.toFixed(1) };
@@ -150,7 +167,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   }
   let anim = 0;
   async function aplicarEscenario(suave = true) {
-    const pro = T3.escenario === 'proyecto'; if (pro) await leerParches();
+    const pro = proyecto(); if (pro) await leerParches();
     const vis = [...mallas.values()].filter(M => M.mesh.visible); if (!vis.length) return;
     for (const M of vis) { if (pro) calcularPropuesta(M); M.zA = M.z.slice(); M.zB = pro ? M.zP : M.z0; }
     const id = ++anim, t0 = performance.now(), dur = suave ? 1600 : 0;
@@ -160,8 +177,8 @@ export async function crearIndicadores({ THREE, T3 }) {
     requestAnimationFrame(paso);
   }
   addEventListener('escenario', () => setTimeout(() => aplicarEscenario(true), 120));
-  let tSl = 0; addEventListener('cora-cambio', () => { clearTimeout(tSl); tSl = setTimeout(() => { if (T3.escenario === 'proyecto') aplicarEscenario(false); }, 250); });
-  const resumen = () => { const M = [...mallas.values()].find(q => q.mesh.visible); if (!M || T3.escenario !== 'proyecto') return null;
+  let tSl = 0; addEventListener('cora-cambio', () => { clearTimeout(tSl); tSl = setTimeout(() => { if (proyecto()) aplicarEscenario(false); }, 250); });
+  const resumen = () => { const M = [...mallas.values()].find(q => q.mesh.visible); if (!M || !proyecto()) return null;
     let a = 0, b = 0, mx = 0; for (let k = 0; k < M.z0.length; k++) { a += M.z0[k]; b += M.zP[k]; const d = (M.zP[k] - M.z0[k]) / (M.zs || 1); if (Math.abs(d) > Math.abs(mx)) mx = d; }
     const F = CAMPO && !CAMPO.vacio ? CAMPO : null;
     return { prom: a ? (b / a - 1) * 100 : 0, max: mx * 100, arboles: F ? F.arboles : 0, techos: F ? F.techos : 0, mercados: MERCADOS.length }; };
@@ -175,12 +192,15 @@ export async function crearIndicadores({ THREE, T3 }) {
       const it = I.lista.find(x => x.code === code && (anio ? x.year : !x.year)); const M = await malla(it.f);
       if (sel !== code) return null; /* se eligió otro mientras cargaba */
       if (!M.mesh.parent) g.add(M.mesh); M.mesh.visible = true; anim++;
-      const pro = T3.escenario === 'proyecto'; if (pro) { await leerParches(); calcularPropuesta(M); }
+      const pro = proyecto(); if (pro) { await leerParches(); calcularPropuesta(M); }
       M.z.set(pro ? M.zP : M.z0); elevar(M); colorear(M, pro); return it;
     },
+    recalcular: (suave = true) => aplicarEscenario(suave), // para data3d/sim_ui.js: recalcula sin disparar el evento global «escenario»
     resumen, onCambio: null, ultimoCalculo: null, cobertura: () => CAMPO, // ultimoCalculo: {code, vertices, ms} del último recálculo con la propuesta
     altura(v) { alto = v; for (const M of mallas.values()) if (M.mesh.visible) elevar(M); },
-    ver(on) { g.visible = on; }
+    ver(on) { g.visible = on; },
+    // vista limpia: láminas bajas, pegadas al piso y algo transparentes para ver el territorio debajo
+    estilo({ opacidad, base } = {}) { if (opacidad != null) opac = opacidad; if (base != null) baseY = base; for (const M of mallas.values()) { M.mesh.material.opacity = opac; M.mesh.material.depthWrite = opac > 0.85; if (opac < 0.85) M.mesh.renderOrder = 20; /* encima del agua de los humedales (antes se veían huecos negros) */ M.mesh.material.needsUpdate = true; if (M.mesh.visible) elevar(M); } }
   };
   window.KEN_IND = api; // para revisar desde la consola (resumen, cobertura, ultimoCalculo)
   return api;
@@ -203,7 +223,7 @@ export function panelIndicadores(api, on) {
     if (['SE', 'IC', 'PA', 'EPO'].includes(c) && (r.arboles || r.techos)) return `<div style="margin-top:3px;color:#c9cdd0">Cuenta ${fmtN(r.arboles)} árboles nuevos${r.techos && c !== 'EPO' ? ` y ${fmtN(r.techos)} techos verdes` : ''}.</div>`;
     if (c === 'CCL' && r.mercados) return `<div style="margin-top:3px;color:#c9cdd0">${r.mercados} mercados de barrio reciben parte de la carga.</div>`; return ''; };
   const escBox = () => { const pro = (window.KEN_ESC && window.KEN_ESC.e) === 'proyecto', r = api.resumen(), b = (on, t, e) => `<button data-e="${e}" style="flex:1;padding:5px;border:0;font:inherit;cursor:pointer;background:${on ? (e === 'hoy' ? '#e9ebec' : '#34d399') : 'transparent'};color:${on ? '#0d0f12' : '#c9cdd0'}">${t}</button>`;
-    return `<div style="display:flex;border:1px solid rgba(255,255,255,.12);border-radius:7px;overflow:hidden;margin-top:9px">${b(!pro, 'Kennedy hoy', 'hoy')}${b(pro, 'Con la propuesta', 'proyecto')}</div>
+    return `<div style="display:flex;border:1px solid rgba(255,255,255,.12);border-radius:7px;overflow:hidden;margin-top:9px">${b(!pro, 'Estado actual', 'hoy')}${b(pro, 'Con la propuesta', 'proyecto')}</div>
       <div style="margin-top:6px;color:#9aa2a7;font-size:10px;line-height:1.4">${pro ? `${QUE[api.sel] || ''}${cuenta(api.sel, r)}${r ? `<div style="margin-top:4px;color:#e9ebec;font:500 10.5px 'JetBrains Mono',monospace">Promedio en Kennedy ${r.prom >= 0 ? '+' : '−'}${Math.abs(r.prom).toFixed(1)} % · donde más cambia ${r.max >= 0 ? '+' : '−'}${Math.abs(r.max * 0.01).toFixed(2)}</div>` : ''}<div style="margin-top:3px;color:#646c71;font-size:9px">Supuesto del simulador sobre la lámina; los % de Corabastos salen de los sliders del flujo de carros.</div>`
         : 'Así está hoy, según las láminas. Pasa a <b style="color:#6ee7b7">Con la propuesta</b> para ver cómo cambia.'}</div>`; };
   api.onCambio = () => { if (document.getElementById('ind-panel')) pintar(); };

@@ -1,5 +1,5 @@
 /* ============ HUMEDAL LA VACA: RECUPERACIÓN A LO LARGO DE LOS 10 AÑOS DE LA PROPUESTA ============
-   Solo con «Con la propuesta». Sigue la línea de tiempo del panel de escenarios (SIMST.t, semana 0 a 519):
+   Solo con «Con la propuesta». Sigue la semana de la simulación (SIMST.t, derivada del reloj universal data3d/reloj.js; semana 0 a 519):
    · la lámina de agua y la franja de juncos se ensanchan despacio (curva logística: casi nada el año 1, la mayor parte entre los años 3 y 7);
    · se siembran árboles nativos del humedal (aliso, sauce, chicalá, arrayán, sauco, mano de oso) por tandas
      del año 1 al 7, y cada uno crece de plántula a árbol en ~5 años;
@@ -7,6 +7,7 @@
    La velocidad depende de SIM-03: la tasa de recuperación del humedal (P3.rec), la densidad de árboles (P3.arboles) y el escenario
    (B sin criterio de ubicación, C con corredores). Las cifras de ensanche, siembra y especies son supuestos de escala [SUP].
    Forma del humedal: data3d/water_bodies.json (sectores norte y sur de La Vaca), al marco del mundo con lw(). */
+import { RELOJ } from './reloj.js?v=5';
 export async function iniciarHumedalVaca({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y];
   const W = await cj('data3d/water_bodies.json').catch(() => []);
@@ -142,11 +143,11 @@ export async function iniciarHumedalVaca({ T3, cj }) {
   }
   /* ---------- cuadro ---------- */
   const V = new THREE.Vector3(), RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  (function cuadro(now) { requestAnimationFrame(cuadro); if (!on) return; const tt = RMQ ? 0 : now / 1000; UA.uT.value = tt; UJ.uT.value = tt;
+  RELOJ.alDibujar(function cuadro(info) { if (!on) return; const tt = RMQ ? 0 : info.tAnim; UA.uT.value = tt; UJ.uT.value = tt; // agua, juncos y aves decorativas: tiempo de animación del reloj (se detienen en pausa)
     for (let i = 0; i < nAves; i++) { const a = AV[i], an = a.f + tt * a.w; BP[i * 3] = a.cx + Math.cos(an) * a.r; BP[i * 3 + 1] = Y + a.y + Math.sin(tt * 2 + a.f) * 1.5; BP[i * 3 + 2] = a.cz + Math.sin(an) * a.r; }
     gb.attributes.position.needsUpdate = true;
     const cam = T3.camera; V.set(C0[0], 60, C0[1]).project(cam); const vis = V.z < 1 && Math.abs(V.x) < 0.95 && Math.abs(V.y) < 0.95 && !document.body.classList.contains('tb-abierto') && cam.position.y > 60;
-    et.style.display = vis ? 'block' : 'none'; if (vis) et.style.transform = `translate(${((V.x + 1) / 2 * innerWidth).toFixed(1)}px,${((1 - V.y) / 2 * innerHeight).toFixed(1)}px) translate(-50%,-105%)`; })(0);
+    et.style.display = vis ? 'block' : 'none'; if (vis) et.style.transform = `translate(${((V.x + 1) / 2 * innerWidth).toFixed(1)}px,${((1 - V.y) / 2 * innerHeight).toFixed(1)}px) translate(-50%,-105%)`; });
   // vuelo al humedal (usa la animación de cámara del simulador)
   const ver = () => { if (!T3.orbit) return; T3.anim = { t: 0, dur: 2.4, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1: new THREE.Vector3(C0[0] + 260, 380, C0[1] + 520), c1: new THREE.Vector3(C0[0], 0, C0[1] - 40) }; };
   return { aplicar, ESTADO, centro: C0, ver };

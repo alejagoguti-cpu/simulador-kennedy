@@ -5,7 +5,7 @@
    Se arma con las mismas posiciones y alturas de los árboles (real3d.js: T3.trees.pos) y solo cerca de la cámara (se rehace al moverse). */
 export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* cerca: dentro de ese radio de la cámara van los árboles reales (real3d.js) */
   const pos = T3.trees && T3.trees.pos; if (!pos) return null;
-  const { X, Z, Hh } = pos, N = X.length;
+  const { X, Z, Hh } = pos, N = X.length, OC = pos.OC; /* OC < 1: árbol talado por el plan parcial de Bavaria (escenario D), no se dibuja */
   const MAXA = movil ? 6000 : 16000, POR = movil ? 70 : 55, R = movil ? 450 : 2000; /* rendimiento: ~400 mil manchas (antes 1,3 millones) */
   const cap = movil ? MAXA * POR : 420000;
   const P = new Float32Array(cap * 3), C = new Float32Array(cap * 3), S = new Float32Array(cap);
@@ -38,7 +38,7 @@ export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* 
   let n = 0, ult = { x: 1e9, z: 1e9 };
   function rehacer(cx, cz) {
     const cand = [];
-    const C2 = cerca * cerca; for (let i = 0; i < N; i++) { const dx = X[i] - cx, dz = Z[i] - cz, d2 = dx * dx + dz * dz; if (d2 < R * R && d2 >= C2) cand.push([d2, i]); }
+    const C2 = cerca * cerca; for (let i = 0; i < N; i++) { if (OC && OC[i] < 1) continue; const dx = X[i] - cx, dz = Z[i] - cz, d2 = dx * dx + dz * dz; if (d2 < R * R && d2 >= C2) cand.push([d2, i]); }
     cand.sort((a, b) => a[0] - b[0]);
     n = 0;
     for (let k = 0; k < cand.length && k < MAXA; k++) {
@@ -70,6 +70,7 @@ export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* 
   const api = {
     pts, visible: true,
     ver: (on) => { api.visible = on; pts.visible = on; },
+    invalidar: () => { ult = { x: 1e9, z: 1e9 }; }, /* rehacer las copas en el próximo cuadro (talas del plan parcial) */
     update: (cam) => {
       mat.uniforms.uEsc.value = T3.renderer.domElement.height / (2 * Math.tan(cam.fov * Math.PI / 360));
       const c = cerca ? cam.position : (T3.orbit ? T3.orbit.target : cam.position); /* con árboles reales cerca: centrado en la cámara, como real3d.js */

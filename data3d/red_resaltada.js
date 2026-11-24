@@ -1,3 +1,4 @@
+import { RELOJ } from './reloj.js?v=5'; // reloj universal: las animaciones usan su tiempo de animación (se detienen en pausa)
 /* Red resaltada (residuos, asambleas): líneas con grosor real en pantalla + halo ancho y suave + pulsos que recorren
    los tramos, siempre encima del modelo para que se lean de lejos. pos: Float32Array de segmentos (x,y,z, x,y,z ...). */
 export async function redResaltada({ THREE, T3, pos: pos0, colores: col0, color, ancho = 2.6, arco = 0 }) {
@@ -23,11 +24,11 @@ export async function redResaltada({ THREE, T3, pos: pos0, colores: col0, color,
     fragmentShader: 'varying vec3 vC; void main(){ float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; gl_FragColor = vec4(mix(vec3(1.0), vC, 0.4), smoothstep(0.5, 0.1, r)); }' });
   const pulsos = new THREE.Points(pg, pm); pulsos.renderOrder = 8; pulsos.frustumCulled = false; g.add(pulsos);
   const fase = new Float32Array(n).map((_, k) => (k * 0.618) % 1);
-  let raf = 0; const anim = () => { raf = requestAnimationFrame(anim); if (!g.visible || !g.parent || !g.parent.visible) return;
+  const anim = () => { if (!g.visible || !g.parent || !g.parent.visible) return;
     T3.renderer.getSize(res); mats.forEach(m => m.resolution.copy(res));
-    const t = performance.now() / 1000;
+    const t = RELOJ.tAnim; // tiempo de animación del reloj universal (se detiene en pausa)
     for (let k = 0; k < n; k++) { const u = (t * 0.3 + fase[k]) % 1, o = k * 6, p = pos0, h = arco > 0 ? Math.min(arco < 0.1 ? 900 : 260, Math.hypot(p[o + 3] - p[o], p[o + 5] - p[o + 2]) * arco) : 0; pp[k * 3] = p[o] + (p[o + 3] - p[o]) * u; pp[k * 3 + 1] = p[o + 1] + (p[o + 4] - p[o + 1]) * u + 4 * h * u * (1 - u); pp[k * 3 + 2] = p[o + 2] + (p[o + 5] - p[o + 2]) * u; }
     pg.attributes.position.needsUpdate = true; };
-  anim();
+  RELOJ.alDibujar(anim);
   return g;
 }
