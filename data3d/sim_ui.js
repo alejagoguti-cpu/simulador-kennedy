@@ -146,7 +146,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   inf.addEventListener('click', (e) => { if (e.target === inf) cerrarInforme(); });
 
   /* ---------- estado de la corrida ---------- */
-  const R = { sim: null, def: null, valores: {}, s: null, hist: [], go: null, fin: false, base: null, picos: 'soporte', foco: null, extinciones: [], eventos: [] };
+  const R = { sim: null, def: null, valores: {}, s: null, hist: [], go: null, fin: false, base: null, picos: null, foco: null, extinciones: [], eventos: [] };
   const defDe = (id) => (M && M.SIMS ? M.SIMS.find(x => x.id === id) : null);
   function preparar(id) {
     setTimeout(() => mostrarInd(), 400);
@@ -159,7 +159,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (R.def && R.def.par != null && !R.def.propuesta) { const fv = document.querySelector('#gs-fc button[data-v="1"]'); if (fv && !fv.classList.contains('on')) fv.click(); }
       // el indicador del par se prende solo, bajo y transparente para no tapar la vista
       const IND_PAR = { 1: 'CCL', 2: 'PM', 3: 'SE', 4: 'SE', 5: 'CV', 6: 'OC' }, ci = IND_PAR[R.def && R.def.par];
-      if (ci) { R.ind = ci; R.alto = 0.09; indApi().then(A => { if (A.estilo) A.estilo({ opacidad: 0.72, base: 4 }); A.altura(R.alto); }); mostrarInd(); pintarPicos(); } }, 900);
+      if (ci && false) { R.ind = ci; /* sin picos: la autora ya no los quiere */ R.alto = 0.09; indApi().then(A => { if (A.estilo) A.estilo({ opacidad: 0.72, base: 4 }); A.altura(R.alto); }); mostrarInd(); pintarPicos(); } }, 900);
     if (R.def && R.def.par === 1) setTimeout(() => { // abastecimiento: tráfico y concentración comercial y logística (CCL) prendidos
       // el tráfico se ve con la capa de RUIDO de carros (no con el flujo de puntos): ruido prendido, flujo apagado
       const fo = document.querySelector('#gs-fc button[data-v=""]'); if (fo && !fo.classList.contains('on')) fo.click();
@@ -190,7 +190,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     };
     lote();
   }
-  function pintarPrevia(txt) { let e = document.getElementById('su-previa'); const box = document.getElementById('su-picos'); if (!box) return;
+  function pintarPrevia(txt) { let e = document.getElementById('su-previa'); const box = document.getElementById('su-eco'); if (!box) return;
     if (!e) { e = document.createElement('p'); e.id = 'su-previa'; box.before(e); } e.textContent = txt; e.style.display = txt ? '' : 'none'; }
   /* COMPARACIÓN DEL PAR: cada simulación «con propuesta» (id par) se compara con su pareja «sin propuesta» (id impar), corrida con los
      MISMOS valores de las variables; la «sin propuesta» no tiene contra qué compararse (es el punto de partida). Sin pares en el modelo
@@ -251,7 +251,6 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
       <h4>Evaluación ecocéntrica</h4><div id="su-eco"><p class="pre">Dale play para ver las cinco dimensiones.</p></div>
       <h4>Mira en el territorio</h4><div class="su-lug">${lugares().map((l, i) => `<button type="button" data-l="${i}">${l.n}</button>`).join('')}</div>
-      <h4>Indicadores · picos sobre Kennedy</h4><div id="su-picos"></div>
       <h4>Resultados en vivo</h4><div id="su-inds"></div>
       <h4>Resaltar</h4><div class="su-seg" data-g="foco"><button data-v="especies">Especies</button><button data-v="ruido">Ruido</button><button data-v="trafico">Tráfico</button><button data-v="" class="on">Normal</button></div>
       <h4>Informe</h4><div class="su-seg"><button data-inf>Ver informe ahora</button></div>`;
@@ -319,7 +318,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const ra = box.querySelector('.su-alto input'); if (ra) ra.oninput = () => { R.alto = +ra.value; A.altura(R.alto); }; pintarCambio(A);
     box.querySelectorAll('button[data-c]').forEach(b => b.onclick = () => { R.ind = b.dataset.c || null; mostrarInd(); pintarPicos(); });
   }
-  async function mostrarInd() { const A = await indApi(); if (!R.altoIni) { R.altoIni = 1; if (A.estilo) A.estilo({ opacidad: 0.66, base: 4 }); A.altura(R.alto); } A.ver(!!R.ind); await A.mostrar(R.ind || null, false); }
+  async function mostrarInd() { R.ind = null; if (window.KEN_IND) window.KEN_IND.ver(false); if (window.KEN_PICOS_IND) window.KEN_PICOS_IND.ver(false); return; /* picos quitados */ const A = await indApi(); if (!R.altoIni) { R.altoIni = 1; if (A.estilo) A.estilo({ opacidad: 0.66, base: 4 }); A.altura(R.alto); } A.ver(!!R.ind); await A.mostrar(R.ind || null, false); }
   const prom = (A) => { if (!A || !A.length) return 0; let s = 0, n = 0; for (const v of A) if (isFinite(v)) { s += v; n++; } return n ? s / n : 0; };
   const c01 = (v) => Math.max(0, Math.min(1, v || 0));
   function factoresSim(I) { // cuánto de cada intervención existe en esta semana del modelo (0–1) -> T3.simInd para indicadores.js
@@ -381,7 +380,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const generico = (ev) => { const K = M && M.KEN_XZ; return ev.x == null || (K && Math.abs(ev.x - K[0]) < 2 && Math.abs(ev.z - K[1]) < 2); };
   function clavar(lista) {
     const L = (lista || []).filter(ev => ev && !generico(ev)); if (!L.length) return;
-    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=3').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
+    if (!HEC) { if (!pHec) pHec = import('./hechos.js?v=4').then(m => { HEC = m.crearHechos({ T3 }); HEC.alClic(ev => { if (!viendo) mostrarAviso(Object.assign({}, ev, { auto: true })); }); return HEC; }).catch(e => console.warn('hechos:', e)); pHec.then(h => h && h.poner(L)); return; }
     HEC.poner(L);
   }
   function avisar(ev) {

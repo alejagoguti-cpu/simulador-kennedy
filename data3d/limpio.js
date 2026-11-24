@@ -9,7 +9,7 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=63';
+import { iniciarSimUI } from './sim_ui.js?v=65';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 1040;
@@ -140,7 +140,7 @@ export function iniciarLimpio({ T3 }) {
   const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
     if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
   // sin los anillos naranjas de entrada ni los halos de camiones (data3d/origenes.js): la autora no los quiere (solo los carros)
-  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; } for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
+  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
   setInterval(() => { T3.scene.traverse(o => {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);

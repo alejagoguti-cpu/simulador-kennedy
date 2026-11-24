@@ -51,7 +51,7 @@ export function crearHechos({ T3 }) {
     document.body.appendChild(d);
     return { ev, g, aro, mA, d, t0: performance.now() };
   }
-  function clave(ev) { return ev.id || (ev.sem + '|' + ev.titulo); }
+  function clave(ev) { return ev.sem + '|' + ev.titulo; } /* el mismo hecho llega como aviso y en ind().hechos */
   function poner(lista) {
     for (const ev of lista || []) { if (ev == null || ev.x == null || ev.z == null || !isFinite(ev.x)) continue; const k = clave(ev); if (!H.has(k)) H.set(k, crear(ev)); }
     // los 4 más recientes con etiqueta completa; el resto en mínimo; más de 40 → se quitan los más viejos
