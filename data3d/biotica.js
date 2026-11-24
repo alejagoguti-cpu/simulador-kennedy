@@ -1028,7 +1028,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const ley = document.createElement('div'); ley.id = 'bio-ley';
     ley.innerHTML = `<b>Relaciones entre especies (líneas)</b>${TIPOS.map(t => `<span><i style="background:${t.c}"></i>${t.n}</span>`).join('')}<small>Cada línea une a un animal con la especie o el árbol con el que se relaciona; el punto que corre va del que actúa al que recibe.</small>`;
     document.body.appendChild(ley);
-    setInterval(() => { ley.style.display = grupo.visible && ESTADO.on && lineas.visible ? '' : 'none'; }, 800); }
+    setInterval(() => { ley.style.display = grupo.visible ? '' : 'none'; }, 800); }
   window.KEN_BIOTICA_SOLO = {
     on() { if (SOLO.on) return; SOLO.on = true; armarBase(); SOLO.antes = { gv: grupo.visible, on: ESTADO.on, ag: ESTADO.agentes, mk: T3.maskU ? T3.maskU.uOn.value : null };
       if (T3.maskU) T3.maskU.uOn.value = 0; // los edificios propios se ocultan (su sombreador no obedece al color): la malla de Google vuelve a mostrar los suyos, oscurecidos

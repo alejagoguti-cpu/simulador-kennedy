@@ -2998,7 +2998,7 @@ function crearFlujoCarros(THREE, N, ANCHO, dedupe, yVia, RUTAS) {
   const ESC = [[0, [0.10, 0.72, 0.29]], [2.5, [0.55, 0.85, 0.20]], [6, [0.98, 0.84, 0.10]], [11, [0.98, 0.50, 0.08]], [18, [0.90, 0.12, 0.10]], [30, [0.55, 0.03, 0.08]]];
   const colorDe = (d) => { if (d <= ESC[0][0]) return ESC[0][1]; for (let i = 1; i < ESC.length; i++) if (d <= ESC[i][0]) { const [a, ca] = ESC[i - 1], [b, cb] = ESC[i], t = (d - a) / (b - a); return [ca[0] + (cb[0] - ca[0]) * t, ca[1] + (cb[1] - ca[1]) * t, ca[2] + (cb[2] - ca[2]) * t]; } return ESC[ESC.length - 1][1]; };
   let tPint = 0;
-  const api = { mesh, escala: ESC, get visible() { return mesh.visible; }, set visible(v) { mesh.visible = v; if (v) api.pintar(); } };
+  const api = { mesh, escala: ESC, get visible() { return mesh.visible; }, set visible(v) { if (document.documentElement.classList.contains('limpio')) v = false; /* simulador limpio: nunca las líneas de colores del flujo en el piso (varios módulos la prendían solos) */ mesh.visible = v; if (v) api.pintar(); } };
   // cada cuadro: cada carro suma a la vía más cercana (a menos de 9 m)
   api.contar = (V, dt) => {
     if (!(dt > 0)) return;
@@ -3741,7 +3741,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       // selector ESTADO ACTUAL / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
       import('./data3d/escenario.js?v=114').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
-      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=105').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=107').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
       ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=2'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
@@ -3801,7 +3801,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=12');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=49'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(() => Promise.all([import('./data3d/biotica.js?v=50'), import('./data3d/huertas_barrio.js?v=10'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
     .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=33').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=4').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=10')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));
