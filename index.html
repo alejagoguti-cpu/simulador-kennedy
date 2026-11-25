@@ -193,9 +193,9 @@ document.addEventListener('DOMContentLoaded',()=>{
    const pasos=document.querySelectorAll('.cv-steps li'),ok=document.querySelectorAll('.cv-steps li.ok').length;
    if(pasos.length&&ok<pasos.length)return 'Cargando '+(document.querySelector('.cv-steps li:not(.ok)')?.textContent.trim().toLowerCase()||'capas')+'… ('+ok+'/'+pasos.length+')';
    const T=window.KEN_T3,tl=T&&T.tiles;
-   if(tl){const s=tl.stats,pend=s.downloading+s.parsing,fina=tl.errorTarget<=T.errMeta;
+   if(tl){const s=tl.stats,pend=s.downloading+s.parsing,fina=tl.errorTarget<=(T.errPortada||T.errMeta);
      quieta=(T.mallaMostrada&&fina&&pend===0)?quieta+1:0;
-     if(quieta<4)return 'Cargando imagen satelital… '+(fina?(pend?pend+' teselas por bajar':'afinando'):'nitidez '+Math.round(T.errMeta/tl.errorTarget*100)+' %');}
+     if(quieta<4)return 'Cargando imagen satelital… '+(fina?(pend?pend+' teselas por bajar':'afinando'):'nitidez '+Math.round((T.errPortada||T.errMeta)/tl.errorTarget*100)+' %');}
    return '';
  };
  const sync=()=>{
@@ -941,7 +941,11 @@ function flight(ms) {
           C.L.push([o, c.x, c.y, c.z, r]); }); }
       if (ahora - C.t > 250) { C.t = ahora; const p = cam.position, f = T3.gpuDebil ? 0.008 : 0.005;
         for (const [o, x, y, z, r] of C.L) { const d = Math.hypot(x - p.x, y - p.y, z - p.z), chico = r < d * f; if (chico) { if (o.layers.mask === 1) o.layers.mask = 4; } else if (o.layers.mask === 4) o.layers.mask = 1; } }
-    }    if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
+    }
+    /* detrás de la portada URBIA nadie ve la escena: se dibuja 1 vez por segundo (sube texturas y compila sombreadores) en vez de en cada cuadro.
+       Antes la página iba a 1–5 cuadros/s mientras cargaba y eso frenaba también la descarga de la foto satelital */
+    const tapada = !!document.getElementById('urbia-intro'); if (tapada && (T3._tTapa = (T3._tTapa || 0) + dt) < 1) { requestAnimationFrame(flight); return; } T3._tTapa = 0;
+    if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
     requestAnimationFrame(flight); return;
   }
   acc = Math.min(acc + ms, 60);
@@ -1326,8 +1330,9 @@ function actualizarMallaIn(T, tl, dt) {
   const tras = abierta && !!document.getElementById('urbia-intro'); /* maqueta lista pero aún detrás de la portada URBIA: nadie ve la carga progresiva, se pide de una vez la nitidez final con más descargas y procesado en paralelo para que al dar «Iniciar» la foto ya esté completa */
   if (tl.downloadQueue) tl.downloadQueue.maxJobs = tras ? 40 : abierta ? 24 : panelOk ? 6 : 2;
   if (tl.parseQueue) tl.parseQueue.maxJobs = tras ? (T.movil ? 4 : 12) : (T.movil ? 2 : 6);
-  if (tras && tl.errorTarget > meta) tl.errorTarget = meta;
-  if (tl.errorTarget > meta && tl.stats.downloading + tl.stats.parsing < (abierta ? 10 : 1) && tl.stats.visible > 3) /* abierta: se afina aunque queden algunas descargas (en la vista oblicua siempre hay alguna y nunca llegaba a la nitidez final) */ tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
+  T.errPortada = Math.max(T.errMeta, 10); /* la portada espera la foto completa a nitidez alta (~4 veces menos teselas que la máxima: carga en una fracción del tiempo); el último afinado (10 → 5 px) se hace ya adentro en pocos segundos */
+  if (tras && tl.errorTarget > T.errPortada) tl.errorTarget = T.errPortada;
+  if (!tras && tl.errorTarget > meta &&tl.stats.downloading + tl.stats.parsing < (abierta ? 10 : 1) && tl.stats.visible > 3) /* abierta: se afina aunque queden algunas descargas (en la vista oblicua siempre hay alguna y nunca llegaba a la nitidez final) */ tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
     T.dbgN = (T.dbgN || 0) + 1; T.dbgT = (T.dbgT || 0) + dt; if (T.dbgT > 1) { T.dbgFps = T.dbgN / T.dbgT; T.dbgN = 0; T.dbgT = 0; console.log('[debug] fps ' + T.dbgFps.toFixed(1) + ' · triángulos ' + (T.renderer.info.render.triangles / 1e6).toFixed(2) + ' M · teselas ' + s.visible + ' · descargando ' + s.downloading); }
