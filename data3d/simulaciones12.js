@@ -441,7 +441,7 @@ export function crear(id, semilla = 1, valores = {}) {
   E.par = P; E.prop = S.propuesta; E.fOrg = 1;
   E.bas = basuraIni(E); E.suelo = sueloIni(E); E.atr = atropellosIni(E); E.hechos = []; E.muertes = muertesIni(E); E.cie = mod.cierre ? { t0: mod.cierre.t0, dur: mod.cierre.dur, via: mod.cierre.via, fase: 0, faseMax: 0 } : null;
   E.par = P; E.prop = S.propuesta; E.xHb = new Float32Array(NP).fill(1); E.xFrag = new Float32Array(NP).fill(1); pruebaIni(E);
-  E.rachasLocales = new Map();
+  E.rachasLocales = new Map(); E.rachaSectores = new Uint8Array(ZONAS.length);
   return E;
 }
 const bits = (v) => { v = v - ((v >>> 1) & 0x55555555); v = (v & 0x33333333) + ((v >>> 2) & 0x33333333); return (((v + (v >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; };
@@ -966,7 +966,7 @@ export function paso(E) {
   const x = ind(E);
   referencia(E, x);
   E.vals = {}; for (const R of REGLAS) { const v = VALOR[R.k](x); E.vals[R.k] = v; E.racha[R.k] = MALO[R.k](v) ? E.racha[R.k] + 1 : 0;
-    if (!E.go && ['abasto','residuos','habitat'].includes(R.k) && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, sem: s.t + 1, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', inicio:s.t-2, valor: Math.round(v * 1000) / 1000 }; }
+    if (!E.go && ['residuos','habitat'].includes(R.k) && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, enfoque:R.k==='residuos'?'Circularidad':'Ecocentrismo', sem: s.t + 1, inicio:s.t-2, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', valor: Math.round(v * 1000) / 1000 }; }
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
   verdePaso(E); x.verde = indVerde(E);
@@ -982,7 +982,12 @@ export function paso(E) {
     E.rachasLocales.set(id,semanas);
     if(semanas) alertas.push({...punto,indicador,semanas,inicio:x.sem-semanas+1,sem:x.sem});
   }
-  sectores.forEach((p,i)=>revisar('s'+i,p,'Cobertura <80 %',p.valor<80));
+  sectores.forEach((p,i)=>{
+    const mal=p.valor<80;
+    E.rachaSectores[i]=mal?E.rachaSectores[i]+1:0;
+    revisar('s'+i,p,'Cobertura <80 %',mal);
+    if(!E.go&&E.rachaSectores[i]>=4)E.go={regla:'abasto',enfoque:'Comercio ecológico',sem:x.sem,inicio:x.sem-3,motivo:'el sector '+p.n+' recibió menos del 80 % de su demanda durante cuatro semanas consecutivas',lugar:p.n,x:p.x,z:p.z,valor:p.valor};
+  });
   x.evaluacion.diversidad.porParche.forEach((p,j)=>{
     let inicial=0;
     const afectadas=[];
