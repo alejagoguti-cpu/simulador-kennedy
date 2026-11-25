@@ -93,3 +93,86 @@ html.limpio body #su-tab .ee-values{font-size:10px}
 html.limpio body #su-tab .ee-causal,html.limpio body #su-tab .ee-focal{border-top:1px solid #ffffff20;padding:5px 0}
 html.limpio body #su-tab .ee-steps{padding-left:18px}
 html.limpio body #su-tab .ee-steps li{margin:9px 0;line-height:1.6}
+
+/* Composición de la referencia: territorio central, escenarios y franja de respuesta. */
+html.limpio body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:30;background:linear-gradient(90deg,rgba(26,33,30,.72),transparent 38%,transparent 73%,rgba(26,33,30,.24)),linear-gradient(0deg,rgba(23,30,25,.5),transparent 35%)}
+#urbia-context{position:fixed;top:99px;left:34px;width:260px;z-index:38;color:#f2f3ec;pointer-events:none;font-family:system-ui}
+.ur-kicker{font:10px monospace;letter-spacing:.19em;color:#d9dfcd}
+#urbia-context h1{font-size:36px;font-weight:300;line-height:1.14;letter-spacing:-.035em;margin:17px 0}
+#urbia-context em{font-weight:400;background:#d5ff32;color:#20271b;padding:0 6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+#urbia-context p{font-size:12px;line-height:1.5;color:#d6dacf;margin:10px 0}
+.ur-purpose{display:flex;align-items:center;gap:12px;margin-top:18px}
+.ur-purpose>span{color:#d5ff32;font-size:27px;border:1px solid #dce4c755;border-radius:9px;padding:6px 13px}
+.ur-purpose b{font-size:12px;font-weight:500}.ur-purpose p{font-size:11px!important;margin:4px 0!important}
+#urbia-nav{position:fixed;z-index:42;top:28px;left:38%;display:flex;gap:26px;font:10px monospace;letter-spacing:.12em;color:#c3c9bd}
+#urbia-nav b{color:#d5ff32;font-weight:500;padding-bottom:12px;border-bottom:2px solid #d5ff32}
+html.limpio body #lp-esc{left:auto!important;right:24px!important;top:104px!important;transform:none!important;display:flex;flex-direction:column;gap:8px;width:258px;padding:15px!important;border-radius:20px!important;box-sizing:border-box}
+html.limpio body #lp-esc::before{content:'ESCENARIOS DE COMPARACIÓN';font:10px/1.5 monospace;letter-spacing:.15em;padding:0 0 5px;color:#e5ebd7}
+html.limpio body #lp-esc button{display:flex;align-items:center;gap:12px;text-align:left;padding:13px!important;border:1px solid #e0e8d42b;border-radius:12px;opacity:1;background:#ffffff04}
+html.limpio body #lp-esc button.on{background:linear-gradient(120deg,#d7ed95,#c1d675)!important;border-color:#d5ff3280!important}
+#lp-esc b{font-size:13px;font-weight:600;display:block}
+#lp-esc small{display:block;font:10px/1.45 system-ui;margin-top:5px;opacity:.8}
+.ur-scenario-icon{font-size:25px;font-weight:300}
+#urbia-network{position:fixed;top:65px;right:26px;z-index:47;background:#303a33b8;color:#e1e8d5;border:1px solid #dbe5c340;border-radius:8px;padding:7px 12px;font:10px system-ui;cursor:pointer}
+html.limpio body #lp-der{display:none!important}
+html.limpio body.ur-network-open #lp-der{display:flex!important;top:305px!important;bottom:244px!important;max-height:calc(100vh - 549px)!important;right:24px!important;width:288px!important}
+html.limpio body #gs-izq{top:365px!important;left:34px!important;width:240px!important;bottom:242px!important;max-height:calc(100vh - 607px)!important;border-radius:14px!important;font-size:11px}
+#urbia-response{position:fixed;left:24px;right:24px;bottom:80px;z-index:41;background:linear-gradient(115deg,#60665c80,#202923bb);border:1px solid #dce7cc40;border-radius:21px 21px 0 0;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:12px 18px}
+html.limpio body #urbia-response #su-tab{background:none;border:0;box-shadow:none;backdrop-filter:none;padding:0;overflow:visible}
+html.limpio body #urbia-response .ee-intro{padding:0 0 7px;display:flex;align-items:baseline;gap:12px}
+html.limpio body #urbia-response .ee-eyebrow{display:none}
+html.limpio body #urbia-response .ee-intro h5{font-size:15px;margin:0}
+html.limpio body #urbia-response .ee-intro p{font-size:10px}
+html.limpio body #urbia-response .ee-tiles{grid-template-columns:repeat(6,minmax(0,1fr));gap:0}
+html.limpio body #urbia-response .ee-tile{border:0;border-left:1px solid #e0e8d427;border-radius:0;padding:5px 14px;background:none;min-height:91px;text-align:center}
+html.limpio body #urbia-response .ee-tile:first-child{border-left:0}
+html.limpio body #urbia-response .ee-tile[aria-pressed=true]{border-radius:12px;background:#d5ff3220;color:#e2ff9c;box-shadow:none}
+html.limpio body #urbia-response .ee-tile-name{min-height:14px;font-size:11px}
+html.limpio body #urbia-response .ee-kpi{justify-content:center;margin-top:4px}
+html.limpio body #urbia-response .ee-kpi strong{font-size:24px}
+html.limpio body #urbia-response .ee-kpi svg{width:39px;height:39px}
+html.limpio body #urbia-response .ee-tile[aria-pressed=true] circle:last-child{stroke:#d5ff32}
+html.limpio body #urbia-response .ee-tile-label{display:none}
+html.limpio body #urbia-response .ee-hint,html.limpio body #urbia-response .ee-legend{display:none}
+html.limpio body #urbia-response .ee-card{position:fixed;right:24px;top:303px;bottom:244px;width:288px;box-sizing:border-box;overflow-y:auto;background:#252e28f5;border:1px solid #e2edce40;border-radius:15px;margin:0;box-shadow:0 14px 35px #0005}
+html.limpio body #urbia-response .ee-causal,html.limpio body #urbia-response .ee-focal{display:inline-block;border:0;padding:0;margin-right:16px;font-size:10px}
+html.limpio body #urbia-response details[open]:not(.ee-card details){position:fixed;right:24px;top:303px;bottom:244px;width:288px;box-sizing:border-box;overflow:auto;background:#252e28fa;padding:14px;border:1px solid #e2edce40;border-radius:15px}
+html.limpio body #urbia-response .ee-clear{float:right;font-size:9px;margin:2px 0 0;padding:3px 8px}
+html.limpio body #lp-anos{left:24px!important;right:24px!important;bottom:20px!important;height:61px!important;box-sizing:border-box;transform:none!important;max-width:none!important;border-radius:0 0 21px 21px!important;padding:12px 18px!important;border-top-color:#ffffff14!important}
+html.limpio body #lp-anos .tit{max-width:190px;font-size:11px!important}
+html.limpio body #lp-anos .pista{min-width:80px!important}
+html.limpio body #lp-ojo{top:22px!important;right:24px!important}
+@media(max-height:800px) and (min-width:1001px){
+ #urbia-context{top:78px}#urbia-context h1{font-size:29px;margin:12px 0}.ur-purpose{display:none}
+ html.limpio body #gs-izq{top:265px!important;max-height:calc(100vh - 507px)!important}
+ html.limpio body #lp-esc{top:83px!important}
+ html.limpio body #urbia-response .ee-card{top:280px}
+}
+@media(max-width:1000px){
+ #urbia-context{top:75px;left:20px;width:210px}#urbia-context h1{font-size:27px}
+ #urbia-context>p,.ur-purpose,#urbia-nav{display:none}
+ html.limpio body #gs-izq{top:205px!important;left:20px!important;width:220px!important;max-height:calc(100vh - 450px)!important}
+ html.limpio body #lp-esc{top:90px!important;right:18px!important;width:236px}
+ html.limpio body #urbia-response .ee-tile{padding:5px}
+ html.limpio body #urbia-response .ee-tile-name{font-size:10px}
+ html.limpio body #urbia-response .ee-kpi strong{font-size:18px}
+}
+@media(max-width:760px){
+ #urbia-context{display:none}#urbia-network{top:15px;right:15px}
+ html.limpio body #lp-esc{top:55px!important;left:12px!important;right:12px!important;width:auto;flex-direction:row;padding:8px!important;gap:6px}
+ html.limpio body #lp-esc::before{display:none}html.limpio body #lp-esc button{padding:8px!important;flex:1}#lp-esc small{display:none}
+ html.limpio body #gs-izq{left:12px!important;top:126px!important;width:175px!important;bottom:275px!important;max-height:calc(100dvh - 401px)!important}
+ #urbia-response{left:12px;right:12px;bottom:75px;padding:10px}
+ html.limpio body #urbia-response .ee-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+ html.limpio body #urbia-response .ee-tile{min-height:64px}
+ html.limpio body #urbia-response .ee-kpi{min-height:24px}
+ html.limpio body #urbia-response .ee-kpi svg{width:24px;height:24px}
+ html.limpio body #urbia-response .ee-intro p{display:none}
+ html.limpio body #urbia-response .ee-card,html.limpio body #urbia-response details[open]:not(.ee-card details){top:125px;left:12px;right:12px;bottom:286px;width:auto}
+ html.limpio body #lp-anos{left:12px!important;right:12px!important;bottom:14px!important}
+ html.limpio body #lp-anos .tit{display:none}
+ html.limpio body.ur-network-open #lp-der{top:125px!important;left:12px!important;right:12px!important;width:auto!important;bottom:286px!important;max-height:calc(100dvh - 411px)!important;z-index:45}
+}
+
+/* Los detalles flotan respecto de la ventana, no del contenedor de indicadores. */
+html.limpio body #urbia-response,html.limpio body #urbia-response #su-tab{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;filter:none!important}

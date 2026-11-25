@@ -55,11 +55,11 @@ export function contenidoEco(I,H,B,prop,selected,open){
  '<div class="ee-tiles">'+tiles+'</div><p class="ee-hint">Selecciona un indicador para explorar sus datos y verlo en el territorio.</p>'+
  '<div class="ee-legend"><span><i class="ee-con"></i>Con propuesta</span><span><i class="ee-sin"></i>Sin propuesta</span></div>'+cards+
  '<details class="ee-causal" data-detail="causal" '+(open.has('causal')?'open':'')+'><summary>Relaciones del sistema</summary><ol class="ee-steps"><li>Huertas → recursos vegetales → interacciones → ocupación de parches</li><li>Hábitat y vías → conectividad del grafo</li><li>Tráfico y edificios → riesgo de atropellos y choques</li><li>Orgánicos → compost → huertas</li></ol><p>Reproducción vegetal, rutas alternativas y nutrientes disponibles: relaciones pendientes de calibrar.</p></details>'+
- '<details class="ee-focal" data-detail="focal" '+(open.has('focal')?'open':'')+'><summary>Especies focales</summary>'+species+'</details><button class="ee-clear">Quitar selección del mapa</button>';
+ '<details class="ee-focal" data-detail="focal" '+(open.has('focal')?'open':'')+'><summary>Especies focales</summary>'+species+'</details><button class="ee-clear">Cerrar detalle y selección</button>';
 
 }
 export function crearPanelEvaluacion({T3}){
- let selected='supervivencia',group=null,host=null,last=null,signature='',open=new Set(),lastOther=null;
+ let selected=null,group=null,host=null,last=null,signature='',open=new Set(),lastOther=null;
  const clear=()=>{if(group){group.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();});T3.scene.remove(group);group=null;}};
  function mapa(I){
   clear();if(!selected||!I?.evaluacion)return;
@@ -72,12 +72,12 @@ export function crearPanelEvaluacion({T3}){
    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));const line=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0x8ad9e5,transparent:true,opacity:.45,depthTest:false}));line.renderOrder=59;group.add(line);}
  }
  return {render(container,I,H,B,prop,run){
-  if(signature!==run){selected='supervivencia';open.clear();clear();signature=run;}
+  if(signature!==run){selected=null;open.clear();clear();signature=run;}
   if(host)host.querySelectorAll('details[data-detail]').forEach(d=>{if(d.open)open.add(d.dataset.detail);else open.delete(d.dataset.detail);});
   const focus=host?.contains(document.activeElement)?document.activeElement.dataset.select:null;
   host=container;last=I;lastOther=B.find(h=>h.sem===I.sem)||null;container.innerHTML=contenidoEco(I,H,B,prop,selected,open);
   container.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{selected=btn.dataset.select;container.querySelectorAll('.ee-card').forEach(c=>c.hidden=c.dataset.ind!==selected);open.add(selected);container.querySelector('details[data-detail="'+selected+'"]').open=true;container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.select===selected?'true':'false'));mapa(last);});
-  container.querySelector('.ee-clear').onclick=()=>{selected=null;clear();container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed','false'));};
+  container.querySelector('.ee-clear').onclick=()=>{selected=null;clear();container.querySelectorAll('.ee-card').forEach(c=>c.hidden=true);container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed','false'));};
   if(focus)container.querySelector('[data-select="'+focus+'"]')?.focus({preventScroll:true});
   if(selected)mapa(I);
  },clear};

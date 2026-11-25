@@ -5,7 +5,7 @@
    · informe final (al año 20 o en el game over): veredicto, tabla inicio → final, gráficas, especies que desaparecieron y por qué,
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
-import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=2';
+import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=3';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
 
@@ -785,7 +785,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   });
   const tab = document.createElement('div'); tab.id = 'su-tab';
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
-  setInterval(() => { const D = document.getElementById('lp-der'); if (D && tab.parentNode !== D) D.appendChild(tab); }, 700); /* los diagramas van a la DERECHA (debajo de quién interactúa con quién) */
+  setInterval(() => { const D = document.getElementById('urbia-response') || document.getElementById('lp-der'); if (D && tab.parentNode !== D) D.appendChild(tab); }, 700); /* los diagramas van a la DERECHA (debajo de quién interactúa con quién) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
