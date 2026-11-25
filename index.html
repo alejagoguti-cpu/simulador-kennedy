@@ -184,12 +184,27 @@
 document.addEventListener('DOMContentLoaded',()=>{
  const intro=document.getElementById('urbia-intro'),start=document.getElementById('urbia-start'),loader=document.getElementById('loader'),status=document.getElementById('estado-maqueta');
  intro.querySelectorAll('[data-zoom]').forEach(btn=>btn.onclick=()=>intro.querySelector('iframe').contentWindow.postMessage('zoom-'+btn.dataset.zoom,'*'));
- const sync=()=>{
-   if(loader.classList.contains('hidden')){observer.disconnect();start.disabled=false;start.textContent='Iniciar';status.textContent='';}
-   else status.textContent=document.getElementById('lmsg')?.textContent||'Cargando la vista inicial…';
+ /* «Iniciar» se activa solo con TODO cargado: maqueta, capas, árboles, tráfico y la imagen satelital de Google ya a su nitidez final
+    (antes se activaba con la maqueta armada y la foto seguía bajando borrosa al entrar). Tope de 3 min tras la maqueta por si la red no termina. */
+ let tAbierta=0,quieta=0;
+ const listo=()=>{
+   if(!loader.classList.contains('hidden'))return 'Cargando la vista inicial…';
+   if(!tAbierta)tAbierta=performance.now();
+   const pasos=document.querySelectorAll('.cv-steps li'),ok=document.querySelectorAll('.cv-steps li.ok').length;
+   if(pasos.length&&ok<pasos.length)return 'Cargando '+(document.querySelector('.cv-steps li:not(.ok)')?.textContent.trim().toLowerCase()||'capas')+'… ('+ok+'/'+pasos.length+')';
+   const T=window.KEN_T3,tl=T&&T.tiles;
+   if(tl){const s=tl.stats,pend=s.downloading+s.parsing,fina=tl.errorTarget<=T.errMeta;
+     quieta=(T.mallaMostrada&&fina&&pend===0)?quieta+1:0;
+     if(quieta<4)return 'Cargando imagen satelital… '+(fina?(pend?pend+' teselas por bajar':'afinando'):'nitidez '+Math.round(T.errMeta/tl.errorTarget*100)+' %');}
+   return '';
  };
- const observer=new MutationObserver(sync);observer.observe(loader,{attributes:true,childList:true,subtree:true,characterData:true});sync();
- start.onclick=()=>intro.remove();
+ const sync=()=>{
+   const falta=listo();
+   if(!falta||(tAbierta&&performance.now()-tAbierta>180000)){clearInterval(iv);start.disabled=false;start.textContent='Iniciar';status.textContent='';}
+   else status.textContent=falta;
+ };
+ const iv=setInterval(sync,500);sync();
+ start.onclick=()=>{intro.remove();window.KEN_RELOJ?.arrancar();};
  setTimeout(()=>{if(start.disabled&&intro.isConnected){const retry=document.createElement('button');retry.className='retry-intro';retry.textContent='Reintentar carga';retry.onclick=()=>location.reload();status.after(retry);}},150000);
 });
 </script>
@@ -657,7 +672,7 @@ function marcarPaso(k) {
   if (n === PASOS.length) setTimeout(() => $('cvMini').classList.remove('on'), 1600);
 }
 function abrirPortada() {
-  RELOJ.arrancar(); // el reloj universal empieza a correr cuando la portada se abre (mientras carga, el tiempo no pasa)
+  if (!document.getElementById('urbia-intro')) RELOJ.arrancar(); // el reloj universal empieza a correr cuando se entra (con la portada URBIA, al dar «Iniciar»: antes corría detrás de ella y se entraba en el año 13)
   if ($('loader').classList.contains('hidden')) return;
   $('loader').classList.add('hidden');
   if (T3 && T3.llegada) { const L = T3.llegada; T3.llegada = null; T3.camera.position.copy(L.p0); T3.orbit.target.copy(L.c0); setTimeout(() => { T3.anim = { t: 0, dur: 4.8, p0: L.p0, c0: L.c0, p1: L.p1, c1: L.c1 }; }, 600); } /* vuelo corto al humedal, empieza cuando ya se ve la ciudad */ /* vuelo de llegada al humedal El Burro */
@@ -1046,6 +1061,7 @@ async function crearMallaGoogle(T) {
   const [TR, PL] = await Promise.all([import('3d-tiles-renderer'), import('3d-tiles-renderer/plugins')]); // a la vez, no uno tras otro
   const { DRACOLoader } = await import('three/addons/loaders/DRACOLoader.js');
   const draco = new DRACOLoader().setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');
+  draco.setWorkerLimit(Math.max(4, Math.min(8, (navigator.hardwareConcurrency || 4) - 2))); /* las ~540 teselas nítidas se descomprimen en paralelo (de fábrica 4 hilos): la foto completa queda lista antes de «Iniciar» */
   const tiles = new TR.TilesRenderer();
   tiles.registerPlugin(new PL.GoogleCloudAuthPlugin({ apiToken: GKEY, autoRefreshToken: true }));
   tiles.registerPlugin(new PL.GLTFExtensionsPlugin({ dracoLoader: draco }));
@@ -1307,7 +1323,10 @@ function actualizarMallaIn(T, tl, dt) {
   /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
      sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
   const abierta = KEN ? $('loader').classList.contains('hidden') : true, meta = abierta ? T.errMeta : Math.max(T.errMeta, 14); /* antes de abrir: nitidez media */
-  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 24 : panelOk ? 6 : 2;
+  const tras = abierta && !!document.getElementById('urbia-intro'); /* maqueta lista pero aún detrás de la portada URBIA: nadie ve la carga progresiva, se pide de una vez la nitidez final con más descargas y procesado en paralelo para que al dar «Iniciar» la foto ya esté completa */
+  if (tl.downloadQueue) tl.downloadQueue.maxJobs = tras ? 40 : abierta ? 24 : panelOk ? 6 : 2;
+  if (tl.parseQueue) tl.parseQueue.maxJobs = tras ? (T.movil ? 4 : 12) : (T.movil ? 2 : 6);
+  if (tras && tl.errorTarget > meta) tl.errorTarget = meta;
   if (tl.errorTarget > meta && tl.stats.downloading + tl.stats.parsing < (abierta ? 10 : 1) && tl.stats.visible > 3) /* abierta: se afina aunque queden algunas descargas (en la vista oblicua siempre hay alguna y nunca llegaba a la nitidez final) */ tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
