@@ -353,6 +353,27 @@ SIMS.push({ id: 13, par: 0, propuesta: false, parN: '00 Base', prueba: 'Sin prue
   pregunta: '¿Qué pasaría con Kennedy en 15 años con la red de mercados, huertas, Estaciones Circulares y Bavaria Común?', desc: 'La red distribuida de la propuesta con el metro y el crecimiento normal de la población y del tráfico.', visible: 'Todo el territorio.', sliders: BASE_SL });
 
 export const MITIGA_DB = 3; // dB menos en las calles pacificadas (ver mitiga arriba) [SUP]
+/* MECANISMOS DE LA PROPUESTA (2026-11-25, docs/indicadores_macromodelos.md «Cambios de fórmula»). Solo en las corridas con propuesta (id par y 14);
+   cada uno es una OBRA con calendario (fase 0 → 1), no un descuento por etiqueta: la corrida sin propuesta no cambia.
+   · PASOS DE FAUNA (E5 Corredor biótico): pasos bajo/sobre las vías principales con cerramiento que guía a la fauna, en las vías principales que cortan las
+     rutas de dispersión entre parches (EXPO.cruce > 0; el núcleo de dispersión decide cuáles se usan). Se construyen de la semana 52 a la 260 (años 2–5). Reducen la mortalidad al cruzar 54 %:
+     Rytwinski et al. 2016, PLoS ONE 11(11): e0166941, «How effective is road mitigation at reducing road-kill? A meta-analysis» (cerramiento con o sin
+     pasos: −54 % de atropellos). Supervivencia al cruzar = e^(−c·Q·(1 − 0,54·fase)). Afecta los atropellos, la conectividad (supervivencia de los
+     enlaces del corredor) y los destinos alcanzables.
+   · CALLES VERDES Y PACIFICADAS (E5 corredor + calles verdes entre módulos + E9 Manzanas del Cuidado): [SUP] 30 % de las calles a 30 km/h y con franjas
+     verdes, construidas de la semana 52 a la 416 (años 2–8); cada una −3 dB (MITIGA_DB, EEA 2010). Se combina con el deslizador «mitiga» del par 02:
+     mit = 1 − (1 − deslizador)·(1 − 0,30·fase). */
+export const PROP_SUP = { PASO_RED: 0.54, PASO_T0: 52, PASO_T1: 260, MIT: 0.30, MIT_T0: 52, MIT_T1: 416 };
+const faseObra = (t, t0, t1) => Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
+function mecanismosProp(E, t) {
+  if (!E.prop) return; const S = PROP_SUP;
+  E.traf.mit = 1 - (1 - E.traf.mit0) * (1 - S.MIT * faseObra(t, S.MIT_T0, S.MIT_T1));
+  const f = faseObra(t, S.PASO_T0, S.PASO_T1); if (f <= 0) return;
+  const k = Math.round(f * 100); if (E.S0 && E.pasoK === k) return; E.pasoK = k;
+  const C = V.TRAFICO.C_ATROP, S0 = E.S0 || (E.S0 = new Float32Array(NP * NP)), r = 1 - S.PASO_RED * k / 100;
+  for (let p = 0; p < NP; p++) for (let q = 0; q < NP; q++) { const i = p * NP + q, cr = EXPO.cruce[i] || 0;
+    S0[i] = cr ? Math.exp(-C * cr * r) : PRE.S0[i]; } }
+const S0de = (E) => E.S0 || PRE.S0;
 
 /* ---------- REGLAS DE GAME OVER: siete, iguales para las 12; cualquiera cumplida 4 semanas seguidas = game over ---------- */
 export const REGLAS = [
@@ -407,7 +428,8 @@ export async function cargarDatos(cargar) {
     else if (fb) LOC.push([RED.FI[b], 1, RED.FLI[a] * RED.W3, RED.ALC[RED.FAUNA[RED.FI[b]].grupo]]);
     else LOC.push([-1, RED.FLI[a] * RED.W3, RED.FLI[b] * RED.W3, null]); }
   const metroF = (red) => { const f = new Float32Array(NP).fill(1); for (const i of J.metro.cerca) f[i] = 1 - red; return { k: 'metro' + red + '_' + J.metro.radio, f }; };
-  PRE = { LOC, Lc, Ll, mLc: media(Lc), mLl: media(Ll), nC: Lc.length, nL: Ll.length, fC, S0, DEST, WZ, POLI: [...POLI], metroF, PAR: J.PAR, metro: J.metro };
+  const energ = (a) => { let s = 0; for (const v of a) s += Math.pow(10, v / 10); return 10 * Math.log10(s / Math.max(1, a.length)); }; // promedio energético (L_Aeq)
+  PRE = { LOC, Lc, Ll, mLc: media(Lc), mLl: media(Ll), eLc: energ(Lc), eLl: energ(Ll), nC: Lc.length, nL: Ll.length, fC, S0, DEST, WZ, POLI: [...POLI], metroF, PAR: J.PAR, metro: J.metro };
   D = J; return D;
 }
 const listo = () => { if (!D) throw new Error('simulaciones.js: falta await cargarDatos()'); };
@@ -446,6 +468,7 @@ export function crear(id, semilla = 1, valores = {}) {
   s.red.xAve = E.xAve; s.red.xH = E.xH; s.red.fRata = 1;
   E.par = P; E.prop = S.propuesta; E.fOrg = 1;
   E.bas = basuraIni(E); E.suelo = sueloIni(E); E.atr = atropellosIni(E); E.hechos = []; E.muertes = muertesIni(E); E.cie = mod.cierre ? { t0: mod.cierre.t0, dur: mod.cierre.dur, via: mod.cierre.via, fase: 0, faseMax: 0 } : null;
+  E.traf.mit0 = E.traf.mit; E.S0 = null; E.pasoK = -1;
   E.par = P; E.prop = S.propuesta; E.xHb = new Float32Array(NP).fill(1); E.xFrag = new Float32Array(NP).fill(1); pruebaIni(E);
   E.rachasLocales = new Map(); E.rachaSectores = new Uint8Array(ZONAS.length);
   return E;
@@ -980,7 +1003,7 @@ function indVerde(E) {
   const XQ = s.red.XQ, links = [], corr = E.frag && E.prop ? new Set(E.frag.corr.map(q => E.frag.p * NP + q).concat(E.frag.corr.map(q => q * NP + E.frag.p))) : null, fase = Math.min(1, t / 156);
   for (let a = 0; a < pc.length; a++) for (let b = a + 1; b < pc.length; b++) { const A = pc[a], B = pc[b], d = Math.hypot(A.x - B.x, A.z - B.z); if (d > S.MAX_D || A.r <= 0 || B.r <= 0) continue;
     const pa = A._p, pb = B._p; let sv = 1, via = null, cruzaVia = false;
-    if (pa >= 0 && pb >= 0 && pa !== pb) { const m = 1 - (XQ ? XQ[pa * NP + pb] : 1) * PRE.S0[pa * NP + pb]; sv = 1 - m; cruzaVia = (EXPO.cruce[pa * NP + pb] || 0) + (EXPO.cruce[pb * NP + pa] || 0) > 0;
+    if (pa >= 0 && pb >= 0 && pa !== pb) { const m = 1 - (XQ ? XQ[pa * NP + pb] : 1) * S0de(E)[pa * NP + pb]; sv = 1 - m; cruzaVia = (EXPO.cruce[pa * NP + pb] || 0) + (EXPO.cruce[pb * NP + pa] || 0) > 0;
       const cr = ATR_CR.get(Math.min(pa, pb) * NP + Math.max(pa, pb)); if (cr) via = ATR.VIAS[cr[0]][0]; }
     const fb = sv * Math.min(1, Math.min(A.calidad, B.calidad) / 0.4); let f = fb * Math.min(A._m, B._m), tipo = 'corredor'; /* fb sin madurez: un enlace que apenas crece no está roto */
     if (corr && corr.has(pa * NP + pb)) { f = Math.max(f, fase); tipo = 'corredor'; }
@@ -1063,9 +1086,18 @@ function muertesPaso(E) {
   M.semana = nuevos.length; if (M.lista.length > S.LISTA) M.lista.splice(0, M.lista.length - S.LISTA); }
 function dbParche(E, p, trafico, mitDb) { const e = EXPO.parches[p]; if (!e) return 45; const L = 74 + 10 * Math.log10(Math.max(1, e[1] * trafico) / EXPO.medianaVia) - 10 * Math.log10(Math.max(15, e[0]) / 15) - mitDb; return Math.max(35, L); }
 function indAvesRuido(E, x) {
-  const s = E.s, occ = s.occ, mit = MITIGA_DB * E.traf.mit; let w = 0, b = 0, ex = 0; const pp = [];
-  for (let p = 0; p < NP; p++) { let a = 0; for (let i = 0; i < RED.NFA; i++) if (RED.AVE[i]) a += occ[i * NP + p]; const db = dbParche(E, p, x.trafico, mit); if (a) { const bi = Math.max(0, Math.min(1, (70 - db) / 20)); w += a; b += a * bi; if (db > 60) ex += a; pp.push({ x: Math.round(PARCHES[p].x), z: Math.round(PARCHES[p].z), db: Math.round(db * 10) / 10, aves: a, n: PARCHES[p].n }); } }
-  pp.sort((u, v) => v.aves - u.aves || v.db - u.db); return { bienestar: w ? b / w : 1, expuestas: w ? ex / w : 0, porParche: pp.slice(0, 20) }; }
+  const s = E.s, occ = s.occ, mit = MITIGA_DB * E.traf.mit; let w = 0, b = 0, ex = 0, bf = 0, en = 0; const pp = [];
+  for (let p = 0; p < NP; p++) { let a = 0; for (let i = 0; i < RED.NFA; i++) if (RED.AVE[i]) a += occ[i * NP + p]; const db = dbParche(E, p, x.trafico, mit); if (a) { const bi = Math.max(0, Math.min(1, (70 - db) / 20)); w += a; b += a * bi; bf += a * bienestarDe(db); en += a * Math.pow(10, db / 10); if (db > 60) ex += a; pp.push({ x: Math.round(PARCHES[p].x), z: Math.round(PARCHES[p].z), db: Math.round(db * 10) / 10, aves: a, n: PARCHES[p].n }); } }
+  pp.sort((u, v) => v.aves - u.aves || v.db - u.db);
+  /* bienestarFauna (indicador «Bienestar de la fauna», 2026-11-25): Σ aᵖ·B(Lᵖ) / Σ aᵖ, aᵖ = aves (especie × parche) en el parche p, B = BIENESTAR_SUP.
+     dbAves = nivel energético al que está expuesta la ocupación de aves. bienestar (curva vieja 50–70 dB) se conserva. */
+  return { bienestar: w ? b / w : 1, bienestarFauna: w ? bf / w : 1, dbAves: w ? 10 * Math.log10(en / w) : null, expuestas: w ? ex / w : 0, porParche: pp.slice(0, 20) }; }
+/* DOSIS-RESPUESTA del bienestar de la fauna frente al ruido: B(L) = 1 si L ≤ 50 dB(A); 1 − (L − 50)/25 entre 50 y 75; 0 desde 75.
+   50 dB(A): Shannon et al. 2016 (Biological Reviews 91: 982–1005): las respuestas de la fauna terrestre empiezan hacia 40 dB(A) y 20 % de los estudios
+   documenta efectos bajo 50 dB(A). [SUP] 75 dB(A) como pérdida total: borde de vía principal (el nivel de una vía con el flujo mediano es 74 dB(A) a 15 m
+   con la fórmula del simulador), donde la literatura de aves y carreteras (Reijnen et al. 1996, J. Appl. Ecol. 33: 1–14) ya no encuentra densidades normales. */
+export const BIENESTAR_SUP = { L0: 50, L1: 75 };
+export const bienestarDe = (L) => Math.max(0, Math.min(1, 1 - (L - BIENESTAR_SUP.L0) / (BIENESTAR_SUP.L1 - BIENESTAR_SUP.L0)));
 function indCiclos(E, x) {
   const S = MUERTES_SUP, s = E.s, Bs = E.bas, tala = s.planArb ? s.planArb / PLAN_BAV.ARB_TOT : 0; let parq = 0; for (const P of PARCHES) if (P.t === 'parque') parq += P.ha;
   const bos = PI_BOSQUE >= 0 ? PARCHES[PI_BOSQUE].ha * (1 - tala) : 0, copa = parq * E.PAR.P3.arboles + bos, humF = Bs.ha.reduce((a, h, k) => a + h * Bs.cal[k], 0);
@@ -1082,15 +1114,21 @@ function indBiodiversidad(E) {
     GRUPOS_F = { polinizadores: [...pol], dispersores: [...disp], depredadores: [...dep], descomponedores: ['lombriz', 'caracol'].map(id => RED.FI[id]).filter(i => i != null) }; }
   const occ = E.s.occ, NFA = RED.NFA, n = new Float64Array(NFA); let tot = 0, S_ = 0; for (let i = 0; i < NFA; i++) { for (let p = 0; p < NP; p++) n[i] += occ[i * NP + p]; tot += n[i]; if (n[i]) S_++; }
   let H = 0; for (let i = 0; i < NFA; i++) if (n[i]) { const pi = n[i] / tot; H -= pi * Math.log(pi); } const J = S_ > 1 ? H / Math.log(S_) : 0;
+  /* shannonArea (2026-11-25, indicador del tablero): H' con pᵢ = Aᵢ / Σ A, Aᵢ = hectáreas ocupadas por la especie i (Σ de las ha de sus parches).
+     El modelo no cuenta individuos: con la misma densidad por especie, los individuos son proporcionales al área ocupada. Contar parches iguala un
+     módulo de cubierta de 0,1 ha con un humedal de 18 ha. areaEsp = Aᵢ por id de especie (abeja, colibrí, tingua: especies clave). */
+  const A = new Float64Array(NFA); let At = 0; for (let i = 0; i < NFA; i++) { for (let p = 0; p < NP; p++) if (occ[i * NP + p]) A[i] += PARCHES[p].ha || 0; At += A[i]; }
+  let Ha = 0; for (let i = 0; i < NFA; i++) if (A[i] > 0) { const pi = A[i] / At; Ha -= pi * Math.log(pi); }
+  const areaEsp = {}; for (let i = 0; i < NFA; i++) areaEsp[RED.FAUNA[i].id] = Math.round(A[i] * 100) / 100;
   const g = {}; for (const [k, L] of Object.entries(GRUPOS_F)) g[k] = { presentes: L.filter(i => n[i] > 0).length, total: L.length };
   const r = { riqueza: S_, shannon: H, equitatividad: J, gruposFuncionales: g }; if (E.ref.listo && !E.bioRef) E.bioRef = { riqueza: S_, shannon: H, equitatividad: J, gruposFuncionales: JSON.parse(JSON.stringify(g)) };
-  return { ...r, ref: E.bioRef || null }; }
+  return { ...r, shannonArea: Ha, areaEsp, ref: E.bioRef || null }; }
 
 /* ---------- una semana ---------- */
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
   if (E.traf.pob) s.pob *= Math.pow(1 + E.traf.pob, 1 / V.AÑO); // expansión poblacional (en vez de P1.crece, con la tasa del deslizador)
-  ganchoTraf(E, t); pruebaAntes(E, t);
+  mecanismosProp(E, t); ganchoTraf(E, t); pruebaAntes(E, t);
   let sv = null;
   if (E.cie) desvios(E, t);
   if (E.plan) zonaPredio(E, t);
@@ -1153,7 +1191,7 @@ export function paso(E) {
         const indices=PRE.destinosIndices ||= new Map();
         if(!indices.has(W))indices.set(W,Array.from({length:NP},(_,origen)=>Array.from({length:NP},(_,p)=>p).filter(p=>p!==origen && W[origen*NP+p]>0)));
         for(const p of indices.get(W)[q]) if(E.s.q[p]>0 &&
-        (!RED.TER[i] || (E.s.red.XQ?.[p*NP+q]??1)*PRE.S0[p*NP+q]>0)) destinos.add(p);
+        (!RED.TER[i] || (E.s.red.XQ?.[p*NP+q]??1)*S0de(E)[p*NP+q]>0)) destinos.add(p);
       }
     }
     return {n:f.n,grupo:f.grupo,valor:lugares.length,lugares,alcanzables:W?destinos.size:null};
@@ -1201,12 +1239,16 @@ export function ind(E) {
   const dL = 10 * Math.log10(V0) - mitDb, dC = 10 * Math.log10(V0 * fCer) - mitDb, n = PRE.nC + PRE.nL;
   const ruidoDb = ((PRE.mLc + dC) * PRE.nC + (PRE.mLl + dL) * PRE.nL) / n;
   if (E.ruido0 == null) E.ruido0 = PRE.mLc * PRE.nC / n + PRE.mLl * PRE.nL / n; // inicio = HOY (sin crecimiento ni metro)
+  /* L_Aeq (ISO 1996-1): promedio ENERGÉTICO de las mismas celdas, 10·log10(Σ 10^(Lᵢ/10) / n); cada grupo se desplaza dC o dL dB, así que
+     Σ 10^((Lᵢ+d)/10) = n_g · 10^((eL_g + d)/10). ruidoDb (promedio aritmético) se conserva para las reglas y avisos de siempre. */
+  const ruidoLAeq = 10 * Math.log10((PRE.nC * Math.pow(10, (PRE.eLc + dC) / 10) + PRE.nL * Math.pow(10, (PRE.eLl + dL) / 10)) / n);
+  if (E.ruidoLAeq0 == null) E.ruidoLAeq0 = 10 * Math.log10((PRE.nC * Math.pow(10, PRE.eLc / 10) + PRE.nL * Math.pow(10, PRE.eLl / 10)) / n);
   const callesRuidosas = (sobre(PRE.Lc, 65 - dC) + sobre(PRE.Ll, 65 - dL)) / n * 100, callesOMS = (sobre(PRE.Lc, 53 - dC) + sobre(PRE.Ll, 53 - dL)) / n * 100;
   const congestion = TOMTOM.congestion * Math.pow(trafico, TOMTOM.beta), tiempo10km = TOMTOM.libre * (1 + congestion / 100);
   // atropellos (índice [SUP], ver encabezado)
   let atrop = 0; const XQ = s.red.XQ;
   if (XQ) for (let i = 0; i < NFA; i++) { if (!RED.TER[i]) continue; const W = PRE.DEST[RED.FAUNA[i].grupo], b = i * NP;
-    for (let q = 0; q < NP; q++) { if (!occ[b + q]) continue; for (let p = 0; p < NP; p++) { const w = W[q * NP + p]; if (w) atrop += w * (1 - XQ[p * NP + q] * PRE.S0[p * NP + q]); } } }
+    for (let q = 0; q < NP; q++) { if (!occ[b + q]) continue; for (let p = 0; p < NP; p++) { const w = W[q * NP + p]; if (w) atrop += w * (1 - XQ[p * NP + q] * S0de(E)[p * NP + q]); } } }
   // zonas
   const soporteEco = new Float32Array(NZ), comercio = new Float32Array(NZ), cora = new Float32Array(NZ), rP = new Float32Array(NP);
   for (let p = 0; p < NP; p++) { let k = 0; for (let i = 0; i < NFA; i++) k += occ[i * NP + p]; rP[p] = k / NFA; }
@@ -1239,7 +1281,7 @@ export function ind(E) {
   const borde = BORDE_TOT > 0 ? cl01(o.cora.borde / BORDE_TOT) * (o.cora.mad || 0) : 0;
   const recuperacion = cl01(0.25 * Math.max(cl01((huertas - h0) / (3 * h0)), cl01(comidaLocal / 10)) + 0.15 * arb + 0.15 * borde + 0.15 * cl01((s.W - 0.55) / 0.45) + 0.3 * cl01((red / Math.max(1, refV(E, 'red', red)) - 1) / 0.5));
   return E.ind = { sem, año: sem / V.AÑO, fauna: c.esp, fauna0: c0.esp, flora: c.flora, flora0: c0.flora, red, red0: E.red0, redTipos: c.red, redTipos0: c0.red, pares: c.pares, pares0: c0.pares,
-    aves, poliniz, poliniz0: E.poli0, polinizEsp: poli, trafico, congestion, tiempo10km, ruidoDb, ruidoDb0: E.ruido0, callesRuidosas, callesOMS, atropellosIndice: atrop, atropellos: null, hechos: null, verde: null, muertes: null, avesRuido: null, ciclos: null, biodiversidad: null, comidaMin: o.zMin, residuos: o.pend / Math.max(1, o.alm),
+    aves, poliniz, poliniz0: E.poli0, polinizEsp: poli, trafico, congestion, tiempo10km, ruidoDb, ruidoDb0: E.ruido0, ruidoLAeq, ruidoLAeq0: E.ruidoLAeq0, mitiga: E.traf.mit, callesRuidosas, callesOMS, atropellosIndice: atrop, atropellos: null, hechos: null, verde: null, muertes: null, avesRuido: null, ciclos: null, biodiversidad: null, comidaMin: o.zMin, residuos: o.pend / Math.max(1, o.alm),
     huertas, bodegas: s.cora.ap.length, cierre: indCierre(E, o), zonas: { soporteEco, comercio, cora }, extinciones: E.ev, presion, recuperacion, predio, eventos: [],
     ref: E.ref.listo ? { pares: E.ref.pares, red: E.ref.red, poliniz: E.ref.poli, semanas: REF } : null,
     basura: { total_t_dia: Bs.total, puntos: Bs.pts.map(P => ({ x: Math.round(P.x), z: Math.round(P.z), t_dia: P.t, fuente: P.fuente, acumulada: P.acum, acumulada0: P.acum0, sinRecoger_t_dia: P.u, nombre: P.nombre || null })), captura: Bs.captura, fraccionSinRecoger: (() => { let u = 0, g = 0; for (const P of Bs.pts) if (P.fuente !== 'humedal') { u += P.u; g += P.t; } return g > 0 ? u / g : 0; })(), acumulada: Bs.acum, acumulada0: Bs.acum0, sinRecoger_t_dia: Bs.pts.reduce((a, P) => a + P.u, 0) },
@@ -1301,7 +1343,7 @@ function atropellosPaso(E, trafico) {
   const A = E.atr, s = E.s, occ = s.occ, XQ = s.red.XQ, t = s.t; A.nuevos = []; if (!XQ) return;
   const fP = 1; // sin reducción automática: exposición calculada en cada cruce
   for (let k = 0; k < A.esp.length; k++) { const [i, f] = A.esp[k], W = PRE.DEST[RED.FAUNA[i].grupo], b = i * NP, base = k * NP * NP;
-    for (let q = 0; q < NP; q++) { if (!occ[b + q]) continue; for (let p = 0; p < NP; p++) { const w = W[q * NP + p]; if (!w) continue; const m = 1 - XQ[p * NP + q] * PRE.S0[p * NP + q]; if (m <= 1e-6) continue;
+    for (let q = 0; q < NP; q++) { if (!occ[b + q]) continue; for (let p = 0; p < NP; p++) { const w = W[q * NP + p]; if (!w) continue; const m = 1 - XQ[p * NP + q] * S0de(E)[p * NP + q]; if (m <= 1e-6) continue;
       const j = base + q * NP + p; A.acc[j] += w * m * f * fP;
       if (A.acc[j] >= 1) { A.acc[j] -= 1; const a = Math.min(p, q), c = Math.max(p, q), cr = ATR_CR.get(a * NP + c), veh = ((EXPO.cruce[q * NP + p] || 0) + (EXPO.cruce[p * NP + q] || 0)) / 2 * trafico;
         const via = cr ? ATR.VIAS[cr[0]][0] : 'vía principal', x = cr ? cr[1] : (PARCHES[p].x + PARCHES[q].x) / 2, z = cr ? cr[2] : (PARCHES[p].z + PARCHES[q].z) / 2;

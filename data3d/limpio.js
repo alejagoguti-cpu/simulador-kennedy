@@ -9,8 +9,8 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { crearSlides } from './slides_sim.js?v=3';
-import { iniciarSimUI } from './sim_ui.js?v=111';
+import { crearSlides } from './slides_sim.js?v=4';
+import { iniciarSimUI } from './sim_ui.js?v=112';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -145,16 +145,8 @@ export function iniciarLimpio({ T3 }) {
      a la izquierda (el canvas #tb-cuerda del tablero se mueve aquí; tablero.js lo dibuja aunque el tablero esté cerrado). El tablero
      sigue contando encuentros (su paso del reloj queda prendido). */
   { const sb = document.createElement('style'); sb.textContent = '.lug-et,.hc-et,#bas-etq,.be,#cont-et,#mercred-aviso,#pares-etq{display:none!important}'; document.head.appendChild(sb); } /* sin burbujas de información sobre el mapa */
-  { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
-    #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
-    #lp-red h5{cursor:pointer} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}
-    #lp-der #lp-red{position:static;width:auto;flex:none} #lp-der #lp-red h5::after{content:''} #lp-der #lp-red canvas{width:220px!important;max-width:100%;margin:0 auto} /* bola un poco más chica */ #lp-der #lp-red p{font-size:10px}`; document.head.appendChild(st);
-    const card = document.createElement('div'); card.id = 'lp-red'; card.className = ''; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
-    let movido = false;
-    setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
-      /* la columna derecha (#lp-der) ya no se muestra: la tarjeta solo se ve (y la cuerda solo se dibuja) si el panel de datos la monta en #lp-datos */
-      const on = !!ESC.activo && movido && !!card.closest('#lp-datos, #lp-tablero'); card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
-      const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
+  /* el diagrama de cuerdas (#tb-cuerda de tablero.js) lo monta ahora el tablero de indicadores (panel_indicadores.js, tarjeta «Interacciones bióticas»),
+     que también decide window.KEN_CUERDA_VIVA: solo se dibuja cuando esa tarjeta está a la vista. */
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
 
   /* sin la franja verde de la orilla del humedal ni los rellenos planos verdes de zonas (se veían raros sobre la foto) */
@@ -187,6 +179,33 @@ export function iniciarLimpio({ T3 }) {
   const resumenCapas = () => { const on = [['rc-btn', 'Ruido'], ['lp-bio', 'Solo bióticas']].filter(([id]) => { const b = document.getElementById(id); return b && b.classList.contains('on'); }).map(x => x[1]);
     capas.querySelector('.lp-ds').textContent = on.length ? on.join(' · ') : 'ninguna'; };
   capas.querySelector('.lp-db').addEventListener('click', () => setTimeout(resumenCapas, 60));
+  /* CONVENCIONES: qué es cada cosa que se ve en el mapa (colores y formas reales de cada módulo; plegadas al final del panel izquierdo) */
+  const sw = { pil: (c) => `<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="2" y="2.5" width="14" height="5" rx="2.5" fill="${c}"/></svg>`,
+    lin: (c, d) => `<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h16" stroke="${c}" stroke-width="3" stroke-linecap="round"${d ? ' stroke-dasharray="3 3"' : ''}/></svg>`,
+    pto: (c) => `<svg viewBox="0 0 18 10" aria-hidden="true"><circle cx="9" cy="5" r="3.6" fill="${c}"/></svg>`,
+    halo: (c) => `<svg viewBox="0 0 18 10" aria-hidden="true"><defs><radialGradient id="lpcvh"><stop offset="0" stop-color="${c}" stop-opacity=".9"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs><circle cx="9" cy="5" r="5" fill="url(#lpcvh)"/></svg>`,
+    cil: () => `<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="5" y="1" width="8" height="10" rx="2" fill="none" stroke="rgba(255,255,255,.5)"/><rect x="6" y="6" width="6" height="4.4" rx="1" fill="#4ade80"/><path d="M4 2.5h10" stroke="#ff4d4d" stroke-width="1.4"/></svg>`,
+    cruz: () => `<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M5 2l8 8M13 2l-8 8" stroke="#0b0d10" stroke-width="3" stroke-linecap="round"/><path d="M5 2l8 8M13 2l-8 8" stroke="rgba(255,255,255,.55)" stroke-width="1" stroke-linecap="round"/></svg>`,
+    agua: () => `<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 3c3-2 5 2 8 0s5 2 8 0v6H1z" fill="#24323a" stroke="#4d6a74" stroke-width=".8"/></svg>`,
+    arbol: () => `<svg viewBox="0 0 18 12" aria-hidden="true"><circle cx="6" cy="6" r="3.6" fill="#3f5f34"/><circle cx="11.5" cy="5" r="4" fill="#4c7340"/></svg>`,
+    huerta: () => `<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="1" y="1" width="16" height="8" rx="1.5" fill="#5f7d33"/><path d="M1 3.6h16M1 6.4h16" stroke="#cfe3a5" stroke-width=".8"/></svg>` };
+  const CONV = [
+    ['Tráfico (de lejos cada vehículo es una píldora)', [[sw.pil('#fff0d2'), 'Carro'], [sw.pil('#ffae1f'), 'Moto'], [sw.pil('#ff3d6e'), 'Camión de carga'], [sw.pil('#7fe3ff'), 'Bicicleta'], [sw.pil('#8b5cf6'), 'Carros nuevos del plan parcial Bavaria (sin propuesta)']]],
+    ['Infraestructura', [[sw.lin('#ff8a1e'), 'Metro Línea 1 en obra (titila)'], [sw.lin('#fff04a'), 'Metro Línea 1 operando (desde 2028)'], [sw.cil(), 'Medidor de capacidad de Corabastos y de cada mercado (par 01): se llena verde, ámbar desde 90 %, rojo sobre el tope; anillo rojo = tope']]],
+    ['Naturaleza', [[sw.agua(), 'Humedales El Burro, La Vaca y Techo'], [sw.arbol(), 'Árboles (inventario de arbolado)'], [sw.huerta(), 'Huertas en cubiertas (solo con propuesta)'], ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M2 6c2-3 4-3 7 0 3-3 5-3 7 0" fill="none" stroke="#d9dccf" stroke-width="1.5" stroke-linecap="round"/></svg>', 'Fauna en 3D (aves, abejas, anfibios): se mueve según el modelo biótico']]],
+    ['Eventos', [[sw.cruz(), 'Muerte de un animal: cruz con el animal encima (botón «Ver» de un aviso)'], [sw.pto('#ff5a4f'), 'Hecho que empeora (en pausa)'], [sw.pto('#5fe08f'), 'Hecho que mejora (en pausa)']]],
+    ['Capas que se prenden a mano', [[sw.halo('#f22914'), 'Ruido de carros: halo rojo alrededor de cada vehículo'], [sw.lin('#e0b23a'), 'Solo relaciones bióticas: líneas con los colores de cada tipo de interacción (los mismos del diagrama de cuerdas del tablero)']]]];
+  const conv = document.createElement('details'); conv.id = 'lp-conv'; conv.className = 'lp-det';
+  conv.innerHTML = '<summary><span class="lp-dt">Convenciones</span><span class="lp-ds">qué es cada cosa</span></summary><div class="lp-db">'
+    + CONV.map(([g, L]) => `<p class="lp-cg">${g}</p><ul class="lp-cv">${L.map(([s, n]) => `<li>${s}<span>${n}</span></li>`).join('')}</ul>`).join('') + '</div>';
+  { const cs = document.createElement('style'); cs.textContent = `html.limpio body #gs-izq .lp-lista li .lp-acc{grid-column:1/-1;padding:0 10px 8px 12px;min-width:0}
+    html.limpio body #gs-izq .lp-lista li:not(.on) .lp-acc,html.limpio body #gs-izq .lp-lista li .lp-acc:empty{display:none}
+    html.limpio body #gs-izq .lp-acc #su-der{margin:2px 0 0!important}
+    html.limpio body #gs-izq .lp-acc #lp-vars > summary{display:none}
+    html.limpio body #gs-izq #lp-conv .lp-cg{margin:8px 0 4px;font:400 9.5px/1.2 var(--ui-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ui-tx3)}
+    html.limpio body #gs-izq #lp-conv .lp-cv{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+    html.limpio body #gs-izq #lp-conv .lp-cv li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:center;font:400 11px/1.35 var(--ui-sans);color:var(--ui-tx2)}
+    html.limpio body #gs-izq #lp-conv .lp-cv svg{width:22px;height:13px;display:block}`; document.head.appendChild(cs); }
   const SL = crearSlides({ alCorrer: () => { if (RELOJ.pausaSem) alternar(); } });
   const ICO_SL = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 14h4M8 11.5V14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
   let escE = 'hoy';
@@ -194,14 +213,17 @@ export function iniciarLimpio({ T3 }) {
   function refrescarSeis() { const base = escE === 'con' ? 14 : 13; seis.classList.toggle('con', escE === 'con');
     const h = seis.querySelector('.lp-sec'); if (h) h.title = ESC.activo === base ? `Corre Kennedy ${escE === 'con' ? 'con' : 'sin'} propuesta, sin prueba de estrés. Toca una simulación para aplicarla desde ahora y ver sus diapositivas.` : 'Toca otra vez la simulación activa para quitarla.';
     const l = seis.querySelector('.lp-modo'); if (l) l.textContent = escE === 'con' ? 'Con propuesta' : 'Sin propuesta';
-    seis.querySelectorAll('li').forEach(li => { const b = li.querySelector('.lp-sim'), on = ESC.activo === +b.dataset.s; li.classList.toggle('on', on); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); }
+    seis.querySelectorAll('li').forEach(li => { const b = li.querySelector('.lp-sim'), on = ESC.activo === +b.dataset.s; li.classList.toggle('on', on); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.setAttribute('aria-expanded', on); });
+    if (typeof ordenar === 'function') ordenar(); }
   function pintarSeis() {
     /* filas de una línea: número + nombre; la prueba de estrés va en el title (y en la descripción accesible) */
+    { const sd0 = document.getElementById('su-der'); if (sd0 && seis.contains(sd0)) seis.after(sd0); } /* las variables salen del acordeón antes de rehacer la lista */
     seis.innerHTML = `<header class="lp-sec"><h5 id="lp-seis-t">Simulaciones</h5><span class="lp-modo"></span></header><ul class="lp-lista">` + PARES.map(P => `<li title="${P.prueba}">
       <button type="button" class="lp-sim" data-s="${idDe(P.par)}" data-p="${P.par}" aria-describedby="lp-pr-${P.par}"><i>${String(P.par).padStart(2, '0')}</i><b>${P.n}</b><small id="lp-pr-${P.par}" class="lp-sr">${P.prueba}</small></button>
-      <button type="button" class="lp-ver" data-p="${P.par}" aria-label="Ver diapositivas de ${P.n}" title="Diapositivas">${ICO_SL}</button></li>`).join('') + '</ul>';
+      <button type="button" class="lp-ver" data-p="${P.par}" aria-label="Ver diapositivas de ${P.n}" title="Diapositivas">${ICO_SL}</button><div class="lp-acc" id="lp-acc-${P.par}" role="region" aria-label="Variables de ${P.n}"></div></li>`).join('') + '</ul>';
     seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
-      if (ESC.activo === id) { escoger(base, true); SL.cerrar(); } else { escoger(id, true); SL.abrir(+b.dataset.p, escE === 'con', b); }
+      /* ACORDEÓN: la simulación se aplica y sus variables se abren justo debajo de la fila; las diapositivas solo con su botón */
+      if (ESC.activo === id) { escoger(base, true); SL.cerrar(); } else escoger(id, true);
       refrescarSeis(); setTimeout(refrescarSeis, 150); });
     seis.querySelectorAll('.lp-ver').forEach(b => b.onclick = () => SL.abrir(+b.dataset.p, escE === 'con', b));
     refrescarSeis(); }
@@ -214,8 +236,10 @@ export function iniciarLimpio({ T3 }) {
   const ordenar = () => { const gz = document.getElementById('gs-izq'); if (!gz) return false;
     const rl = gz.querySelector('.gs-reloj'), sd = document.getElementById('su-der');
     if (rl && rl.nextElementSibling !== seis) rl.after(seis); else if (!rl && seis.parentNode !== gz) gz.prepend(seis);
-    if (sd && seis.nextElementSibling !== sd) seis.after(sd);
-    const ref = sd && sd.parentNode === gz ? sd : seis; if (ref.nextElementSibling !== capas) ref.after(capas);
+    /* Variables + informe: dentro del acordeón de la simulación activa (debajo de su fila); con la simulación base, plegadas después de la lista */
+    const acc = seis.querySelector('li.on .lp-acc');
+    if (sd && acc) { if (sd.parentNode !== acc) acc.appendChild(sd); const dt = sd.querySelector('#lp-vars'); if (dt && !dt.open) dt.open = true; } else if (sd && seis.nextElementSibling !== sd) seis.after(sd);
+    const ref = sd && sd.parentNode === gz ? sd : seis; if (ref.nextElementSibling !== capas) ref.after(capas); if (capas.nextElementSibling !== conv) capas.after(conv);
     const db = capas.querySelector('.lp-db');
     for (const id of ['rc-btn', 'lp-bio']) { const b = document.getElementById(id); if (b && gz.contains(b) && b.parentNode !== db) db.appendChild(b); }
     resumenCapas();
@@ -229,7 +253,7 @@ export function iniciarLimpio({ T3 }) {
     const hs = [...sd.querySelectorAll(':scope > h4')]; if (hs[0] && !/variables|informe/i.test(hs[0].textContent)) hs[0].classList.add('lp-par');
     for (const h of hs) if (/^\s*informe/i.test(h.textContent)) h.classList.add('lp-inf-h');
     const hv = hs.find(h => /^\s*variables/i.test(h.textContent)); if (!hv) return;
-    const dt = document.createElement('details'); dt.id = 'lp-vars'; dt.className = 'lp-det'; dt.open = varsAbiertas;
+    const dt = document.createElement('details'); dt.id = 'lp-vars'; dt.className = 'lp-det'; dt.open = varsAbiertas || !!sd.closest('.lp-acc'); /* en el acordeón de la simulación, abiertas */
     dt.innerHTML = '<summary><span class="lp-dt">Variables</span><span class="lp-ds"></span></summary><div class="lp-db"></div>';
     const cuerpo = dt.querySelector('.lp-db'); let k = hv.nextElementSibling; while (k && k.classList.contains('su-sl')) { const n = k.nextElementSibling; cuerpo.appendChild(k); k = n; }
     hv.replaceWith(dt); resumenVars(dt);
@@ -238,7 +262,8 @@ export function iniciarLimpio({ T3 }) {
   { let obs = null, obsD = null; const espera = setInterval(() => { const gz = document.getElementById('gs-izq'); if (!gz) return;
       if (!obs) { obs = new MutationObserver(ordenar); obs.observe(gz, { childList: true }); }
       const sd = document.getElementById('su-der'); if (sd && !obsD) { obsD = new MutationObserver(envolverVars); obsD.observe(sd, { childList: true }); envolverVars(); }
-      if (ordenar() && obsD) clearInterval(espera); }, 300); }
+      if (ordenar() && obsD) clearInterval(espera); }, 300);
+  }
   /* tableta y celular: el panel izquierdo y el tablero son cajones que se abren con estos botones (uno a la vez) */
   { const ICO_MEN = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
     const ICO_TAB = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11M4.5 11V7.5M8 11V3.5M11.5 11V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
