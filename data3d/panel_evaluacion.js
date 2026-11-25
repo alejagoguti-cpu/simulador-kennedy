@@ -35,27 +35,31 @@ export function curvaEco(H,B,path,prop){
  const min=Math.max(0,lo-pad),max=hi+pad,X=t=>34+t/780*242,Y=v=>64-(v-min)/(max-min)*51;
  const line=arr=>{let on=false;return arr.map(([t,v])=>{if(!finite(v)){on=false;return '';}const p=(on?'L':'M')+X(t).toFixed(2)+' '+Y(v).toFixed(2);on=true;return p;}).join(' ');};
  const draw=(arr,color,dash)=>'<path d="'+line(arr)+'" fill="none" stroke="'+color+'" stroke-width="2" '+(dash?'stroke-dasharray="4 3"':'')+'/>';
- return '<svg viewBox="0 0 284 83" role="img" aria-label="Comparación temporal: verde con propuesta; ámbar sin propuesta. Horizonte 15 años."><title>'+esc(path)+'</title>'+
+ return '<svg viewBox="0 0 284 83" role="img" aria-label="Comparación temporal: lima con propuesta; línea discontinua sin propuesta. Horizonte 15 años."><title>'+esc(path)+'</title>'+
  [0,5,10,15].map(y=>'<line x1="'+X(y*52)+'" x2="'+X(y*52)+'" y1="10" y2="66" stroke="#a7c6bb" opacity=".13"/><text x="'+X(y*52)+'" y="79" text-anchor="middle">'+y+'</text>').join('')+
  '<text x="1" y="15">'+esc(fmt(hi))+'</text><text x="1" y="65">'+esc(fmt(lo))+'</text>'+
  draw(prop?b:a,'#f4c47f',true)+draw(prop?a:b,'#91e5bb',false)+'</svg>';
 }
 export function contenidoEco(I,H,B,prop,selected,open){
- const causal='<svg viewBox="0 0 290 175" role="img" aria-label="Relaciones ecológicas: huertas, recursos vegetales, interacciones y ocupación; hábitat y cruces, conectividad; orgánicos, compost y huertas. Líneas punteadas: relaciones sin calibrar."><defs><marker id="ee-arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0L5 2.5L0 5" fill="#8bb9a7"/></marker></defs><g fill="none" stroke="#8bb9a7" marker-end="url(#ee-arrow)"><path d="M90 24H105M195 24H209M250 45V65M90 87H105M45 66V53H250V65M90 148H209"/></g>'+[
- [0,3,'Huertas',fmt(I.huertas)],[105,3,'Recursos','flora presente'],[210,3,'Interacciones',fmt(I.red)],
- [210,66,'Ocupación',fmt(I.pares)],[105,66,'Conectividad',fmt(I.evaluacion?.paisaje?.pc)],[0,66,'Hábitat / vías','calidad y riesgo'],
- [0,130,'Orgánicos',fmt(I.circular?.organicos_t_dia)+' t/d'],[210,130,'Compost',fmt(I.evaluacion?.nutrientes?.retorno)+' t/d']
- ].map(([x,y,n,v])=>'<g transform="translate('+x+' '+y+')"><rect width="80" height="40" rx="9" fill="#19362d" stroke="#8bb9a755"/><text x="40" y="15" text-anchor="middle" fill="#dcebe1" font-size="9">'+esc(n)+'</text><text x="40" y="29" text-anchor="middle" fill="#a8cdbb" font-size="8">'+esc(v)+'</text></g>').join('')+'</svg>';
- const cards=INDICADORES.map(d=>'<section class="ee-card" data-ind="'+d.id+'"><button class="ee-select" data-select="'+d.id+'" aria-pressed="'+(selected===d.id)+'">'+d.n+' <span>Ver en Kennedy ↗</span></button>'+
+ const cards=INDICADORES.map(d=>'<section class="ee-card" data-ind="'+d.id+'" '+(selected===d.id?'':'hidden')+'><button class="ee-select" data-select="'+d.id+'" aria-pressed="'+(selected===d.id)+'">'+d.n+' <span>Ver en Kennedy ↗</span></button>'+
  d.metrics.map(([p,n,u])=>{const now=get(I,p),other=get(B.find(h=>h.sem===I.sem),p);return '<figure><figcaption><span>'+esc(n)+'</span><b>'+fmt(now)+' <small>'+esc(u)+'</small></b></figcaption>'+curvaEco(H,B,p,prop)+'<p class="ee-values">'+(prop?'Con':'Sin')+' propuesta: '+fmt(now)+(B.length?' · '+(prop?'Sin':'Con')+' propuesta: '+fmt(other):' · Comparación calculándose')+'</p></figure>';}).join('')+
  '<details data-detail="'+d.id+'" '+(open.has(d.id)?'open':'')+'><summary>Fórmula, datos y fuente científica</summary><p class="ee-formula">'+esc(d.formula)+'</p><p>'+esc(d.nota)+'</p><a href="'+d.fuente+'" target="_blank" rel="noopener noreferrer">'+esc(d.autor)+'</a></details></section>').join('');
  const species=(I.evaluacion?.especies||[]).map(s=>'<div class="ee-species"><b>'+esc(s.n||s.id)+'</b><span>'+esc(s.id==='abeja'?'Polinización':s.id==='mirla'?'Dispersión de semillas':'Conservación de hábitats')+'</span><p>'+ (s.disponible?fmt(s.ocupados)+' parches · '+fmt(s.colonizaciones)+' colonizaciones · '+fmt(s.extinciones)+' extinciones locales':esc(s.motivo))+'</p></div>').join('');
- return '<div class="ee-intro"><h5>Evaluación ecocéntrica · 15 años</h5><p><i class="ee-con"></i>Con propuesta <i class="ee-sin"></i>Sin propuesta</p><small>Datos del modelo · unidades y escalas propias. Las series se detienen cuando termina la corrida; no se prolongan datos faltantes.</small></div>'+
- '<details class="ee-causal" data-detail="causal" '+(open.has('causal')?'open':'')+'><summary>Cómo se conectan las relaciones</summary>'+causal+'<p>Huertas → recursos vegetales presentes → recursos de la red biótica → probabilidades de colonización y extinción → ocupación de parches.</p><p>Hábitat y cruces viales → conectividad del grafo → PC. Tráfico y edificios → riesgo de atropello y choque.</p><p>Orgánicos → tratamiento → flujos de compost → huertas.</p><p class="ee-pendiente">Relaciones pendientes de calibrar: visitas florales → reproducción vegetal; rutas alternativas → exposición real al desplazarse; compost → nutrientes disponibles. No se asignan resultados a estas relaciones.</p></details>'+
- '<details class="ee-focal" data-detail="focal" '+(open.has('focal')?'open':'')+'><summary>Especies focales</summary>'+species+'</details><p class="ee-values">Mapa: verde = mayor valor; coral = menor; ámbar = igual, frente a la pareja en la misma semana. En supervivencia se marcan los eventos recientes registrados.</p><button class="ee-clear">Quitar selección del mapa</button>'+cards;
+ const tiles=INDICADORES.map(d=>{
+ const [path,label,unit]=d.metrics[0],value=get(I,path);
+ const ratio=unit==='0–1'&&finite(value)&&value>=0&&value<=1;
+ const ring=ratio?'<svg viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="17" fill="none" stroke="#ffffff20" stroke-width="3"/><circle cx="21" cy="21" r="17" fill="none" stroke="#d5ff32" stroke-width="3" pathLength="100" stroke-dasharray="'+(value*100)+' 100" transform="rotate(-90 21 21)"/></svg>':'';
+ return '<button class="ee-tile" data-select="'+d.id+'" aria-pressed="'+(selected===d.id)+'"><span class="ee-tile-name">'+esc(d.n.replace(/^\d+ · /,''))+'</span><span class="ee-kpi">'+ring+'<strong>'+fmt(value)+'</strong></span><span class="ee-unit">'+esc(unit)+'</span><span class="ee-tile-label">'+esc(label)+'</span></button>';
+ }).join('');
+ return '<header class="ee-intro"><span class="ee-eyebrow">KENNEDY / EVALUACIÓN</span><h5>Indicadores de respuesta</h5><p>Año '+fmt((I.sem||0)/52)+' <span>de 15</span> · '+(prop?'Con propuesta':'Sin propuesta')+'</p></header>'+
+ '<div class="ee-tiles">'+tiles+'</div><p class="ee-hint">Selecciona un indicador para explorar sus datos y verlo en el territorio.</p>'+
+ '<div class="ee-legend"><span><i class="ee-con"></i>Con propuesta</span><span><i class="ee-sin"></i>Sin propuesta</span></div>'+cards+
+ '<details class="ee-causal" data-detail="causal" '+(open.has('causal')?'open':'')+'><summary>Relaciones del sistema</summary><ol class="ee-steps"><li>Huertas → recursos vegetales → interacciones → ocupación de parches</li><li>Hábitat y vías → conectividad del grafo</li><li>Tráfico y edificios → riesgo de atropellos y choques</li><li>Orgánicos → compost → huertas</li></ol><p>Reproducción vegetal, rutas alternativas y nutrientes disponibles: relaciones pendientes de calibrar.</p></details>'+
+ '<details class="ee-focal" data-detail="focal" '+(open.has('focal')?'open':'')+'><summary>Especies focales</summary>'+species+'</details><button class="ee-clear">Quitar selección del mapa</button>';
+
 }
 export function crearPanelEvaluacion({T3}){
- let selected=null,group=null,host=null,last=null,signature='',open=new Set(),lastOther=null;
+ let selected='supervivencia',group=null,host=null,last=null,signature='',open=new Set(),lastOther=null;
  const clear=()=>{if(group){group.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();});T3.scene.remove(group);group=null;}};
  function mapa(I){
   clear();if(!selected||!I?.evaluacion)return;
@@ -68,11 +72,11 @@ export function crearPanelEvaluacion({T3}){
    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));const line=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0x8ad9e5,transparent:true,opacity:.45,depthTest:false}));line.renderOrder=59;group.add(line);}
  }
  return {render(container,I,H,B,prop,run){
-  if(signature!==run){selected=null;open.clear();clear();signature=run;}
+  if(signature!==run){selected='supervivencia';open.clear();clear();signature=run;}
   if(host)host.querySelectorAll('details[data-detail]').forEach(d=>{if(d.open)open.add(d.dataset.detail);else open.delete(d.dataset.detail);});
   const focus=host?.contains(document.activeElement)?document.activeElement.dataset.select:null;
   host=container;last=I;lastOther=B.find(h=>h.sem===I.sem)||null;container.innerHTML=contenidoEco(I,H,B,prop,selected,open);
-  container.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{selected=btn.dataset.select;open.add(selected);container.querySelector('details[data-detail="'+selected+'"]').open=true;container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',b===btn?'true':'false'));mapa(last);});
+  container.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{selected=btn.dataset.select;container.querySelectorAll('.ee-card').forEach(c=>c.hidden=c.dataset.ind!==selected);open.add(selected);container.querySelector('details[data-detail="'+selected+'"]').open=true;container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.select===selected?'true':'false'));mapa(last);});
   container.querySelector('.ee-clear').onclick=()=>{selected=null;clear();container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed','false'));};
   if(focus)container.querySelector('[data-select="'+focus+'"]')?.focus({preventScroll:true});
   if(selected)mapa(I);

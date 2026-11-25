@@ -5,7 +5,7 @@
    · informe final (al año 20 o en el game over): veredicto, tabla inicio → final, gráficas, especies que desaparecieron y por qué,
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
-import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=1';
+import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=2';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
 
@@ -819,10 +819,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function pintarTablero() {
     const I = ultimo();
     if (!I || !R.sim) { tab.innerHTML = ''; panelEvaluacion.clear(); return; }
-    if (!tab.querySelector('#ee-panel')) tab.innerHTML = '<h5 class="su-tt">Jardín de indicadores · en vivo</h5><div id="su-eco"></div><div id="ee-panel"></div>';
+    if (!tab.querySelector('#ee-panel')) tab.innerHTML = '<div id="ee-panel"></div>';
     const B = (R.ecoBase || R.base || []).filter(h => h.sem <= I.sem);
     panelEvaluacion.render(tab.querySelector('#ee-panel'), I, R.hist, B, !!R.def?.propuesta, R.s);
-    pintarEco();
   }
   function pintarTableroViejo() {
     const I = ultimo(); if (!I || !R.sim) { tab.innerHTML = ''; return; }
