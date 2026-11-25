@@ -173,11 +173,13 @@
 #urbia-intro iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 #urbia-intro .ui-center{position:absolute;bottom:max(5vh,16px);width:100%;pointer-events:none}
 #urbia-intro h1{font-size:clamp(20px,3vw,34px);margin:0 0 12px;text-shadow:0 2px 12px #000}
+#urbia-intro .intro-creditos{font:400 clamp(11px,2vw,14px)/1.5 system-ui;color:#e6e8e0;margin:0 12px 14px;text-shadow:0 1px 6px #000}
 #urbia-start{pointer-events:auto;cursor:pointer}
+#urbia-start:is(:hover,:focus-visible){outline:2px solid #d5ff3f;outline-offset:4px}
 </style>
 <section id="urbia-intro" aria-labelledby="urbia-intro-title">
-<iframe src="data3d/urbia-escena.html" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
-<div class="ui-center"><p style="margin:0 0 6px;color:#f4f3ef;font:600 13px/1.4 system-ui;letter-spacing:.04em;text-shadow:0 1px 8px #000">Simulador 3D de Kennedy</p><h1 id="urbia-intro-title">Modelamiento dinámico</h1><button id="urbia-start" type="button">Iniciar</button></div>
+<iframe src="data3d/urbia-escena.html?v=2" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
+<div class="ui-center"><p style="margin:0 0 6px;color:#f4f3ef;font:600 13px/1.4 system-ui;letter-spacing:.04em;text-shadow:0 1px 8px #000">Simulador 3D de Kennedy</p><h1 id="urbia-intro-title">Modelamiento dinámico</h1><p class="intro-creditos">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo</p><button id="urbia-start" type="button">Iniciar</button></div>
 </section>
 <script>
 document.getElementById('urbia-start').addEventListener('click',function(){
