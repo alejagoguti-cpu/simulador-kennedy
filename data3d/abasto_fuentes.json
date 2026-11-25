@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "descripcion": "Parámetros con fuente para el escenario 01 Abastecimiento (Corabastos y red de mercados de Kennedy). Ver docs/fuentes_abastecimiento.md.",
+    "compilado": "2026-11-25",
+    "confianza": "alta = dato oficial verificado en el documento; media = oficial secundario o estudio contratado; baja = prensa o estimación propia (se indica 'derivado')"
+  },
+  "ingresos_corabastos": {
+    "anio": 2025,
+    "t_anio": 2357973,
+    "t_dia": 6460,
+    "t_dia_max_mensual": 6839,
+    "t_dia_min_mensual": 6097,
+    "vehiculos_carga_anio": 379598,
+    "vehiculos_carga_dia": 1040,
+    "pesados_dia": 949.7,
+    "livianos_dia": 90.3,
+    "t_por_vehiculo": 6.21,
+    "mensual": [
+      {"mes": "2025-01", "t": 206293, "veh": 33969}, {"mes": "2025-02", "t": 187595, "veh": 30721},
+      {"mes": "2025-03", "t": 199220, "veh": 32704}, {"mes": "2025-04", "t": 194395, "veh": 31707},
+      {"mes": "2025-05", "t": 209540, "veh": 33325}, {"mes": "2025-06", "t": 187221, "veh": 30409},
+      {"mes": "2025-07", "t": 211999, "veh": 33139}, {"mes": "2025-08", "t": 195054, "veh": 31025},
+      {"mes": "2025-09", "t": 189925, "veh": 30459}, {"mes": "2025-10", "t": 199987, "veh": 32110},
+      {"mes": "2025-11", "t": 182919, "veh": 29444}, {"mes": "2025-12", "t": 193823, "veh": 30586}
+    ],
+    "por_grupo": [
+      {"grupo": "verduras y hortalizas", "t_anio": 847458, "participacion": 0.359},
+      {"grupo": "tubérculos, raíces y plátanos", "t_anio": 661339, "participacion": 0.280},
+      {"grupo": "frutas", "t_anio": 640179, "participacion": 0.271},
+      {"grupo": "otros (carnes, granos, lácteos y huevos, pescados, procesados)", "t_anio": 208997, "participacion": 0.089}
+    ],
+    "vehiculos_totales_dia_todas_categorias": {"valor": 11465, "anio": 2016, "nota": "4.184.854 veh/año, incluye compradores, autos y motos", "fuente": "Corabastos, Informe de gestión 2016, p. 53 (Covial S.A.) https://www.corabastos.com.co/sites/default/files/2020-07/InformedeGestionGerencia2016.pdf", "confianza": "media"},
+    "serie_t_anio": [
+      {"anio": 2018, "t": 2367666, "fuente": "Corabastos, Informe de gestión 2018, p. 4 https://www.corabastos.com.co/sites/default/files/2020-07/InformeGestion2018.pdf", "confianza": "media"},
+      {"anio": 2021, "t": 2198118, "fuente": "SIPSA 2021 en DTS logística Gobernación de Cundinamarca 2022, p. 40", "confianza": "media"},
+      {"anio": 2025, "t": 2357973, "fuente": "DANE-SIPSA anexos 2025", "confianza": "alta"}
+    ],
+    "fuente": "DANE, SIPSA_A, anexos mensuales ene–dic 2025 (hojas 2 y 4), p. ej. https://www.dane.gov.co/files/operaciones/SIPSA/anex-SIPSAabastecimiento-dic2025.xlsx; sumas y promedios derivados",
+    "confianza": "alta"
+  },
+  "participacion_bogota": {
+    "corabastos_entre_mayoristas_sipsa_bogota": 0.946,
+    "alimentos_que_entran_a_bogota_t_anio_2020": 4550000,
+    "corabastos_sobre_total_bogota_aprox": 0.52,
+    "fraccion_que_se_queda_en_la_ciudad": 0.85,
+    "plazas_distritales_sobre_corabastos_2024": [0.051, 0.057],
+    "fuente": "SIPSA dic-2025 (193.823/204.801 t, derivado); DTS logística Gobernación de Cundinamarca 2022 pp. 11-14 https://regionmetropolitana.gov.co/sites/default/files/archivos/publicaciones/2024-12-24/4.-identificacin.-logstica-y-distribucin-de-alimentos.pdf; Contraloría de Bogotá 2025 p. 33",
+    "confianza": "alta (94,6 %); baja (52 %, derivado de años distintos)"
+  },
+  "tipos_vehiculo": [
+    {"tipo": "liviano (moto, auto, campero, camioneta)", "carga_t": 0.8, "participacion": 0.087, "fuente": "Participación: DANE-SIPSA 2025, hoja 4. Carga: [SUP]", "confianza": "alta participación / baja carga"},
+    {"tipo": "C2P camión 2 ejes pequeño (350, 650, turbo, NHR/NPR)", "carga_t": 5, "participacion": 0.770, "fuente": "SDM 2020, aforo Av. Agoberto Mejía x Corabastos (C2P 84,3 % de los camiones) × 91,3 % pesados SIPSA; carga [SUP] entre 3,5 y 6,5 t", "confianza": "media participación / baja carga"},
+    {"tipo": "C2G camión sencillo grande", "carga_t": 9, "participacion": 0.089, "fuente": "SDM 2020 (9,8 % de los camiones) × 0,913; carga [SUP]; PBV 16–17 t (Res. MinTransporte 4100/2004 y 1782/2009)", "confianza": "media / baja"},
+    {"tipo": "C3 doble troque", "carga_t": 17, "participacion": 0.030, "fuente": "SDM 2020 (3,3 %) × 0,913; carga [SUP]; PBV 28 t (Res. 4100/2004)", "confianza": "media / baja"},
+    {"tipo": ">=C4 minimula o tractomula", "carga_t": 30, "participacion": 0.024, "fuente": "SDM 2020 (2,6 %) × 0,913; carga [SUP]; PBV 3S2 48 t, 3S3 52 t (Res. 4100/2004)", "confianza": "media / baja"}
+  ],
+  "tipos_vehiculo_control": {"promedio_ponderado_t": 5.95, "observado_sipsa_t": 6.21, "capacidad_promedio_nodo_corabastos_sdm_t": 6.6, "fuente_sdm": "SDM 2020, Resumen ejecutivo p. 36 https://observatorio.movilidadbogota.gov.co/sites/default/files/2025-09/Resumen%20ejecutivo%20de%20resultados%20Caracterizaci%C3%B3n%20de%20carga.pdf", "medios_alternativos_viajes_abastecimiento_nodo": 0.40, "C2G_viajes_abastecimiento_nodo": 0.25},
+  "franjas_horarias": {
+    "ingreso_carga_t": [
+      {"desde": "12:00", "hasta": "20:00", "participacion_t": 0.446, "que": "hortalizas, cebolla larga, zanahoria, papa criolla, arveja, yuca, arracacha, mazorca (ingreso 15–19 h; B21/23/24 12 h)"},
+      {"desde": "20:00", "hasta": "24:00", "participacion_t": 0.151, "que": "papa negra (B13–15, B18–20, ingreso 20 h)"},
+      {"desde": "04:00", "hasta": "06:00", "participacion_t": 0.402, "que": "frutas, plátano, aguacate, granos y procesados, tomate guiso, cebolla cabezona (ingreso 4–5 h)"}
+    ],
+    "fuente": "Derivado: Corabastos, página Horarios https://corabastos.com.co/horarios/ × grupos SIPSA 2025 × proporciones de tubérculos de ACIDC 2022 (papa 54 %, criolla+yuca+arracacha 31 %, plátano 15 %)",
+    "confianza": "baja",
+    "venta_publico": {"desde": "01:00", "hasta": "18:00", "despeje": "00:00-01:00", "fuente": "https://corabastos.com.co/horarios/", "confianza": "alta"},
+    "operacion": {"horas": "24 h, 7 días; cierra 1-ene, jueves y viernes santo, 25-dic; 9 puertas", "fuente": "DANE, Boletín trimestral abastecimiento jul–sep 2012 https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf", "confianza": "media"},
+    "restriccion_distrital": {"regla": ">8.500 kg en Zona 1: L–V 06:00–08:00 y 17:00–20:00; >20 años de modelo: además sábados 05:00–21:00", "norma": "Decreto 652 de 2025, arts. 487 y 489", "fuente": "https://www.movilidadbogota.gov.co/preguntas-frecuentes/cuales-son-las-areas-y-horarios-de-restriccion-de-circulacion-de-vehiculos-de", "confianza": "alta (no verificado si Corabastos está dentro de la Zona 1)"}
+  },
+  "capacidad_corabastos": {
+    "area_ha": 42,
+    "area_construida_m2": 137000,
+    "fraccion_vias": 0.59,
+    "bodegas": 57,
+    "bodegas_conteo_dane_2012": 32,
+    "almacenamiento_estatico_t_2012": 1900,
+    "comerciantes": 6000,
+    "t_ha_dia": 333.33,
+    "veh_ha": 310,
+    "t_dia_max": null,
+    "t_dia_max_nota": "No hay cifra oficial de capacidad máxima medida. Las cifras institucionales de 12.000–14.000 t/día (Corabastos 2016; SDDE-FAO 2018) son operaciones comerciales declaradas, no ingresos medidos.",
+    "tope_relativo_propuesto": {"central": 0.11, "rango": [0.05, 0.25], "derivacion": "ocupación 90 % → 1/0,9−1 = 11 %; 80 % → 25 % (SDDE-FAO 2018); punta mensual SIPSA 2025 = +5,9 %"},
+    "saturacion": "SDDE-FAO 2018: con 100 % de ocupación debió ampliarse desde 2018 y con 95 % desde 2019; recomienda ampliar o crear centrales satélite. Volumen plano 2018–2025 (≈2,2–2,4 Mt/año).",
+    "parqueo_camiones_cupos": null,
+    "residuos_t_dia": {"valor": 100, "organicos_2017": 80.4, "fuente": "DANE 2012; SDDE-FAO 2018 en DTS logística p. 46"},
+    "fuente": "SDDE-FAO 2018, Línea base PMAAB, citada en DTS logística Gobernación de Cundinamarca 2022 pp. 46-49 https://regionmetropolitana.gov.co/sites/default/files/archivos/publicaciones/2024-12-24/4.-identificacin.-logstica-y-distribucin-de-alimentos.pdf; DANE 2012",
+    "confianza": "media"
+  },
+  "demanda": {
+    "per_capita_total_kg_dia": 1.02,
+    "per_capita_total_fuente": "RAPE Región Central, Plan de Abastecimiento: Bogotá 2020 = 2.880.034 t / 7.743.955 hab (Tabla 3, DTS comercialización Gobernación de Cundinamarca 2022 p. 11) https://regionmetropolitana.gov.co/sites/default/files/archivos/publicaciones/2024-12-24/1.-identificacin.-abastecimiento-y-comercializacin-agropecuaria.pdf",
+    "per_capita_kg_dia": 0.65,
+    "per_capita_rango": [0.61, 0.69],
+    "per_capita_nota": "Frescos vía Corabastos, derivado: 6.460 t/día × 0,85 / 7,93 M (Bogotá) o 8,97 M (Bogotá + conurbados)",
+    "bogota_t_dia_total": 7890,
+    "bogota_t_dia_nota": "2.880.034 t/año / 365 (2020)",
+    "poblacion_kennedy": 1080742,
+    "poblacion_kennedy_anio": 2026,
+    "poblacion_kennedy_serie_sdp": {"2024": 1078895, "2025": 1080598, "2026": 1080742, "2027": 1080037, "2028": 1078789},
+    "poblacion_kennedy_serie_dane_sin_ajuste": {"2012": 992398, "2017": 1009665, "2022": 1034283, "2024": 1037929},
+    "kennedy_t_dia": 702,
+    "kennedy_t_dia_rango": [660, 750],
+    "kennedy_t_dia_total_alimentos": 1100,
+    "crecimiento_anual": 0.005,
+    "crecimiento_nota": "DANE 2017–2022: +0,48 %/año; SDP ajustada 2024–2028: ≈0 %/año; crecimiento natural 2022: 4 por mil. 1,6 %/año no tiene respaldo; usar valores mayores solo como estrés declarado.",
+    "fuente": "SED, Boletín estadístico Localidad Kennedy 2024, Tabla 2 (DANE-SDP, CNPV 2018 ajustado por efecto Covid) https://www.educacionbogota.edu.co/portal_institucional/sites/default/files/inline-files/2022/08%20Boleti%CC%81n%20Kennedy%202024.pdf; SDS ASIS Kennedy 2024 https://saludata.saludcapital.gov.co/osb/wp-content/uploads/2026/01/8.-ASIS_Kennedy_2024.pdf",
+    "confianza": "alta (población); baja-media (per cápita de frescos y t/día de Kennedy, derivados)"
+  },
+  "plazas_mercados": [
+    {"nombre": "Plaza Distrital de Mercado Kennedy", "localidad": "Kennedy", "direccion": "Calle 42 Sur #78M-50", "lat": null, "lng": null, "area_m2": 2296.65, "puestos": 215, "puestos_ocupados": 131, "capacidad_t_dia": 17, "capacidad_nota": "derivado: 131 × 0,13 t/puesto/día (promedio de las 19 PDM)", "fuente": "Contraloría de Bogotá 2025, p. 25 https://www.contraloriabogota.gov.co/sites/default/files/2025-05/Informe%20situaci%C3%B3n%20plazas%20de%20mercado%20en%20Bogot%C3%A1%20D,C.pdf", "confianza": "media (volumen baja)"},
+    {"nombre": "Plaza Distrital de Mercado Trinidad Galán", "localidad": "Puente Aranda", "direccion": "Carrera 60 #5-00", "lat": null, "lng": null, "area_m2": 3679.8, "puestos": 185, "puestos_ocupados": 134, "capacidad_t_dia": 17, "capacidad_nota": "derivado: 134 × 0,13", "fuente": "Contraloría de Bogotá 2025, pp. 24-25", "confianza": "media (volumen baja)"},
+    {"nombre": "Plaza Distrital de Mercado Las Ferias", "localidad": "Engativá", "direccion": null, "lat": null, "lng": null, "area_m2": 4852.16, "puestos": 251, "puestos_ocupados": null, "capacidad_t_dia": null, "fuente": "Contraloría de Bogotá 2025", "confianza": "media"},
+    {"nombre": "Sistema de 19 PDM (IPES)", "localidad": "12 localidades", "direccion": null, "lat": null, "lng": null, "area_m2": null, "puestos": 3637, "puestos_ocupados": 2632, "capacidad_t_dia": 342, "capacidad_nota": "10.163–10.629 t/mes en 2024 / 30,4 días; ≈0,13 t por puesto ocupado al día", "fuente": "Contraloría de Bogotá 2025, pp. 25 y 33-34 (IPES, Informe de gestión 2024)", "confianza": "media-alta"},
+    {"nombre": "Paloquemao", "localidad": "Los Mártires", "direccion": null, "lat": null, "lng": null, "area_m2": null, "puestos": null, "capacidad_t_dia": 120, "capacidad_nota": "3.730 t en dic-2025; 1.859 veh/mes", "fuente": "DANE-SIPSA dic-2025", "confianza": "alta"},
+    {"nombre": "Plaza Samper Mendoza", "localidad": "Los Mártires", "direccion": null, "lat": null, "lng": null, "area_m2": 7378.18, "puestos": null, "capacidad_t_dia": 92, "capacidad_nota": "2.837 t en dic-2025", "fuente": "DANE-SIPSA dic-2025; Contraloría 2025", "confianza": "alta"},
+    {"nombre": "Plaza Las Flores", "localidad": null, "direccion": null, "lat": null, "lng": null, "area_m2": null, "puestos": null, "capacidad_t_dia": 142, "capacidad_nota": "4.411 t en dic-2025", "fuente": "DANE-SIPSA dic-2025", "confianza": "alta"}
+  ],
+  "parametros_modelo_propuestos": [
+    {"param": "POB_K", "archivo": "data3d/sim_vida.js:24; data3d/viajes_mercados.js:28", "actual": 1034000, "propuesto": 1080742, "fuente": "SED 2024 (DANE-SDP ajustada, 2026)", "confianza": "alta"},
+    {"param": "SUP.KG_PERS", "archivo": "data3d/sim_vida.js:53", "actual": 0.4, "propuesto": 0.65, "fuente": "derivado SIPSA 2025 × 0,85 / población", "confianza": "baja-media"},
+    {"param": "coraTope (deslizador par 01)", "archivo": "data3d/simulaciones12.js:323 (respaldo 15 en :603)", "actual": 22, "propuesto": 11, "rango": [5, 25], "fuente": "SDDE-FAO 2018; SIPSA 2025", "confianza": "media"},
+    {"param": "SUP.HOLGURA", "archivo": "data3d/sim_vida.js:54", "actual": 0.10, "propuesto": 0.06, "fuente": "punta mensual SIPSA 2025 +5,9 %", "confianza": "media"},
+    {"param": "pobCrece (par 01)", "archivo": "data3d/simulaciones12.js:324", "actual": 1.6, "propuesto": 0.5, "fuente": "DANE 2017–2022; SDP 2024–2028 ≈0", "confianza": "alta"},
+    {"param": "P1.capAcopio (par 01)", "archivo": "data3d/simulaciones12.js:324", "actual": 600, "propuesto": 200, "max_propuesto": 340, "fuente": "las 19 PDM de Bogotá mueven ≈342 t/día (Contraloría/IPES 2024)", "confianza": "media"},
+    {"param": "aviso 94 %", "archivo": "data3d/simulaciones12.js:1256", "actual": "94 % de lo que se vende en Bogotá", "propuesto": "94 % de lo que entra a las centrales mayoristas de Bogotá (SIPSA); ≈la mitad de todo lo que entra a la ciudad", "confianza": "alta / baja"},
+    {"param": "vehículos de abastecimiento hoy (nuevo)", "archivo": "data3d/viajes_mercados.js", "actual": null, "propuesto": {"veh_dia": 1040, "t_veh": 6.21}, "fuente": "SIPSA 2025", "confianza": "alta"}
+  ]
+}
