@@ -1554,8 +1554,7 @@ async function initTodoReal() {
           : !(T3.roofU && T3.roofU.uTechoOn.value > 0) ? 'Cargando cubiertas…'
           : !(T3.tintal && T3.conjuntos && (GOOGLE || (LIVIANO && !MEDIO) || T3.bavaria)) ? 'Cargando Bavaria, El Tintal y conjuntos…' /* el INEM (inem.glb, 24 MB) ya no detiene la entrada: con una conexión normal eran 60-80 s de espera; baja después y aparece solo */
           : !QUEST && !trafOk && !T3.traficoRespaldo ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
-          : !(window.KEN_CARRO_REAL || MOVIL || QUEST || T3.traficoRespaldo) ? 'Cargando carros…' /* en celular no hay carro real */
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 1500 && performance.now() - tResto < 5000) ? 'Afinando la foto 3D…' /* rendimiento: antes esperaba hasta 15 s (27 s en portátiles lentos); la foto termina de afinarse con el simulador abierto */ : '';
+          : ''; /* ya no se espera el modelo 3D del carro (12 s) ni el «Afinando la foto 3D» (5 s): el carro aparece al llegar y la portada URBIA ya espera la foto satelital */
         if (!falta) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
@@ -3777,7 +3776,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   const listoK = () => T3 && T3.ready && T3.net ? Promise.resolve() : new Promise(r => setTimeout(() => r(listoK()), 400));
   // Biblioteca El Tintal (modelo propio) y canchas reales de OpenStreetMap: no dependen de la simulación, se cargan en paralelo
   listoK().then(() => import('./data3d/tintal.js?v=18')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
-  const trasAbrir = () => $('loader').classList.contains('hidden') ? Promise.resolve() : new Promise(r => setTimeout(() => r(trasAbrir()), 700)); /* el INEM (24 MB) baja cuando la maqueta ya abrió, sin quitarle conexión a lo que sí se espera */
+  const trasAbrir = () => $('loader').classList.contains('hidden') && !document.getElementById('urbia-intro') ? Promise.resolve() : new Promise(r => setTimeout(() => r(trasAbrir()), 700)); /* el INEM (24 MB) baja después de «Iniciar», sin quitarle conexión a la maqueta ni a la foto satelital que sí se esperan */
   listoK().then(trasAbrir).then(() => import('./data3d/inem.js?v=4')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).then(()=>{T3.inemPreparado=true}).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
   listoK().then(() => import('./data3d/conjuntos.js?v=5')).then(m => m.iniciarConjuntos({ THREE: T3.THREE, T3, lw, Y0: 0.3, movil: MOVIL })).catch(e => console.warn('conjuntos:', e));
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
