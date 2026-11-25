@@ -94,3 +94,40 @@ html.limpio body #su-tab .ee-causal,html.limpio body #su-tab .ee-focal{border-to
 html.limpio body #su-tab .ee-steps{padding-left:18px}
 html.limpio body #su-tab .ee-steps li{margin:9px 0;line-height:1.6}
 
+
+/* Ajuste visual URBIA: una sola familia de superficies, bordes suaves y jerarquía clara. */
+html.limpio body #gs-izq,html.limpio body #lp-der,html.limpio body #lp-anos,html.limpio body #lp-esc,html.limpio body #su-tab{
+ background:linear-gradient(145deg,rgba(57,64,57,.91),rgba(28,34,32,.94))!important;
+ border:1px solid rgba(224,235,208,.19)!important;
+ border-radius:16px!important;
+ box-shadow:0 12px 34px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.06)!important;
+ color:#f0f2eb!important;text-shadow:none!important;
+}
+html.limpio body #gs-izq,html.limpio body #lp-der{padding:12px!important}
+html.limpio body #lp-esc{padding:4px!important;gap:4px}
+html.limpio body #lp-esc button{border-radius:10px!important;transition:background-color .18s,color .18s}
+html.limpio body #lp-esc button:not(.on):hover{background:#ffffff10!important;opacity:1}
+html.limpio body #gs-izq #lp-seis button{border-radius:8px!important;border-color:#dce7d22e!important;color:#e8ecdf!important}
+html.limpio body #gs-izq #lp-seis button.on{color:#202619!important}
+html.limpio body #lp-der{gap:0!important}
+html.limpio body #lp-der>*{padding:10px 0!important}
+html.limpio body #lp-der>*+*{border-top:1px solid #ffffff1c!important}
+html.limpio body #lp-der h5,html.limpio body #gs-izq h5{font-size:11px!important;letter-spacing:.08em;color:#e1e9ce!important}
+html.limpio body #lp-anos{min-height:58px}
+html.limpio body #lp-anos .ano{color:#f2f3eb}
+html.limpio body #lp-anos .pista i{background:#ffffff28}
+html.limpio body #su-tab{padding:13px!important;overflow-x:hidden}
+html.limpio body #su-tab .ee-tile{background:linear-gradient(145deg,#ffffff0b,#ffffff04);border-color:#e5edd22b;border-radius:11px}
+html.limpio body #su-tab .ee-tile:hover{border-color:#d5ff3280;background:#d5ff3210}
+html.limpio body #su-tab .ee-tile[aria-pressed=true]{background:linear-gradient(125deg,#d5ff32,#d9eb96);color:#202619}
+html.limpio body #su-tab .ee-card{border:1px solid #e1e9d52b;border-radius:14px;background:linear-gradient(145deg,#374138,#242c27)}
+html.limpio body #su-tab .ee-card figure+figure{border-top-color:#ffffff18}
+html.limpio body #su-tab .ee-card svg text{fill:#d0d8ca}
+html.limpio body #su-tab details summary{color:#e6eddb}
+html.limpio body #su-tab .ee-formula{background:#151c18;border:1px solid #ffffff12;color:#eff1e9}
+html.limpio body #su-tab .ee-clear{border-radius:8px;background:#ffffff0a;border-color:#d5ff3255}
+html.limpio body #su-tab .ee-clear:hover{background:#d5ff321c;color:#eff8d4}
+@media(max-width:760px){
+ html.limpio body #gs-izq,html.limpio body #lp-der{padding:9px!important}
+ html.limpio body #su-tab{padding:10px!important}
+}
