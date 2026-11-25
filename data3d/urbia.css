@@ -151,3 +151,15 @@ html.limpio body #su-tab .ee-clear:hover{background:#d5ff321c;color:#eff8d4}
 @keyframes ui-glow{50%{filter:drop-shadow(0 0 36px #d5ff3260)}}
 @media(max-width:600px){.ui-kicker{font-size:9px}.ui-center p{font-size:12px;max-width:290px}.ui-foot{font-size:8px;letter-spacing:.08em}}
 @media(prefers-reduced-motion:reduce){.ui-logo{animation:none}#urbia-intro,#urbia-start{transition:none}}
+
+/* Intro de marca: giro continuo antes de entrar al simulador. */
+#urbia-intro{perspective:1000px}
+.ui-logo{animation:ui-logo-giro 8s cubic-bezier(.45,.05,.55,.95) infinite;transform-style:preserve-3d;backface-visibility:visible}
+@keyframes ui-logo-giro{
+ 0%{transform:translateY(0) rotateY(0deg) rotateX(-5deg)}
+ 25%{transform:translateY(-7px) rotateY(90deg) rotateX(0)}
+ 50%{transform:translateY(0) rotateY(180deg) rotateX(5deg)}
+ 75%{transform:translateY(-7px) rotateY(270deg) rotateX(0)}
+ 100%{transform:translateY(0) rotateY(360deg) rotateX(-5deg)}
+}
+#urbia-intro.ui-leaving{display:none!important}
