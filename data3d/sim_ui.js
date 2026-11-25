@@ -5,7 +5,7 @@
    · informe final (al año 20 o en el game over): veredicto, tabla inicio → final, gráficas, especies que desaparecieron y por qué,
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
-import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=3';
+import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=4';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
 

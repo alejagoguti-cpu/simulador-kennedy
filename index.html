@@ -3823,6 +3823,5 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
 }).catch(e => console.warn('simulador:', e));
 addEventListener('resize', () => { try { if (T3) { T3.camera.aspect = innerWidth / innerHeight; T3.camera.updateProjectionMatrix(); T3.renderer.setSize(innerWidth, innerHeight); } } catch (e) {} });
 </script>
-<script type="module" src="data3d/urbia-layout.js?v=1"></script>
 </body>
 </html>
