@@ -163,8 +163,7 @@
   #trafficPlay{padding:3px 10px;font-size:14px;line-height:1;border-radius:7px;cursor:pointer}
   #trafficTime{width:100%;accent-color:#22d3ee;cursor:pointer}
 </style>
-<link rel="stylesheet" href="data3d/urbia.css?v=3">
-<link rel="stylesheet" href="data3d/urbia.css?v=5">
+<link rel="stylesheet" href="data3d/urbia.css?v=6">
 </head>
 <body>
 <style>
@@ -178,20 +177,21 @@
 #urbia-start:is(:hover,:focus-visible){outline:2px solid #d5ff3f;outline-offset:4px}
 </style>
 <section id="urbia-intro" aria-labelledby="urbia-intro-title">
-<iframe src="data3d/urbia-escena.html?v=3" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
-<div class="ui-center"><p style="margin:0 0 6px;color:#f4f3ef;font:600 13px/1.4 system-ui;letter-spacing:.04em;text-shadow:0 1px 8px #000">Simulador 3D de Kennedy</p><h1 id="urbia-intro-title">Modelamiento dinámico</h1><p class="intro-creditos">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo</p><button id="urbia-start" type="button">Iniciar</button></div>
+<iframe src="data3d/urbia-escena.html?v=4" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
+<div class="zoom-intro" aria-label="Zoom de portada"><button type="button" data-zoom="out" aria-label="Alejar">−</button><button type="button" data-zoom="in" aria-label="Acercar">+</button></div><div class="ui-center"><p style="margin:0 0 6px;color:#f4f3ef;font:600 13px/1.4 system-ui;letter-spacing:.04em;text-shadow:0 1px 8px #000">Simulador 3D de Kennedy</p><h1 id="urbia-intro-title">Modelamiento dinámico</h1><p class="intro-creditos">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo</p><button id="urbia-start" type="button" disabled>Preparando Kennedy…</button><small id="estado-maqueta" role="status"></small></div>
 </section>
 <script>
-document.getElementById('urbia-start').addEventListener('click',function(){
-  const intro=document.getElementById('urbia-intro');
-  const loader=document.getElementById('loader');
-  const enter=()=>{if(loader.classList.contains('hidden')){observer.disconnect();intro.remove();}};
-  const observer=new MutationObserver(enter);
-  observer.observe(loader,{attributes:true,attributeFilter:['class']});
-  this.disabled=true;
-  this.textContent='Cargando Kennedy…';
-  enter();
-},{once:true});
+document.addEventListener('DOMContentLoaded',()=>{
+ const intro=document.getElementById('urbia-intro'),start=document.getElementById('urbia-start'),loader=document.getElementById('loader'),status=document.getElementById('estado-maqueta');
+ intro.querySelectorAll('[data-zoom]').forEach(btn=>btn.onclick=()=>intro.querySelector('iframe').contentWindow.postMessage('zoom-'+btn.dataset.zoom,'*'));
+ const sync=()=>{
+   if(loader.classList.contains('hidden')){observer.disconnect();start.disabled=false;start.textContent='Iniciar';status.textContent='';}
+   else status.textContent=document.getElementById('lmsg')?.textContent||'Cargando la vista inicial…';
+ };
+ const observer=new MutationObserver(sync);observer.observe(loader,{attributes:true,childList:true,subtree:true,characterData:true});sync();
+ start.onclick=()=>intro.remove();
+ setTimeout(()=>{if(start.disabled&&intro.isConnected){const retry=document.createElement('button');retry.className='retry-intro';retry.textContent='Reintentar carga';retry.onclick=()=>location.reload();status.after(retry);}},150000);
+});
 </script>
 <div id="urbia-brand"><img src="data3d/urbia-logo.svg" alt="urbia" width="96" height="37"><span>KENNEDY<br>SIMULADOR ECOLÓGICO</span></div>
 
@@ -1528,11 +1528,11 @@ async function initTodoReal() {
         const falta = !(window.KEN3D && document.getElementById('gs-izq')) ? 'Preparando la simulación…'
           : document.querySelectorAll('.cv-steps li.ok').length < PASOS.length ? 'Cargando capas…'
           : !(T3.roofU && T3.roofU.uTechoOn.value > 0) ? 'Cargando cubiertas…'
-          : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
-          : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
-          : !(window.KEN_CARRO_REAL || MOVIL) ? 'Cargando carros…' /* en celular no hay carro real */
+          : !(T3.tintal && T3.conjuntos && (GOOGLE || (LIVIANO && !MEDIO) || T3.bavaria) && T3.inemPreparado) ? 'Cargando Bavaria, El Tintal, INEM y conjuntos…'
+          : !QUEST && !trafOk && !T3.traficoRespaldo ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
+          : !(window.KEN_CARRO_REAL || MOVIL || QUEST || T3.traficoRespaldo) ? 'Cargando carros…' /* en celular no hay carro real */
           : (tResto = tResto || performance.now(), performance.now() - tilesT < 1500 && performance.now() - tResto < 5000) ? 'Afinando la foto 3D…' /* rendimiento: antes esperaba hasta 15 s (27 s en portátiles lentos); la foto termina de afinarse con el simulador abierto */ : '';
-        if (!falta || performance.now() - t0 > 150000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
+        if (!falta) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
     say(REALISTA ? 'Kennedy fotorrealista · cargando la malla 3D de Google y el tráfico…' : '🧱 TODO 3D listo · ' + B.length.toLocaleString('es-CO') + ' edificios · cargando árboles 3D y tráfico…', 5000);
@@ -1587,7 +1587,7 @@ async function initTodoReal() {
       if (!REALISTA) try { if (!T3.movil) T3.plants = await T3.R.buildNearPlants(T3, W, lw, T3.env, P); } // en celular no se descargan las plantas 3D (varios MB)
       catch (e) { console.warn('pasto 3D:', e); pastoRespaldo(); }
     })();
-    pTraf.then(e => { if (e) { console.warn('traffic:', e); try { buildCars(THREE, N); } catch (e2) { console.warn('cars:', e2); } marcarPaso('trafico'); } });    return true;
+    pTraf.then(e => { if (e) { console.warn('traffic:', e); try { buildCars(THREE, N); T3.traficoRespaldo=true; } catch (e2) { console.warn('cars:', e2); } marcarPaso('trafico'); } });    return true;
   } catch (e) {
     $('loader').classList.add('hidden');
     console.warn('TODO3D:', e);
@@ -3753,7 +3753,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   const listoK = () => T3 && T3.ready && T3.net ? Promise.resolve() : new Promise(r => setTimeout(() => r(listoK()), 400));
   // Biblioteca El Tintal (modelo propio) y canchas reales de OpenStreetMap: no dependen de la simulación, se cargan en paralelo
   listoK().then(() => import('./data3d/tintal.js?v=18')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
-  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=4')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
+  listoK().then(() => import('./data3d/inem.js?v=4')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).then(()=>{T3.inemPreparado=true}).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
   listoK().then(() => import('./data3d/conjuntos.js?v=5')).then(m => m.iniciarConjuntos({ THREE: T3.THREE, T3, lw, Y0: 0.3, movil: MOVIL })).catch(e => console.warn('conjuntos:', e));
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
@@ -3770,7 +3770,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       // selector ESTADO ACTUAL / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
       import('./data3d/escenario.js?v=117').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
-      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=130').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=131').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
       ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=5'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas

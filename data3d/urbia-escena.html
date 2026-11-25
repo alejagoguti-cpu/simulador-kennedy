@@ -1,3 +1,19 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="https://cdn.jsdelivr.net/gh/alejagoguti-cpu/urbia-javeriana@4fc18a09cc530defa8f1f054ef01dedb402823f1/docs/"><link rel="stylesheet" href="assets/index-DD6YLid8.css"><style>html,body{margin:0;overflow:hidden!important;background:#08090c}#root>:not(.lienzo){display:none!important}.lienzo{position:fixed;inset:0}body{cursor:auto}/* El cursor del sistema sigue al puntero aunque WebGL pierda cuadros. */
 html body,html body .lienzo,html body canvas{cursor:auto!important}
-#root>.cursor-punto,#root>.cursor-anillo{display:none!important}</style></head><body><div id="root"></div><script>for(const type of ['click','pointerdown','wheel','touchmove','keydown'])window.addEventListener(type,event=>{event.preventDefault();event.stopImmediatePropagation()},{capture:true,passive:false});</script><script type="module" src="assets/index-BRRT1W14.js"></script></body></html>
+#root>.cursor-punto,#root>.cursor-anillo{display:none!important}</style></head><body><div id="root"></div><script>
+let zoom=1, pending=0, pinch=0;
+function setZoom(value){
+  zoom=Math.min(2.8,Math.max(0.8,value));
+  if(!pending)pending=requestAnimationFrame(()=>{
+    pending=0;
+    const scene=document.querySelector('.lienzo');
+    if(scene)scene.style.transform='scale('+zoom+')';
+  });
+}
+window.addEventListener('wheel',e=>{e.preventDefault();e.stopImmediatePropagation();setZoom(zoom*Math.exp(-Math.max(-120,Math.min(120,e.deltaY))*.002));},{capture:true,passive:false});
+const distance=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+window.addEventListener('touchstart',e=>{if(e.touches.length===2)pinch=distance(e.touches)},{passive:true});
+window.addEventListener('touchmove',e=>{if(e.touches.length!==2)return;e.preventDefault();e.stopImmediatePropagation();const d=distance(e.touches);if(pinch>0)setZoom(zoom*d/pinch);pinch=d;},{passive:false,capture:true});
+window.addEventListener('touchend',()=>{pinch=0});
+window.addEventListener('message',e=>{if(e.source!==parent)return;if(e.data==='zoom-in')setZoom(zoom*1.2);if(e.data==='zoom-out')setZoom(zoom/1.2);});
+for(const type of ['click','pointerdown','wheel','touchmove','keydown'])window.addEventListener(type,event=>{event.preventDefault();event.stopImmediatePropagation()},{capture:true,passive:false});</script><script type="module" src="assets/index-BRRT1W14.js"></script></body></html>

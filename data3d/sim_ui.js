@@ -1,4 +1,4 @@
-import { seguimiento } from './seguimiento.js?v=1';
+import { seguimiento } from './seguimiento.js?v=2';
 /* ============ INTERFAZ DE LAS 12 SIMULACIONES (vista limpia) ============
    Corre el modelo semanal de data3d/simulaciones12.js al mismo paso que la barra de años (RELOJ.sem) y muestra:
    · panel de la derecha (vidrio): variables (sliders) de la simulación, indicadores en vivo con su gráfica, picos en el piso y foco;

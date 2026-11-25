@@ -163,3 +163,17 @@ html.limpio body #su-tab .ee-clear:hover{background:#d5ff321c;color:#eff8d4}
  100%{transform:translateY(0) rotateY(360deg) rotateX(-5deg)}
 }
 #urbia-intro.ui-leaving{display:none!important}
+
+.zoom-intro{position:absolute;z-index:2;right:18px;top:18px;display:flex;gap:5px}
+.zoom-intro button,.retry-intro{background:#14151bde;color:#f4f3ef;border:1px solid #ffffff40;border-radius:10px;padding:8px 14px;cursor:pointer}
+.zoom-intro button{font:20px system-ui}.zoom-intro button:hover{border-color:#d5ff3f}
+#estado-maqueta{font:11px system-ui;color:#d4d7df;margin:6px}#urbia-start:disabled{background:#464950;color:#f4f3ef}
+html.limpio body :is(#lp-der,#gs-izq,#lp-esc,#lp-anos,#su-tab){background:linear-gradient(145deg,#252833ee,#101117f5)!important;color:#f4f3ef!important;border-color:#c7cbe033!important}
+#st-panel .st-heading,#st-panel .st-tabs,#st-panel .st-pages{display:flex;align-items:center;justify-content:space-between;gap:5px}
+#st-panel .st-heading small,#st-panel .st-road small{color:#c5c9d2;font-size:10px}
+#st-panel .st-road{border-radius:12px;background:linear-gradient(120deg,#32343e,#1d2028);padding:7px 12px;border:1px solid #c5c9d23d}
+#st-panel .st-road summary{display:grid;grid-template-columns:1fr auto;align-items:center}
+#st-panel .st-road strong{font:500 27px system-ui;color:#d5ff3f}#st-panel .st-road small{grid-column:1/-1}
+#st-panel .st-tabs{margin:10px 0}#st-panel .st-tabs button{flex:1;text-decoration:none;border:1px solid #ced2e02e;border-radius:8px;padding:6px 3px;color:#e4e6ed}
+#st-panel .st-tabs button[aria-pressed=true]{background:#d5ff3f;color:#13150e}
+#st-panel .st-pages button:disabled{opacity:.4}#st-panel .st-road button{color:#e0f6a9}
