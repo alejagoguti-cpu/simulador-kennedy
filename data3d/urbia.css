@@ -1,0 +1,64 @@
+/* Tema URBIA: grafito, vidrio y lima. Interfaz compacta sobre el territorio. */
+html:root{
+ --ui-bg:rgba(38,43,42,.88)!important;--ui-bg2:rgba(240,247,222,.045)!important;
+ --ui-bd:rgba(224,236,212,.16)!important;--ui-bd2:rgba(214,255,50,.42)!important;
+ --ui-tx:#f0f2eb!important;--ui-tx2:#c2c8bb!important;--ui-tx3:#a3ad9a!important;
+ --ui-acc:#d5ff32!important;--ui-acc-bg:rgba(213,255,50,.13)!important;--ui-acc-tx:#e0f7a0!important;
+ --ui-glass:rgba(38,43,42,.88)!important;--ui-glass-bd:rgba(226,236,211,.22)!important;
+ --ui-glass-sh:0 14px 38px rgba(0,0,0,.24)!important;--ui-glass-fx:blur(18px) saturate(.85)!important;
+ color-scheme:dark;
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ html:root{--ui-glass:linear-gradient(135deg,rgba(74,80,72,.6),rgba(31,38,36,.76))!important;--ui-bg:rgba(35,41,38,.76)!important}
+}
+#urbia-brand{position:fixed;top:14px;left:20px;z-index:48;display:flex;align-items:center;gap:12px;pointer-events:none;filter:drop-shadow(0 2px 6px #0006)}
+#urbia-brand img{display:block;width:96px;height:37px}
+#urbia-brand span{border-left:1px solid #e5edd13d;padding-left:12px;font:500 9px/1.6 'JetBrains Mono',monospace;letter-spacing:.15em;color:#e5eadb}
+html.limpio body #gs-izq{top:66px!important;max-height:calc(100dvh - 156px)!important}
+html.limpio body #lp-der{top:66px!important;right:14px!important;width:300px!important;max-height:calc(100dvh - 160px)!important;padding:10px 12px!important;border-radius:18px!important;scrollbar-width:thin;scrollbar-color:#cbdc7b66 transparent}
+html.limpio body #lp-esc{top:16px!important;padding:3px!important;border-radius:12px!important}
+html.limpio body #lp-esc button{font-size:11px!important;padding:7px 12px!important}
+html.limpio body #lp-esc button.on,html.limpio body #lp-esc button.con.on,
+html.limpio body #gs-izq #lp-seis button.on{
+ background:#d5ff32!important;color:#1d2413!important;border-color:#d5ff32!important;opacity:1!important;text-shadow:none!important;box-shadow:0 0 18px #d5ff321a!important;
+}
+html.limpio body #gs-izq #lp-seis button{height:auto!important;min-height:30px;font-size:11px!important;padding:6px 8px!important}
+html.limpio body #lp-sims .lp-gr b,html.limpio body #lp-red h5,html.limpio body .su-tt{color:#d7e7a6!important}
+html.limpio body #lp-anos{border-radius:16px!important;padding:9px 12px!important;gap:9px!important}
+html.limpio body #lp-anos button.play{background:#d5ff32!important;color:#1d2413!important;border-color:#d5ff32!important;box-shadow:0 0 16px #d5ff3222}
+html.limpio body #lp-anos .pista b{background:linear-gradient(90deg,#a9c532,#d5ff32)!important}
+html.limpio body #lp-anos .tit{font-size:11px!important}
+html.limpio body #lp-anos .ano{font-size:18px!important}
+html.limpio body input[type=range]{accent-color:#d5ff32}
+html.limpio body :is(button,summary,a,input):focus-visible{outline:2px solid #d5ff32!important;outline-offset:3px}
+html.limpio body #su-tab .ee-card{background:linear-gradient(135deg,#d5ff3208,#16211b22);border-color:#d6e6bc30;border-radius:12px;padding:9px}
+html.limpio body #su-tab .ee-select{font-size:12px}
+html.limpio body #su-tab .ee-select[aria-pressed=true]{color:#d5ff32}
+html.limpio body #su-tab .ee-card figcaption b{font-size:13px}
+html.limpio body #su-tab .ee-intro h5{font-size:12px}
+html.limpio body #su-tab .ee-con{background:#d5ff32}
+html.limpio body #su-tab .ee-sin{background:#cad5a8}
+html.limpio body #su-tab svg path[stroke="#91e5bb"]{stroke:#d5ff32}
+html.limpio body #su-tab svg path[stroke="#f4c47f"]{stroke:#cad5a8}
+html.limpio body #su-tab .ee-causal rect{fill:#303a2b;stroke:#d6e6bc40}
+html.limpio body #su-tab .ee-formula{background:#111a1255}
+html.limpio body #su-tab details a{color:#d5e69d}
+html.limpio body #su-tab .ee-values,html.limpio body #su-tab .eco-nota{color:#c2cbbb}
+html.limpio body #su-tab .tb3-t{border-radius:12px;background:#d5ff3207;border-color:#d6e6bc30}
+body .cv-brand,body #lmsg,body #cvDato{color:#d5e6a6}
+body .cv-bar i{background:#d5ff32}
+@media(min-width:1100px){
+ html.limpio body #lp-anos{left:286px!important;right:330px!important;min-width:0!important}
+ html.limpio body #lp-anos .pista{min-width:100px!important}
+}
+@media(max-width:760px){
+ #urbia-brand{left:12px;top:12px}#urbia-brand img{width:76px;height:30px}#urbia-brand span{display:none}
+ html.limpio body #lp-esc{left:100px!important;right:12px!important;top:12px!important;transform:none!important;justify-content:center}
+ html.limpio body #lp-esc button{flex:1;min-width:0;padding:7px 5px!important;font-size:10px!important}
+ html.limpio body #gs-izq{top:60px!important;max-height:calc(53dvh - 74px)!important}
+ html.limpio body #lp-der{top:auto!important;left:12px!important;right:12px!important;width:auto!important;bottom:86px!important;max-height:39dvh!important}
+ html.limpio body #lp-anos{max-width:calc(100vw - 24px)!important;box-sizing:border-box}
+}
+@media(prefers-reduced-transparency:reduce){html:root{--ui-bg:#262d28!important;--ui-glass:#262d28!important;--ui-glass-fx:none!important}}
+@media(prefers-reduced-motion:reduce){#urbia-brand,html.limpio body #lp-esc button{transition:none!important}}
+@media print{#urbia-brand{display:none}}
