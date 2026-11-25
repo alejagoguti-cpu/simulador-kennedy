@@ -1,3 +1,4 @@
+import { seguimiento } from './seguimiento.js?v=1';
 /* ============ INTERFAZ DE LAS 12 SIMULACIONES (vista limpia) ============
    Corre el modelo semanal de data3d/simulaciones12.js al mismo paso que la barra de años (RELOJ.sem) y muestra:
    · panel de la derecha (vidrio): variables (sliders) de la simulación, indicadores en vivo con su gráfica, picos en el piso y foco;
@@ -5,13 +6,13 @@
    · informe final (al año 20 o en el game over): veredicto, tabla inicio → final, gráficas, especies que desaparecieron y por qué,
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
-import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=4';
+import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=5';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
-const SEMILLA = 1; let FIN = 1040; // 20 años (M.SEMANAS_FIN si el modelo lo trae)
+const SEMILLA = 1; let FIN = 780; // 20 años (M.SEMANAS_FIN si el modelo lo trae)
 const IND = [ // resultados en vivo: clave en ind(), nombre, formato, mejor si sube (true) o baja (false)
   { k: 'fauna', n: 'Especies de fauna', f: (v, I) => `${v} de ${I.fauna0}`, sube: true },
   { k: 'red', n: 'Interacciones entre especies', f: (v) => fmt(v), sube: true, ayuda: 'relaciones de la red biótica que ocurren en cada lugar' },
@@ -39,7 +40,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=23'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=24'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -195,7 +196,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let idAlDia = 0;
   function ponerseAlDia(hasta) {
     if (!M || !R.sim || !hasta) return; const id = ++idAlDia, s = M.crear(R.sim, SEMILLA, R.valores), H = []; R.s = null; R.hist = [];
-    const lote = () => { if (id !== idAlDia) return; for (let k = 0; k < 120 && H.length < hasta; k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
+    const lote = () => { if (id !== idAlDia) return; for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
       if (H.length < hasta) return void setTimeout(lote, 0);
       R.s = s; R.hist = H; const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); } };
     lote();
@@ -235,7 +236,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const s = M.crear(R.sim, SEMILLA, R.valores), H = [];
     pintarPrevia(previa ? 'Calculando la vista previa…' : '');
     const lote = () => { if (id !== idRe) return;
-      for (let k = 0; k < 120 && H.length < hasta; k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
+      for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
       if (H.length < hasta) return void setTimeout(lote, 0);
       R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
@@ -253,7 +254,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function calcularBase() {
     const otra = R.def && R.def.par != null ? (R.def.propuesta ? R.sim - 1 : R.sim + 1) : parejaSin(); R.ecoBase = null; if (!M || otra == null || !M.SIMS.some(s => s.id === otra)) { R.base = null; return; }
     try { const id = ++idBase, d = defDe(otra), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = R.valores[s.k] != null ? R.valores[s.k] : s.val; }); const s = M.crear(otra, SEMILLA, v); const H = []; R.ecoBase = H;
-      const lote = () => { if (id !== idBase) return; try { for (let k = 0; k < 80 && H.length < FIN; k++) { M.paso(s); H.push(derivar(M.ind(s))); if (M.gameOver(s)) { if (R.def && R.def.propuesta) R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else if (R.def && R.def.propuesta) R.base = H; } catch (e) { console.warn('base:', e); } };
+      const lote = () => { if (id !== idBase) return; try { for (let k = 0, inicio = performance.now(); k < 4 && H.length < FIN && (k === 0 || performance.now() - inicio < 5); k++) { M.paso(s); H.push(derivar(M.ind(s))); if (M.gameOver(s)) { if (R.def && R.def.propuesta) R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else if (R.def && R.def.propuesta) R.base = H; } catch (e) { console.warn('base:', e); } };
       lote(); } // por lotes: 20 años de una vez trabarían la página
     catch (e) { console.warn('base del par:', e); }
   }
@@ -278,8 +279,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   RELOJ.alDibujar(() => {
     if (!R.s || R.go || R.fin) return;
     if (R.previa && !RELOJ.pausaSem) { R.previa = false; pintarPrevia(''); } // al darle play la vista previa se va y los picos siguen la barra
-    let n = 0;
-    while (R.s && R.hist.length < Math.max(1, Math.min(FIN, RELOJ.sem)) && n++ < 30) {
+    let n = 0; const comienzo = performance.now();
+    while (R.s && R.hist.length < Math.max(1, Math.min(FIN, RELOJ.sem)) && n++ < 4 && (n === 1 || performance.now()-comienzo<5)) {
       M.paso(R.s); const I = M.ind(R.s); derivar(I); R.hist.push(I); window.KEN_PREDIO_SIM = I.predio || null; /* carros del plan parcial (data3d/trafico_plan.js) según los vehículos/día del modelo */
       for (const x of I.extinciones || []) { R.extinciones.push(x); avisarExtincion(x); }
       for (const ev of I.eventos || []) avisar(ev);
@@ -784,6 +785,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     'Biodiversidad (Shannon)': { por: 'No basta contar especies: importa que estén repartidas y cumplan funciones distintas.', para: 'Medir la diversidad de la fauna de Kennedy.', como: 'Índice de Shannon H\' sobre la ocupación de cada especie (más alto = más especies y más repartidas).', donde: 'En todos los parches de Kennedy.', pts: I => [] }
   });
   const tab = document.createElement('div'); tab.id = 'su-tab';
+  const styleSeguimiento=document.createElement('style');
+  styleSeguimiento.textContent='#st-panel h3{font:500 18px system-ui;color:#f2f4ec}#st-panel h4{font:600 12px system-ui;color:#d5ff60;margin:16px 0 4px}#st-panel summary{border-bottom:1px solid #ffffff20;padding:8px 0}#st-panel summary b{font:500 10px monospace;color:#dce7bb}#st-panel svg{width:100%;display:block;background:#111a1580;border-radius:9px}#st-panel svg text{fill:#e2e9df;font:8px system-ui}#st-panel p{margin:6px 0}#st-panel button{background:transparent;color:#d4e7a9;border:0;text-decoration:underline;cursor:pointer}#st-panel .st-row{display:grid;grid-template-columns:1fr auto;gap:3px;padding:4px 0}#st-panel meter{grid-column:1/-1;width:100%;height:6px}';
+  document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
   setInterval(() => { const D = document.getElementById('urbia-response') || document.getElementById('lp-der'); if (D && tab.parentNode !== D) D.appendChild(tab); }, 700); /* los diagramas van a la DERECHA (debajo de quién interactúa con quién) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
@@ -819,8 +823,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function pintarTablero() {
     const I = ultimo();
     if (!I || !R.sim) { tab.innerHTML = ''; panelEvaluacion.clear(); return; }
-    if (!tab.querySelector('#ee-panel')) tab.innerHTML = '<div id="ee-panel"></div>';
+    if (!tab.querySelector('#ee-panel')) tab.innerHTML = '<div id="st-panel"></div><details><summary>Detalle de la evaluación ecológica</summary><div id="ee-panel"></div></details>';
     const B = (R.ecoBase || R.base || []).filter(h => h.sem <= I.sem);
+    seguimiento(tab.querySelector('#st-panel'),I,R.hist,B,!!R.def?.propuesta,T3);
     panelEvaluacion.render(tab.querySelector('#ee-panel'), I, R.hist, B, !!R.def?.propuesta, R.s);
   }
   function pintarTableroViejo() {

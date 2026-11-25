@@ -69,7 +69,7 @@
      motivo = el que anotó data3d/red_trofica.js al extinguirse en ese parche (sin recursos de la red, tráfico y ruido, tala, humedal degradado o
      azar demográfico). */
 import { redCompleta, evaluarEstado } from './evaluacion_ecologica.js?v=1';
-import * as V from './sim_vida.js?v=sims1';
+import * as V from './sim_vida.js?v=sostenibilidad1';
 import { crearRed, MOTIVOS } from './red_trofica.js?v=2';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
@@ -77,7 +77,7 @@ import { PLAN_BAV } from './plan_bavaria_datos.js?v=2'; // la misma instancia qu
 
 const NZ = ZONAS.length, NP = PARCHES.length;
 export const ZONAS_XZ = ZONAS.map(z => [z[0], z[1]]); // centro de cada zona de 500 m, marco MUNDO del simulador (x este, z sur)
-export const SEMANAS_FIN = 1040; // 20 años de 52 semanas
+export const SEMANAS_FIN = 780; // 20 años de 52 semanas
 export const SEMANAS = SEMANAS_FIN; // nombre anterior (compatibilidad)
 export const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 20 }];
 
@@ -352,11 +352,11 @@ export const MITIGA_DB = 3; // dB menos en las calles pacificadas (ver mitiga ar
 export const REGLAS = [
   { k: 'fauna', n: 'Fauna', txt: 'quedan menos del 90 % de las especies de fauna presentes al inicio', umbral: 90, unidad: '% de las especies del inicio', semanas: 4,
     fuente: 'Steffen et al. 2015, Planetary boundaries (Science 347, doi 10.1126/science.1259855): límite de integridad de la biosfera = mantener el Biodiversity Intactness Index en 90 % o más (https://www.stockholmresilience.org/research/planetary-boundaries/quantitative-evolution-of-boundaries.html). [SUP] se aplica a la riqueza local de las 23 especies de la red: perder 3 = salir del límite.' },
-  { k: 'habitat', n: 'Hábitat', txt: 'los parches ocupados (especie × parche) caen 30 % o más frente al año 1', umbral: 70, unidad: '% de la ocupación del año 1', semanas: 4,
-    fuente: 'La regla de hábitat de data3d/sim_vida.js (caída de 30 %), aplicada a la ocupación de la metapoblación de Levins en vez de a la riqueza (que ya mide la regla de fauna). Se compara con la referencia del año 1 (semanas 40–52, REF) porque el estado inicial está por debajo del equilibrio del modelo; antes de la semana 52, con la semana 0. [SUP heredado de sim_vida.js]' },
+  { k: 'habitat', n: 'Hábitat', txt: 'la presencia especie × parche en Kennedy cae 30 % frente al inicio', umbral: 70, unidad: '% de la ocupación del año 1', semanas: 4,
+    fuente: 'La regla de hábitat de data3d/sim_vida.js (caída de 30 %), aplicada a la ocupación de la metapoblación de Levins en vez de a la riqueza (que ya mide la regla de fauna). Referencia: semana cero. Umbral de prueba del proyecto. [SUP heredado de sim_vida.js]' },
   { k: 'humedal', n: 'Humedales', txt: 'el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy', umbral: 70, unidad: '% del área funcional de hoy', semanas: 4,
     fuente: 'Convención de Ramsar (Colombia la adoptó por la Ley 357 de 1997): mantener las características ecológicas de los humedales y su uso racional, sin pérdida neta (https://www.ramsar.org/about/wise-use-wetlands). Política de Humedales del Distrito Capital (Decreto 624 de 2007, https://www.ambientebogota.gov.co/politica-de-humedales-del-distrito-capital): conservar y recuperar los humedales de Bogotá, incluidos El Burro, La Vaca y Techo. [SUP] umbral 30 %, el mismo de la regla de hábitat; la pérdida sale de la basura arrojada en los bordes (ver BASURA_SUP).' },
-  { k: 'abasto', n: 'Abastecimiento', txt: 'alguna zona recibe menos del 80 % de los alimentos que necesita', umbral: 80, unidad: '% de lo que necesita la zona peor servida', semanas: 4,
+  { k: 'abasto', n: 'Abastecimiento', txt: 'Kennedy recibe menos del 80 % de los alimentos que necesita', umbral: 80, unidad: '% de la demanda de Kennedy', semanas: 4,
     fuente: 'Regla de data3d/sim_vida.js (0,4 kg/día de frescos por persona, OMS).' },
   { k: 'residuos', n: 'Residuos', txt: 'los orgánicos pendientes de tratamiento superan la capacidad de almacenamiento', umbral: 100, unidad: '% del almacenamiento', semanas: 4,
     fuente: 'Regla de data3d/sim_vida.js (3 días de contenedores y calle + 2 semanas de planta).' },
@@ -365,12 +365,12 @@ export const REGLAS = [
   { k: 'trafico', n: 'Tráfico', txt: 'circulan 30 % más vehículos que hoy (índice de tráfico 1,30 o más)', umbral: 1.3, unidad: 'índice (1 = hoy)', semanas: 4,
     fuente: 'Plan de Movilidad Sostenible y Segura de Bogotá (2023): 77 % de los viajes en modos sostenibles en 2035; hoy ~70 % (Encuesta de Movilidad 2023, https://bogota.gov.co/mi-ciudad/movilidad/movilidad-en-bogota-asi-se-movilizan-los-capitalinos-segun-encuesta ; https://www.larepublica.co/economia/claudia-lopez-presento-el-nuevo-plan-de-movilidad-para-bogota-con-metas-a-2035-3741556). Los viajes no sostenibles deben pasar de 30 % a 23 % (× 0,77). [SUP] game over cuando el tráfico se aleja de hoy tanto como la meta pide bajar, en sentido contrario: 1 / 0,77 ≈ 1,30.' }
 ];
-const VALOR = { fauna: (x) => x.fauna / Math.max(1, x.fauna0) * 100, habitat: (x) => x.pares / Math.max(1, x.ref ? x.ref.pares : x.pares0) * 100, abasto: (x) => x.comidaMin * 100,
+const VALOR = { fauna: (x) => x.fauna / Math.max(1, x.fauna0) * 100, habitat: (x) => x.pares / Math.max(1, x.pares0) * 100, abasto: (x) => 100 * (1 - x.abasto.deficit),
   residuos: (x) => x.residuos * 100, ruido: (x) => x.ruidoDb - x.ruidoDb0, trafico: (x) => x.trafico, humedal: (x) => x.humedalFuncional };
 const MALO = { fauna: (v) => v < 90, habitat: (v) => v <= 70, abasto: (v) => v < 80, residuos: (v) => v > 100, ruido: (v) => v >= 3, trafico: (v) => v >= 1.3, humedal: (v) => v <= 70 };
 // cerca del game over (aviso previo): 2/3 del camino desde el valor de hoy hasta el umbral
 const CERCA = { fauna: (v) => v < 94, habitat: (v) => v <= 80, abasto: (v) => v < 87, residuos: (v) => v > 85, ruido: (v) => v >= 2, trafico: (v) => v >= 1.2, humedal: (v) => v <= 80 };
-const MOTIVO_GO = { fauna: 'se perdió más del 10 % de las especies de fauna', habitat: 'la ocupación de los parches cayó 30 % o más', abasto: 'una zona recibió menos del 80 % de los alimentos',
+const MOTIVO_GO = { fauna: 'se perdió más del 10 % de las especies de fauna', habitat: 'la ocupación de los parches cayó 30 % o más', abasto: 'Kennedy recibió menos del 80 % de los alimentos',
   residuos: 'los orgánicos pendientes superaron el almacenamiento', ruido: 'el ruido de las calles subió 3 dB o más', trafico: 'el tráfico subió 30 % o más sobre hoy',
   humedal: 'los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes' };
 
@@ -441,6 +441,7 @@ export function crear(id, semilla = 1, valores = {}) {
   E.par = P; E.prop = S.propuesta; E.fOrg = 1;
   E.bas = basuraIni(E); E.suelo = sueloIni(E); E.atr = atropellosIni(E); E.hechos = []; E.muertes = muertesIni(E); E.cie = mod.cierre ? { t0: mod.cierre.t0, dur: mod.cierre.dur, via: mod.cierre.via, fase: 0, faseMax: 0 } : null;
   E.par = P; E.prop = S.propuesta; E.xHb = new Float32Array(NP).fill(1); E.xFrag = new Float32Array(NP).fill(1); pruebaIni(E);
+  E.rachasLocales = new Map();
   return E;
 }
 const bits = (v) => { v = v - ((v >>> 1) & 0x55555555); v = (v & 0x33333333) + ((v >>> 2) & 0x33333333); return (((v + (v >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; };
@@ -462,7 +463,6 @@ const vAño = (r, a) => 0.70 * Math.pow(1 + r, a) + 0.22 + 0.08;
 function factorTraf(E, t) { const a = Math.max(0, Math.floor(t / V.AÑO)), T = E.traf;
   const fp = E.s.pob / V.POB_K; // [SUP] par 01 con propuesta: con mercados de barrio a pie, la población nueva suma 30 % de los viajes en carro
   /* [SUP] par 01 con propuesta: los mercados de barrio a pie y el acopio cercano quitan viajes en carro y camión hacia Corabastos: el tráfico BAJA hasta −25 % en 4 años (a medida que abren) */
-  if (E.par === 1 && E.prop) return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * (1 + (fp - 1) * 0.2) * (1 - 0.25 * Math.min(1, t / (4 * V.AÑO)));
   return vAño(T.r, a) / vAño(V.TRAFICO.carros, a) * fp; }
 function ganchoTraf(E, t) {
   const T = E.traf, mOn = E.metro && t >= E.metro.desde;
@@ -974,6 +974,48 @@ export function paso(E) {
   muertesPaso(E); { const M = E.muertes; x.muertes = { total: M.total, semana: M.semana, porCausa: { ...M.porCausa }, porAño: M.porAño.slice(), lista: M.lista.slice() }; }
   x.avesRuido = indAvesRuido(E, x); x.ciclos = indCiclos(E, x); x.biodiversidad = indBiodiversidad(E);
   x.evaluacion = evaluarEstado(E, x, RED, PARCHES);
+  const o = E.o, ratio = (a,b) => b>0 ? 100*a/b : null;
+  const sectores = ZONAS.map(([x,z],i)=>({n:'Sector '+(i+1),x,z,valor:o.zRec[i]*100,demanda:o.demandaZona[i]/7000}));
+  const alertas = [];
+  function revisar(id, punto, indicador, mal) {
+    const semanas = mal ? (E.rachasLocales.get(id)||0)+1 : 0;
+    E.rachasLocales.set(id,semanas);
+    if(semanas) alertas.push({...punto,indicador,semanas,inicio:x.sem-semanas+1,sem:x.sem});
+  }
+  sectores.forEach((p,i)=>revisar('s'+i,p,'Cobertura <80 %',p.valor<80));
+  x.evaluacion.diversidad.porParche.forEach((p,j)=>{
+    let inicial=0;
+    for(let i=0;i<RED.NFA;i++) inicial+=E.occ0[i*NP+j];
+    revisar('p'+j,{...p,valor:ratio(p.riqueza,inicial)},'Pérdida de presencia ≥30 %',inicial>0 && p.riqueza<=.7*inicial);
+  });
+  const plantas = (x.estaciones||[]).filter(p=>p.tipo==='estacion');
+  const estaciones = plantas.map(p=>({...p,valor:ratio(p.acumulado_t,o.capacidadPlanta/1000/plantas.length)}));
+  estaciones.forEach((p,i)=>revisar('e'+i,p,'Almacenamiento >100 %',p.valor>100));
+  const especies=RED.FAUNA.map((f,i)=>{
+    const lugares=[];
+
+    const W=PRE.DEST[f.grupo], destinos=new Set();
+    for(let q=0;q<NP;q++) if(E.s.occ[i*NP+q]){
+      lugares.push(q);
+      if(W){
+        const indices=PRE.destinosIndices ||= new Map();
+        if(!indices.has(W))indices.set(W,Array.from({length:NP},(_,origen)=>Array.from({length:NP},(_,p)=>p).filter(p=>p!==origen && W[origen*NP+p]>0)));
+        for(const p of indices.get(W)[q]) if(E.s.q[p]>0 &&
+        (!RED.TER[i] || (E.s.red.XQ?.[p*NP+q]??1)*PRE.S0[p*NP+q]>0)) destinos.add(p);
+      }
+    }
+    return {n:f.n,grupo:f.grupo,valor:lugares.length,lugares,alcanzables:W?destinos.size:null};
+  });
+  x.evaluacion.territorio={
+    red:x.red,riqueza:x.biodiversidad.riqueza,conectados:ratio(x.verde.resumen.nConectados,x.verde.resumen.nParches),
+    atropellos:x.atropellos.semana,verde:x.ciclos.suelo,
+    organicos:o.gen/7000,recolectados:o.recolectado/7000,tratados:o.desv/7000,pendientes:o.pend/1000,
+    aprovechamiento:ratio(o.desv,o.gen),compost:o.compost/7000,retorno:o.vuelve/7000,
+    madura:o.entradaMadura/7000,sustrato:o.sustrato/7000,saturacion:ratio(o.pend,o.alm),
+    autonomia:ratio(o.localConsumido,o.need),cobertura:o.recib*100,produccion:o.prod/7000,autoconsumo:o.auto/7000,
+    acopio:o.acopiado/7000,concentracion:ratio(o.coraKg,o.recib*o.need),sectores,estaciones,especies,alertas,
+    eventos:E.atr.nuevos.map(p=>({...p})),gameOver:E.go?{...E.go}:null
+  };
   x.eventos = avisos(E, x); x.hechos = E.hechos.slice();
   return E;
 }

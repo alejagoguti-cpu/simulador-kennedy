@@ -362,7 +362,7 @@ export function paso(s, PAR) {
     espera: resol.m, resol, pc: 3000 * (1 - P1.reac * Math.min(1, pers / P1.zona) * 0.25), carga, retiro, prog: prop,
     gen, relleno: colR, desv: trat, rech, compost: comp, vuelve: comp, hongos, pct2: trat / gen * 100, pila, km: colR / 8000 * 28 * 2 + colC / 1500 * dist * 2, ocup: capComp ? Math.min(1.5, s.pcp / Math.max(1, Sp)) : 0,
     aves: s.B, riq: Math.round(42 * (0.45 + 0.35 * conect + 0.3 * s.W)), hum: s.W * 100, trampa: s.muertes, conect,
-    plan: e === 'D' ? { viviendas: planViv, personas: planPers, autos: planAutos, arboles: planArb } : null, need: needT, recib: rec / needT, zMin, zArg, nBajo, zRec, zLoc, zRed, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
+    plan: e === 'D' ? { viviendas: planViv, personas: planPers, autos: planAutos, arboles: planArb } : null, demandaZona: NEED.slice(), localConsumido: LOCZ.reduce((a,b)=>a+b,0), recolectado: colR+colC, capacidadPlanta: Sp, entradaMadura: madura, sustrato: sust, acopiado: acop, need: needT, recib: rec / needT, zMin, zArg, nBajo, zRec, zLoc, zRed, coraKg: coraT, bavKg, merc, nodos, pend, alm, sep, capComp, esp, esp0: s.esp0,
     trafico: { años: ET.G.años, car: ET.G.car, moto: ET.G.moto, V: ET.V, D: ET.D, mq: ET.mqMedio, xq: ET.xqMedio, ocAve, ocTer, ocAve0: s.oc0.ave, ocTer0: s.oc0.ter },
     espOc, espOc0: s.espOc0,
     cora: { lib: DC.lib, desm: DC.ap.length, rest: DC.rest, m2: DC.m2, borde: Math.round(DC.ha * 1e4), mad: DC.mad, total: BODEGAS.length }, perdido,

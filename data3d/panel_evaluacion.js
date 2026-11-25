@@ -40,8 +40,8 @@ export function curvaEco(H,B,path,prop){
  '<text x="1" y="15">'+esc(fmt(hi))+'</text><text x="1" y="65">'+esc(fmt(lo))+'</text>'+
  draw(prop?b:a,'#f4c47f',true)+draw(prop?a:b,'#91e5bb',false)+'</svg>';
 }
-export function contenidoEco(I,H,B,prop,selected,open){
- const cards=INDICADORES.map(d=>'<section class="ee-card" data-ind="'+d.id+'" '+(selected===d.id?'':'hidden')+'><button class="ee-select" data-select="'+d.id+'" aria-pressed="'+(selected===d.id)+'">'+d.n+' <span>Ver en Kennedy ↗</span></button>'+
+export function contenidoEco(I,H,B,prop,selected,open,lazy=false){
+ const cards=INDICADORES.filter(d=>!lazy||d.id===selected).map(d=>'<section class="ee-card" data-ind="'+d.id+'" '+(selected===d.id?'':'hidden')+'><button class="ee-select" data-select="'+d.id+'" aria-pressed="'+(selected===d.id)+'">'+d.n+' <span>Ver en Kennedy ↗</span></button>'+
  d.metrics.map(([p,n,u])=>{const now=get(I,p),other=get(B.find(h=>h.sem===I.sem),p);return '<figure><figcaption><span>'+esc(n)+'</span><b>'+fmt(now)+' <small>'+esc(u)+'</small></b></figcaption>'+curvaEco(H,B,p,prop)+'<p class="ee-values">'+(prop?'Con':'Sin')+' propuesta: '+fmt(now)+(B.length?' · '+(prop?'Sin':'Con')+' propuesta: '+fmt(other):' · Comparación calculándose')+'</p></figure>';}).join('')+
  '<details data-detail="'+d.id+'" '+(open.has(d.id)?'open':'')+'><summary>Fórmula, datos y fuente científica</summary><p class="ee-formula">'+esc(d.formula)+'</p><p>'+esc(d.nota)+'</p><a href="'+d.fuente+'" target="_blank" rel="noopener noreferrer">'+esc(d.autor)+'</a></details></section>').join('');
  const species=(I.evaluacion?.especies||[]).map(s=>'<div class="ee-species"><b>'+esc(s.n||s.id)+'</b><span>'+esc(s.id==='abeja'?'Polinización':s.id==='mirla'?'Dispersión de semillas':'Conservación de hábitats')+'</span><p>'+ (s.disponible?fmt(s.ocupados)+' parches · '+fmt(s.colonizaciones)+' colonizaciones · '+fmt(s.extinciones)+' extinciones locales':esc(s.motivo))+'</p></div>').join('');
@@ -75,9 +75,10 @@ export function crearPanelEvaluacion({T3}){
   if(signature!==run){selected=null;open.clear();clear();signature=run;}
   if(host)host.querySelectorAll('details[data-detail]').forEach(d=>{if(d.open)open.add(d.dataset.detail);else open.delete(d.dataset.detail);});
   const focus=host?.contains(document.activeElement)?document.activeElement.dataset.select:null;
-  host=container;last=I;lastOther=B.find(h=>h.sem===I.sem)||null;container.innerHTML=contenidoEco(I,H,B,prop,selected,open);
-  container.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{selected=btn.dataset.select;container.querySelectorAll('.ee-card').forEach(c=>c.hidden=c.dataset.ind!==selected);open.add(selected);container.querySelector('details[data-detail="'+selected+'"]').open=true;container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.select===selected?'true':'false'));mapa(last);});
+  host=container;last=I;lastOther=B.find(h=>h.sem===I.sem)||null;const draw=()=>{container.innerHTML=contenidoEco(I,H,B,prop,selected,open,true);
+  container.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{if(selected!==btn.dataset.select){selected=btn.dataset.select;open.add(selected);draw();mapa(last);return;}selected=btn.dataset.select;container.querySelectorAll('.ee-card').forEach(c=>c.hidden=c.dataset.ind!==selected);open.add(selected);container.querySelector('details[data-detail="'+selected+'"]').open=true;container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.select===selected?'true':'false'));mapa(last);});
   container.querySelector('.ee-clear').onclick=()=>{selected=null;clear();container.querySelectorAll('.ee-card').forEach(c=>c.hidden=true);container.querySelectorAll('[data-select]').forEach(b=>b.setAttribute('aria-pressed','false'));};
+  };draw();
   if(focus)container.querySelector('[data-select="'+focus+'"]')?.focus({preventScroll:true});
   if(selected)mapa(I);
  },clear};
