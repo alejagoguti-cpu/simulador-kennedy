@@ -40,7 +40,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=24'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=25'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -196,9 +196,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let idAlDia = 0;
   function ponerseAlDia(hasta) {
     if (!M || !R.sim || !hasta) return; const id = ++idAlDia, s = M.crear(R.sim, SEMILLA, R.valores), H = []; R.s = null; R.hist = [];
-    const lote = () => { if (id !== idAlDia) return; for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
-      if (H.length < hasta) return void setTimeout(lote, 0);
-      R.s = s; R.hist = H; const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); } };
+    const lote = () => { if (id !== idAlDia) return; for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); if(M.gameOver(s))break; }
+      if (!M.gameOver(s) && H.length < hasta) return void setTimeout(lote, 0);
+      R.s = s; R.hist = H; if(M.gameOver(s)){gameOver(M.gameOver(s));return;} const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); } };
     lote();
   }
   function preparar(id, opc) {
@@ -236,11 +236,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const s = M.crear(R.sim, SEMILLA, R.valores), H = [];
     pintarPrevia(previa ? 'Calculando la vista previa…' : '');
     const lote = () => { if (id !== idRe) return;
-      for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); }
-      if (H.length < hasta) return void setTimeout(lote, 0);
+      for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); if(M.gameOver(s))break; }
+      if (!M.gameOver(s) && H.length < hasta) return void setTimeout(lote, 0);
       R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
-      else { R.s = s; R.hist = H; refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); pintarGraficas(); pintarHistoria(); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
+      else { R.s = s; R.hist = H; if(M.gameOver(s)){gameOver(M.gameOver(s));return;} refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); pintarGraficas(); pintarHistoria(); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
     };
     lote();
   }
@@ -299,7 +299,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const g = M.gameOver(R.s); if (g && R.def && R.def.par) { gameOver(g); return; } /* la simulación base no se detiene: el game over sale como aviso y sigue corriendo */
       if (I.sem % 13 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada trimestre: los picos se recalculan con lo que ya pasó // cada medio año: los picos se recalculan con lo que ya pasó
     }
-    if (R.hist.length >= FIN && !R.fin) { R.fin = true; if (R.def && R.def.par) { RELOJ.pausarAños(true); setTimeout(() => abrirInforme(), 700); } else dispatchEvent(new Event('lp-vuelta')); /* simulación base (sin escenario): vuelve a empezar sola */ }
+    if (R.hist.length >= FIN && !R.fin) { R.fin = true; if (R.def && R.def.par) { RELOJ.pausarAños(true); abrirInforme(); } else dispatchEvent(new Event('lp-vuelta')); /* simulación base (sin escenario): vuelve a empezar sola */ }
     if (n) pintarIndicadores();
   });
   addEventListener('lp-reinicio', () => { reiniciarModelo(); pintarIndicadores(true); });
@@ -946,16 +946,17 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.go = g; RELOJ.pausarAños(true);
     go.querySelector('p').textContent = `Año ${(g.sem / 52 + 1).toFixed(1)} · ${g.motivo || g.regla}`;
     go.classList.add('on'); if (window.KEN_FOCO) window.KEN_FOCO.on([g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' ? 'trafico' : 'especies', 'cierre', 'predio', 'basura', 'degradacion', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // la causa queda en color: el cierre, el predio o la basura
-    setTimeout(() => { go.classList.remove('on'); abrirInforme(); }, 4200);
+    go.classList.remove('on'); abrirInforme();
   }
 
   /* ---------- INFORME ---------- */
   /* informe nuevo (data3d/informe.js): veredicto «¿Fue sostenible?», antes → después, estado actual vs esta simulación, gráficas por año,
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
-    const H = R.hist; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=3');
-      abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: (M && M.REGLAS) || [], go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, onCerrar: cerrarInforme });
+    const H = R.hist, corrida=R.s; if (!H.length) return;
+    try { const { abrirInforme2 } = await import('./informe.js?v=4');
+      if(corrida!==R.s || H!==R.hist)return;
+      abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: (M && M.REGLAS) || [], parametros:{...R.valores}, definiciones:M.SIMS, go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, onCerrar: cerrarInforme });
       inf.classList.add('on'); return;
     } catch (e) { console.warn('informe nuevo:', e); }
     abrirInformeViejo();

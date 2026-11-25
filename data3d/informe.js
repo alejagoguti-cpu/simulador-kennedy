@@ -1,9 +1,10 @@
+import {adjuntarBalance} from './balance_final.js?v=1';
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
    Pinta en `cont` (la caja de vidrio #su-inf .caja) un informe para no expertos (y para proyectar ante un jurado):
      1 · HÉROE: par, pregunta, veredicto grande «¿Fue sostenible?» Sí / No / En parte con una frase, y las 3–4 cifras que más importan
          (con propuesta: lado a lado con su pareja sin propuesta, misma semana y mismos valores; sin propuesta: año 1 → final);
-     2 · «Cómo cambió en 20 años»: hasta 4 curvas grandes (2 × 2), primero la métrica clave del par; con = línea ámbar, sin = gris punteada,
+     2 · «Cómo cambió en 15 años»: hasta 4 curvas grandes (2 × 2), primero la métrica clave del par; con = línea ámbar, sin = gris punteada,
          límite de game over en rojo suave y etiquetas al final de cada línea;
      3 · la red de interacciones en una sola «bola» (perdidas en rojo, nuevas en verde) y lo que pasó por plazo (corto / mediano / largo);
      4 · tabla compacta con todos los indicadores y «Notas y fuentes» (reglas, fuentes, supuestos y cómo se decide el veredicto), plegadas.
@@ -13,7 +14,7 @@
    Nada se inventa aquí: todo sale de `hist` (ind() de cada semana), `base`, `go`, `eventos`, `reglas` y de data3d/simulaciones_datos.json (red biótica).
    Solo SVG en línea, sin librerías. Las curvas se promedian cada 4 semanas. Estilos con prefijo i2- dentro de .inf2. */
 
-const FIN = 1040, AÑO = 52, CADA = 4;
+const FIN = 780, AÑO = 52, CADA = 4;
 const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 20 }];
 
 /* ---------- utilidades ---------- */
@@ -60,14 +61,14 @@ const TEMAS = [
 ];
 
 /* ---------- reglas de game over: valor y «hoy» (los mismos VALOR de simulaciones12.js) ---------- */
-const VAL = { fauna: (h) => h.fauna / Math.max(1, h.fauna0) * 100, habitat: (h) => h.pares / Math.max(1, h.ref ? h.ref.pares : h.pares0) * 100, abasto: (h) => h.comidaMin * 100,
+const VAL = { fauna: (h) => h.fauna / Math.max(1, h.fauna0) * 100, habitat: (h) => h.pares / Math.max(1, h.pares0) * 100, abasto: (h) => h.evaluacion?.territorio?.cobertura,
   residuos: (h) => h.residuos * 100, ruido: (h) => h.ruidoDb - h.ruidoDb0, trafico: (h) => h.trafico, humedal: (h) => h.humedalFuncional };
 const HOY = { fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100 };
 const UMB = { fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70 };
 const FMT_R = { ruido: (v) => SG(v) + nf(Math.abs(v), 1) + ' dB', trafico: (v) => nf(v, 2) };
 const fmtR = (k, v) => (FMT_R[k] || ((x) => nf(x) + ' %'))(v);
-const ART = { fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la comida en la zona peor servida', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico' };
-const CORTO_R = { fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'falta de comida en una zona', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico' };
+const ART = { fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico' };
+const CORTO_R = { fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico' };
 const prox = (k, v, umbral) => { const h = HOY[k], u = umbral != null ? umbral : UMB[k]; if (v == null || u === h) return 0; return Math.max(0, Math.min(1.2, (v - h) / (u - h))); };
 const cruzó = (k, v, umbral) => { const u = umbral != null ? umbral : UMB[k]; return v != null && (HOY[k] < u ? v >= u : v <= u); };
 
@@ -476,7 +477,7 @@ function presenciaFauna(H, ext) {
 
 /* ======================================================================= */
 let OBS = null;
-export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas = [], go = null, eventos = [], extinciones = [], ind = [], semilla = 1, onCerrar = null }) {
+export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def = {}, hist, base = null, reglas = [], go = null, eventos = [], extinciones = [], ind = [], semilla = 1, onCerrar = null }) {
   const t0 = performance.now();
   if (!cont || !hist || !hist.length) return null;
   ponerCss();
@@ -488,14 +489,11 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
   const indMap = new Map((ind || []).map(x => [x.k, x]));
   const IT = (it) => { const o = indMap.get(it.k); return o ? { ...it, n: o.n || it.n, sube: o.sube != null ? o.sube : it.sube, f: it.f } : it; };
   const conProp = def.propuesta != null ? !!def.propuesta : (def.grupo === 'propuesta');
-  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => VAL[r.k]);
+  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => ['abasto','habitat','residuos'].includes(r.k));
   const umb = (k) => { const r = RG.find(x => x.k === k); return r && r.umbral != null ? r.umbral : UMB[k]; };
 
-  /* --- game over de la pareja sin propuesta (si se detuvo antes de los 20 años): la regla que estaba cruzada en su última semana --- */
-  let goB = null;
-  if (B && B.length < FIN) { const U = B[B.length - 1]; const k = RG.map(r => r.k).find(k => cruzó(k, VAL[k](U), umb(k)));
-    goB = { sem: U.sem || B.length, regla: k || null, n: k ? (RG.find(r => r.k === k) || {}).n : null }; }
-
+  /* --- game over de la pareja sin propuesta (si se detuvo antes de los 15 años): la regla que estaba cruzada en su última semana --- */
+  const goB = B?.at(-1)?.evaluacion?.territorio?.gameOver;
   /* --- comparaciones de los indicadores clave (veredicto) y tabla completa --- */
   const temas = TEMAS.map(T => ({ ...T, items: T.items.map(IT).filter(it => get(L, it.k) != null && (!it.soloSi || it.soloSi(H)) && !(H.every(h => !get(h, it.k)) && (!B || B.every(h => !get(h, it.k))))) })).filter(T => T.items.length);
   const comps = [], filas = [];
@@ -518,21 +516,12 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
   if (go) { const R = RG.find(r => r.k === go.regla) || {};
     V = { t: 'No', cls: 'mal', ic: 'no' }; razon = `Kennedy llegó a game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${go.motivo || R.n}.`;
     frase = `Kennedy llega a game over en el año ${añoDe(go.sem)}: ${go.motivo || CORTO_R[go.regla] || R.n}.`; }
-  else { const ok = !cerca.length && mejor.length > peor.length;
-    V = ok ? { t: 'Sí', cls: 'bien', ic: 'si' } : { t: 'En parte', cls: 'parte', ic: 'parte' };
-    const fin = nH >= FIN ? 'Llega a los 20 años sin game over' : `Llega al año ${añoDe(wFin)} sin game over`;
-    razon = `${fin} y mejora ${mejor.length} de ${comps.length} indicadores clave ${frente}${mejor.length ? ' (' + nom(mejor) + ')' : ''}`;
-    const pero = []; if (cerca.length) pero.push(cerca.map(e => `${ART[e.r.k] || (e.r.n || e.r.k).toLowerCase()} queda cerca de su límite (${fmtR(e.r.k, e.vF)}; game over en ${fmtR(e.r.k, umb(e.r.k))})`).join(' y '));
-    if (peor.length) pero.push(`empeora ${nom(peor, 2)}`);
-    razon += pero.length ? `, pero ${lista(pero)}.` : '.';
-    if (ok) frase = `${fin} y mejora ${mejor.length} de ${comps.length} indicadores clave ${frente}.`;
-    else if (cerca.length) frase = `${fin}, pero ${ART[cerca[0].r.k] || 'un indicador'} queda cerca de su límite (${fmtR(cerca[0].r.k, cerca[0].vF)}; game over en ${fmtR(cerca[0].r.k, umb(cerca[0].r.k))}).`;
-    else frase = `${fin}, pero empeoran tantos indicadores clave (${peor.length}) como los que mejoran (${mejor.length}) ${frente}.`; }
+  else {V={t:nH>=FIN?'Horizonte completo':'En curso',cls:'parte',ic:'parte'};razon='La evaluación por sistema considera pérdidas locales, tendencias y datos disponibles.';frase=razon;}
 
   /* alerta: la pareja sin propuesta llegó a game over y esta no (o más tarde) */
   let alerta = '';
   if (goB && conProp) { const qué = goB.regla ? ` por ${CORTO_R[goB.regla] || min1(goB.n || goB.regla)}` : '';
-    alerta = `<div class="i2-alerta">${icono('gameover')}<p><b>Sin propuesta, Kennedy llega a game over en el año ${añoDe(goB.sem)}</b>${esc(qué)}. ${go ? `Con propuesta llega en el año ${añoDe(go.sem)}.` : nH >= FIN ? 'Con propuesta llega a los 20 años sin game over.' : ''} Las cifras se comparan en el año ${añoC}, la última semana que tienen las dos.</p></div>`; }
+    alerta = `<div class="i2-alerta">${icono('gameover')}<p><b>Sin propuesta, Kennedy llega a game over en el año ${añoDe(goB.sem)}</b>${esc(qué)}. ${go ? `Con propuesta llega en el año ${añoDe(go.sem)}.` : nH >= FIN ? 'Con propuesta llega a los 15 años sin game over.' : ''} Las cifras se comparan en el año ${añoC}, la última semana que tienen las dos.</p></div>`; }
 
   /* --- métricas: las del par primero; luego la regla del game over (o la más cercana) y relleno --- */
   const tiene = (k) => MET[k] && H.some(h => MET[k].v(h) != null);
@@ -564,7 +553,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
   const titulo = def.parN ? def.parN.replace(/^\d+\s*/, '') : (def.n || `Simulación ${sim}`);
   const numPar = def.parN ? (def.parN.match(/^\d+/) || [''])[0] : '';
   const htmlHero = `<div class="i2-top"><span class="i2-k">Informe final · ${esc(parN || 'simulación ' + sim)}${escenario ? ' · ' + esc(min1(escenario)) : ''}</span><button class="i2-btn" data-i2-imp>Imprimir / PDF</button><button class="i2-btn pri" data-i2-x>Cerrar</button></div>
-    <header class="i2-hero"><div class="i2-kick">${numPar ? `<span>Par ${esc(numPar)} de 06</span>` : `<span>Simulación ${esc(sim)}</span>`}${escenario ? `<span class="i2-pill ${conProp ? 'con' : ''}">${esc(escenario)}</span>` : ''}<span>${nf(años, años % 1 ? 1 : 0)} de 20 años${go ? ' · se detuvo por game over' : ''}</span></div>
+    <header class="i2-hero"><div class="i2-kick">${numPar ? `<span>Par ${esc(numPar)} de 06</span>` : `<span>Simulación ${esc(sim)}</span>`}${escenario ? `<span class="i2-pill ${conProp ? 'con' : ''}">${esc(escenario)}</span>` : ''}<span>${nf(años, años % 1 ? 1 : 0)} de 15 años${go ? ' · se detuvo por game over' : ''}</span></div>
       <h2 class="i2-tit" style="margin-bottom:0">${esc(titulo)}</h2>${def.pregunta ? `<p class="i2-preg">${esc(def.pregunta)}</p>` : ''}
       <div class="i2-ver ${V.cls}"><div class="i2-vbig"><small>¿Fue sostenible?</small><div class="i2-vw">${icono(V.ic)}${V.t}</div></div>
         <div><p class="i2-vf">${esc(frase)}</p><div class="i2-vs"><span class="i2-cnt bien">${icono('sube')}<b>${mejor.length}</b> mejoran</span><span class="i2-cnt mal">${icono('baja')}<b>${peor.length}</b> empeoran</span><span class="i2-cnt">${icono('igual')}<b>${igual.length}</b> casi iguales</span><span class="i2-cntt">de ${comps.length} indicadores clave, ${esc(frente)}</span></div></div>
@@ -577,7 +566,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
     return { k, t: M.t, sub: M.ay, fn: M.v, fy: M.f, fa: k === 'suelo' ? (v) => '×' + nf(v, 2) : null, lim: lim != null ? lim : null, limTxt: M.limTxt ? (k === 'cora' ? 'tope de Corabastos' : M.limTxt) : null }; });
   GR.forEach(g => { g.s = serie(H, g.fn); g.r = B ? serie(B, g.fn) : null; if (g.r && !g.r.length) g.r = null; g.go = go ? go.sem : null; g.goB = goB && g.r ? goB.sem : null; });
   const GRv = GR.filter(g => g.s.length > 1);
-  const htmlGr = GRv.length ? `<section class="i2-sec"><div class="i2-sh"><div><span class="i2-lab">Cómo cambió en 20 años</span><h3 class="i2-st">${esc(may1(lista(GRv.slice(0, 2).map((g, i) => i ? min1(MET[g.k].n) : MET[g.k].n))))}</h3></div>
+  const htmlGr = GRv.length ? `<section class="i2-sec"><div class="i2-sh"><div><span class="i2-lab">Cómo cambió en 15 años</span><h3 class="i2-st">${esc(may1(lista(GRv.slice(0, 2).map((g, i) => i ? min1(MET[g.k].n) : MET[g.k].n))))}</h3></div>
       <div class="i2-leg"><span><i></i>${B ? 'Con propuesta' : 'Esta simulación'}</span>${B ? '<span><i class="ref"></i>Sin propuesta</span>' : ''}${GRv.some(g => g.lim != null) ? '<span><i class="lim"></i>Límite</span>' : ''}</div></div>
     <div class="i2-charts">${GRv.map((g, i) => `<figure class="i2-ch" data-i2-g="${i}" style="margin:0"><div class="i2-cht">${esc(g.t)}</div><div class="i2-chs">${esc(g.sub)}</div><div data-i2-svg></div><div class="i2-tip"></div></figure>`).join('')}</div></section>` : '';
 
@@ -604,12 +593,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
     <table class="i2-tab"><thead><tr><th>Indicador</th><th>${B ? 'Sin propuesta' : 'Año 1'}</th><th>${B ? 'Con propuesta' : 'Final'}</th><th>Diferencia</th></tr></thead><tbody>${filas.join('')}</tbody></table></div></details>`;
   const link = (t) => esc(t).replace(/https?:\/\/[^\s)<]+/g, (u) => { const m = u.match(/[.,;]+$/), uu = m ? u.slice(0, -m[0].length) : u; return `<a href="${uu}" target="_blank" rel="noopener">${uu}</a>${m ? m[0] : ''}`; });
   const htmlNotas = `<details class="i2-fold"><summary>Notas y fuentes<span>Reglas de game over, cómo se decide el veredicto y supuestos</span></summary><div class="i2-fb i2-notas">
-    <h4>Cómo se decide el veredicto</h4><ol>
-      <li><b>No</b>: se cumplió una regla de game over (cualquiera de las ${RG.length}, 4 semanas seguidas).</li>
-      <li><b>Sí</b>: no hubo game over, ningún indicador de las reglas terminó a 2/3 o más del camino entre hoy y su límite, y mejoran más indicadores clave de los que empeoran.</li>
-      <li><b>En parte</b>: no hubo game over pero falla alguna de las otras dos condiciones.</li>
-      <li>Indicadores clave: ${esc(lista(temas.flatMap(T => T.items.filter(i => i.clave).map(i => min1(i.n)))))}. Se comparan ${B ? `con su pareja sin propuesta (mismos valores y semilla) en la misma semana (año ${añoC}${baseCorta ? ', cuando la versión sin propuesta llegó a game over' : ''})` : 'el año 1 con el final'}. «Casi igual» = menos de 2 % (0,5 puntos, 0,2 dB o ninguna especie).</li>
-      <li>Detalle: ${esc(razon)}</li></ol>
+    <h4>Evaluación</h4><p>Umbrales experimentales de Bavaria Común. Cuatro semanas consecutivas en un sector, estación o parche confirman un colapso local. La ejecución completa termina cuando el indicador agregado de Kennedy incumple durante cuatro semanas.</p>
     <h4>Reglas de game over · iguales para las 12 simulaciones</h4>
     <div class="i2-reg">${RG.map(r => { const e = estR.find(x => x.r.k === r.k), es = go && go.regla === r.k; return `<div class="${es ? 'go' : ''}"><b>${esc(r.n)}</b>: game over si ${esc(r.txt || '')}.${e ? ` <span class="fin ${es || e.pF >= 2 / 3 ? 'mal' : ''}">Al final: ${esc(fmtR(r.k, e.vF))}${es ? ' · se cumplió' : ''}.</span>` : ''}${r.fuente ? `<p>Fuente: ${link(r.fuente)}</p>` : ''}</div>`; }).join('')}</div>
     <h4>Supuestos de este informe</h4><ul>
@@ -623,6 +607,7 @@ export function abrirInforme2({ cont, sim, def = {}, hist, base = null, reglas =
   cont.scrollTop = 0;
   cont.innerHTML = `<div class="inf2">${htmlHero}${htmlGr}${htmlRed}${htmlEv}<section class="i2-sec" style="margin-top:40px">${htmlTab}${htmlNotas}</section></div>`;
   const root = cont.firstElementChild;
+  adjuntarBalance(root,{sim,def,H,go,semilla,parametros,definiciones});
   root.querySelector('[data-i2-imp]').onclick = () => window.print();
   root.querySelector('[data-i2-x]').onclick = () => { if (onCerrar) onCerrar(); else { const s = cont.closest('#su-inf'); if (s) s.classList.remove('on'); } };
 

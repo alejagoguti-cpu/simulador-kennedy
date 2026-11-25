@@ -966,7 +966,7 @@ export function paso(E) {
   const x = ind(E);
   referencia(E, x);
   E.vals = {}; for (const R of REGLAS) { const v = VALOR[R.k](x); E.vals[R.k] = v; E.racha[R.k] = MALO[R.k](v) ? E.racha[R.k] + 1 : 0;
-    if (!E.go && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, sem: s.t + 1, motivo: MOTIVO_GO[R.k], valor: Math.round(v * 1000) / 1000 }; }
+    if (!E.go && ['abasto','residuos','habitat'].includes(R.k) && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, sem: s.t + 1, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', inicio:s.t-2, valor: Math.round(v * 1000) / 1000 }; }
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
   verdePaso(E); x.verde = indVerde(E);
@@ -985,8 +985,9 @@ export function paso(E) {
   sectores.forEach((p,i)=>revisar('s'+i,p,'Cobertura <80 %',p.valor<80));
   x.evaluacion.diversidad.porParche.forEach((p,j)=>{
     let inicial=0;
-    for(let i=0;i<RED.NFA;i++) inicial+=E.occ0[i*NP+j];
-    revisar('p'+j,{...p,valor:ratio(p.riqueza,inicial)},'Pérdida de presencia ≥30 %',inicial>0 && p.riqueza<=.7*inicial);
+    const afectadas=[];
+    for(let i=0;i<RED.NFA;i++){inicial+=E.occ0[i*NP+j];if(E.occ0[i*NP+j]&&!E.s.occ[i*NP+j])afectadas.push(RED.FAUNA[i].n);}
+    revisar('p'+j,{...p,afectadas,valor:ratio(p.riqueza,inicial)},'Pérdida de presencia ≥30 %',inicial>0 && p.riqueza<=.7*inicial);
   });
   const plantas = (x.estaciones||[]).filter(p=>p.tipo==='estacion');
   const estaciones = plantas.map(p=>({...p,valor:ratio(p.acumulado_t,o.capacidadPlanta/1000/plantas.length)}));
@@ -1012,7 +1013,7 @@ export function paso(E) {
     organicos:o.gen/7000,recolectados:o.recolectado/7000,tratados:o.desv/7000,pendientes:o.pend/1000,
     aprovechamiento:ratio(o.desv,o.gen),compost:o.compost/7000,retorno:o.vuelve/7000,
     madura:o.entradaMadura/7000,sustrato:o.sustrato/7000,saturacion:ratio(o.pend,o.alm),
-    autonomia:ratio(o.localConsumido,o.need),cobertura:o.recib*100,produccion:o.prod/7000,autoconsumo:o.auto/7000,
+    capTratamiento:o.capComp/7000, demanda:o.need/7000, capacidadAlmacen:o.alm/1000, presencia:ratio(x.pares,x.pares0), autonomia:ratio(o.localConsumido,o.need),cobertura:o.recib*100,produccion:o.prod/7000,autoconsumo:o.auto/7000,
     acopio:o.acopiado/7000,concentracion:ratio(o.coraKg,o.recib*o.need),sectores,estaciones,especies,alertas,
     eventos:E.atr.nuevos.map(p=>({...p})),gameOver:E.go?{...E.go}:null
   };
