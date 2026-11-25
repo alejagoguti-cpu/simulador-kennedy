@@ -44,7 +44,7 @@ const ICO = {
 };
 
 let M = null;
-const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=26').then(m => (M = m));
+const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=27').then(m => (M = m));
 
 function slidesDe(par, con) {
   const P = M.PARES.find(p => p.par === par), S = M.SIMS.find(s => s.par === par && s.propuesta === con);

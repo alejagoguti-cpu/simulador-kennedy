@@ -341,7 +341,7 @@ for (const P of PARES) for (const prop of [false, true]) SIMS.push({ id: 2 * P.p
    14 = Kennedy con propuesta (escenario C). Condiciones normales: población +0,5 %/año [SUP: crecimiento moderado, Kennedy ya es una localidad consolidada], carros +1,5 %/año, recolección 84 %; sin corte,
    sin cierre, sin pérdida de parche, sin aumento de orgánicos, sin presión inmobiliaria extra ni falta de recursos. Las reglas de game over siguen activas. */
 const BASE_SL = [sPob(0.5), sTraf, sRecol];
-SIMS.push({ id: 13, par: 0, propuesta: false, parN: '00 Base', prueba: 'Sin prueba de estrés: Kennedy en condiciones normales', capa: null, n: 'Kennedy hoy', corto: 'Kennedy hoy', base: 'D', grupo: 'actual',
+SIMS.push({ id: 13, par: 0, propuesta: false, parN: '00 Base', prueba: 'Sin prueba de estrés: Kennedy en condiciones normales', capa: null, n: 'Kennedy sin propuesta', corto: 'Kennedy sin propuesta', base: 'D', grupo: 'actual',
   pregunta: '¿Qué pasaría con Kennedy en 15 años si sigue como hoy, con el plan parcial Bavaria?', desc: 'Estado actual con el plan parcial Bavaria, el metro y el crecimiento normal de la población y del tráfico.', visible: 'Todo el territorio.', sliders: BASE_SL },
   { id: 14, par: 0, propuesta: true, parN: '00 Base', prueba: 'Sin prueba de estrés: Kennedy en condiciones normales', capa: null, n: 'Kennedy con propuesta', corto: 'Kennedy con propuesta', base: 'C', grupo: 'propuesta',
   pregunta: '¿Qué pasaría con Kennedy en 15 años con la red de mercados, huertas, Estaciones Circulares y Bavaria Común?', desc: 'La red distribuida de la propuesta con el metro y el crecimiento normal de la población y del tráfico.', visible: 'Todo el territorio.', sliders: BASE_SL });

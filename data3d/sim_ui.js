@@ -40,7 +40,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=26'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=27'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -463,7 +463,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      si «Ir a cada muerte» está prendido): animal sobre la X, marca en pantalla y zoom con la reconstrucción del momento (momento_muerte.js).
      «Seguir» (en la fila o en el zoom) devuelve la cámara, quita el foco y sigue corriendo si estaba corriendo. */
   let FEED = null;
-  import('./feed_eventos.js?v=1').then(m => { FEED = m.crearFeed({ alVer: (ev, f) => verEvento(ev, f), alSeguir: () => seguir() }); }).catch(e => console.warn('feed de eventos:', e));
+  import('./feed_eventos.js?v=2').then(m => { FEED = m.crearFeed({ alVer: (ev, f) => verEvento(ev, f), alSeguir: () => seguir() }); }).catch(e => console.warn('feed de eventos:', e));
   const escH = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let viendo = null;
   /* cola: entra una fila nueva cada 2,5 s (reales) como mínimo; si se acumulan más de 4 en espera se descartan (siguen en el informe final,
@@ -494,7 +494,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (cola.some(esAtropello)) return; }
     yaAvisado.set(ev.titulo, sem);
     if (!SIN_CAPAS && !generico(ev)) clavar([ev]);
-    if (autoMuerte(ev) && (!FEED || FEED.auto) && sem - semAuto >= 52 && !viendo && !cola.some(e => e.auto)) { semAuto = sem; ev.auto = true; cola.unshift(ev); return; }
+    /* sin vuelo automático a las muertes (pedido de la autora): la cámara solo va cuando la persona toca «Ver» en el feed */
     cola.push(ev); while (cola.length > 4) { const k = cola.findIndex(e => !e.auto && !e.prio && !(e.tipo === 'especies' && e.signo < 0)); /* las alertas (prio) no se descartan */ cola.splice(k >= 0 ? k : cola.findIndex(e => !e.auto), 1); }
   }
   function mostrarAviso(ev) {
@@ -784,8 +784,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   styleSeguimiento.textContent='#st-panel h3{font:500 18px system-ui;color:#f2f4ec}#st-panel h4{font:600 12px system-ui;color:#d5ff60;margin:16px 0 4px}#st-panel summary{border-bottom:1px solid #ffffff20;padding:8px 0}#st-panel summary b{font:500 10px monospace;color:#dce7bb}#st-panel svg{width:100%;display:block;background:#111a1580;border-radius:9px}#st-panel svg text{fill:#e2e9df;font:8px system-ui}#st-panel p{margin:6px 0}#st-panel button{background:transparent;color:#d4e7a9;border:0;text-decoration:underline;cursor:pointer}#st-panel .st-row{display:grid;grid-template-columns:1fr auto;gap:3px;padding:4px 0}#st-panel meter{grid-column:1/-1;width:100%;height:6px}';
   document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
-  /* los datos ya no van a la derecha (#su-tab / cuerdas): el tablero estadístico vive en el panel izquierdo, section#lp-datos (panel_datos.js) */
-  import('./panel_datos.js?v=1').then(m => m.iniciarPanelDatos({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de datos:', e));
+  /* el tablero estadístico en tiempo real vive en la columna derecha, aside#lp-tablero (panel_datos.js + graficas_vivas.js) */
+  import('./panel_datos.js?v=2').then(m => m.iniciarPanelDatos({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de datos:', e));
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';

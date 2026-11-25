@@ -268,11 +268,11 @@ function marca() {
   // zoom: escoge un lado libre (izquierda arriba, derecha arriba, izquierda abajo, derecha abajo) entre el panel izquierdo y el feed
   const { W, mov } = medidas(); zoom.style.width = (W + 16) + 'px'; const zw = zoom.offsetWidth, zh = zoom.offsetHeight;
   let zx, zy;
-  if (mov) { zx = 12; zy = 108; /* debajo del botón del panel */ }
+  if (mov) { zx = 12; zy = 158; /* debajo de la franja de eventos (108-150) */ }
   else {
     const r = (id) => { const e = document.getElementById(id); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return b.width && b.height ? b : null; };
-    const iz = r('gs-izq'), fe = r('su-feed'), an = r('lp-anos');
-    const L = (iz ? iz.right : 0) + 14, R = (fe ? fe.left : innerWidth) - 14, T = 66, B = (an ? an.top : innerHeight) - 12, g = 96;
+    const iz = r('gs-izq'), fe = r('su-feed'), tb = r('lp-tablero'), an = r('lp-anos');
+    const L = (iz ? iz.right : 0) + 14, R = (tb ? tb.left : innerWidth) - 14, T = (fe ? fe.bottom : 66) + 12, B = (an ? an.top : innerHeight) - 12, g = 96; /* espacio libre del mapa: entre el panel izquierdo y el tablero, bajo la franja de eventos */
     const cand = { io: [sx - h - g - zw, sy - h - g - zh + 40], do: [sx + h + g, sy - h - g - zh + 40], ia: [sx - h - g - zw, sy + h + g - 40], da: [sx + h + g, sy + h + g - 40] };
     const cabe = (p) => p[0] >= L && p[0] + zw <= R && p[1] >= T && p[1] + zh <= B;
     if (!lado || !cabe(cand[lado])) lado = Object.keys(cand).find(k => cabe(cand[k])) || 'io';

@@ -9,8 +9,8 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { crearSlides } from './slides_sim.js?v=1';
-import { iniciarSimUI } from './sim_ui.js?v=107';
+import { crearSlides } from './slides_sim.js?v=2';
+import { iniciarSimUI } from './sim_ui.js?v=110';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -153,7 +153,7 @@ export function iniciarLimpio({ T3 }) {
     let movido = false;
     setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
       /* la columna derecha (#lp-der) ya no se muestra: la tarjeta solo se ve (y la cuerda solo se dibuja) si el panel de datos la monta en #lp-datos */
-      const on = !!ESC.activo && movido && !!card.closest('#lp-datos'); card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
+      const on = !!ESC.activo && movido && !!card.closest('#lp-datos, #lp-tablero'); card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
       const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
 
@@ -176,19 +176,29 @@ export function iniciarLimpio({ T3 }) {
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
   escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.hidden = true; document.body.appendChild(der); /* se conserva vacío (otros módulos lo buscan), escondido */
+  /* TABLERO EN TIEMPO REAL (columna derecha, alto completo): aquí solo la caja exterior; el panel de datos (data3d/panel_datos.js) se monta adentro.
+     En tableta y celular se abre con el botón «Tablero» (#lp-tab-tog). */
+  const tablero = document.getElementById('lp-tablero') || document.createElement('aside');
+  if (!tablero.isConnected) { tablero.id = 'lp-tablero'; tablero.setAttribute('aria-label', 'Tablero en tiempo real'); document.body.appendChild(tablero); }
   const seis = document.createElement('section'); seis.id = 'lp-seis'; seis.setAttribute('aria-labelledby', 'lp-seis-t');
-  const datos = document.createElement('section'); datos.id = 'lp-datos'; datos.setAttribute('aria-label', 'Datos');
+  /* capas del mapa que quedan (ruido de carros, solo relaciones bióticas): plegadas en una línea */
+  const capas = document.createElement('details'); capas.id = 'lp-capas'; capas.className = 'lp-det';
+  capas.innerHTML = '<summary><span class="lp-dt">Capas del mapa</span><span class="lp-ds"></span></summary><div class="lp-db"></div>';
+  const resumenCapas = () => { const on = [['rc-btn', 'Ruido'], ['lp-bio', 'Solo bióticas']].filter(([id]) => { const b = document.getElementById(id); return b && b.classList.contains('on'); }).map(x => x[1]);
+    capas.querySelector('.lp-ds').textContent = on.length ? on.join(' · ') : 'ninguna'; };
+  capas.querySelector('.lp-db').addEventListener('click', () => setTimeout(resumenCapas, 60));
   const SL = crearSlides({ alCorrer: () => { if (RELOJ.pausaSem) alternar(); } });
   const ICO_SL = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 14h4M8 11.5V14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
   let escE = 'hoy';
   const idDe = (par) => escE === 'con' ? 2 * par : 2 * par - 1;
   function refrescarSeis() { const base = escE === 'con' ? 14 : 13; seis.classList.toggle('con', escE === 'con');
-    const t = seis.querySelector('.lp-base'); if (t) t.textContent = ESC.activo === base ? `Corre Kennedy ${escE === 'con' ? 'con' : 'sin'} propuesta, sin prueba de estrés. Toca una simulación para aplicarla desde ahora y ver sus diapositivas.` : 'Toca otra vez la simulación activa para quitarla.';
-    const l = seis.querySelector('.lp-sec span'); if (l) l.textContent = escE === 'con' ? 'con propuesta' : 'sin propuesta';
+    const h = seis.querySelector('.lp-sec'); if (h) h.title = ESC.activo === base ? `Corre Kennedy ${escE === 'con' ? 'con' : 'sin'} propuesta, sin prueba de estrés. Toca una simulación para aplicarla desde ahora y ver sus diapositivas.` : 'Toca otra vez la simulación activa para quitarla.';
+    const l = seis.querySelector('.lp-modo'); if (l) l.textContent = escE === 'con' ? 'Con propuesta' : 'Sin propuesta';
     seis.querySelectorAll('li').forEach(li => { const b = li.querySelector('.lp-sim'), on = ESC.activo === +b.dataset.s; li.classList.toggle('on', on); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); }
   function pintarSeis() {
-    seis.innerHTML = `<header class="lp-sec"><h5 id="lp-seis-t">Simulaciones</h5><span></span></header><p class="lp-base"></p><ul class="lp-lista">` + PARES.map(P => `<li>
-      <button type="button" class="lp-sim" data-s="${idDe(P.par)}" data-p="${P.par}"><i>${String(P.par).padStart(2, '0')}</i><span><b>${P.n}</b><small>${P.prueba}</small></span></button>
+    /* filas de una línea: número + nombre; la prueba de estrés va en el title (y en la descripción accesible) */
+    seis.innerHTML = `<header class="lp-sec"><h5 id="lp-seis-t">Simulaciones</h5><span class="lp-modo"></span></header><ul class="lp-lista">` + PARES.map(P => `<li title="${P.prueba}">
+      <button type="button" class="lp-sim" data-s="${idDe(P.par)}" data-p="${P.par}" aria-describedby="lp-pr-${P.par}"><i>${String(P.par).padStart(2, '0')}</i><b>${P.n}</b><small id="lp-pr-${P.par}" class="lp-sr">${P.prueba}</small></button>
       <button type="button" class="lp-ver" data-p="${P.par}" aria-label="Ver diapositivas de ${P.n}" title="Diapositivas">${ICO_SL}</button></li>`).join('') + '</ul>';
     seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
       if (ESC.activo === id) { escoger(base, true); SL.cerrar(); } else { escoger(id, true); SL.abrir(+b.dataset.p, escE === 'con', b); }
@@ -199,19 +209,50 @@ export function iniciarLimpio({ T3 }) {
     const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? idDe(par) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */
     pintarSeis(); if (par && SL.abierto) SL.abrir(par, escE === 'con'); });
   /* orden del panel izquierdo: un observador (no un intervalo que pelea) pone cada bloque en su sitio cuando giro_sim.js o sim_ui.js agregan nodos */
+  /* Panel izquierdo angosto, de arriba abajo: «Simulaciones» (#lp-seis) → Variables (plegable) + «Ver informe» (#su-der) → «Capas del mapa»
+     (plegable). El reloj grande se esconde (la hora va en la barra de años). Los datos van al tablero de la derecha (#lp-tablero). */
   const ordenar = () => { const gz = document.getElementById('gs-izq'); if (!gz) return false;
     const rl = gz.querySelector('.gs-reloj'), sd = document.getElementById('su-der');
     if (rl && rl.nextElementSibling !== seis) rl.after(seis); else if (!rl && seis.parentNode !== gz) gz.prepend(seis);
     if (sd && seis.nextElementSibling !== sd) seis.after(sd);
-    if (gz.lastElementChild !== datos) gz.appendChild(datos); return !!sd; };
-  { let obs = null; const espera = setInterval(() => { const gz = document.getElementById('gs-izq'); if (!gz) return;
+    const ref = sd && sd.parentNode === gz ? sd : seis; if (ref.nextElementSibling !== capas) ref.after(capas);
+    const db = capas.querySelector('.lp-db');
+    for (const id of ['rc-btn', 'lp-bio']) { const b = document.getElementById(id); if (b && gz.contains(b) && b.parentNode !== db) db.appendChild(b); }
+    resumenCapas();
+    /* el contenedor viejo de datos ya no va en el panel izquierdo: si aparece aquí, se pasa al tablero */
+    const vd = document.getElementById('lp-datos'); if (vd && gz.contains(vd)) tablero.appendChild(vd);
+    return !!sd; };
+  /* Variables de #su-der (sim_ui.js las repinta con innerHTML): se envuelven en un <details> cerrado con un resumen de una línea */
+  let varsAbiertas = false;
+  const resumenVars = (dt) => { const v = [...dt.querySelectorAll('.su-sl label b')].map(b => b.textContent.trim()); dt.querySelector('.lp-ds').textContent = v.length ? `${v.length} · ${v.join(' · ')}` : ''; };
+  const envolverVars = () => { const sd = document.getElementById('su-der'); if (!sd || sd.querySelector('#lp-vars')) return;
+    const hs = [...sd.querySelectorAll(':scope > h4')]; if (hs[0] && !/variables|informe/i.test(hs[0].textContent)) hs[0].classList.add('lp-par');
+    for (const h of hs) if (/^\s*informe/i.test(h.textContent)) h.classList.add('lp-inf-h');
+    const hv = hs.find(h => /^\s*variables/i.test(h.textContent)); if (!hv) return;
+    const dt = document.createElement('details'); dt.id = 'lp-vars'; dt.className = 'lp-det'; dt.open = varsAbiertas;
+    dt.innerHTML = '<summary><span class="lp-dt">Variables</span><span class="lp-ds"></span></summary><div class="lp-db"></div>';
+    const cuerpo = dt.querySelector('.lp-db'); let k = hv.nextElementSibling; while (k && k.classList.contains('su-sl')) { const n = k.nextElementSibling; cuerpo.appendChild(k); k = n; }
+    hv.replaceWith(dt); resumenVars(dt);
+    dt.addEventListener('toggle', () => { varsAbiertas = dt.open; });
+    dt.addEventListener('input', () => resumenVars(dt)); };
+  { let obs = null, obsD = null; const espera = setInterval(() => { const gz = document.getElementById('gs-izq'); if (!gz) return;
       if (!obs) { obs = new MutationObserver(ordenar); obs.observe(gz, { childList: true }); }
-      if (ordenar()) clearInterval(espera); }, 300); }
-  /* celular: el panel izquierdo es un cajón que se abre con este botón */
-  { const tg = document.createElement('button'); tg.id = 'lp-izq-tog'; tg.type = 'button'; tg.setAttribute('aria-controls', 'gs-izq'); tg.setAttribute('aria-expanded', 'false');
-    tg.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Simulaciones y datos</span>';
-    tg.onclick = () => { const on = !html.classList.contains('lp-izq-abierto'); html.classList.toggle('lp-izq-abierto', on); tg.setAttribute('aria-expanded', on); tg.querySelector('span').textContent = on ? 'Cerrar panel' : 'Simulaciones y datos'; };
-    document.body.appendChild(tg); }
+      const sd = document.getElementById('su-der'); if (sd && !obsD) { obsD = new MutationObserver(envolverVars); obsD.observe(sd, { childList: true }); envolverVars(); }
+      if (ordenar() && obsD) clearInterval(espera); }, 300); }
+  /* tableta y celular: el panel izquierdo y el tablero son cajones que se abren con estos botones (uno a la vez) */
+  { const ICO_MEN = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    const ICO_TAB = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11M4.5 11V7.5M8 11V3.5M11.5 11V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    const tg = document.createElement('button'); tg.id = 'lp-izq-tog'; tg.type = 'button'; tg.setAttribute('aria-controls', 'gs-izq'); tg.setAttribute('aria-expanded', 'false');
+    tg.innerHTML = ICO_MEN + '<span>Simulaciones</span>';
+    const tt = document.createElement('button'); tt.id = 'lp-tab-tog'; tt.type = 'button'; tt.setAttribute('aria-controls', 'lp-tablero'); tt.setAttribute('aria-expanded', 'false');
+    tt.innerHTML = ICO_TAB + '<span>Tablero</span>';
+    const poner = (cual, on) => { html.classList.toggle('lp-izq-abierto', cual === 'izq' && on); html.classList.toggle('lp-tab-abierto', cual === 'tab' && on);
+      tg.setAttribute('aria-expanded', html.classList.contains('lp-izq-abierto')); tt.setAttribute('aria-expanded', html.classList.contains('lp-tab-abierto'));
+      tg.querySelector('span').textContent = html.classList.contains('lp-izq-abierto') ? 'Cerrar' : 'Simulaciones'; tt.querySelector('span').textContent = html.classList.contains('lp-tab-abierto') ? 'Cerrar' : 'Tablero'; };
+    tg.onclick = () => poner('izq', !html.classList.contains('lp-izq-abierto'));
+    tt.onclick = () => poner('tab', !html.classList.contains('lp-tab-abierto'));
+    addEventListener('keydown', (e) => { if (e.key === 'Escape' && (html.classList.contains('lp-izq-abierto') || html.classList.contains('lp-tab-abierto'))) poner('', false); });
+    document.body.append(tg, tt); }
   setTimeout(pintarSeis, 0);
   /* SIEMPRE CORRIENDO: al abrir arranca la simulación base (Kennedy hoy) y la barra de años corre sola; al llegar al año 15 vuelve a empezar */
   setTimeout(function arrancar() { const L = document.getElementById('loader'); if ((L && !L.classList.contains('hidden')) || !UI) return void setTimeout(arrancar, 400);
@@ -230,6 +271,7 @@ export function iniciarLimpio({ T3 }) {
     <span class="tit">Escoge una simulación</span>
     <div class="pista"><i></i><b></b>${FASES.map(f => `<u title="${f.n} · años ${f.a0}–${f.a1}" style="left:${(f.a0 - 1) / AÑOS * 100}%;width:${(f.a1 - f.a0 + 1) / AÑOS * 100}%">${f.n.replace(' plazo', '')}</u>`).join('')}${[1, 5, 10, 15].map(a => `<s style="left:${(a - 0.5) / AÑOS * 100}%">${a}</s>`).join('')}</div>
     <span class="ano">Año 1<small>Corto plazo</small></span>
+    <span class="hora" title="Hora del día en la simulación (carros, fauna y cielo)"><b>--:--</b><small>hora</small></span>
     <button type="button" class="vel" title="Velocidad: cuánto dura un año de la simulación (no es tiempo real)">${VEL_TXT[0]}</button>`;
   document.body.appendChild(bar);
   const $b = (s) => bar.querySelector(s);
@@ -263,6 +305,7 @@ export function iniciarLimpio({ T3 }) {
     $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
     const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
+    { const md = RELOJ.minutoDia, hh = String(Math.floor(md / 60) % 24).padStart(2, '0') + ':' + String(Math.floor(md % 60)).padStart(2, '0'); const hb = $b('.hora b'); if (hb.textContent !== hh) hb.textContent = hh; }
     /* simulador: el tablero y las simulaciones quedan visibles mientras corre (sin desvanecer paneles) */ T3.horaLuz = 10.5; /* siempre luz de media mañana (el reloj y los carros siguen su hora) */ { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las cruces de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
     const p = $b('.play'); if (p.dataset.corre !== String(corre)) { p.dataset.corre = corre; p.innerHTML = corre ? ICO_PAUSA : ICO_PLAY; p.setAttribute('aria-label', corre ? 'Pausar' : 'Correr'); }
   });
