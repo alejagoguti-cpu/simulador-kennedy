@@ -834,7 +834,7 @@ export async function iniciarSimulacion(cfg = {}) {
       else if (a.zona) { const pts = []; for (let k = 0; k < 40; k++) pts.push([a.zona[0] + Math.cos(k / 40 * 6.283) * a.rz, a.zona[1] + Math.sin(k / 40 * 6.283) * a.rz]); trazo(pts, 1, col, true); }
       else if (a.ave) trazo(a.ave.poly, 1, col, true);
       else if (a.h) { if (a.tipo === 'abeja' || a.tipo === 'colibri') for (const fl of a.h.flores) trazo([a.h.colmena, fl], 0.5, col); trazo(a.h.poly, 1, col, true); }
-      ficha.innerHTML = `<button class="x" aria-label="Cerrar">✕</button><h4>${t.n}${t.p ? `<b style="background:${CONV[t.p].c}">${t.p}</b>` : ''}</h4>
+      ficha.innerHTML = `<button class="x" aria-label="Cerrar"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><h4>${t.n}${t.p ? `<b style="background:${CONV[t.p].c}">${t.p}</b>` : ''}</h4>
         <div class="es" id="gs-f-es">${estado(a)}</div><p>${REGLA[a.tipo] || ''}</p><p id="gs-f-ev"></p>
         <div class="bt"><button id="gs-f-seg" class="on">Seguir con la cámara</button></div>`;
       ficha.classList.add('on'); ficha.querySelector('.x').onclick = cerrarFicha;
@@ -848,7 +848,7 @@ export async function iniciarSimulacion(cfg = {}) {
       if (k === 'P2') { trazo(rRecu.p, 2, cv.c); rEntrega.forEach(l => trazo(l.p, 1.6, CONV.P3.c)); }
       if (k === 'P3') { for (const a of A) if ((a.tipo === 'maestra' && a.grupo) || (a.tipo === 'vecino' && a.ini < 2)) trazo((a.grupo || a.lin).p, 1.4, ACT[a.tipo].c); rEntrega.forEach(l => trazo(l.p, 1.4, CONV.P2.c)); }
       if (k === 'P4') { const h = HUE.reduce((b, h) => Math.hypot(h.c[0] - q[0], h.c[1] - q[1]) < Math.hypot(b.c[0] - q[0], b.c[1] - q[1]) ? h : b, HUE[0]); for (const fl of h.flores) trazo([h.colmena, fl], 0.6, ACT.abeja.c); trazo(h.poly, 1.4, cv.c, true); }
-      ficha.innerHTML = `<button class="x" aria-label="Cerrar">✕</button><h4><b style="background:${cv.c}">${k}</b>${cv.t}</h4>
+      ficha.innerHTML = `<button class="x" aria-label="Cerrar"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><h4><b style="background:${cv.c}">${k}</b>${cv.t}</h4>
         <div class="es">${lb.sub} · ${cv.h}</div><p><b>Actores:</b> ${actores}</p><p><b>Interacciones:</b> ${INTER[k]}</p><p style="color:#94a3b8">Las líneas de color muestran las rutas de sus agentes. Toca un agente para ver cómo se comporta.</p>`;
       ficha.classList.add('on'); ficha.querySelector('.x').onclick = cerrarFicha;
       volar(q[0], q[1], 420);

@@ -9,7 +9,8 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=106';
+import { crearSlides } from './slides_sim.js?v=1';
+import { iniciarSimUI } from './sim_ui.js?v=107';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -51,7 +52,7 @@ export const SIMS = [
   { id: 10, par: 5, n: 'Población y especulación · con propuesta', base: 'C', cam: 'general' },
   { id: 11, par: 6, n: 'Gobernanza · sin propuesta', base: 'D', cam: 'general' },
   { id: 12, par: 6, n: 'Gobernanza · con propuesta', base: 'C', cam: 'general' },
-  { id: 13, par: 0, n: 'Kennedy hoy', base: 'D', cam: 'general' },          /* simulación BASE (sin escenario): siempre corriendo */
+  { id: 13, par: 0, n: 'Kennedy sin propuesta', base: 'D', cam: 'general' }, /* simulación BASE (sin escenario): siempre corriendo */
   { id: 14, par: 0, n: 'Kennedy con propuesta', base: 'C', cam: 'general' }
 ];
 
@@ -76,22 +77,22 @@ export function iniciarLimpio({ T3 }) {
     /* barra de años (abajo, mismo vidrio de los paneles) */
     #lp-anos { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px;
       padding: 10px 14px; width: min(760px, calc(100vw - 32px)); box-sizing: border-box; border-radius: 16px;
-      background: linear-gradient(180deg, rgba(40,44,52,.62), rgba(20,22,28,.72)); border: 1px solid rgba(255,255,255,.14);
-      backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #eef1f4; }
+      color: #eef1f4; } /* el vidrio lo pone data3d/urbia.css (--ui-glass) */
     #lp-anos button { flex: none; height: 34px; min-width: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
     #lp-anos button:hover { background: rgba(255,255,255,.16); }
-    #lp-anos button.play { min-width: 44px; background: rgba(255,170,70,.9); color: #1c1205; border-color: transparent; }
+    #lp-anos button.play { min-width: 44px; background: var(--ui-acc); color: var(--ui-acc-ink); border-color: transparent; }
+    #lp-anos button svg { width: 14px; height: 14px; display: block; margin: auto; }
     #lp-anos .tit { flex: none; max-width: 230px; font: 600 13px/1.2 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #lp-anos .vel { min-width: 92px !important; font-size: 11.5px !important; }
 #lp-anos .ano { flex: none; font: 600 20px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .03em; min-width: 62px; text-align: right; }
     #lp-anos .pista { position: relative; flex: 1; height: 26px; }
     #lp-anos .pista i { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 3px; background: rgba(255,255,255,.16); }
-    #lp-anos .pista b { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #ffb347, #ffd86b); width: 0; }
+    #lp-anos .pista b { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 3px; background: var(--ui-acc); width: 0; }
     #lp-anos .pista u { position: absolute; top: -3px; height: 12px; border-left: 1px solid rgba(255,255,255,.28); padding-left: 5px; box-sizing: border-box; font: 600 9px/12px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; opacity: .6; white-space: nowrap; overflow: hidden; }
 #lp-anos .ano small { display: block; font: 600 9px/1.2 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .6; text-align: right; }
 #lp-anos .pista s { position: absolute; top: 18px; transform: translateX(-50%); font: 500 10px system-ui, sans-serif; opacity: .55; text-decoration: none; }
     #lp-anos.vacia .play, #lp-anos.vacia .vel, #lp-anos.vacia .rei { opacity: .45; pointer-events: none; }
-    @media (min-width: 1100px) { #lp-anos { left: 296px; right: 312px; transform: none; width: auto; } #lp-anos .tit { max-width: 200px; } #lp-anos .pista { min-width: 380px; } } /* barra larga: ocupa todo el ancho entre los dos paneles */
+    /* posición de la barra: data3d/urbia.css (a la derecha del panel izquierdo, que va de arriba abajo) */
 @media (max-width: 640px) { #lp-anos .tit { display: none; } #lp-anos { gap: 8px; padding: 8px 10px; } }`;
   document.head.appendChild(css);
   import('./camara_quieta.js?v=1').then(m => m.iniciarCamaraQuieta({ T3 })).catch(e => console.warn('cámara quieta:', e)); /* la cámara nunca se mueve sola */
@@ -146,14 +147,13 @@ export function iniciarLimpio({ T3 }) {
   { const sb = document.createElement('style'); sb.textContent = '.lug-et,.hc-et,#bas-etq,.be,#cont-et,#mercred-aviso,#pares-etq{display:none!important}'; document.head.appendChild(sb); } /* sin burbujas de información sobre el mapa */
   { const st = document.createElement('style'); st.textContent = `#lp-red{position:fixed;left:296px;top:316px;z-index:41;width:340px;padding:9px 10px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4;display:none}
     #lp-red.on{display:block} #lp-red h5{margin:0 0 2px;font:600 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ffd28a} #lp-red .n{font:600 20px 'Barlow Condensed',system-ui,sans-serif} #lp-red .n small{font:500 11px system-ui,sans-serif;opacity:.7;margin-left:4px}
-    #lp-red h5{cursor:pointer} #lp-red h5::after{content:' ▾';opacity:.7} #lp-red.cerrado h5::after{content:' ▸'} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}
+    #lp-red h5{cursor:pointer} #lp-red.cerrado #lp-red-c,#lp-red.cerrado p{display:none} #lp-red.cerrado{width:auto;padding:7px 10px} #lp-red canvas{width:100%!important;display:block} #lp-red p{margin:3px 0 0;font:400 10.5px/1.35 system-ui,sans-serif;opacity:.7} @media (max-width:1100px){#lp-red{display:none!important}}
     #lp-der #lp-red{position:static;width:auto;flex:none} #lp-der #lp-red h5::after{content:''} #lp-der #lp-red canvas{width:220px!important;max-width:100%;margin:0 auto} /* bola un poco más chica */ #lp-der #lp-red p{font-size:10px}`; document.head.appendChild(st);
     const card = document.createElement('div'); card.id = 'lp-red'; card.className = ''; card.innerHTML = '<h5>Quién interactúa con quién · ahora</h5><div class="n"><span id="lp-red-n">0</span><small>interacciones ocurriendo</small></div><div id="lp-red-c"></div><p id="lp-red-p">Pasa sobre una especie para ver con quién se relaciona.</p>'; document.body.appendChild(card); card.querySelector('h5').onclick = () => card.classList.toggle('cerrado'); /* empieza plegada: el territorio primero */
     let movido = false;
     setInterval(() => { const cv = document.getElementById('tb-cuerda'); if (cv && !movido) { document.getElementById('lp-red-c').appendChild(cv); movido = true; }
-      { const D = document.getElementById('lp-der'); if (D && D.firstElementChild !== card) D.prepend(card); /* quién interactúa con quién: arriba a la derecha */
-        const ley = document.getElementById('bio-ley'); if (D && ley && card.nextElementSibling !== ley) card.after(ley); } /* convenciones de las líneas: debajo, en el mismo panel */
-      const on = !!ESC.activo && movido; card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
+      /* la columna derecha (#lp-der) ya no se muestra: la tarjeta solo se ve (y la cuerda solo se dibuja) si el panel de datos la monta en #lp-datos */
+      const on = !!ESC.activo && movido && !!card.closest('#lp-datos'); card.classList.toggle('on', on); window.KEN_CUERDA_VIVA = on;
       const tn = document.getElementById('tb-n'), p1 = document.getElementById('tb-pie1'); document.getElementById('lp-red-n').textContent = (window.KEN_ENC || 0).toLocaleString('es-CO'); if (p1 && p1.textContent) document.getElementById('lp-red-p').textContent = p1.textContent; }, 500); }
   let nRep = 0; const rep = setInterval(() => { limpiarPanel(); if (++nRep > 30) clearInterval(rep); }, 1000);
 
@@ -166,35 +166,52 @@ export function iniciarLimpio({ T3 }) {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
 
-  /* ---------- ESCENARIOS (arriba) y SUS 6 SIMULACIONES (derecha) ---------- */
-  { const se = document.createElement('style'); se.textContent = `#lp-esc{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:4px;padding:4px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    #lp-esc button{padding:9px 18px;border-radius:10px;border:0;background:none;color:#eef1f4;font:600 13.5px system-ui,sans-serif;cursor:pointer;opacity:.7} #lp-esc button.on{opacity:1;background:rgba(255,255,255,.12)} #lp-esc button.con.on{background:rgba(142,230,168,.2);color:#c9f5d6}
-    #lp-der{position:fixed;right:16px;top:16px;bottom:96px;width:320px;z-index:39;display:flex;flex-direction:column;gap:8px;pointer-events:none} #lp-der > *{pointer-events:auto}
-    #lp-seis{padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);color:#eef1f4}
-    #lp-seis .lp-base{margin:0 0 8px;font:500 11px/1.35 system-ui,sans-serif;opacity:.75} #lp-seis h5{margin:0 0 6px;font:600 10.5px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7} #lp-seis button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 8px;margin:0 0 3px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.05);color:inherit;font:600 12.5px system-ui,sans-serif;cursor:pointer}
-    #lp-seis button i{font:600 16px 'Barlow Condensed',system-ui,sans-serif;font-style:normal;opacity:.55;width:20px} #lp-seis button:hover{background:rgba(255,255,255,.1)} #lp-seis button.on{border-color:rgba(255,190,90,.9);background:rgba(255,190,90,.12)} #lp-seis.con button.on{border-color:rgba(142,230,168,.95);background:rgba(142,230,168,.12)}
-    html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important} #gs-izq #lp-seis{background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:8px 0 4px;margin-top:6px} html.limpio #gs-izq #su-der{position:static;width:auto;max-height:none;padding:6px 0;margin:0;background:none;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-    @media (max-width:760px){#lp-der{top:auto;bottom:86px;left:16px;right:16px;width:auto;max-height:45vh}#lp-esc{top:8px}}
-    /* UN SOLO VIDRIO (pedido de la autora): la columna derecha es un único panel con EXACTAMENTE el vidrio del panel izquierdo (el «vidrio
-       oscuro tipo iPhone» de data3d/ui_sobrio.css: var(--ui-glass), --ui-glass-bd, --ui-glass-sh, --ui-glass-fx, radio 18) y lo de adentro
-       (quién interactúa con quién, convenciones, tablero) va sin cajas propias, separado por líneas finas. Barra de años y selector igual. */
-    #lp-der,#lp-anos,#lp-esc{background:var(--ui-glass,rgba(20,22,28,.5))!important;border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16))!important;border-radius:18px!important;-webkit-backdrop-filter:var(--ui-glass-fx,blur(24px))!important;backdrop-filter:var(--ui-glass-fx,blur(24px))!important;box-shadow:var(--ui-glass-sh,0 22px 50px rgba(0,0,0,.34))!important;color:#eef1f4;text-shadow:0 1px 2px rgba(0,0,0,.35)}
-    #lp-der{bottom:auto;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:none;padding:12px 14px;gap:0;pointer-events:auto;box-sizing:border-box} #lp-der::-webkit-scrollbar{display:none}
-    #lp-der > *{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:10px 0!important;margin:0!important;flex:none!important;max-height:none!important;overflow:visible!important}
-    #lp-der > * + *{border-top:1px solid rgba(255,255,255,.1)!important} #lp-der > :first-child{padding-top:0!important} #lp-der > :last-child{padding-bottom:0!important}
-    #lp-der #bio-ley{position:static!important;max-width:none!important;display:flex} #lp-der #bio-ley b{color:#c3cace;letter-spacing:.14em}
-    @media (max-width:760px){#lp-der{max-height:45vh}}`; document.head.appendChild(se); }
-  const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.innerHTML = '<button type="button" data-e="hoy" class="on">Kennedy hoy</button><button type="button" data-e="con" class="con">Kennedy con propuesta</button>'; document.body.appendChild(escB);
-  const der = document.createElement('div'); der.id = 'lp-der'; der.innerHTML = '<div id="lp-seis"></div>'; document.body.appendChild(der);
+  /* ---------- ESCENARIOS (arriba) y SIMULACIONES (panel izquierdo, cada una abre sus diapositivas: data3d/slides_sim.js) ----------
+     Panel izquierdo (#gs-izq), de arriba abajo: reloj → «Simulaciones» (#lp-seis) → Par/Variables/Informe (#su-der, de sim_ui.js) →
+     #lp-datos (contenedor vacío que llena el panel de datos; siempre es el ÚLTIMO hijo). La columna derecha #lp-der ya no se muestra.
+     Vidrio, colores y posiciones: data3d/urbia.css (variables --ui-glass*, --ui-acc*). */
+  { const se = document.createElement('style'); se.textContent = `#lp-esc{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:4px;padding:4px}
+    #lp-esc button{padding:8px 16px;border-radius:10px;border:0;background:none;color:inherit;font:500 12.5px var(--ui-sans,system-ui),sans-serif;cursor:pointer;opacity:.75}
+    html.limpio #lp-der{display:none!important} html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important}`; document.head.appendChild(se); }
+  const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
+  escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
+  const der = document.createElement('div'); der.id = 'lp-der'; der.hidden = true; document.body.appendChild(der); /* se conserva vacío (otros módulos lo buscan), escondido */
+  const seis = document.createElement('section'); seis.id = 'lp-seis'; seis.setAttribute('aria-labelledby', 'lp-seis-t');
+  const datos = document.createElement('section'); datos.id = 'lp-datos'; datos.setAttribute('aria-label', 'Datos');
+  const SL = crearSlides({ alCorrer: () => { if (RELOJ.pausaSem) alternar(); } });
+  const ICO_SL = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 14h4M8 11.5V14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
   let escE = 'hoy';
-  function pintarSeis() { const box = document.getElementById('lp-seis'); box.className = escE === 'con' ? 'con' : '';
-    const base = escE === 'con' ? 14 : 13;
-    box.innerHTML = `<h5>Escenarios que pueden ocurrir</h5><p class="lp-base">${ESC.activo === base ? '▶ Corre ' + (escE === 'con' ? 'Kennedy con propuesta' : 'Kennedy hoy') + ' sin escenario. Toca uno para que ocurra desde ahora.' : 'Toca otra vez el escenario para quitarlo.'}</p>` + PARES.map(P => { const id = escE === 'con' ? 2 * P.par : 2 * P.par - 1; return `<button type="button" data-s="${id}" class="${ESC.activo === id ? 'on' : ''}" title="${P.prueba}"><i>${String(P.par).padStart(2, '0')}</i>${P.n}</button>`; }).join('');
-    box.querySelectorAll('button').forEach(b => b.onclick = () => { const id = +b.dataset.s; escoger(ESC.activo === id ? base : id, true); setTimeout(pintarSeis, 120); }); }
-  escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-    const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? (escE === 'con' ? 2 * par : 2 * par - 1) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */ setTimeout(pintarSeis, 120); });
-  /* IZQUIERDA: reloj → escenarios que pueden ocurrir → variables; DERECHA: quién interactúa con quién y los diagramas del modelo ecocéntrico */
-  setInterval(() => { const gz = document.getElementById('gs-izq'), rl = gz && gz.querySelector('.gs-reloj'), ls = document.getElementById('lp-seis'), sd = document.getElementById('su-der'); if (!rl) return; if (ls && rl.nextElementSibling !== ls) rl.after(ls); if (sd && ls && ls.nextElementSibling !== sd) ls.after(sd); }, 600);
+  const idDe = (par) => escE === 'con' ? 2 * par : 2 * par - 1;
+  function refrescarSeis() { const base = escE === 'con' ? 14 : 13; seis.classList.toggle('con', escE === 'con');
+    const t = seis.querySelector('.lp-base'); if (t) t.textContent = ESC.activo === base ? `Corre Kennedy ${escE === 'con' ? 'con' : 'sin'} propuesta, sin prueba de estrés. Toca una simulación para aplicarla desde ahora y ver sus diapositivas.` : 'Toca otra vez la simulación activa para quitarla.';
+    const l = seis.querySelector('.lp-sec span'); if (l) l.textContent = escE === 'con' ? 'con propuesta' : 'sin propuesta';
+    seis.querySelectorAll('li').forEach(li => { const b = li.querySelector('.lp-sim'), on = ESC.activo === +b.dataset.s; li.classList.toggle('on', on); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); }
+  function pintarSeis() {
+    seis.innerHTML = `<header class="lp-sec"><h5 id="lp-seis-t">Simulaciones</h5><span></span></header><p class="lp-base"></p><ul class="lp-lista">` + PARES.map(P => `<li>
+      <button type="button" class="lp-sim" data-s="${idDe(P.par)}" data-p="${P.par}"><i>${String(P.par).padStart(2, '0')}</i><span><b>${P.n}</b><small>${P.prueba}</small></span></button>
+      <button type="button" class="lp-ver" data-p="${P.par}" aria-label="Ver diapositivas de ${P.n}" title="Diapositivas">${ICO_SL}</button></li>`).join('') + '</ul>';
+    seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
+      if (ESC.activo === id) { escoger(base, true); SL.cerrar(); } else { escoger(id, true); SL.abrir(+b.dataset.p, escE === 'con', b); }
+      refrescarSeis(); setTimeout(refrescarSeis, 150); });
+    seis.querySelectorAll('.lp-ver').forEach(b => b.onclick = () => SL.abrir(+b.dataset.p, escE === 'con', b));
+    refrescarSeis(); }
+  escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+    const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? idDe(par) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */
+    pintarSeis(); if (par && SL.abierto) SL.abrir(par, escE === 'con'); });
+  /* orden del panel izquierdo: un observador (no un intervalo que pelea) pone cada bloque en su sitio cuando giro_sim.js o sim_ui.js agregan nodos */
+  const ordenar = () => { const gz = document.getElementById('gs-izq'); if (!gz) return false;
+    const rl = gz.querySelector('.gs-reloj'), sd = document.getElementById('su-der');
+    if (rl && rl.nextElementSibling !== seis) rl.after(seis); else if (!rl && seis.parentNode !== gz) gz.prepend(seis);
+    if (sd && seis.nextElementSibling !== sd) seis.after(sd);
+    if (gz.lastElementChild !== datos) gz.appendChild(datos); return !!sd; };
+  { let obs = null; const espera = setInterval(() => { const gz = document.getElementById('gs-izq'); if (!gz) return;
+      if (!obs) { obs = new MutationObserver(ordenar); obs.observe(gz, { childList: true }); }
+      if (ordenar()) clearInterval(espera); }, 300); }
+  /* celular: el panel izquierdo es un cajón que se abre con este botón */
+  { const tg = document.createElement('button'); tg.id = 'lp-izq-tog'; tg.type = 'button'; tg.setAttribute('aria-controls', 'gs-izq'); tg.setAttribute('aria-expanded', 'false');
+    tg.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Simulaciones y datos</span>';
+    tg.onclick = () => { const on = !html.classList.contains('lp-izq-abierto'); html.classList.toggle('lp-izq-abierto', on); tg.setAttribute('aria-expanded', on); tg.querySelector('span').textContent = on ? 'Cerrar panel' : 'Simulaciones y datos'; };
+    document.body.appendChild(tg); }
   setTimeout(pintarSeis, 0);
   /* SIEMPRE CORRIENDO: al abrir arranca la simulación base (Kennedy hoy) y la barra de años corre sola; al llegar al año 15 vuelve a empezar */
   setTimeout(function arrancar() { const L = document.getElementById('loader'); if ((L && !L.classList.contains('hidden')) || !UI) return void setTimeout(arrancar, 400);
@@ -205,9 +222,11 @@ export function iniciarLimpio({ T3 }) {
   let nVia = 0; const vOsc = setInterval(() => { const V = T3.viasMallas; if (V && V[2]) { V[2].material.color.multiplyScalar(0.7); /* un poco más oscura (antes 0,78), no negra; andenes como estaban */ clearInterval(vOsc); } else if (++nVia > 60) clearInterval(vOsc); }, 500);
   addEventListener('lp-vuelta', () => { reiniciar(); setTimeout(() => { if (RELOJ.pausaSem) alternar(); }, 300); });
   /* ---------- barra de años ---------- */
+  const ICO_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7-4.5z" fill="currentColor"/></svg>', ICO_PAUSA = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" fill="currentColor"/></svg>',
+    ICO_REI = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8a4.5 4.5 0 1 0 1.4-3.3M3.5 2.5v2.6h2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const bar = document.createElement('div'); bar.id = 'lp-anos'; bar.className = 'vacia';
-  bar.innerHTML = `<button type="button" class="play" title="Correr la simulación (barra espaciadora)">▶</button>
-    <button type="button" class="rei" title="Volver al año 1">⟲</button>
+  bar.innerHTML = `<button type="button" class="play" title="Correr la simulación (barra espaciadora)" aria-label="Correr">${ICO_PLAY}</button>
+    <button type="button" class="rei" title="Volver al año 1" aria-label="Volver al año 1">${ICO_REI}</button>
     <span class="tit">Escoge una simulación</span>
     <div class="pista"><i></i><b></b>${FASES.map(f => `<u title="${f.n} · años ${f.a0}–${f.a1}" style="left:${(f.a0 - 1) / AÑOS * 100}%;width:${(f.a1 - f.a0 + 1) / AÑOS * 100}%">${f.n.replace(' plazo', '')}</u>`).join('')}${[1, 5, 10, 15].map(a => `<s style="left:${(a - 0.5) / AÑOS * 100}%">${a}</s>`).join('')}</div>
     <span class="ano">Año 1<small>Corto plazo</small></span>
@@ -222,10 +241,9 @@ export function iniciarLimpio({ T3 }) {
   /* MODO PRESENTACIÓN (como la referencia: ciudad real en vista oblicua hacia el horizonte, masas de color y solo la línea de tiempo):
      al darle play la cámara baja suave a una vista oblicua y los paneles laterales se desvanecen; en pausa vuelven. */
   { const sp = document.createElement('style'); sp.textContent = `#gs-izq,#su-der,#su-hist,#lp-red{transition:opacity .6s ease,transform .6s ease}
-    body.lp-corre #gs-izq{opacity:0!important;pointer-events:none!important;transform:translateX(-24px)} body.lp-corre #su-der{opacity:0!important;pointer-events:none!important;transform:translateX(24px)}
     body.lp-corre #su-hist,body.lp-corre #lp-red{opacity:0!important;pointer-events:none!important}
     #lp-ojo{position:fixed;right:16px;top:16px;z-index:45;padding:7px 12px;border-radius:10px;background:rgba(20,22,28,.78);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);color:#eef1f4;font:600 11.5px system-ui,sans-serif;cursor:pointer;display:none} body.lp-corre #lp-ojo{display:block}`; document.head.appendChild(sp);
-    const ob = document.createElement('button'); ob.id = 'lp-ojo'; ob.type = 'button'; ob.textContent = '❚❚ Pausar y ver los datos'; ob.onclick = () => alternar(); document.body.appendChild(ob); }
+    const ob = document.createElement('button'); ob.id = 'lp-ojo'; ob.type = 'button'; ob.textContent = 'Pausar y ver los datos'; ob.onclick = () => alternar(); document.body.appendChild(ob); }
   const VOBL = { c: [2300, 0, 300], d: [340, 470, 1850] }; let camT = null;
   function irOblicua() { if (!T3.camera || !T3.orbit) return; T3.anim = null; camT = { t0: performance.now(), dur: 2600, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone() }; }
   RELOJ.alDibujar(() => { if (!camT) return; const k = Math.min(1, (performance.now() - camT.t0) / camT.dur), e = k * k * (3 - 2 * k);
@@ -245,8 +263,8 @@ export function iniciarLimpio({ T3 }) {
     $b('.pista b').style.width = (s / FIN_SEM * 100).toFixed(2) + '%';
     const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
-    /* simulador: el tablero y las simulaciones quedan visibles mientras corre (sin desvanecer paneles) */ T3.horaLuz = 10.5; /* siempre luz de media mañana (el reloj y los carros siguen su hora) */ { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las ✕ de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
-    const p = $b('.play'), txt = corre ? '❚❚' : '▶'; if (p.textContent !== txt) p.textContent = txt;
+    /* simulador: el tablero y las simulaciones quedan visibles mientras corre (sin desvanecer paneles) */ T3.horaLuz = 10.5; /* siempre luz de media mañana (el reloj y los carros siguen su hora) */ { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las cruces de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
+    const p = $b('.play'); if (p.dataset.corre !== String(corre)) { p.dataset.corre = corre; p.innerHTML = corre ? ICO_PAUSA : ICO_PLAY; p.setAttribute('aria-label', corre ? 'Pausar' : 'Correr'); }
   });
 
   /* ---------- escoger simulación: prepara el territorio y espera PLAY ---------- */
@@ -303,7 +321,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=5', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=3', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=5', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=5', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=6']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

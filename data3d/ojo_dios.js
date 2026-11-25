@@ -8,6 +8,7 @@
    · cerrar() quita la tarjeta y la marca y devuelve la cámara, también en arco, a donde estaba antes del primer ir(); se resuelve al volver.
    Si otro módulo mueve la cámara con T3.anim (p. ej. al escoger una simulación), el vuelo se cancela y le cede el paso. */
 import { RELOJ } from './reloj.js?v=5';
+import { abrirMomento, cerrarMomento, alasAve } from './momento_muerte.js?v=1';
 
 const CEL = 40, X0 = -8000, Z0 = -8000, NX = 400, NZ = 400;  // mapa de alturas: 16 × 16 km en celdas de 40 m
 const MARGEN = 45;          // m libres por encima de lo más alto de la ruta
@@ -144,16 +145,25 @@ function ponerX(x, z, color, animal) {
     T3.scene.add(marcaX);
   }
   marcaX.userData.mC.color.set(color); marcaX.position.set(x, y0, z); marcaX.visible = true;
-  // el animal muerto, tirado de lado sobre la X (su modelo de data3d/biotica.js, a ~2,4 m de largo para verse desde arriba)
+  /* el animal muerto ENCIMA de la X (su modelo de data3d/biotica.js, ~4 m de largo para leerse desde la cámara): las barras de la X van
+     sin prueba de profundidad en la pasada transparente, así que el animal también (sin luz, solo caras de frente) y se dibuja DESPUÉS:
+     alas (renderOrder 20) y cuerpo (21) siempre encima de la X y de la malla de Google. (Limpiar la profundidad no sirve con N8AO.)
+     Un ave queda boca abajo con las alas abiertas (la silueta se reconoce desde arriba); los demás, de lado. */
   if (marcaX.userData.cuerpo) { marcaX.remove(marcaX.userData.cuerpo); marcaX.userData.cuerpo = null; }
   const B = animal && window.KEN_BIO_MODELO ? window.KEN_BIO_MODELO(animal) : null;
+  marcaX.userData.yAnimal = 0.8;
   if (B && B.geo) {
-    if (!B.geo.boundingBox) B.geo.computeBoundingBox(); const bb = B.geo.boundingBox, L = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z, 1e-3), k = 2.4 / L;
-    const mA = marcaX.userData.mA || (marcaX.userData.mA = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
-    const m = new THREE.Mesh(B.geo, mA); m.scale.setScalar(k); m.rotation.set(Math.PI / 2, 0, 0.6); /* de lado, como caído */ m.position.y = 0.25 + (bb.max.z - bb.min.z) * k * 0.5; m.renderOrder = 17; m.frustumCulled = false;
-    marcaX.add(m); marcaX.userData.cuerpo = m;
+    if (!B.geo.boundingBox) B.geo.computeBoundingBox(); const bb = B.geo.boundingBox, L = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z, 1e-3), k = 4 / L;
+    
+    const mA = marcaX.userData.mA || (marcaX.userData.mA = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.FrontSide, transparent: true, opacity: 1, depthWrite: false, depthTest: false, toneMapped: false }) /* sin luz: se lee igual de día o de noche */);
+    const g = new THREE.Group(), m = new THREE.Mesh(B.geo, mA); m.scale.setScalar(k); m.renderOrder = 21; m.frustumCulled = false;
+    m.position.set(-(bb.min.x + bb.max.x) / 2 * k, 0, -(bb.min.z + bb.max.z) / 2 * k); g.add(m);
+    if (B.ave) { m.position.y = -bb.min.y * k + 0.15; for (const a of alasAve(4, colorAve(B.geo))) { a.material = new THREE.MeshBasicMaterial({ color: a.material.color, side: THREE.DoubleSide, transparent: true, depthWrite: false, depthTest: false, toneMapped: false }); a.renderOrder = 20; a.frustumCulled = false; a.position.y = (bb.max.y - bb.min.y) * k * 0.55 + 0.15; a.rotation.z = 0.08; g.add(a); } g.rotation.y = 0.6; }
+    else { m.rotation.x = Math.PI / 2; m.position.y = (bb.max.z - bb.min.z) * k * 0.5 + 0.15; g.rotation.y = 0.6; }
+    g.position.y = 0.2; marcaX.add(g); marcaX.userData.cuerpo = g; marcaX.userData.yAnimal = 0.2 + (bb.max.y - bb.min.y) * k * 0.6;
   }
 }
+const colorAve = (geo) => { const C = geo.attributes.color; if (!C) return 0x6b5a48; let r = 0, g = 0, b = 0, k = 0; const p = Math.max(1, Math.floor(C.count / 400)); for (let i = 0; i < C.count; i += p) { r += C.getX(i); g += C.getY(i); b += C.getZ(i); k++; } return new THREE.Color(r / k * 0.8, g / k * 0.8, b / k * 0.8); };
 function mostrarTarjeta(titulo, texto, color, lugar, etiqueta) {
   if (!tarjeta) {
     tarjeta = document.createElement('section'); tarjeta.id = 'ojo-t'; tarjeta.setAttribute('role', 'dialog'); tarjeta.setAttribute('aria-live', 'polite');
@@ -162,20 +172,21 @@ function mostrarTarjeta(titulo, texto, color, lugar, etiqueta) {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   tarjeta.style.setProperty('--ojo-c', color);
   tarjeta.innerHTML = `<div class="oj-h">${esc(etiqueta || 'Ojo de Dios')}</div><h3 class="oj-t">${esc(titulo)}</h3>${texto ? `<p class="oj-x">${esc(texto)}</p>` : ''}${lugar ? `<p class="oj-d"><span>Dónde</span>${esc(lugar)}</p>` : ''}<button type="button">Cerrar</button>`;
-  tarjeta.querySelector('button').onclick = () => cerrar();
+  tarjeta.querySelector('button').onclick = () => { const f = alCerrarAct; alCerrarAct = null; cerrar(); f && f(); };
   tarjeta.style.display = ''; requestAnimationFrame(() => tarjeta.classList.add('on'));
 }
 function quitarTarjeta() { if (tarjeta) { tarjeta.classList.remove('on'); const t = tarjeta; setTimeout(() => { if (!t.classList.contains('on')) t.style.display = 'none'; }, 380); } }
 
 /* ---------- API ---------- */
 /* opciones: rapido (vuelo de 1-2 s), cenital (God's Eye: cámara alta y empinada, ~58°, que encuadra el lugar desde arriba), lugar (dónde pasó; va en la tarjeta) */
-async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '', x0 = false /* animal muerto: solo una X en el piso */, animal = '' /* su especie: se dibuja tirado sobre la X */ } = {}) {
+async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = false, cenital = false, lugar = '', etiqueta = '', x0 = false /* animal muerto: solo una X en el piso */, animal = '' /* su especie: se dibuja tirado sobre la X */,
+  muerte = null /* { causa, detalle, nombre, sem }: marca en pantalla + zoom con la reconstrucción (data3d/momento_muerte.js) */, sinTarjeta = false, alCerrar = null /* la persona cerró (tarjeta o zoom) */ } = {}) {
   if (!armar()) throw new Error('KEN_OJO: el 3D aún no está listo');
   if (!isFinite(x) || !isFinite(z)) throw new Error('KEN_OJO.ir: x, z inválidos');
   await armarAlturas();
   const V = THREE.Vector3, cam = T3.camera, y0 = T3.sueloY != null ? T3.sueloY : 0;
   if (!casa) casa = { p: cam.position.clone(), c: T3.orbit.target.clone() };
-  orbita = null; quitarTarjeta();
+  orbita = null; quitarTarjeta(); cerrarMomento(); alCerrarAct = alCerrar;
   // llega desde el lado por donde viene (si está casi encima, desde el sur)
   let dx = cam.position.x - x, dz = cam.position.z - z; const dh = Math.hypot(dx, dz); if (dh < 50) { dx = 0; dz = 1; } else { dx /= dh; dz /= dh; }
   const RF = x0 ? 42 /* animal muerto: muy cerca para verlo */ : cenital ? 380 : R_FIN, EL = cenital ? 1.40 : ELEV; /* God's Eye: casi vertical (~80°), mirando el lugar desde arriba */
@@ -183,21 +194,27 @@ async function ir({ x, z, titulo = '', texto = '', color = '#ffb347', rapido = f
   const pF = new V(x + dx * rh, yF, z + dz * rh); pF.y = Math.max(yF, x0 ? alturaEn(pF.x, pF.z, 0) + 12 /* de cerca: solo por encima de lo que hay justo debajo */ : alturaEn(pF.x, pF.z, 1) + MARGEN);
   const c1 = new V(x, y0, z);
   if (x0) ponerX(x, z, color, animal); else ponerMarca(x, z, color);
-  if (rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta); // la tarjeta sale de una vez: se lee mientras vuela
+  if (rapido && !sinTarjeta) mostrarTarjeta(titulo, texto, color, lugar, etiqueta); // la tarjeta sale de una vez: se lee mientras vuela
+  /* animal muerto: la marca en pantalla y el zoom salen desde ya (la marca sigue al animal mientras la cámara vuela) */
+  if (x0 && muerte && marcaX) abrirMomento({ T3, x, y: marcaX.position.y + (marcaX.userData.yAnimal || 0.8), z, causa: muerte.causa, detalle: muerte.detalle, nombre: muerte.nombre || animal, sem: muerte.sem, lugar, titulo,
+    alCerrar: () => { const f = alCerrarAct; alCerrarAct = null; cerrar(); f && f(); } }).catch(e => console.warn('momento:', e));
   const ok = await new Promise(res => volar(planear(cam.position.clone(), T3.orbit.target.clone(), pF, c1, rapido), res));
   if (!ok) return false;
   orbita = { on: !cenital && !document.documentElement.classList.contains('limpio') /* simulador: la cámara nunca gira sola */, c: c1, rh, y: pF.y, th: Math.atan2(dz, dx) }; /* desde arriba la cámara se queda quieta */
-  if (!rapido) mostrarTarjeta(titulo, texto, color, lugar, etiqueta);
+  if (!rapido && !sinTarjeta) mostrarTarjeta(titulo, texto, color, lugar, etiqueta);
   return true;
 }
 async function cerrar() {
   if (!armado) return false;
-  quitarTarjeta(); orbita = null; if (marca) marca.visible = false; if (marcaX) marcaX.visible = false;
+  quitarTarjeta(); cerrarMomento(); alCerrarAct = null; orbita = null; if (marca) marca.visible = false; if (marcaX) marcaX.visible = false;
   if (!casa) return true;
   const destino = casa; casa = null;
   await armarAlturas();
   return new Promise(res => volar(planear(T3.camera.position.clone(), T3.orbit.target.clone(), destino.p.clone(), destino.c.clone()), res));
 }
 
-window.KEN_OJO = { ir, cerrar, alturaEn: (x, z) => alturaEn(x, z, 0), get volando() { return !!vuelo; } };
+let alCerrarAct = null;
+/* irAuto: el mismo ir() pero sin pasar por data3d/camara_quieta.js (que solo deja mover la cámara tras una acción de la persona): lo usan
+   las muertes de animales, que la autora pidió que se muestren solas */
+window.KEN_OJO = { ir, irAuto: ir, cerrar, alturaEn: (x, z) => alturaEn(x, z, 0), get volando() { return !!vuelo; } };
 export default window.KEN_OJO;

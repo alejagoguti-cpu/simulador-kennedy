@@ -1,4 +1,4 @@
-import {adjuntarBalance} from './balance_final.js?v=1';
+import {adjuntarBalance} from './balance_final.js?v=2';
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
    Pinta en `cont` (la caja de vidrio #su-inf .caja) un informe para no expertos (y para proyectar ante un jurado):
@@ -15,7 +15,7 @@ import {adjuntarBalance} from './balance_final.js?v=1';
    Solo SVG en línea, sin librerías. Las curvas se promedian cada 4 semanas. Estilos con prefijo i2- dentro de .inf2. */
 
 const FIN = 780, AÑO = 52, CADA = 4;
-const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 20 }];
+const FASES = [{ n: 'Corto plazo', a0: 1, a1: 5 }, { n: 'Mediano plazo', a0: 6, a1: 10 }, { n: 'Largo plazo', a0: 11, a1: 15 }];
 
 /* ---------- utilidades ---------- */
 const NFC = [];
@@ -158,110 +158,180 @@ const IC = {
 };
 const icono = (t, cls = '') => `<svg class="i2-ic ${cls}" viewBox="0 0 16 16" aria-hidden="true"><path d="${IC[t] || IC.otro}"/></svg>`;
 
-/* ---------- estilos ---------- */
+/* ---------- estilos ----------
+   Pantalla completa sobre la escena 3D oscurecida y desenfocada (::backdrop del <dialog id="su-inf">).
+   Tono por resultado: .go = coral sobrio · .ok = verde pálido (var(--ui-acc)) · .parte = arena · .curso = neutro.
+   Colores de las gráficas validados con el validador de dataviz sobre la superficie #14161b: serie «con» #4aab90, límite #e0665a
+   (CVD 7,8 → con codificación secundaria: «sin» punteada y gris, límite rotulado); impresión #1a8a6a / #d0473a sobre blanco. */
 const CSS = `
-#su-inf .caja:has(> .inf2) { width: min(1160px, calc(100vw - 24px)); background: rgba(20,22,28,.92); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 0 32px 32px; }
-.inf2 { --ink: #eef1f4; --ink2: rgba(238,241,244,.72); --mut: rgba(238,241,244,.5); --line: rgba(255,255,255,.12); --line2: rgba(255,255,255,.07);
-  --card: rgba(255,255,255,.035); --bg: #16181d; --bien: #8ee6a8; --mal: #ff8a80; --amb: #ffcf7a; --gris: rgba(238,241,244,.5); --grid: rgba(255,255,255,.06);
-  --bienbg: rgba(142,230,168,.12); --malbg: rgba(255,138,128,.13); --ambbg: rgba(255,207,122,.12); --track: rgba(255,255,255,.07);
+#su-inf.i2-dlg { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: #eef0ea; overflow: hidden; }
+#su-inf.i2-dlg:modal { overscroll-behavior: contain; }
+#su-inf.i2-dlg::backdrop { overflow: hidden; overscroll-behavior: contain; background: radial-gradient(120% 90% at 50% 0%, rgba(14,17,18,.42), rgba(5,6,8,.78)); backdrop-filter: blur(12px) saturate(.7) brightness(.82); -webkit-backdrop-filter: blur(12px) saturate(.7) brightness(.82); }
+#su-inf.i2-dlg.go::backdrop { background: radial-gradient(110% 80% at 50% 10%, rgba(120,36,30,.34), rgba(14,6,6,.82)); }
+#su-inf.i2-dlg.ok::backdrop { background: radial-gradient(110% 80% at 50% 10%, rgba(70,104,64,.26), rgba(5,8,6,.8)); }
+@media (prefers-reduced-motion: no-preference) { #su-inf.i2-dlg[open]::backdrop { animation: i2fondo .7s ease-out both; } }
+@keyframes i2fondo { from { opacity: 0; } }
+#su-inf.i2-dlg > .caja { width: 100%; height: 100%; max-height: none; overflow-y: auto; overflow-x: hidden; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; scrollbar-color: rgba(255,255,255,.25) transparent; }
+.inf2 { --ink: var(--ui-tx, #eef0ea); --ink2: rgba(238,240,234,.76); --mut: rgba(238,240,234,.54); --line: rgba(255,255,255,.13); --line2: rgba(255,255,255,.07);
+  --glass: var(--ui-glass, rgba(32,36,35,.8)); --glass-bd: var(--ui-glass-bd, rgba(226,236,211,.2)); --card: rgba(13,15,17,.46); --bg: #14161b;
+  --bien: #95d8a6; --mal: #ff9a8a; --amb: #e6d29e; --gris: #8d939b; --grid: rgba(255,255,255,.07); --s-con: #4aab90; --s-lim: #e0665a;
+  --bienbg: rgba(149,216,166,.13); --malbg: rgba(255,154,138,.14); --ambbg: rgba(230,210,158,.13); --track: rgba(255,255,255,.08);
   --g-ave: #3987e5; --g-poli: #d95926; --g-mam: #199e70; --g-herp: #c98500; --g-inv: #d55181; --g-pla: #0ca30c;
+  --tone: #cfd5dc; --tone-bg: rgba(207,213,220,.1);
   --num: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
-  color: var(--ink); font: 400 15px/1.5 Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
-.inf2 * { box-sizing: border-box; }
+  color: var(--ink); font: 400 15px/1.5 Geist, Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; min-height: 100%; }
+.inf2.go { --tone: #ff9a8a; --tone-bg: rgba(224,102,90,.14); }
+.inf2.ok { --tone: var(--ui-acc, #c9e6b2); --tone-bg: rgba(201,230,178,.12); }
+.inf2.parte { --tone: #e6d29e; --tone-bg: rgba(230,210,158,.12); }
+.inf2 *, .inf2 *::before, .inf2 *::after { box-sizing: border-box; }
 .inf2 p { margin: 0; }
+.inf2 .i2-in { width: min(1280px, 100%); margin: 0 auto; padding: 0 clamp(16px, 3vw, 40px); }
 /* barra superior */
-.inf2 .i2-top { position: sticky; top: 0; z-index: 4; margin: 0 -32px; padding: 14px 32px; display: flex; align-items: center; gap: 8px; background: rgba(20,22,28,.96); border-bottom: 1px solid var(--line2); border-radius: 16px 16px 0 0; }
-.inf2 .i2-k { flex: 1; min-width: 0; font: 600 11px/1.2 Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.inf2 .i2-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: inherit; font: 600 13px Geist, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
-.inf2 .i2-btn:hover { background: rgba(255,255,255,.12); } .inf2 .i2-btn.pri { background: var(--amb); color: #1c1406; border-color: transparent; }
-.inf2 .i2-btn:focus-visible, .inf2 summary:focus-visible { outline: 2px solid var(--amb); outline-offset: 2px; }
-/* héroe */
-.inf2 .i2-hero { padding: 32px 0 8px; }
-.inf2 .i2-kick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font: 600 12px/1.2 Geist, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--mut); }
+.inf2 .i2-top { position: sticky; top: 0; z-index: 6; background: linear-gradient(rgba(10,12,14,.72), rgba(10,12,14,.5)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line2); }
+.inf2 .i2-top .i2-in { display: flex; align-items: center; gap: 8px; min-height: 56px; }
+.inf2 .i2-k { flex: 1; min-width: 0; font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inf2 .i2-k b { color: var(--tone); font-weight: 600; }
+.inf2 .i2-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: inherit; font: 600 13px Geist, Inter, system-ui, sans-serif; cursor: pointer; white-space: nowrap; transition: background-color .15s, border-color .15s; }
+.inf2 .i2-btn:hover { background: rgba(255,255,255,.13); }
+.inf2 .i2-btn.pri { background: var(--tone); color: #121512; border-color: transparent; }
+.inf2 .i2-btn.pri:hover { filter: brightness(1.08); }
+.inf2 .i2-btn .i2-ic { width: 15px; height: 15px; }
+.inf2 .i2-btn:focus-visible, .inf2 summary:focus-visible, .inf2 select:focus-visible, .inf2 input:focus-visible { outline: 2px solid var(--tone); outline-offset: 2px; }
+.inf2 .i2-acc { display: flex; flex-wrap: wrap; gap: 8px; }
+.inf2 .i2-acc.m { display: none; }
+/* escenario de resultados */
+.inf2 .i2-stage { padding-top: clamp(16px, 2.6vh, 32px); padding-bottom: 24px; display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr); grid-template-areas: "kick kick" "tit tit" "ver graf" "kpis graf" "cad cad" "tl tl"; gap: 16px 24px; align-items: start; }
+.inf2 .i2-kick { grid-area: kick; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font: 600 12px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
 .inf2 .i2-pill { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); letter-spacing: .08em; color: var(--ink2); }
-.inf2 .i2-pill.con { border-color: rgba(255,207,122,.45); color: var(--amb); }
-.inf2 .i2-tit { margin-top: 12px; font: 600 clamp(36px, 5.4vw, 60px)/.98 var(--num); letter-spacing: .005em; text-wrap: balance; }
-.inf2 .i2-preg { margin-top: 12px; max-width: 64ch; font-size: clamp(16px, 1.7vw, 19px); line-height: 1.45; color: var(--ink2); text-wrap: pretty; }
-.inf2 .i2-ver { margin-top: 24px; display: grid; grid-template-columns: auto 1fr; gap: 8px 32px; align-items: center; padding: 24px 28px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); position: relative; overflow: hidden; }
-.inf2 .i2-ver::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--gris); }
-.inf2 .i2-ver.bien::before { background: var(--bien); } .inf2 .i2-ver.mal::before { background: var(--mal); } .inf2 .i2-ver.parte::before { background: var(--amb); }
-.inf2 .i2-ver.bien { background: linear-gradient(100deg, rgba(142,230,168,.10), var(--card) 55%); }
-.inf2 .i2-ver.mal { background: linear-gradient(100deg, rgba(255,138,128,.11), var(--card) 55%); }
-.inf2 .i2-ver.parte { background: linear-gradient(100deg, rgba(255,207,122,.10), var(--card) 55%); }
-.inf2 .i2-vbig small { display: block; font: 600 11px/1 Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); margin-bottom: 8px; }
-.inf2 .i2-vw { display: flex; align-items: center; gap: 12px; font: 700 clamp(64px, 9vw, 104px)/.82 var(--num); text-transform: uppercase; letter-spacing: .01em; white-space: nowrap; }
-.inf2 .i2-vw .i2-ic { width: .5em; height: .5em; stroke-width: 2; }
-.inf2 .i2-ver.bien .i2-vw { color: var(--bien); } .inf2 .i2-ver.mal .i2-vw { color: var(--mal); } .inf2 .i2-ver.parte .i2-vw { color: var(--amb); }
-.inf2 .i2-vf { font: 500 clamp(17px, 1.9vw, 22px)/1.4 Geist, system-ui, sans-serif; text-wrap: pretty; }
-.inf2 .i2-vs { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
-.inf2 .i2-cnt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.05); font: 500 13px/1.3 Geist, system-ui, sans-serif; color: var(--ink2); }
-.inf2 .i2-cnt b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.inf2 .i2-cntt { align-self: center; font-size: 13px; color: var(--mut); }
+.inf2 .i2-pill.t { border-color: color-mix(in srgb, var(--tone) 50%, transparent); color: var(--tone); }
+.inf2 .i2-tit { grid-area: tit; margin: 0; }
+.inf2 .i2-eye { display: block; font: 500 clamp(13px, 1.3vw, 16px)/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .3em; text-transform: uppercase; color: var(--mut); margin-bottom: 4px; }
+.inf2 .i2-big { display: block; font: 300 clamp(56px, calc(140vw / var(--len, 9)), 168px)/.84 var(--num); letter-spacing: .03em; text-transform: uppercase; color: var(--tone); overflow: clip; padding-bottom: .04em; text-wrap: balance; }
+.inf2 .i2-big .w { display: inline-block; white-space: nowrap; }
+.inf2 .i2-big .l { display: inline-block; }
+.inf2 .i2-sub { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.inf2 .i2-sub b { font: 400 clamp(22px, 2.4vw, 32px)/1.1 var(--num); letter-spacing: .02em; color: var(--ink); }
+.inf2 .i2-sub span { font-size: 14.5px; color: var(--ink2); max-width: 70ch; text-wrap: pretty; }
+.inf2 .i2-panel { position: relative; padding: 20px 22px; border-radius: 16px; border: 1px solid var(--glass-bd); background: linear-gradient(var(--card), var(--card)), var(--glass); box-shadow: var(--ui-glass-sh, 0 14px 38px rgba(0,0,0,.24)); min-width: 0; break-inside: avoid; }
+.inf2 .i2-ver { grid-area: ver; border-left: 3px solid var(--tone); }
+.inf2 .i2-vlab { font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
+.inf2 .i2-vf { margin-top: 8px; font: 500 clamp(16px, 1.5vw, 19px)/1.45 Geist, Inter, system-ui, sans-serif; text-wrap: pretty; }
+.inf2 .i2-vs { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.inf2 .i2-cnt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.05); font: 500 13px/1.3 Geist, Inter, system-ui, sans-serif; color: var(--ink2); }
+.inf2 .i2-cnt b { font-weight: 600; color: var(--ink); }
+.inf2 .i2-cntt { font-size: 13px; color: var(--mut); }
 .inf2 .i2-cnt.bien .i2-ic { color: var(--bien); } .inf2 .i2-cnt.mal .i2-ic { color: var(--mal); }
-.inf2 .i2-alerta { grid-column: 1 / -1; margin-top: 8px; padding: 12px 16px; border-radius: 12px; background: var(--ambbg); border: 1px solid rgba(255,207,122,.3); font-size: 15px; line-height: 1.45; display: flex; gap: 12px; align-items: flex-start; }
+.inf2 .i2-alerta { margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: var(--ambbg); border: 1px solid rgba(230,210,158,.28); font-size: 14px; line-height: 1.45; display: flex; gap: 10px; align-items: flex-start; }
 .inf2 .i2-alerta .i2-ic { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--amb); }
 .inf2 .i2-alerta b { font-weight: 600; }
+/* tarjeta de la regla (game over) */
+.inf2 .i2-rg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; margin-top: 12px; }
+.inf2 .i2-rg > div { min-width: 0; }
+.inf2 .i2-rg small { display: block; font: 600 10.5px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--mut); }
+.inf2 .i2-rg b { display: block; margin-top: 4px; font: 500 clamp(26px, 2.6vw, 36px)/1 var(--num); letter-spacing: .01em; }
+.inf2 .i2-rg b.t { color: var(--tone); }
+.inf2 .i2-rg span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--mut); }
+.inf2 .i2-rgt { margin-top: 6px; font: 500 clamp(17px, 1.6vw, 20px)/1.35 Geist, Inter, system-ui, sans-serif; }
+.inf2 .i2-rgt em { font-style: normal; color: var(--tone); }
+.inf2 .i2-met { margin-top: 18px; }
+.inf2 .i2-metr { position: relative; height: 10px; border-radius: 5px; background: var(--track); }
+.inf2 .i2-metz { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: repeating-linear-gradient(135deg, rgba(224,102,90,.34) 0 4px, rgba(224,102,90,.16) 4px 8px); }
+.inf2 .i2-metu { position: absolute; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; background: var(--s-lim); }
+.inf2 .i2-meth { position: absolute; top: -3px; bottom: -3px; width: 1px; background: rgba(255,255,255,.45); }
+.inf2 .i2-metv { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 0 3px var(--bg); }
+.inf2 .i2-metl { position: relative; height: 44px; font-size: 12px; color: var(--mut); }
+.inf2 .i2-metl span { position: absolute; top: 8px; transform: translateX(-50%); white-space: nowrap; }
+.inf2 .i2-metl span.u { color: var(--mal); }
+.inf2 .i2-metl span.v { top: 22px; color: var(--ink); font-weight: 600; }
+.inf2 .i2-seq { margin-top: 2px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--ink2); }
+.inf2 .i2-seq i { font-style: normal; padding: 2px 8px; border-radius: 6px; background: var(--malbg); color: var(--mal); font-weight: 600; }
 /* cifras clave */
-.inf2 .i2-cmp { margin-top: 16px; }
-.inf2 .i2-cmph { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; margin-bottom: 12px; }
-.inf2 .i2-lab { font: 600 11px/1.2 Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
-.inf2 .i2-cmph span:last-child { font-size: 13px; color: var(--mut); }
-.inf2 .i2-kpis { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; }
-.inf2 .i2-kpi { padding: 16px 18px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); display: flex; flex-direction: column; min-width: 0; }
-.inf2 .i2-kn { font: 600 14px/1.3 Geist, system-ui, sans-serif; }
-.inf2 .i2-ku { font-size: 12.5px; color: var(--mut); margin-top: 2px; }
-.inf2 .i2-kv { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin-top: 12px; }
-.inf2 .i2-kv b { font: 600 clamp(40px, 4.6vw, 54px)/.9 var(--num); letter-spacing: .005em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.inf2 .i2-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 6px; border-radius: 6px; font: 600 12px/1.2 Geist, system-ui, sans-serif; white-space: nowrap; background: rgba(255,255,255,.06); color: var(--ink2); }
+.inf2 .i2-cmp { grid-area: kpis; }
+.inf2 .i2-cmph { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; margin-bottom: 10px; }
+.inf2 .i2-lab { font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
+.inf2 .i2-cmph span:last-child { font-size: 12.5px; color: var(--mut); }
+.inf2 .i2-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.inf2 .i2-kpi { padding: 14px 16px 16px; display: flex; flex-direction: column; }
+.inf2 .i2-kn { font: 600 13.5px/1.3 Geist, Inter, system-ui, sans-serif; }
+.inf2 .i2-ku { font-size: 12px; color: var(--mut); margin-top: 1px; }
+.inf2 .i2-kv { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin-top: 10px; }
+.inf2 .i2-kv b { font: 400 clamp(38px, 3.6vw, 52px)/.9 var(--num); letter-spacing: .005em; white-space: nowrap; }
+.inf2 .i2-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 6px; border-radius: 6px; font: 600 12px/1.2 Geist, Inter, system-ui, sans-serif; white-space: nowrap; background: rgba(255,255,255,.06); color: var(--ink2); }
 .inf2 .i2-tag .i2-ic { width: 13px; height: 13px; stroke-width: 2; }
 .inf2 .i2-tag.bien { background: var(--bienbg); color: var(--bien); } .inf2 .i2-tag.mal { background: var(--malbg); color: var(--mal); }
-.inf2 .i2-bars { margin-top: auto; padding-top: 14px; display: grid; gap: 7px; }
-.inf2 .i2-bar { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; font-size: 12.5px; color: var(--ink2); }
+.inf2 .i2-bars { margin-top: auto; padding-top: 12px; display: grid; gap: 6px; }
+.inf2 .i2-bar { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; font-size: 12px; color: var(--ink2); }
 .inf2 .i2-bar span:nth-child(2) { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .inf2 .i2-bar.ref span:nth-child(2) { color: var(--ink2); font-weight: 500; }
-.inf2 .i2-tr { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
-.inf2 .i2-tr i { display: block; height: 100%; border-radius: 4px; background: var(--amb); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.inf2 .i2-tr i.bien { background: var(--bien); } .inf2 .i2-tr i.mal { background: var(--mal); }
-.inf2 .i2-tr i.ref { background: rgba(238,241,244,.34); } .inf2 .i2-tr i.igual { background: rgba(238,241,244,.7); }
-/* secciones */
-.inf2 .i2-sec { margin-top: 48px; }
-.inf2 .i2-sh { margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
-.inf2 .i2-st { margin: 4px 0 0; font: 600 clamp(26px, 3vw, 34px)/1.05 var(--num); letter-spacing: .01em; }
+.inf2 .i2-tr { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.inf2 .i2-tr i { display: block; height: 100%; border-radius: 3px; background: var(--s-con); transform-origin: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.inf2 .i2-tr i.ref { background: rgba(238,240,234,.36); }
+/* gráficas */
+.inf2 .i2-main { grid-area: graf; }
+.inf2 .i2-sec { margin-top: 56px; }
+.inf2 .i2-sh { margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.inf2 .i2-st { margin: 4px 0 0; font: 300 clamp(30px, 3.4vw, 46px)/1 var(--num); letter-spacing: .01em; }
 .inf2 .i2-sd { font-size: 14px; color: var(--ink2); max-width: 70ch; }
 .inf2 .i2-leg { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink2); }
 .inf2 .i2-leg span { display: inline-flex; align-items: center; gap: 8px; }
-.inf2 .i2-leg i { display: inline-block; width: 24px; height: 0; border-top: 2.5px solid var(--amb); }
-.inf2 .i2-leg i.ref { border-top: 2px dashed var(--gris); } .inf2 .i2-leg i.lim { border-top: 1.5px solid var(--mal); opacity: .75; }
-/* curvas */
+.inf2 .i2-leg i { display: inline-block; width: 24px; height: 0; border-top: 2px solid var(--s-con); }
+.inf2 .i2-leg i.ref { border-top: 2px dashed var(--gris); } .inf2 .i2-leg i.lim { border-top: 1px solid var(--s-lim); }
 .inf2 .i2-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.inf2 .i2-ch { position: relative; padding: 18px 18px 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); min-width: 0; break-inside: avoid; }
-.inf2 .i2-cht { font: 600 16px/1.25 Geist, system-ui, sans-serif; } .inf2 .i2-chs { font-size: 13px; color: var(--mut); margin-top: 2px; }
-.inf2 .i2-ch svg { display: block; width: 100%; height: auto; margin-top: 10px; touch-action: pan-y; overflow: visible; }
-.inf2 .i2-tip { position: absolute; pointer-events: none; z-index: 3; padding: 8px 10px; border-radius: 8px; background: rgba(12,14,18,.96); border: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; white-space: nowrap; display: none; }
-.inf2 .i2-tip b { font-weight: 600; } .inf2 .i2-tip i { display: inline-block; width: 14px; height: 0; border-top: 2.5px solid var(--amb); vertical-align: middle; margin-right: 6px; } .inf2 .i2-tip i.ref { border-top: 2px dashed var(--gris); }
-.inf2 svg .ax { font: 500 12px Geist, system-ui, sans-serif; fill: var(--mut); font-variant-numeric: tabular-nums; }
-.inf2 svg .gr { stroke: var(--grid); stroke-width: 1; } .inf2 svg .bl { stroke: rgba(255,255,255,.2); stroke-width: 1; }
-.inf2 svg .ln { fill: none; stroke: var(--amb); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.inf2 .i2-ch { margin: 0; }
+.inf2 .i2-cht { font: 600 15.5px/1.25 Geist, Inter, system-ui, sans-serif; } .inf2 .i2-chs { font-size: 12.5px; color: var(--mut); margin-top: 2px; }
+.inf2 .i2-ch .i2-leg { margin-top: 8px; font-size: 12px; }
+.inf2 .i2-ch svg { display: block; width: 100%; height: auto; margin-top: 8px; touch-action: pan-y; overflow: visible; }
+.inf2 .i2-tip { position: absolute; pointer-events: none; z-index: 3; padding: 8px 10px; border-radius: 8px; background: rgba(10,12,14,.96); border: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; white-space: nowrap; display: none; }
+.inf2 .i2-tip b { font-weight: 600; } .inf2 .i2-tip i { display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--s-con); vertical-align: middle; margin-right: 6px; } .inf2 .i2-tip i.ref { border-top: 2px dashed var(--gris); }
+.inf2 svg .ax { font: 500 11.5px Geist, Inter, system-ui, sans-serif; fill: var(--mut); font-variant-numeric: tabular-nums; }
+.inf2 svg .gr { stroke: var(--grid); stroke-width: 1; } .inf2 svg .bl { stroke: rgba(255,255,255,.22); stroke-width: 1; }
+.inf2 svg .ln { fill: none; stroke: var(--s-con); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.inf2 svg .ar { fill: var(--s-con); opacity: .1; stroke: none; }
 .inf2 svg .lr { fill: none; stroke: var(--gris); stroke-width: 2; stroke-dasharray: 5 5; stroke-linecap: round; }
-.inf2 svg .lim { stroke: var(--mal); stroke-width: 1.25; opacity: .6; }
-.inf2 svg .limt { font: 500 11.5px Geist, system-ui, sans-serif; fill: var(--mal); opacity: .9; }
+.inf2 svg .lim { stroke: var(--s-lim); stroke-width: 1; }
+.inf2 svg .limt { font: 600 11px Geist, Inter, system-ui, sans-serif; fill: var(--mal); }
 .inf2 svg .halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
-.inf2 svg .dot { fill: var(--amb); stroke: var(--bg); stroke-width: 2; } .inf2 svg .dotr { fill: #b9bcc2; stroke: var(--bg); stroke-width: 2; }
-.inf2 svg .gox { stroke: var(--mal); stroke-width: 2.2; stroke-linecap: round; }
-.inf2 svg .gol { stroke: var(--mal); stroke-width: 1.5; stroke-dasharray: 2 3; }
-.inf2 svg .val { font: 600 14px Geist, system-ui, sans-serif; fill: var(--ink); font-variant-numeric: tabular-nums; }
-.inf2 svg .valr { font: 500 12.5px Geist, system-ui, sans-serif; fill: var(--ink2); font-variant-numeric: tabular-nums; }
-.inf2 svg .sn { font: 500 11px Geist, system-ui, sans-serif; fill: var(--mut); }
-.inf2 svg .got { font: 600 11.5px Geist, system-ui, sans-serif; fill: var(--mal); }
+.inf2 svg .dot { fill: var(--s-con); stroke: var(--bg); stroke-width: 2; } .inf2 svg .dotr { fill: var(--gris); stroke: var(--bg); stroke-width: 2; }
+.inf2 svg .gox { stroke: var(--s-lim); stroke-width: 2; stroke-linecap: round; }
+.inf2 svg .gol { stroke: var(--s-lim); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.inf2 svg .val { font: 600 13.5px Geist, Inter, system-ui, sans-serif; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.inf2 svg .valr { font: 500 12px Geist, Inter, system-ui, sans-serif; fill: var(--ink2); font-variant-numeric: tabular-nums; }
+.inf2 svg .sn { font: 500 11px Geist, Inter, system-ui, sans-serif; fill: var(--mut); }
+.inf2 svg .got { font: 600 11px Geist, Inter, system-ui, sans-serif; fill: var(--mal); }
 .inf2 svg .cr { stroke: rgba(255,255,255,.4); stroke-width: 1; }
-/* red + plazos */
+/* causa → efecto */
+.inf2 .i2-cad { grid-area: cad; }
+.inf2 .i2-cadl { display: flex; align-items: stretch; gap: 0; margin-top: 10px; overflow-x: auto; scrollbar-width: thin; }
+.inf2 .i2-paso { flex: 1 1 0; min-width: 150px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,.045); border: 1px solid var(--line2); }
+.inf2 .i2-paso small { display: block; font-size: 12px; line-height: 1.3; color: var(--ink2); }
+.inf2 .i2-paso b { display: block; margin-top: 4px; font: 400 26px/1 var(--num); letter-spacing: .01em; }
+.inf2 .i2-paso.fin { background: var(--tone-bg); border-color: color-mix(in srgb, var(--tone) 40%, transparent); }
+.inf2 .i2-paso.fin b { color: var(--tone); }
+.inf2 .i2-fl { flex: none; width: 28px; display: grid; place-items: center; color: var(--mut); }
+.inf2 .i2-fl .i2-ic { width: 16px; height: 16px; }
+/* línea de tiempo */
+.inf2 .i2-tl { grid-area: tl; }
+.inf2 .i2-tlw { position: relative; margin-top: 6px; }
+.inf2 .i2-tlw svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.inf2 svg .fb { fill: rgba(255,255,255,.035); } .inf2 svg .fb.b { fill: rgba(255,255,255,.015); }
+.inf2 svg .fl { font: 600 10px Geist, Inter, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; fill: var(--mut); }
+.inf2 svg .mk.bien { fill: #5cbf7a; } .inf2 svg .mk.mal { fill: var(--s-lim); } .inf2 svg .mk.neu { fill: var(--gris); }
+.inf2 svg .mk { stroke: var(--bg); stroke-width: 1.5; }
+.inf2 svg .mas { font: 600 10px Geist, Inter, system-ui, sans-serif; fill: var(--mut); }
+.inf2 .i2-tll { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink2); margin-top: 6px; }
+.inf2 .i2-tll span { display: inline-flex; align-items: center; gap: 6px; }
+.inf2 .i2-tll svg { width: 10px; height: 10px; }
+/* informe completo */
+.inf2 .i2-completo { padding-top: 8px; padding-bottom: 48px; }
+.inf2 .i2-div { display: flex; align-items: center; gap: 16px; margin-top: 24px; font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--mut); scroll-margin-top: 64px; }
+.inf2 .i2-div::before, .inf2 .i2-div::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .inf2 .i2-duo { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
-.inf2 .i2-box { padding: 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); min-width: 0; break-inside: avoid; }
-.inf2 .i2-bh { font: 600 16px/1.25 Geist, system-ui, sans-serif; } .inf2 .i2-bs { font-size: 13px; color: var(--mut); margin-top: 2px; }
+.inf2 .i2-box { padding: 20px; }
+.inf2 .i2-bh { font: 600 15.5px/1.25 Geist, Inter, system-ui, sans-serif; } .inf2 .i2-bs { font-size: 13px; color: var(--mut); margin-top: 2px; }
 .inf2 .i2-ball svg { display: block; width: 100%; max-width: 440px; height: auto; margin: 8px auto 0; overflow: visible; }
-.inf2 svg .nl { font: 500 11px Geist, system-ui, sans-serif; fill: var(--ink2); } .inf2 svg .nl.fuera { fill: var(--mal); text-decoration: line-through; } .inf2 svg .nl.vuelve { fill: var(--bien); }
-.inf2 svg .gl { font: 600 10px Geist, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; fill: var(--mut); }
-.inf2 svg .ch0 { fill: none; stroke: rgba(238,241,244,.13); stroke-width: .7; } .inf2 svg .chp { fill: none; stroke: var(--mal); stroke-width: 1.6; } .inf2 svg .chn { fill: none; stroke: var(--bien); stroke-width: 1.6; }
+.inf2 svg .nl { font: 500 11px Geist, Inter, system-ui, sans-serif; fill: var(--ink2); } .inf2 svg .nl.fuera { fill: var(--mal); text-decoration: line-through; } .inf2 svg .nl.vuelve { fill: var(--bien); }
+.inf2 svg .gl { font: 600 10px Geist, Inter, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; fill: var(--mut); }
+.inf2 svg .ch0 { fill: none; stroke: rgba(238,240,234,.13); stroke-width: .7; } .inf2 svg .chp { fill: none; stroke: var(--mal); stroke-width: 1.6; } .inf2 svg .chn { fill: none; stroke: var(--bien); stroke-width: 1.6; }
 .inf2 svg .nd { stroke: var(--bg); stroke-width: 1.2; } .inf2 svg .nd.fuera { fill: none !important; stroke: var(--mal); stroke-width: 1.8; } .inf2 svg .nd.aun { fill: none !important; stroke: var(--mut); stroke-width: 1; }
 .inf2 svg .ga { fill: none; stroke-width: 3; stroke-linecap: round; }
 .inf2 .i2-gleg { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 12px; font-size: 12px; color: var(--ink2); }
@@ -269,7 +339,7 @@ const CSS = `
 .inf2 .i2-gleg i.l { width: 20px; height: 0; border-radius: 0; border-top: 2px solid; }
 .inf2 .i2-rs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
 .inf2 .i2-rs > div { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.04); font-size: 12.5px; line-height: 1.35; color: var(--ink2); }
-.inf2 .i2-rs b { display: block; font: 600 30px/1 var(--num); color: var(--ink); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.inf2 .i2-rs b { display: block; font: 400 32px/1 var(--num); color: var(--ink); margin-bottom: 4px; }
 .inf2 .i2-rs b.bien { color: var(--bien); } .inf2 .i2-rs b.mal { color: var(--mal); }
 .inf2 .i2-nota { margin-top: 12px; font-size: 12.5px; color: var(--mut); line-height: 1.5; }
 .inf2 .i2-nota b { color: var(--ink2); font-weight: 600; }
@@ -280,79 +350,137 @@ const CSS = `
 .inf2 .i2-leg .i2-eb { width: 18px; height: 18px; border-radius: 5px; display: inline-grid; place-items: center; }
 .inf2 .i2-leg .i2-eb.bien { background: var(--bienbg); color: var(--bien); } .inf2 .i2-leg .i2-eb.mal { background: var(--malbg); color: var(--mal); }
 .inf2 .i2-fh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
-.inf2 .i2-fh b { font: 600 11px/1.2 Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--ink2); } .inf2 .i2-fh span { font-size: 12px; color: var(--mut); }
+.inf2 .i2-fh b { font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--ink2); } .inf2 .i2-fh span { font-size: 12px; color: var(--mut); }
 .inf2 .i2-ev { display: grid; grid-template-columns: 52px 22px 1fr; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--line2); break-inside: avoid; }
 .inf2 .i2-ev:last-child { border-bottom: 0; }
-.inf2 .i2-ea { font: 600 15px/1.25 var(--num); letter-spacing: .02em; color: var(--ink2); white-space: nowrap; }
+.inf2 .i2-ea { font: 500 15px/1.25 var(--num); letter-spacing: .02em; color: var(--ink2); white-space: nowrap; }
 .inf2 .i2-eb { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: rgba(255,255,255,.06); color: var(--ink2); }
 .inf2 .i2-ev.bien .i2-eb { background: var(--bienbg); color: var(--bien); } .inf2 .i2-ev.mal .i2-eb { background: var(--malbg); color: var(--mal); }
 .inf2 .i2-ic { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.inf2 .i2-et { font: 500 13.5px/1.35 Geist, system-ui, sans-serif; } .inf2 .i2-ex { margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--mut); }
-.inf2 details.i2-mas > summary { cursor: pointer; padding: 10px 0 8px; font: 500 13px Geist, system-ui, sans-serif; color: var(--amb); }
+.inf2 .i2-et { font: 500 13.5px/1.35 Geist, Inter, system-ui, sans-serif; } .inf2 .i2-ex { margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--mut); }
+.inf2 details.i2-mas > summary { cursor: pointer; padding: 10px 0 8px; font: 500 13px Geist, Inter, system-ui, sans-serif; color: var(--tone); }
 .inf2 .i2-vacio { font-size: 13px; color: var(--mut); padding: 8px 0; }
-/* plegables */
-.inf2 details.i2-fold { margin-top: 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
-.inf2 details.i2-fold > summary { list-style: none; cursor: pointer; padding: 16px 20px; display: flex; align-items: center; gap: 12px; font: 600 15px/1.3 Geist, system-ui, sans-serif; }
+/* plegables y tabla */
+.inf2 details.i2-fold { margin-top: 16px; padding: 0; }
+.inf2 details.i2-fold > summary { list-style: none; cursor: pointer; padding: 16px 20px; display: flex; align-items: center; gap: 12px; font: 600 15px/1.3 Geist, Inter, system-ui, sans-serif; }
 .inf2 details.i2-fold > summary::-webkit-details-marker { display: none; }
-.inf2 details.i2-fold > summary span { font: 400 13px Geist, system-ui, sans-serif; color: var(--mut); margin-left: auto; text-align: right; }
+.inf2 details.i2-fold > summary span { font: 400 13px Geist, Inter, system-ui, sans-serif; color: var(--mut); margin-left: auto; text-align: right; }
 .inf2 details.i2-fold > summary::before { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--mut); border-bottom: 2px solid var(--mut); transform: rotate(-45deg); transition: transform .15s; flex: none; }
 .inf2 details.i2-fold[open] > summary::before { transform: rotate(45deg); }
-.inf2 .i2-fb { padding: 0 20px 20px; }
+.inf2 .i2-fb { padding: 0 20px 20px; overflow-x: auto; }
 .inf2 table.i2-tab { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-.inf2 .i2-tab th { font: 600 10.5px/1.2 Geist, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.inf2 .i2-tab th { font: 600 10.5px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 .inf2 .i2-tab td { padding: 8px 10px; border-bottom: 1px solid var(--line2); text-align: right; white-space: nowrap; }
 .inf2 .i2-tab th:first-child, .inf2 .i2-tab td:first-child { text-align: left; white-space: normal; padding-left: 0; }
-.inf2 .i2-tab tr.tema td { padding-top: 16px; font: 600 11px/1.2 Geist, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--ink2); border-bottom: 1px solid var(--line); }
+.inf2 .i2-tab tr.tema td { padding-top: 16px; font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--ink2); border-bottom: 1px solid var(--line); }
 .inf2 .i2-tab td.bien { color: var(--bien); } .inf2 .i2-tab td.mal { color: var(--mal); } .inf2 .i2-tab td.igual { color: var(--mut); }
-.inf2 .i2-tab .k { display: inline-block; margin-left: 6px; font-size: 10px; letter-spacing: .08em; color: var(--amb); text-transform: uppercase; }
-.inf2 .i2-notas h4 { margin: 20px 0 8px; font: 600 11px/1.2 Geist, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
+.inf2 .i2-tab .k { display: inline-block; margin-left: 6px; font-size: 10px; letter-spacing: .08em; color: var(--tone); text-transform: uppercase; }
+.inf2 .i2-notas h4 { margin: 20px 0 8px; font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
 .inf2 .i2-notas h4:first-child { margin-top: 0; }
 .inf2 .i2-reg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .inf2 .i2-reg > div { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.035); font-size: 13px; line-height: 1.45; break-inside: avoid; }
-.inf2 .i2-reg > div.go { box-shadow: inset 3px 0 0 var(--mal); }
+.inf2 .i2-reg > div.go { box-shadow: inset 3px 0 0 var(--s-lim); }
 .inf2 .i2-reg b { font-weight: 600; } .inf2 .i2-reg p { margin-top: 4px; font-size: 11.5px; color: var(--mut); overflow-wrap: anywhere; } .inf2 .i2-reg a { color: var(--ink2); }
 .inf2 .i2-reg .fin { color: var(--ink2); } .inf2 .i2-reg .fin.mal { color: var(--mal); }
-.inf2 .i2-notas ul, .inf2 .i2-notas ol { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--ink2); } .inf2 .i2-notas li { margin: 4px 0; }
+.inf2 .i2-notas ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--ink2); } .inf2 .i2-notas li { margin: 4px 0; }
 .inf2 .i2-pie { margin-top: 24px; font-size: 11.5px; color: var(--mut); }
-@media (max-width: 900px) {
-  .inf2 .i2-kpis { --n: 2 !important; }
-  .inf2 .i2-redg, .inf2 .i2-fases { grid-template-columns: 1fr; }
+/* balance de sostenibilidad (balance_final.js) */
+.inf2 .i2-bal p { margin-top: 8px; font-size: 13.5px; line-height: 1.5; color: var(--ink2); }
+.inf2 .i2-bal p:first-child { margin-top: 0; }
+.inf2 .i2-bal .i2-bgo { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--malbg); border: 1px solid rgba(224,102,90,.3); color: var(--ink); }
+.inf2 .i2-bgr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.inf2 .i2-bgr > div { padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line2); min-width: 0; }
+.inf2 .i2-bgr h4 { margin: 0; font: 600 15px/1.3 Geist, Inter, system-ui, sans-serif; }
+.inf2 .i2-est { display: inline-block; margin-top: 8px; padding: 3px 8px; border-radius: 6px; font: 600 12px/1.3 Geist, Inter, system-ui, sans-serif; background: rgba(255,255,255,.06); color: var(--ink2); }
+.inf2 .i2-est.mal { background: var(--malbg); color: var(--mal); } .inf2 .i2-est.bien { background: var(--bienbg); color: var(--bien); } .inf2 .i2-est.parte { background: var(--ambbg); color: var(--amb); }
+.inf2 .i2-bgr p { font-size: 12.5px; }
+.inf2 .i2-tray { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line2); }
+.inf2 .i2-trc { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; font-size: 13px; color: var(--ink2); }
+.inf2 .i2-trc label { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.inf2 .i2-trc select { max-width: 100%; min-height: 36px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(10,12,14,.8); color: var(--ink); font: 500 13px Geist, Inter, system-ui, sans-serif; }
+.inf2 .i2-trc input[type=range] { width: min(320px, 60vw); accent-color: var(--s-con); }
+.inf2 .i2-trc output { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.inf2 [data-curva] svg { display: block; width: 100%; max-width: 760px; height: auto; margin-top: 10px; overflow: visible; }
+.inf2 .i2-bal details { margin-top: 10px; border-top: 1px solid var(--line2); }
+.inf2 .i2-bal details > summary { cursor: pointer; padding: 12px 0 4px; font: 600 14px Geist, Inter, system-ui, sans-serif; }
+.inf2 .i2-bal details p { font-size: 12.5px; margin-top: 4px; }
+.inf2 .i2-bal h4.par { margin: 20px 0 6px; font: 600 11px/1.2 Geist, Inter, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
+.inf2 .i2-bal .i2-acc { margin-top: 16px; }
+.inf2 .i2-fin { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+/* animación de entrada (solo si el sistema no pide reducir movimiento; .i2-ya = saltada o terminada) */
+.inf2 .i2-salta { position: fixed; left: 50%; bottom: 18px; translate: -50% 0; z-index: 7; padding: 6px 12px; border-radius: 999px; background: rgba(10,12,14,.7); border: 1px solid var(--line); font-size: 12px; color: var(--ink2); pointer-events: none; display: none; }
+.inf2.i2-anim:not(.i2-ya) .i2-salta { display: block; animation: i2in .4s .6s both; }
+@media (prefers-reduced-motion: no-preference) {
+  .inf2.i2-anim:not(.i2-ya) [data-a] { animation: i2sube .7s cubic-bezier(.2,.7,.2,1) calc(var(--d, 0) * 1ms) both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-big { animation: i2esp 1.5s cubic-bezier(.16,.8,.2,1) .25s both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-big .l { animation: i2letra .8s cubic-bezier(.2,.8,.2,1) calc(250ms + var(--i) * 55ms) both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-tr i { animation: i2barra 1.1s cubic-bezier(.2,.7,.2,1) calc(var(--d, 0) * 1ms) both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-metv { animation: i2marca 1.4s cubic-bezier(.3,.7,.2,1) 1.4s both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-metz, .inf2.i2-anim:not(.i2-ya) .i2-metu { animation: i2in .6s 1.3s both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-stage svg .ln, .inf2.i2-anim .i2-ch.rvc.vis svg .ln { stroke-dasharray: 1; animation: i2traza 1.6s cubic-bezier(.4,.1,.2,1) calc(var(--dd, 0) * 1ms) both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-stage svg .lr, .inf2.i2-anim .i2-ch.rvc.vis svg .lr { animation: i2corte 1.6s cubic-bezier(.4,.1,.2,1) calc(var(--dd, 0) * 1ms) both; }
+  .inf2.i2-anim:not(.i2-ya) .i2-stage svg :is(.ar, .dot, .dotr, .val, .valr, .sn, .lim, .limt, .gol, .got, .gox), .inf2.i2-anim .i2-ch.rvc.vis svg :is(.ar, .dot, .dotr, .val, .valr, .sn, .lim, .limt, .gol, .got, .gox) { animation: i2in .5s calc((var(--dd, 0) + 1300) * 1ms) both; }
+  .inf2.i2-anim .i2-ch.rvc:not(.vis) svg :is(.ln, .lr, .ar, .dot, .dotr, .val, .valr, .sn, .gol, .got, .gox) { opacity: 0; }
+  .inf2.i2-anim:not(.i2-ya) .i2-tl svg .mk { transform-box: fill-box; transform-origin: center; animation: i2pop .45s cubic-bezier(.3,1.5,.5,1) calc(var(--d, 0) * 1ms) both; }
+  .inf2.i2-anim .i2-sec.rv:not(.vis) { opacity: 0; translate: 0 24px; }
+  .inf2.i2-anim .i2-sec.rv { transition: opacity .7s ease-out, translate .7s cubic-bezier(.2,.7,.2,1); }
+}
+@keyframes i2in { from { opacity: 0; } }
+@keyframes i2sube { from { opacity: 0; translate: 0 22px; } }
+@keyframes i2esp { from { letter-spacing: .4em; opacity: .2; } }
+@keyframes i2letra { from { translate: 0 105%; opacity: 0; } }
+@keyframes i2barra { from { transform: scaleX(0); } }
+@keyframes i2marca { from { left: var(--x0); } }
+@keyframes i2traza { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes i2corte { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes i2pop { from { opacity: 0; scale: 0; } }
+@media (max-width: 1080px) {
+  .inf2 .i2-stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "kick" "tit" "ver" "acc" "kpis" "graf" "cad" "tl"; }
+  .inf2 .i2-acc.m { display: flex; grid-area: acc; }
+  .inf2 .i2-top .hm { display: none; }
+  .inf2 .i2-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .inf2 .i2-redg, .inf2 .i2-fases { grid-template-columns: minmax(0, 1fr); }
   .inf2 .i2-redg .i2-gleg { justify-content: center; }
 }
-@media (max-width: 680px) {
-  #su-inf .caja:has(> .inf2) { padding: 0 16px 20px; }
+@media (max-width: 760px) {
   .inf2 { font-size: 14px; }
-  .inf2 .i2-top { margin: 0 -16px; padding: 10px 16px; }
-  .inf2 .i2-btn { padding: 7px 10px; font-size: 12.5px; }
-  .inf2 .i2-hero { padding-top: 20px; }
-  .inf2 .i2-ver { grid-template-columns: 1fr; padding: 18px 18px 18px 22px; gap: 12px; }
-  .inf2 .i2-kpis { gap: 8px; }
+  .inf2 .i2-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .inf2 .i2-kpi { padding: 12px 12px 14px; }
-  .inf2 .i2-kn { font-size: 13px; } .inf2 .i2-ku { font-size: 11.5px; }
-  .inf2 .i2-kv b { font-size: 36px; }
-  .inf2 .i2-charts { grid-template-columns: 1fr; gap: 12px; }
-  .inf2 .i2-ch { padding: 14px 12px 8px; }
-  .inf2 .i2-sec { margin-top: 36px; }
-  .inf2 .i2-box { padding: 14px; }
-  .inf2 .i2-rs { grid-template-columns: 1fr; }
-  .inf2 .i2-reg { grid-template-columns: 1fr; }
+  .inf2 .i2-kv b { font-size: 34px; }
+  .inf2 .i2-rg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inf2 .i2-panel { padding: 16px 14px; border-radius: 14px; }
+  .inf2 .i2-charts, .inf2 .i2-bgr, .inf2 .i2-reg, .inf2 .i2-rs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .inf2 .i2-cadl { flex-direction: column; overflow: visible; }
+  .inf2 .i2-paso { min-width: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .inf2 .i2-paso b { margin-top: 0; font-size: 22px; white-space: nowrap; }
+  .inf2 .i2-fl { width: auto; height: 22px; } .inf2 .i2-fl .i2-ic { rotate: 90deg; }
+  .inf2 .i2-sec { margin-top: 40px; }
   .inf2 .i2-tab { font-size: 12.5px; } .inf2 .i2-tab th, .inf2 .i2-tab td { padding: 7px 6px; }
   .inf2 details.i2-fold > summary { padding: 14px; flex-wrap: wrap; } .inf2 details.i2-fold > summary span { margin-left: 20px; text-align: left; width: 100%; }
   .inf2 .i2-fb { padding: 0 14px 14px; }
+  .inf2 .i2-top .i2-in { min-height: 52px; }
+  .inf2 .i2-acc .i2-btn { flex: 1 1 auto; }
 }
 @media print {
-  #su-inf .caja:has(> .inf2) { width: auto; background: #fff !important; border: 0; padding: 0; }
-  .inf2 { --ink: #111; --ink2: #333; --mut: #6b6b6b; --line: #d4d4d4; --line2: #e8e8e8; --card: #fff; --bg: #fff; --bien: #12813a; --mal: #c0392b; --amb: #b86e00; --gris: #8a8a8a; --grid: #ececec;
-    --bienbg: #e6f4ea; --malbg: #fbe9e7; --ambbg: #fff4e0; --track: #eee; color: #111; }
-  .inf2 .i2-top { display: none; } .inf2 .i2-ver { background: #fff !important; }
+  #su-inf.i2-dlg { position: static !important; width: auto; height: auto; overflow: visible; background: #fff; color: #111; }
+  #su-inf.i2-dlg::backdrop { display: none; }
+  #su-inf.i2-dlg > .caja { height: auto; overflow: visible; }
+  .inf2 { --ink: #111; --ink2: #333; --mut: #6b6b6b; --line: #d4d4d4; --line2: #e8e8e8; --card: #fff; --glass: #fff; --glass-bd: #d4d4d4; --bg: #fff; --bien: #12813a; --mal: #c0392b; --amb: #8a6200; --gris: #8a8a8a; --grid: #ececec;
+    --s-con: #1a8a6a; --s-lim: #d0473a; --tone: #333; --tone-bg: #f3f3f3; --bienbg: #e6f4ea; --malbg: #fbe9e7; --ambbg: #fff4e0; --track: #eee; color: #111; }
+  .inf2.go { --tone: #c0392b; } .inf2.ok { --tone: #1a6f3c; }
+  .inf2 .i2-top, .inf2 .i2-acc, .inf2 .i2-fin, .inf2 .i2-salta, .inf2 .i2-bal button { display: none !important; }
+  .inf2 .i2-panel { box-shadow: none; background: #fff; }
+  .inf2 .i2-stage { display: block; } .inf2 .i2-stage > * { margin-bottom: 14px; }
   .inf2 .i2-tr i.ref { background: #bdbdbd; } .inf2 svg .ch0 { stroke: rgba(0,0,0,.14); } .inf2 svg .bl { stroke: #bbb; } .inf2 svg .cr, .inf2 .i2-tip { display: none !important; }
-  .inf2 .i2-ch, .inf2 .i2-kpi, .inf2 .i2-box, .inf2 .i2-ev, .inf2 .i2-ver { break-inside: avoid; }
+  .inf2 .i2-sec.rv { opacity: 1 !important; translate: none !important; }
+  .inf2 .i2-ch svg * { opacity: 1 !important; }
   .inf2 details.i2-fold > summary::before { display: none; }
 }`;
+
 function ponerCss() {
   if (document.getElementById('inf2-css')) return;
   if (!document.querySelector('link[data-inf2-fuentes]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.dataset.inf2Fuentes = '1';
-    l.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Geist:wght@400;500;600&display=swap'; document.head.appendChild(l); }
+    l.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600&family=Geist:wght@400;500;600&display=swap'; document.head.appendChild(l); }
   const s = document.createElement('style'); s.id = 'inf2-css'; s.textContent = CSS; document.head.appendChild(s);
   // al imprimir se abren los plegables (tabla y notas) para que salgan en el PDF
   window.addEventListener('beforeprint', () => document.querySelectorAll('.inf2 details').forEach(d => { if (!d.open) { d.open = true; d.dataset.i2Cerrar = '1'; } }));
@@ -391,10 +519,10 @@ function grafica(G, W) {
   const pad = (hi - lo) * 0.12; lo -= pad; hi += pad; if (pos && lo < 0) lo = 0;
   const st = paso(lo, hi, 3); lo = Math.floor(lo / st) * st; if (pos && lo < 0) lo = 0; hi = Math.ceil(hi / st) * st;
   const y = (v) => T + (1 - (v - lo) / (hi - lo)) * ph, dec = st < 0.1 ? 2 : st < 1 ? 1 : 0;
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(G.t)}: años 1 a 20">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(G.t)}: años 1 a 15">`;
   for (let v = lo; v <= hi + st * 1e-6; v += st) s += `<line class="gr" x1="${L}" x2="${L + pw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text class="ax" x="${L - 8}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${esc(G.fa ? G.fa(v) : nf(v, dec))}</text>`;
   s += `<line class="bl" x1="${L}" x2="${L + pw}" y1="${T + ph}" y2="${T + ph}"/>`;
-  for (const a of [1, 5, 10, 15, 20]) { const xa = x((a - 0.5) * AÑO); s += `<text class="ax" x="${xa.toFixed(1)}" y="${T + ph + 18}" text-anchor="middle">${a === 1 ? 'año 1' : a}</text>`; }
+  for (const a of (W < 480 ? [1, 5, 10, 15] : [1, 3, 5, 7, 9, 11, 13, 15])) { const xa = x((a - 0.5) * AÑO); s += `<text class="ax" x="${xa.toFixed(1)}" y="${T + ph + 18}" text-anchor="middle">${a === 1 ? 'año 1' : a}</text>`; }
   let yl = null, limArriba = true;
   if (G.lim != null) { yl = y(G.lim); limArriba = yl > T + 16; s += `<line class="lim" x1="${L}" x2="${L + pw}" y1="${yl.toFixed(1)}" y2="${yl.toFixed(1)}"/><text class="limt halo" x="${L + 6}" y="${(limArriba ? yl - 6 : yl + 14).toFixed(1)}">${esc(G.limTxt || 'límite')}</text>`; }
   const path = (P) => P.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ',' + y(p[1]).toFixed(1)).join('');
@@ -416,10 +544,10 @@ function grafica(G, W) {
         if (!mejor || c < mejor.c) mejor = { c, izq, yy, xx: izq ? xe - 9 : xe + 9 }; }
       s += `<text class="got halo" x="${mejor.xx.toFixed(1)}" y="${mejor.yy.toFixed(1)}" text-anchor="${mejor.izq ? 'end' : 'start'}">${esc(txt)}</text>`; }
     else { s += `<circle class="dotr" cx="${xe.toFixed(1)}" cy="${ye.toFixed(1)}" r="4"/>`; labs.push({ y: ye, x: xe, cls: 'valr', t: G.fy(e[1]), sn: 'sin' }); } }
-  s += `<path class="ln" d="${path(G.s)}"/>`;
+  s += `<path class="ar" d="${path(G.s)}L${x(G.s[G.s.length - 1][0]).toFixed(1)},${T + ph}L${x(G.s[0][0]).toFixed(1)},${T + ph}Z"/><path class="ln" pathLength="1" d="${path(G.s)}"/>`;
   const e = G.s[G.s.length - 1], xe = x(e[0]), ye = y(e[1]);
   if (G.go) { const xg = x(G.go); s += `<line class="gol" x1="${xg.toFixed(1)}" x2="${xg.toFixed(1)}" y1="${T}" y2="${T + ph}"/>`;
-    s += `<text class="got halo" x="${(xg - 6).toFixed(1)}" y="${T + 12}" text-anchor="end">game over · año ${añoDe(G.go)}</text>`; }
+    const der = xg < L + pw * 0.5; s += `<text class="got halo" x="${(der ? xg + 6 : xg - 6).toFixed(1)}" y="${T + 12}" text-anchor="${der ? 'start' : 'end'}">game over · año ${añoDe(G.go)}</text>`; }
   s += `<circle class="dot" cx="${xe.toFixed(1)}" cy="${ye.toFixed(1)}" r="5"/>`;
   labs.push({ y: ye, x: xe, cls: 'val', t: G.fy(e[1]), sn: G.r ? 'con' : '' });
   // separa las etiquetas que se montan (mínimo 30 px: valor + nombre debajo)
@@ -475,14 +603,37 @@ function presenciaFauna(H, ext) {
   return { ini: new Set(ids), fin: set, volvieron, fuera, exacto: H[0].fauna0 === ids.length };
 }
 
+const REDU = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+/* ---------- línea de tiempo de avisos (años 1–15, por plazo) ---------- */
+function lineaTiempo(EV, W, go) {
+  const H = W < 520 ? 112 : 124, L = 8, R = 8, T = 22, B = 26, pw = W - L - R, y0 = H - B;
+  const x = (w) => L + Math.max(0, Math.min(FIN, w)) / FIN * pw;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Avisos del modelo en los 15 años">`;
+  FASES.forEach((F, i) => { const a = x((F.a0 - 1) * AÑO), b = x(Math.min(15, F.a1) * AÑO);
+    s += `<rect class="fb${i % 2 ? ' b' : ''}" x="${a.toFixed(1)}" y="${T - 14}" width="${(b - a).toFixed(1)}" height="${y0 - T + 14}" rx="4"/><text class="fl" x="${(a + 6).toFixed(1)}" y="${T - 2}">${W < 520 ? F.n.split(' ')[0] : F.n + ' · años ' + F.a0 + '–' + Math.min(15, F.a1)}</text>`; });
+  s += `<line class="bl" x1="${L}" x2="${L + pw}" y1="${y0}" y2="${y0}"/>`;
+  for (let a = 1; a <= 15; a++) { if (W < 520 && a !== 1 && a % 5) continue; s += `<text class="ax" x="${x((a - 0.5) * AÑO).toFixed(1)}" y="${y0 + 16}" text-anchor="middle">${a === 1 ? 'año 1' : a}</text>`; }
+  if (go) { const xg = x(go.sem); s += `<line class="gol" x1="${xg.toFixed(1)}" x2="${xg.toFixed(1)}" y1="${T - 14}" y2="${y0}"/>`; }
+  const pila = new Map(), pts = []; let k = 0;
+  for (const e of EV) { const g = /^game over/i.test(e.titulo), cls = g || e.signo < 0 ? 'mal' : e.signo > 0 ? 'bien' : 'neu';
+    const col = Math.round(x(e.sem) / 9), n = pila.get(col) || 0; pila.set(col, n + 1);
+    const xx = col * 9, yy = y0 - 8 - n * 11;
+    if (n === 5) { s += `<text class="mas" x="${xx}" y="${yy + 4}" text-anchor="middle">+</text>`; continue; } if (n > 5) continue;
+    const d = 2600 + Math.min(1400, k++ * 18);
+    s += cls === 'bien' ? `<circle class="mk bien" style="--d:${d}" cx="${xx}" cy="${yy}" r="4.2"/>` : cls === 'mal' ? `<path class="mk mal" style="--d:${d}" d="M${xx - 4.6},${yy - 3.6}L${xx + 4.6},${yy - 3.6}L${xx},${yy + 4.4}Z"/>` : `<rect class="mk neu" style="--d:${d}" x="${xx - 3.6}" y="${yy - 3.6}" width="7.2" height="7.2" rx="1"/>`;
+    pts.push({ x: xx, y: yy, e }); }
+  return { svg: s + '</svg>', pts };
+}
+const FLECHA = '<svg class="i2-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg>';
+
 /* ======================================================================= */
-let OBS = null;
-export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def = {}, hist, base = null, reglas = [], go = null, eventos = [], extinciones = [], ind = [], semilla = 1, onCerrar = null }) {
+let OBS = null, IOB = null;
+export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def = {}, hist, base = null, reglas = [], go = null, eventos = [], extinciones = [], ind = [], semilla = 1, cadena = null, onCerrar = null, onReiniciar = null, animar = true }) {
   const t0 = performance.now();
   if (!cont || !hist || !hist.length) return null;
   ponerCss();
   const H = hist, nH = H.length, L = H[nH - 1], wFin = L.sem || nH;
-  const i1 = Math.min(nH - 1, AÑO - 1), A1 = H[i1]; // año 1 = semana 52 (el modelo ya se asentó; arranca por debajo de su equilibrio)
+  const i1 = Math.min(nH - 1, AÑO - 1), A1 = H[i1];
   const B = base && base.length && sim !== 1 ? base : null;
   const nC = B ? Math.min(nH, B.length) : 0, HC = B ? H[nC - 1] : null, BC = B ? B[nC - 1] : null, wC = HC ? (HC.sem || nC) : 0;
   const baseCorta = B && B.length < nH, añoC = añoDe(wC);
@@ -491,10 +642,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const conProp = def.propuesta != null ? !!def.propuesta : (def.grupo === 'propuesta');
   const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => ['abasto','habitat','residuos'].includes(r.k));
   const umb = (k) => { const r = RG.find(x => x.k === k); return r && r.umbral != null ? r.umbral : UMB[k]; };
-
-  /* --- game over de la pareja sin propuesta (si se detuvo antes de los 15 años): la regla que estaba cruzada en su última semana --- */
   const goB = B?.at(-1)?.evaluacion?.territorio?.gameOver;
-  /* --- comparaciones de los indicadores clave (veredicto) y tabla completa --- */
   const temas = TEMAS.map(T => ({ ...T, items: T.items.map(IT).filter(it => get(L, it.k) != null && (!it.soloSi || it.soloSi(H)) && !(H.every(h => !get(h, it.k)) && (!B || B.every(h => !get(h, it.k))))) })).filter(T => T.items.length);
   const comps = [], filas = [];
   for (const T of temas) { filas.push(`<tr class="tema"><td colspan="4">${esc(T.n)}</td></tr>`);
@@ -502,77 +650,107 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
       const ha = B ? BC : A1, hb = B ? HC : L, a = get(ha, it.k), b = get(hb, it.k), c = cambio(it, a, b);
       if (it.clave && c) comps.push({ it, c });
       filas.push(`<tr><td>${esc(it.n)}${it.clave ? '<span class="k">clave</span>' : ''}</td><td>${a == null ? '—' : esc(it.f(a, ha))}</td><td>${b == null ? '—' : esc(it.f(b, hb))}</td><td class="${c ? c.cls : ''}">${c ? (c.igual ? 'casi igual' : esc(c.txt) + ' · ' + PALABRA[c.cls]) : '—'}</td></tr>`); } }
-
-  /* --- reglas: valor final, máximo acercamiento --- */
   const estR = RG.map(r => { let mx = 0, wmx = 0; for (let i = 0; i < nH; i += 2) { const p = prox(r.k, VAL[r.k](H[i]), r.umbral); if (p > mx) { mx = p; wmx = H[i].sem; } }
     const vF = VAL[r.k](L); return { r, vF, pF: prox(r.k, vF, r.umbral), mx, wmx }; });
   const cerca = estR.filter(e => !go && e.pF >= 2 / 3).sort((a, b) => b.pF - a.pF);
 
-  /* --- veredicto (mismos criterios de la versión 2) --- */
+  /* --- veredicto (criterios del encabezado: No = game over · Sí = sin game over, ninguna regla a 2/3 o más de su límite y mejoran más de los que empeoran · En parte = el resto) --- */
   const frente = B ? 'frente a la misma prueba sin propuesta' : 'frente al año 1';
   const mejor = comps.filter(x => x.c.cls === 'bien').sort((a, b) => b.c.dd - a.c.dd), peor = comps.filter(x => x.c.cls === 'mal').sort((a, b) => b.c.dd - a.c.dd), igual = comps.filter(x => x.c.cls === 'igual');
-  const nom = (arr, k = 3) => lista(arr.slice(0, k).map(x => min1(x.it.n)));
-  let V, razon, frase;
-  if (go) { const R = RG.find(r => r.k === go.regla) || {};
-    V = { t: 'No', cls: 'mal', ic: 'no' }; razon = `Kennedy llegó a game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${go.motivo || R.n}.`;
-    frase = `Kennedy llega a game over en el año ${añoDe(go.sem)}: ${go.motivo || CORTO_R[go.regla] || R.n}.`; }
-  else {V={t:nH>=FIN?'Horizonte completo':'En curso',cls:'parte',ic:'parte'};razon='La evaluación por sistema considera pérdidas locales, tendencias y datos disponibles.';frase=razon;}
+  const completo = nH >= FIN;
+  let V, razon, frase, RGo = null;
+  if (go) { RGo = (reglas || []).find(r => r.k === go.regla) || RG.find(r => r.k === go.regla) || { k: go.regla, n: go.regla, umbral: UMB[go.regla] };
+    V = { t: 'No', cls: 'go', big: 'Game over', eye: 'Resultado · condición crítica sostenida' };
+    razon = `Kennedy llegó a game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${go.motivo || RGo.n}.`; frase = razon; }
+  else { const si = !cerca.length && mejor.length > peor.length;
+    V = si ? { t: 'Sí', cls: 'ok', big: 'Sostenible', eye: '¿Fue sostenible? · Sí' } : { t: 'En parte', cls: 'parte', big: 'En parte', eye: '¿Fue sostenible?' };
+    const c0 = cerca[0];
+    frase = si ? `Sin game over ${completo ? 'en los 15 años' : 'hasta el año ' + añoDe(wFin)}: ${mejor.length} de ${comps.length} indicadores clave mejoran y ${peor.length} empeoran ${frente}.`
+      : c0 ? `Sin game over, pero ${ART[c0.r.k] || min1(c0.r.n)} quedó a ${nf(Math.min(1, c0.pF) * 100)} % del camino a su límite (${fmtR(c0.r.k, c0.vF)}).`
+      : `Sin game over, pero mejoran ${mejor.length} y empeoran ${peor.length} indicadores clave ${frente}.`;
+    if (!completo) { V.eye = `Informe parcial · año ${añoDe(wFin)} de 15 · hasta ahora: ${V.t}`; V.big = 'En curso'; V.cls = 'curso'; frase = 'Hasta ahora: ' + min1(frase); }
+    razon = frase; }
 
-  /* alerta: la pareja sin propuesta llegó a game over y esta no (o más tarde) */
   let alerta = '';
   if (goB && conProp) { const qué = goB.regla ? ` por ${CORTO_R[goB.regla] || min1(goB.n || goB.regla)}` : '';
-    alerta = `<div class="i2-alerta">${icono('gameover')}<p><b>Sin propuesta, Kennedy llega a game over en el año ${añoDe(goB.sem)}</b>${esc(qué)}. ${go ? `Con propuesta llega en el año ${añoDe(go.sem)}.` : nH >= FIN ? 'Con propuesta llega a los 15 años sin game over.' : ''} Las cifras se comparan en el año ${añoC}, la última semana que tienen las dos.</p></div>`; }
+    alerta = `<div class="i2-alerta">${icono('gameover')}<p><b>Sin propuesta, Kennedy llega a game over en el año ${añoDe(goB.sem)}</b>${esc(qué)}. ${go ? `Con propuesta llega en el año ${añoDe(go.sem)}.` : completo ? 'Con propuesta llega a los 15 años sin game over.' : ''} Las cifras se comparan en el año ${añoC}, la última semana que tienen las dos.</p></div>`; }
 
-  /* --- métricas: las del par primero; luego la regla del game over (o la más cercana) y relleno --- */
+  /* --- métricas --- */
   const tiene = (k) => MET[k] && H.some(h => MET[k].v(h) != null);
   const reglaFoco = go ? go.regla : goB && goB.regla ? goB.regla : (estR.slice().sort((a, b) => b.mx - a.mx)[0] || {}).r ? estR.slice().sort((a, b) => b.mx - a.mx)[0].r.k : null;
   const llaves = []; const pon = (k) => { if (k && !llaves.includes(k) && tiene(k)) llaves.push(k); };
   (PAR_MET[def.par] || []).forEach(pon); pon(REGLA_MET[reglaFoco]);
   const limDe = (k) => { const rk = Object.keys(REGLA_MET).find(r => REGLA_MET[r] === k); if (rk) { const u = umb(rk); return rk === 'trafico' ? u * 100 : u; } return MET[k].lim; };
 
-  /* --- héroe: cifras clave --- */
-  const kpiK = llaves.slice(); // relleno del héroe: los indicadores clave que más cambiaron (como métrica genérica si no hay una propia)
+  /* --- cifras clave (cuentan hacia arriba desde la referencia) --- */
   const extra = [...mejor, ...peor].sort((a, b) => b.c.dd - a.c.dd);
-  const kpis = kpiK.map(k => ({ k, M: MET[k] }));
+  const kpis = llaves.map(k => ({ k, M: MET[k] }));
   for (const x of extra) { if (kpis.length >= 4) break; const mk = x.it.m; if (mk && kpis.some(q => q.k === mk)) continue; if (mk && tiene(mk)) { kpis.push({ k: mk, M: MET[mk] }); continue; }
     kpis.push({ k: x.it.k, M: { n: x.it.n, u: '', v: (h) => get(h, x.it.k), f: (v) => x.it.f(v, L), fh: x.it.f, sube: x.it.sube, dif: x.it.dif, esc: x.it.esc, u2: x.it.u } }); }
-  for (const k of RELLENO) { if (kpis.length >= 3) break; if (!kpis.some(q => q.k === k) && tiene(k)) kpis.push({ k, M: MET[k] }); }
-  const kpi = ({ M }) => {
+  for (const k of RELLENO) { if (kpis.length >= 4) break; if (!kpis.some(q => q.k === k) && tiene(k)) kpis.push({ k, M: MET[k] }); }
+  const CNT = [];
+  const kpi = ({ M }, i) => {
     const ha = B ? BC : A1, hb = B ? HC : L, a = M.v(ha), b = M.v(hb), it = { ...M, u: M.u2 || ['', ''] }, c = cambio(it, a, b);
     const fa = (v, h) => v == null ? '—' : (M.fh ? M.fh(v, h) : M.f(v)), lim = M.lim != null && M.dif === 'pts' ? limDe(Object.keys(MET).find(k => MET[k] === M)) : null;
     const mx = Math.max(Math.abs(a || 0), Math.abs(b || 0), lim || 0, M.dif === 'pts' && Math.max(a || 0, b || 0) <= 100 && Math.max(a || 0, b || 0) > 40 ? 100 : 0) || 1;
-    const w = (v) => (Math.abs(v || 0) / mx * 100).toFixed(1);
-    return `<div class="i2-kpi"><div class="i2-kn">${esc(M.n)}</div>${M.u ? `<div class="i2-ku">${esc(M.u)}</div>` : ''}
-      <div class="i2-kv"><b>${esc(fa(b, hb))}</b>${tag(c)}</div>
-      <div class="i2-bars"><div class="i2-bar"><span>${B ? 'Con propuesta' : `Año ${añoDe(wFin)}`}</span><span>${esc(fa(b, hb))}</span><div class="i2-tr"><i class="${c ? c.cls : ''}" style="width:${w(b)}%"></i></div></div>
-        <div class="i2-bar ref"><span>${B ? 'Sin propuesta' : 'Año 1'}</span><span>${esc(fa(a, ha))}</span><div class="i2-tr"><i class="ref" style="width:${w(a)}%"></i></div></div></div></div>`; };
-  const htmlKpis = kpis.length ? `<div class="i2-cmp"><div class="i2-cmph"><span class="i2-lab">${B ? 'Con propuesta frente a sin propuesta' : 'Del año 1 al final'}</span><span>${B ? `Misma prueba, mismos valores · año ${añoC}` : `Año 1 → año ${añoDe(wFin)}`}</span></div>
-    <div class="i2-kpis" style="--n:${kpis.length}">${kpis.map(kpi).join('')}</div></div>` : '';
+    const w = (v) => (Math.abs(v || 0) / mx * 100).toFixed(1), d = 1500 + i * 140;
+    if (a != null && b != null) CNT.push({ i, a, b, f: (v) => fa(v, hb), d });
+    return `<div class="i2-kpi i2-panel" data-a style="--d:${d}"><div class="i2-kn">${esc(M.n)}</div>${M.u ? `<div class="i2-ku">${esc(M.u)}</div>` : ''}
+      <div class="i2-kv"><b data-i2-n="${i}">${esc(fa(b, hb))}</b>${tag(c)}</div>
+      <div class="i2-bars"><div class="i2-bar"><span>${B ? 'Con propuesta' : `Año ${añoDe(wFin)}`}</span><span>${esc(fa(b, hb))}</span><div class="i2-tr"><i style="width:${w(b)}%;--d:${d + 200}"></i></div></div>
+        <div class="i2-bar ref"><span>${B ? 'Sin propuesta' : 'Año 1'}</span><span>${esc(fa(a, ha))}</span><div class="i2-tr"><i class="ref" style="width:${w(a)}%;--d:${d + 200}"></i></div></div></div></div>`; };
+  const htmlKpis = kpis.length ? `<div class="i2-cmp"><div class="i2-cmph" data-a style="--d:1400"><span class="i2-lab">${B ? 'Con propuesta frente a sin propuesta' : 'Del año 1 al final'}</span><span>${B ? `Misma prueba, mismos valores · año ${añoC}` : `Año 1 → año ${añoDe(wFin)}`}</span></div>
+    <div class="i2-kpis">${kpis.map(kpi).join('')}</div></div>` : '';
+
+  /* --- tarjeta del game over: regla, cuándo, umbral frente al valor --- */
+  let htmlRegla = '';
+  if (go && RGo) { const k = go.regla, u = RGo.umbral != null ? RGo.umbral : UMB[k], hoy = HOY[k], max = hoy < u, v = num(go.valor);
+    const fr = (x) => x == null ? '—' : fmtR(k, x), nS = RGo.semanas || 4;
+    const valSem = (h) => k === 'abasto' ? (h.evaluacion?.territorio?.sectores || []).find(s => s.n === go.lugar)?.valor ?? null : VAL[k](h);
+    const sec = H.filter(h => h.sem > go.sem - nS && h.sem <= go.sem).map(valSem).filter(x => x != null && isFinite(x));
+    const top = Math.max(hoy, u, v || 0) * 1.18 || 1, p = (x) => Math.max(0, Math.min(100, x / top * 100));
+    htmlRegla = `<div class="i2-vlab">Regla incumplida · ${esc(RGo.n)}</div><p class="i2-rgt">${esc(may1((go.motivo || RGo.txt || '').replace(/\bsector (sector)\b/i, '$1')))}${go.lugar && go.lugar !== 'Kennedy' && !(go.motivo || '').includes(go.lugar) ? ` <em>· ${esc(go.lugar)}</em>` : ''}.</p>
+      <div class="i2-rg"><div><small>Semana</small><b>${nf(go.sem)}</b><span>de ${nf(FIN)}</span></div><div><small>Año</small><b>${añoDe(go.sem)}</b><span>de 15</span></div>
+        <div><small>Umbral · ${max ? 'máximo' : 'mínimo'}</small><b>${esc(fr(u))}</b><span>${esc(RGo.unidad || '')}</span></div><div><small>Valor alcanzado</small><b class="t">${esc(fr(v))}</b><span>${nS} semanas seguidas</span></div></div>
+      <div class="i2-met" aria-hidden="true"><div class="i2-metr"><div class="i2-metz" style="left:${max ? p(u) : 0}%;right:${max ? 0 : 100 - p(u)}%"></div><div class="i2-meth" style="left:${p(hoy)}%"></div><div class="i2-metu" style="left:${p(u)}%"></div><div class="i2-metv" style="left:${p(v || 0)}%;--x0:${p(hoy)}%"></div></div>
+        <div class="i2-metl"><span style="left:${p(hoy)}%">hoy ${esc(fr(hoy))}</span><span class="u" style="left:${p(u)}%">umbral</span><span class="v" style="left:${p(v || 0)}%">${esc(fr(v))}</span></div></div>
+      ${sec.length > 1 ? `<div class="i2-seq">Últimas ${sec.length} semanas${k === 'abasto' ? ' en ' + esc(go.lugar) : ''}: ${sec.map(x => `<i>${esc(fr(x))}</i>`).join(FLECHA)}</div>` : ''}`; }
 
   const años = wFin / AÑO, parN = def.parN || '', escenario = def.par != null ? (conProp ? 'Con propuesta' : 'Sin propuesta') : '';
   const titulo = def.parN ? def.parN.replace(/^\d+\s*/, '') : (def.n || `Simulación ${sim}`);
   const numPar = def.parN ? (def.parN.match(/^\d+/) || [''])[0] : '';
-  const htmlHero = `<div class="i2-top"><span class="i2-k">Informe final · ${esc(parN || 'simulación ' + sim)}${escenario ? ' · ' + esc(min1(escenario)) : ''}</span><button class="i2-btn" data-i2-imp>Imprimir / PDF</button><button class="i2-btn pri" data-i2-x>Cerrar</button></div>
-    <header class="i2-hero"><div class="i2-kick">${numPar ? `<span>Par ${esc(numPar)} de 06</span>` : `<span>Simulación ${esc(sim)}</span>`}${escenario ? `<span class="i2-pill ${conProp ? 'con' : ''}">${esc(escenario)}</span>` : ''}<span>${nf(años, años % 1 ? 1 : 0)} de 15 años${go ? ' · se detuvo por game over' : ''}</span></div>
-      <h2 class="i2-tit" style="margin-bottom:0">${esc(titulo)}</h2>${def.pregunta ? `<p class="i2-preg">${esc(def.pregunta)}</p>` : ''}
-      <div class="i2-ver ${V.cls}"><div class="i2-vbig"><small>¿Fue sostenible?</small><div class="i2-vw">${icono(V.ic)}${V.t}</div></div>
-        <div><p class="i2-vf">${esc(frase)}</p><div class="i2-vs"><span class="i2-cnt bien">${icono('sube')}<b>${mejor.length}</b> mejoran</span><span class="i2-cnt mal">${icono('baja')}<b>${peor.length}</b> empeoran</span><span class="i2-cnt">${icono('igual')}<b>${igual.length}</b> casi iguales</span><span class="i2-cntt">de ${comps.length} indicadores clave, ${esc(frente)}</span></div></div>
-        ${alerta}</div>
-      ${htmlKpis}</header>`;
+  let li = 0; const letras = V.big.toUpperCase().split(' ').map(w => `<span class="w">${[...w].map(ch => `<span class="l" style="--i:${li++}">${esc(ch)}</span>`).join('')}</span>`).join(' ');
+  const IR = { ver: 'M2 8s2.5-4.5 6-4.5S14 8 14 8s-2.5 4.5-6 4.5S2 8 2 8zM8 6.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 1 0 0-3.6', pdf: 'M8 2v8M4.5 6.5L8 10l3.5-3.5M2.5 13.5h11', rei: 'M3 8a5 5 0 1 0 1.5-3.6M3 2.5v2.5h2.5', x: 'M4 4l8 8M12 4l-8 8' };
+  const ic = (k) => `<svg class="i2-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="${IR[k]}"/></svg>`;
+  const acciones = (cls) => `<div class="i2-acc ${cls}"><button type="button" class="i2-btn pri" data-i2-ver>${ic('ver')}Ver informe completo</button><button type="button" class="i2-btn" data-i2-pdf>${ic('pdf')}Descargar PDF</button>${onReiniciar ? `<button type="button" class="i2-btn" data-i2-rei>${ic('rei')}Reiniciar simulación</button>` : ''}</div>`;
+  const htmlTop = `<div class="i2-top"><div class="i2-in"><span class="i2-k">Informe final · <b>${esc(V.big)}</b> · ${esc(parN || 'simulación ' + sim)}</span>
+    <button type="button" class="i2-btn hm" data-i2-ver>${ic('ver')}Ver informe completo</button><button type="button" class="i2-btn hm" data-i2-pdf>${ic('pdf')}Descargar PDF</button>${onReiniciar ? `<button type="button" class="i2-btn hm" data-i2-rei>${ic('rei')}Reiniciar simulación</button>` : ''}<button type="button" class="i2-btn" data-i2-x aria-label="Cerrar informe">${ic('x')}Cerrar</button></div></div>`;
 
-  /* --- curvas: máximo 4 (métricas del par primero) --- */
+  /* --- curvas: la principal (escenario) y hasta 4 en el informe --- */
   const grK = llaves.slice(); for (const k of RELLENO) { if (grK.length >= 4) break; if (!grK.includes(k) && tiene(k)) grK.push(k); }
-  const GR = grK.slice(0, 4).map(k => { const M = MET[k], lim = limDe(k);
-    return { k, t: M.t, sub: M.ay, fn: M.v, fy: M.f, fa: k === 'suelo' ? (v) => '×' + nf(v, 2) : null, lim: lim != null ? lim : null, limTxt: M.limTxt ? (k === 'cora' ? 'tope de Corabastos' : M.limTxt) : null }; });
-  GR.forEach(g => { g.s = serie(H, g.fn); g.r = B ? serie(B, g.fn) : null; if (g.r && !g.r.length) g.r = null; g.go = go ? go.sem : null; g.goB = goB && g.r ? goB.sem : null; });
-  const GRv = GR.filter(g => g.s.length > 1);
-  const htmlGr = GRv.length ? `<section class="i2-sec"><div class="i2-sh"><div><span class="i2-lab">Cómo cambió en 15 años</span><h3 class="i2-st">${esc(may1(lista(GRv.slice(0, 2).map((g, i) => i ? min1(MET[g.k].n) : MET[g.k].n))))}</h3></div>
-      <div class="i2-leg"><span><i></i>${B ? 'Con propuesta' : 'Esta simulación'}</span>${B ? '<span><i class="ref"></i>Sin propuesta</span>' : ''}${GRv.some(g => g.lim != null) ? '<span><i class="lim"></i>Límite</span>' : ''}</div></div>
-    <div class="i2-charts">${GRv.map((g, i) => `<figure class="i2-ch" data-i2-g="${i}" style="margin:0"><div class="i2-cht">${esc(g.t)}</div><div class="i2-chs">${esc(g.sub)}</div><div data-i2-svg></div><div class="i2-tip"></div></figure>`).join('')}</div></section>` : '';
+  const mkG = (k, M) => { const lim = M.lim0 !== undefined ? M.lim0 : limDe(k);
+    const g = { k, t: M.t, sub: M.ay, fn: M.v, fy: M.f, fa: k === 'suelo' ? (v) => '×' + nf(v, 2) : null, lim: lim != null ? lim : null, limTxt: M.limTxt ? (k === 'cora' ? 'tope de Corabastos' : M.limTxt) : null };
+    g.s = serie(H, g.fn); g.r = B ? serie(B, g.fn) : null; if (g.r && !g.r.length) g.r = null; g.go = go ? go.sem : null; g.goB = goB && g.r ? goB.sem : null; return g; };
+  const GRv = grK.slice(0, 4).map(k => mkG(k, MET[k])).filter(g => g.s.length > 1);
+  let G0 = null;
+  if (go && go.regla === 'abasto' && go.lugar && go.lugar !== 'Kennedy') G0 = mkG('sector', { t: `Cobertura de alimentos · ${go.lugar}`, ay: 'Alimentos que recibe el sector frente a su demanda (%). El game over se mide por sector.', v: (h) => num((h.evaluacion?.territorio?.sectores || []).find(s => s.n === go.lugar)?.valor), f: (v) => nf(v) + ' %', lim0: umb('abasto'), limTxt: 'game over < 80 %' });
+  else if (go && REGLA_MET[go.regla] && tiene(REGLA_MET[go.regla])) G0 = mkG(REGLA_MET[go.regla], MET[REGLA_MET[go.regla]]);
+  if (G0 && G0.s.length < 2) G0 = null;
+  if (!G0) G0 = GRv[0] || null;
+  const CH = [G0, ...GRv];
+  const leyenda = (g) => `<div class="i2-leg"><span><i></i>${B ? 'Con propuesta' : 'Esta simulación'}</span>${g && g.r ? '<span><i class="ref"></i>Sin propuesta</span>' : ''}${g && g.lim != null ? '<span><i class="lim"></i>Límite</span>' : ''}</div>`;
+  const fig = (g, i, cls, d) => `<figure class="i2-ch i2-panel ${cls}" data-i2-g="${i}" style="--dd:${d}"><div class="i2-cht">${esc(g.t)}</div><div class="i2-chs">${esc(g.sub || '')} Años 1 a 15, promedio cada ${CADA} semanas.</div>${cls.includes('i2-main') ? leyenda(g) : ''}<div data-i2-svg></div><div class="i2-tip"></div></figure>`;
+  const htmlMain = G0 ? fig(G0, 0, 'i2-main', 2300).replace('<figure ', '<figure data-a style="--d:2100" ').replace(' style="--dd:2300"', '').replace('data-i2-g="0"', 'data-i2-g="0" data-dd="2300"') : '';
+  const htmlGr = GRv.length ? `<section class="i2-sec rv"><div class="i2-sh"><div><span class="i2-lab">Cómo cambió en 15 años</span><h3 class="i2-st">${esc(may1(lista(GRv.slice(0, 2).map((g, i) => i ? min1(MET[g.k].n) : MET[g.k].n))))}</h3></div>${leyenda(GRv.find(g => g.r) || GRv[0])}</div>
+    <div class="i2-charts">${GRv.map((g, i) => fig(g, i + 1, 'rvc', 0)).join('')}</div></section>` : '';
 
-  /* --- red + lo que pasó --- */
+  /* --- causa → efecto (cadena del par con los valores finales) --- */
+  const pasos = (cadena || []).filter(p => p && p.t);
+  const fin = go ? { t: 'Game over · ' + (RGo?.n || go.regla), v: `año ${añoDe(go.sem)}` } : { t: '¿Fue sostenible?', v: V.t };
+  const htmlCad = pasos.length ? `<div class="i2-cad i2-panel" data-a style="--d:3300"><div class="i2-vlab">Causa → efecto · valores al final</div><div class="i2-cadl">${[...pasos, { ...fin, fin: true }].map((p, i) => `${i ? `<div class="i2-fl" data-a style="--d:${3400 + i * 160}">${FLECHA}</div>` : ''}<div class="i2-paso${p.fin ? ' fin' : ''}" data-a style="--d:${3400 + i * 160}"><small>${esc(p.t)}</small><b>${esc(p.v)}</b></div>`).join('')}</div></div>` : '';
+
+  /* --- avisos y línea de tiempo --- */
   const PF = presenciaFauna(H, extinciones);
-  // avisos: sin repetir la misma especie que desaparece dos veces en la misma semana (aviso de la interfaz + aviso del modelo)
   const EV = []; for (const e of (eventos || []).filter(e => e && e.titulo).slice().sort((a, b) => a.sem - b.sem)) {
     const m = /^Desapareci[oó] (.+)$/.exec(e.titulo); if (m && EV.some(o => o.sem === e.sem && o.titulo.includes(m[1]))) continue;
     const dup = EV.findIndex(o => o.sem === e.sem && /^Desapareci[oó] /.test(o.titulo) && e.titulo.includes(o.titulo.replace(/^Desapareci[oó] /, ''))); if (dup >= 0) { EV[dup] = e; continue; }
@@ -580,20 +758,24 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const evRow = (e) => { const g = /^game over/i.test(e.titulo), cls = g || e.signo < 0 ? 'mal' : e.signo > 0 ? 'bien' : '';
     return `<div class="i2-ev ${cls}"${e.texto ? ` title="${esc(e.texto)}"` : ''}><div class="i2-ea">Año ${añoDe(e.sem)}</div><div class="i2-eb" aria-label="${e.signo > 0 ? 'bueno' : e.signo < 0 ? 'malo' : 'neutro'}">${icono(g ? 'gameover' : e.tipo)}</div><div class="i2-et">${esc(e.titulo)}</div></div>`; };
   const nBue = EV.filter(e => e.signo > 0).length, nMal = EV.filter(e => e.signo < 0 || /^game over/i.test(e.titulo)).length;
-  const htmlEv = `<section class="i2-sec"><div class="i2-sh"><div><span class="i2-lab">Línea de tiempo</span><h3 class="i2-st">Lo que pasó, por plazo</h3></div>
+  const mkS = { bien: '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4.2" fill="#5cbf7a"/></svg>', mal: '<svg viewBox="0 0 10 10"><path d="M.4 1h9.2L5 9.4z" fill="#e0665a"/></svg>', neu: '<svg viewBox="0 0 10 10"><rect x="1.4" y="1.4" width="7.2" height="7.2" rx="1" fill="#8d939b"/></svg>' };
+  const htmlTl = `<div class="i2-tl i2-panel" data-a style="--d:2500"><div class="i2-cmph" style="margin:0"><span class="i2-lab">Línea de tiempo · avisos del modelo</span><span>${EV.length} avisos · ${nBue} buenos · ${nMal} malos</span></div>
+    <div class="i2-tlw" data-i2-tl><div class="i2-tip"></div></div><div class="i2-tll"><span>${mkS.bien}Bueno</span><span>${mkS.mal}Malo</span><span>${mkS.neu}Neutro</span>${go ? '<span><svg viewBox="0 0 10 10"><path d="M5 0v10" stroke="#e0665a" stroke-dasharray="2 2"/></svg>Game over</span>' : ''}</div></div>`;
+  const htmlEv = `<section class="i2-sec rv"><div class="i2-sh"><div><span class="i2-lab">Por plazo</span><h3 class="i2-st">Lo que pasó</h3></div>
       <div class="i2-leg"><span><span class="i2-eb bien">${icono('sube')}</span>${nBue} buenos</span><span><span class="i2-eb mal">${icono('baja')}</span>${nMal} malos</span><span>${EV.length} avisos del modelo</span></div></div>
     <div class="i2-fases">${FASES.map(F => { const es = EV.filter(e => { const a = añoDe(e.sem); return a >= F.a0 && a <= F.a1; });
-      return `<div class="i2-box"><div class="i2-fh"><b>${F.n}</b><span>años ${F.a0}–${F.a1}</span></div>${es.length ? es.slice(0, 8).map(evRow).join('') + (es.length > 8 ? `<details class="i2-mas"><summary>Ver ${es.length - 8} avisos más</summary>${es.slice(8).map(evRow).join('')}</details>` : '') : `<p class="i2-vacio">${añoDe(wFin) < F.a0 ? 'La corrida terminó antes de este plazo.' : 'Sin avisos en estos años.'}</p>`}</div>`; }).join('')}</div></section>`;
-  const htmlRed = `<section class="i2-sec"><div class="i2-sh"><div><span class="i2-lab">Red de la vida</span><h3 class="i2-st">Relaciones entre especies al final</h3></div>
+      return `<div class="i2-box i2-panel"><div class="i2-fh"><b>${F.n}</b><span>años ${F.a0}–${Math.min(15, F.a1)}</span></div>${es.length ? es.slice(0, 8).map(evRow).join('') + (es.length > 8 ? `<details class="i2-mas"><summary>Ver ${es.length - 8} avisos más</summary>${es.slice(8).map(evRow).join('')}</details>` : '') : `<p class="i2-vacio">${añoDe(wFin) < F.a0 ? 'La corrida terminó antes de este plazo.' : 'Sin avisos en estos años.'}</p>`}</div>`; }).join('')}</div></section>`;
+  const htmlRed = `<section class="i2-sec rv"><div class="i2-sh"><div><span class="i2-lab">Red de la vida</span><h3 class="i2-st">Relaciones entre especies al final</h3></div>
       <p class="i2-sd">Cada punto es una especie y cada curva una relación: comer, polinizar, dispersar semillas o anidar.</p></div>
-    <div class="i2-box" data-i2-red><p class="i2-nota">Cargando la red…</p></div></section>`;
+    <div class="i2-box i2-panel" data-i2-red><p class="i2-nota">Cargando la red…</p></div></section>`;
 
-  /* --- tabla completa + notas y fuentes --- */
-  const htmlTab = `<details class="i2-fold"><summary>Todos los indicadores<span>${B ? `Sin propuesta frente a con propuesta · año ${añoC}` : `Año 1 frente al año ${añoDe(wFin)}`}</span></summary><div class="i2-fb">
+  /* --- tabla + notas --- */
+  const htmlTab = `<details class="i2-fold i2-panel"><summary>Todos los indicadores<span>${B ? `Sin propuesta frente a con propuesta · año ${añoC}` : `Año 1 frente al año ${añoDe(wFin)}`}</span></summary><div class="i2-fb">
     <table class="i2-tab"><thead><tr><th>Indicador</th><th>${B ? 'Sin propuesta' : 'Año 1'}</th><th>${B ? 'Con propuesta' : 'Final'}</th><th>Diferencia</th></tr></thead><tbody>${filas.join('')}</tbody></table></div></details>`;
   const link = (t) => esc(t).replace(/https?:\/\/[^\s)<]+/g, (u) => { const m = u.match(/[.,;]+$/), uu = m ? u.slice(0, -m[0].length) : u; return `<a href="${uu}" target="_blank" rel="noopener">${uu}</a>${m ? m[0] : ''}`; });
-  const htmlNotas = `<details class="i2-fold"><summary>Notas y fuentes<span>Reglas de game over, cómo se decide el veredicto y supuestos</span></summary><div class="i2-fb i2-notas">
+  const htmlNotas = `<details class="i2-fold i2-panel"><summary>Notas y fuentes<span>Reglas de game over, cómo se decide el veredicto y supuestos</span></summary><div class="i2-fb i2-notas">
     <h4>Evaluación</h4><p>Umbrales experimentales de Bavaria Común. Cuatro semanas consecutivas en un sector, estación o parche confirman un colapso local. La ejecución completa termina cuando el indicador agregado de Kennedy incumple durante cuatro semanas.</p>
+    <h4>Cómo se decide el veredicto</h4><ul><li><b>Game over (No)</b>: se cumplió una regla de game over durante 4 semanas seguidas.</li><li><b>Sostenible (Sí)</b>: sin game over, ningún indicador de las reglas a 2/3 o más del camino a su límite, y mejoran más indicadores clave de los que empeoran.</li><li><b>En parte</b>: el resto. Con pareja se compara en la misma semana; sin pareja, año 1 → final.</li></ul>
     <h4>Reglas de game over · iguales para las 12 simulaciones</h4>
     <div class="i2-reg">${RG.map(r => { const e = estR.find(x => x.r.k === r.k), es = go && go.regla === r.k; return `<div class="${es ? 'go' : ''}"><b>${esc(r.n)}</b>: game over si ${esc(r.txt || '')}.${e ? ` <span class="fin ${es || e.pF >= 2 / 3 ? 'mal' : ''}">Al final: ${esc(fmtR(r.k, e.vF))}${es ? ' · se cumplió' : ''}.</span>` : ''}${r.fuente ? `<p>Fuente: ${link(r.fuente)}</p>` : ''}</div>`; }).join('')}</div>
     <h4>Supuestos de este informe</h4><ul>
@@ -604,33 +786,73 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
       <li>Red: ${PF.exacto ? '' : 'el modelo no informa qué especies faltaban al inicio; '}la presencia de la fauna se ${PF.volvieron.length || !Array.isArray(L.presentes) ? 'reconstruye con las extinciones de cada semana (si una especie vuelve, se toma la última que desapareció)' : 'toma del modelo'}. Plantas: censo de árboles SIGAU y bosque de Bavaria; las nativas de los módulos de huertas se suman cuando sube el conteo de flora del modelo. Una relación está activa si sus dos especies viven en Kennedy.</li>
     </ul><p class="i2-pie">Informe generado en el navegador a partir de ${nf(nH)} semanas simuladas${B ? ` y ${nf(B.length)} de la pareja sin propuesta` : ''}.</p></div></details>`;
 
-  cont.scrollTop = 0;
-  cont.innerHTML = `<div class="inf2">${htmlHero}${htmlGr}${htmlRed}${htmlEv}<section class="i2-sec" style="margin-top:40px">${htmlTab}${htmlNotas}</section></div>`;
-  const root = cont.firstElementChild;
-  adjuntarBalance(root,{sim,def,H,go,semilla,parametros,definiciones});
-  root.querySelector('[data-i2-imp]').onclick = () => window.print();
-  root.querySelector('[data-i2-x]').onclick = () => { if (onCerrar) onCerrar(); else { const s = cont.closest('#su-inf'); if (s) s.classList.remove('on'); } };
+  const htmlStage = `<section class="i2-stage i2-in">
+    <div class="i2-kick" data-a style="--d:100">${numPar ? `<span>Par ${esc(numPar)} de 06</span>` : `<span>Simulación ${esc(sim)}</span>`}${escenario ? `<span class="i2-pill ${conProp ? 't' : ''}">${esc(escenario)}</span>` : ''}<span>${nf(años, años % 1 ? 1 : 0)} de 15 años${go ? ' · se detuvo por game over' : ''}</span></div>
+    <h1 class="i2-tit" id="i2-titulo" aria-label="${esc(V.big)}: ${esc(titulo)}"><span class="i2-eye" data-a style="--d:200">${esc(V.eye)}</span><span class="i2-big" style="--len:${Math.max(7, V.big.length)}" aria-hidden="true">${letras}</span>
+      <span class="i2-sub" data-a style="--d:1000"><b>${esc(titulo)}</b>${def.pregunta ? `<span>${esc(def.pregunta)}</span>` : ''}</span></h1>
+    <div class="i2-ver i2-panel" data-a style="--d:1200">${go ? htmlRegla : `<div class="i2-vlab">Veredicto · ${esc(V.t)}</div><p class="i2-vf">${esc(frase)}</p>`}
+      <div class="i2-vs"><span class="i2-cnt bien">${icono('sube')}<b>${mejor.length}</b> mejoran</span><span class="i2-cnt mal">${icono('baja')}<b>${peor.length}</b> empeoran</span><span class="i2-cnt">${icono('igual')}<b>${igual.length}</b> casi iguales</span><span class="i2-cntt">de ${comps.length} indicadores clave, ${esc(frente)}</span></div>${alerta}</div>
+    ${acciones('m')}${htmlKpis}${htmlMain}${htmlCad}${htmlTl}</section>`;
 
-  /* --- partes que dependen del ancho (se rehacen al cambiar de tamaño) --- */
+  cont.scrollTop = 0;
+  cont.innerHTML = `<div class="inf2 ${V.cls}">${htmlTop}${htmlStage}<div class="i2-completo i2-in"><div class="i2-div" id="i2-completo">Informe completo</div>${htmlGr}<div data-i2-bal></div>${htmlRed}${htmlEv}<section class="i2-sec rv" style="margin-top:40px">${htmlTab}${htmlNotas}</section>
+    <div class="i2-fin"><button type="button" class="i2-btn" data-i2-imp>Imprimir</button><button type="button" class="i2-btn" data-i2-pdf>${ic('pdf')}Descargar PDF</button>${onReiniciar ? `<button type="button" class="i2-btn" data-i2-rei>${ic('rei')}Reiniciar simulación</button>` : ''}<button type="button" class="i2-btn pri" data-i2-x>Cerrar</button></div></div>
+    <div class="i2-salta" aria-hidden="true">Clic o Esc para saltar la animación</div></div>`;
+  const root = cont.firstElementChild;
+  adjuntarBalance(root, { sim, def, H, go, semilla, parametros, definiciones });
+  const cerrar = () => { if (onCerrar) onCerrar(); else { const s = cont.closest('#su-inf'); if (s) { s.classList.remove('on'); if (s.close) s.close(); } } };
+  root.querySelectorAll('[data-i2-x]').forEach(b => b.onclick = cerrar);
+  root.querySelectorAll('[data-i2-imp]').forEach(b => b.onclick = () => window.print());
+  root.querySelectorAll('[data-i2-pdf]').forEach(b => b.onclick = () => { const p = root.querySelector('.i2-bal [data-pdf]'); if (p) p.click(); else window.print(); });
+  root.querySelectorAll('[data-i2-rei]').forEach(b => b.onclick = () => onReiniciar && onReiniciar());
+  root.querySelectorAll('[data-i2-ver]').forEach(b => b.onclick = () => { saltar(); root.querySelector('#i2-completo').scrollIntoView({ behavior: REDU() ? 'auto' : 'smooth', block: 'start' }); });
+
+  /* --- animación de entrada: ~4,5 s; clic o Esc la salta; nada si el sistema pide reducir movimiento --- */
+  const anima = animar && !REDU();
+  let rafs = [], tms = [];
+  const ponerFinal = () => CNT.forEach(c => { const el = root.querySelector(`[data-i2-n="${c.i}"]`); if (el) el.textContent = c.f(c.b); });
+  function saltar() { if (!root.classList.contains('i2-anim') || root.classList.contains('i2-ya')) return; root.classList.add('i2-ya'); rafs.forEach(cancelAnimationFrame); tms.forEach(clearTimeout); ponerFinal(); }
+  root.saltar = saltar; root.animando = () => anima && !root.classList.contains('i2-ya');
+  if (anima) { root.classList.add('i2-anim');
+    for (const c of CNT) { const el = root.querySelector(`[data-i2-n="${c.i}"]`); if (!el) continue; el.textContent = c.f(c.a);
+      tms.push(setTimeout(() => { const t1 = performance.now(), dur = 1100; const paso = (t) => { const k = Math.min(1, (t - t1) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = c.f(c.a + (c.b - c.a) * e); if (k < 1) rafs.push(requestAnimationFrame(paso)); };
+        rafs.push(requestAnimationFrame(paso)); }, c.d + 150)); }
+    tms.push(setTimeout(() => root.classList.add('i2-ya'), 5200));
+    root.addEventListener('pointerdown', (e) => { if (!e.target.closest('button, a, summary, select, input')) saltar(); }, { capture: true });
+    if (window.IntersectionObserver) { if (IOB) IOB.disconnect(); IOB = new IntersectionObserver((es) => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('vis'); IOB.unobserve(en.target); } }), { root: cont, threshold: 0.18 });
+      root.querySelectorAll('.i2-sec.rv, .i2-ch.rvc').forEach(el => IOB.observe(el)); }
+    else root.querySelectorAll('.i2-sec.rv, .i2-ch.rvc').forEach(el => el.classList.add('vis')); }
+
+  /* --- partes que dependen del ancho --- */
   function pintarGraficas() {
-    const figs = [...root.querySelectorAll('[data-i2-g]')], anchos = figs.map(f => f.querySelector('[data-i2-svg]').clientWidth); // un solo cálculo de layout
-    figs.forEach((fig, k) => { const g = GRv[+fig.dataset.i2G], box = fig.querySelector('[data-i2-svg]'), W = Math.max(260, Math.floor(anchos[k] || 320));
-      const R = grafica(g, W); box.innerHTML = R.svg; const svg = box.firstElementChild, cr = svg.querySelector('.i2-x'), ln = cr.firstElementChild, dt = cr.lastElementChild, tip = fig.querySelector('.i2-tip');
+    const figs = [...root.querySelectorAll('[data-i2-g]')], anchos = figs.map(f => f.querySelector('[data-i2-svg]').clientWidth);
+    figs.forEach((fig, k) => { const g = CH[+fig.dataset.i2G]; if (!g) return; const box = fig.querySelector('[data-i2-svg]'), W = Math.max(260, Math.floor(anchos[k] || 320));
+      const R = grafica(g, W); box.innerHTML = R.svg; if (fig.dataset.dd) box.firstElementChild.style.setProperty('--dd', fig.dataset.dd);
+      const svg = box.firstElementChild, cr = svg.querySelector('.i2-x'), ln = cr.firstElementChild, dt = cr.lastElementChild, tip = fig.querySelector('.i2-tip');
       const mover = (ev) => { const bb = svg.getBoundingClientRect(), px = (ev.clientX - bb.left) * (W / bb.width); const w = (px - R.L) / R.pw * FIN; if (w < 0 || w > FIN) { salir(); return; }
         let best = g.s[0]; for (const p of g.s) if (Math.abs(p[0] - w) < Math.abs(best[0] - w)) best = p;
         let rb = null; if (g.r) for (const p of g.r) if (!rb || Math.abs(p[0] - best[0]) < Math.abs(rb[0] - best[0])) rb = p; if (rb && Math.abs(rb[0] - best[0]) > 8) rb = null;
         const xx = R.x(best[0]); ln.setAttribute('x1', xx); ln.setAttribute('x2', xx); dt.setAttribute('cx', xx); dt.setAttribute('cy', R.y(best[1])); cr.style.display = '';
-        tip.innerHTML = `<b>Año ${añoDe(best[0])}</b><br><i></i>${g.r ? 'Con propuesta' : 'Valor'}: <b>${esc(g.fy(best[1]))}</b>${rb ? `<br><i class="ref"></i>Sin propuesta: <b>${esc(g.fy(rb[1]))}</b>` : ''}`;
+        tip.innerHTML = `<b>Año ${añoDe(best[0])}</b> · semana ${nf(best[0])}<br><i></i>${g.r ? 'Con propuesta' : 'Valor'}: <b>${esc(g.fy(best[1]))}</b>${rb ? `<br><i class="ref"></i>Sin propuesta: <b>${esc(g.fy(rb[1]))}</b>` : ''}${g.lim != null ? `<br>Límite: <b>${esc(g.fy(g.lim))}</b>` : ''}`;
         tip.style.display = 'block'; const fx = svg.offsetLeft + xx * (bb.width / W), tw = tip.offsetWidth; tip.style.left = Math.max(4, Math.min(fig.clientWidth - tw - 4, fx + 14 > fig.clientWidth - tw ? fx - tw - 14 : fx + 14)) + 'px'; tip.style.top = (svg.offsetTop + 6) + 'px'; };
       const salir = () => { cr.style.display = 'none'; tip.style.display = 'none'; };
       svg.addEventListener('pointermove', mover); svg.addEventListener('pointerdown', mover); svg.addEventListener('pointerleave', salir); });
+    const tb = root.querySelector('[data-i2-tl]');
+    if (tb) { const W = Math.max(280, Math.floor(tb.clientWidth || 600)), T = lineaTiempo(EV, W, go), tip = tb.querySelector('.i2-tip');
+      tb.querySelectorAll('svg').forEach(s => s.remove()); tb.insertAdjacentHTML('afterbegin', T.svg); const svg = tb.querySelector('svg');
+      svg.addEventListener('pointermove', (ev) => { const bb = svg.getBoundingClientRect(), px = (ev.clientX - bb.left) * (W / bb.width), py = (ev.clientY - bb.top) * (W / bb.width);
+        let best = null, bd = 18; for (const p of T.pts) { const d = Math.hypot(p.x - px, (p.y - py) * 0.6); if (d < bd) { bd = d; best = p; } }
+        if (!best) { tip.style.display = 'none'; return; }
+        tip.innerHTML = `<b>Año ${añoDe(best.e.sem)}</b> · semana ${nf(best.e.sem)}<br>${esc(best.e.titulo)}`; tip.style.display = 'block';
+        const tw = tip.offsetWidth, fx = best.x * (bb.width / W); tip.style.left = Math.max(0, Math.min(tb.clientWidth - tw, fx - tw / 2)) + 'px'; tip.style.top = Math.max(-40, best.y * (bb.width / W) - 56) + 'px'; });
+      svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; }); }
   }
   let RD = null;
   function pintarRed() {
     const box = root.querySelector('[data-i2-red]'); if (!box || !RD) return;
     const fl0 = new Set(RD.floraHoy), dF = (L.flora != null && H[0].flora != null) ? L.flora - H[0].flora : 0, flF = new Set(fl0);
-    if (dF > 0) RD.floraNuevas.slice(0, dF).forEach(id => flF.add(id)); // nativas de los módulos de huertas
-    if (dF < 0) RD.soloBosque.slice(0, -dF).forEach(id => flF.delete(id)); // tala del bosque de Bavaria
+    if (dF > 0) RD.floraNuevas.slice(0, dF).forEach(id => flF.add(id));
+    if (dF < 0) RD.soloBosque.slice(0, -dF).forEach(id => flF.delete(id));
     const vivo0 = (n) => n.fa ? PF.ini.has(n.id) : fl0.has(n.id), vivoF = (n) => n.fa ? PF.fin.has(n.id) : flF.has(n.id);
     const camb = new Map(); let nP = 0, nN = 0;
     for (const [i, j] of RD.enl) { const A = RD.nodos[i], Bn = RD.nodos[j], e0 = vivo0(A) && vivo0(Bn), eF = vivoF(A) && vivoF(Bn);
@@ -643,7 +865,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
     const r1 = get(A1, 'red'), rF = get(L, 'red');
     box.innerHTML = `<div class="i2-redg"><div class="i2-ball">${bola(RD, W, PF.fin, flF, camb)}</div><div>
       <div class="i2-gleg">${GRUPOS.map(G => `<span><i style="background:var(--g-${G.k})"></i>${G.n}</span>`).join('')}</div>
-      <div class="i2-gleg"><span><i class="l" style="border-color:var(--mal)"></i>Relación perdida</span><span><i class="l" style="border-color:var(--bien)"></i>Relación nueva</span><span><i class="l" style="border-color:rgba(238,241,244,.35)"></i>Sigue igual</span></div>
+      <div class="i2-gleg"><span><i class="l" style="border-color:var(--mal)"></i>Relación perdida</span><span><i class="l" style="border-color:var(--bien)"></i>Relación nueva</span><span><i class="l" style="border-color:rgba(238,240,234,.35)"></i>Sigue igual</span></div>
       <div class="i2-rs"><div><b class="${nP ? 'mal' : ''}">${nf(nP)}</b>relaciones perdidas${fuera.length ? ' (se fue ' + esc(lista(fuera.map(f => f[1]))) + ')' : ''}</div>
         <div><b class="${nN ? 'bien' : ''}">${nf(nN)}</b>relaciones nuevas${nueF.length ? ' con plantas nativas de las huertas' : ''}</div>
         <div><b>${r1 != null && rF != null && r1 ? SG(rF - r1) + nf(Math.abs(rF - r1) / r1 * 100) + ' %' : '—'}</b>interacciones en todos los lugares, año 1 → final</div></div>
@@ -658,5 +880,5 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
     OBS = new ResizeObserver(() => { const w = cont.clientWidth; if (!root.isConnected) { OBS.disconnect(); return; } if (Math.abs(w - w0) < 24 || !w) return; w0 = w; clearTimeout(tm); tm = setTimeout(() => { pintarGraficas(); pintarRed(); }, 120); });
     OBS.observe(cont); }
   const ms = performance.now() - t0;
-  return { ms, veredicto: V.t, razon, mejoran: mejor.length, empeoran: peor.length };
+  return { ms, veredicto: V.t, razon, mejoran: mejor.length, empeoran: peor.length, root };
 }

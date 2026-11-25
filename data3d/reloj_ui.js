@@ -68,10 +68,10 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
   if (!document.getElementById('rt-css')) { const s = document.createElement('style'); s.id = 'rt-css'; s.textContent = CSS; document.head.appendChild(s); }
   host.setAttribute('aria-label', 'Control de tiempo de la simulación');
   // dos filas, un solo reloj: AÑOS (escala del modelo semanal) y DÍA (escala de segundos: carros, fauna, aves, cielo)
-  host.innerHTML = `<div class="rt-fila rt-años"><span class="rt-et">Años</span><button type="button" class="rt-play" id="rt-playA" aria-label="Pausar los años">❚❚</button>
+  host.innerHTML = `<div class="rt-fila rt-años"><span class="rt-et">Años</span><button type="button" class="rt-play" id="rt-playA" aria-label="Pausar los años"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" fill="currentColor"/></svg></button>
       <span class="rt-fecha" id="rt-fechaA" role="timer" aria-live="off">Año 1 · semana 1</span>
       <div class="rt-vel" id="rt-velA" role="group" aria-label="Semanas por segundo">${VEL_AÑOS.map(v => `<button type="button" data-v="${v}" aria-label="${v} semanas por segundo" title="${v} ${v === 1 ? 'semana' : 'semanas'} por segundo${v === 52 ? ' (un año por segundo)' : ''}">${v}</button>`).join('')}</div><span class="rt-u">sem/s</span></div>
-    <div class="rt-fila rt-dia"><span class="rt-et">Día</span><button type="button" class="rt-play" id="rt-play" aria-label="Pausar el día">❚❚</button>
+    <div class="rt-fila rt-dia"><span class="rt-et">Día</span><button type="button" class="rt-play" id="rt-play" aria-label="Pausar el día"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" fill="currentColor"/></svg></button>
       <span class="rt-fecha" id="rt-fecha" role="timer" aria-live="off">lunes · 06:30</span>
       <div class="rt-vel" id="rt-vel" role="group" aria-label="Velocidad del día">${VELOCIDADES.map(v => `<button type="button" data-v="${v}" aria-label="Velocidad ${v} veces">${v}×</button>`).join('')}</div>
       <button type="button" class="rt-salto" id="rt-salto" title="Calcula las próximas 2 horas del día sin dibujar la escena" aria-label="Avanzar 2 horas del día sin dibujar">+2 h</button>
@@ -84,12 +84,13 @@ export function crearControlTiempo({ RELOJ = R0, host } = {}) {
   vel.querySelectorAll('button').forEach(b => b.onclick = () => { RELOJ.ponerVel(+b.dataset.v); });
   playA.onclick = () => { if (RELOJ.saltando) return; RELOJ.pausarAños(!RELOJ.pausaSem); };
   velA.querySelectorAll('button').forEach(b => b.onclick = () => { if (!RELOJ.saltando) RELOJ.ponerVelAños(+b.dataset.v); });
+  const ICO_RT = { play: '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M5 3.5v9l7-4.5z" fill="currentColor"/></svg>', pausa: '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" fill="currentColor"/></svg>' };
   const pintar = () => {
-    play.textContent = RELOJ.pausa || !RELOJ.arrancado ? '▶' : '❚❚';
+    { const k = RELOJ.pausa || !RELOJ.arrancado ? 'p' : 'c'; if (play.dataset.k !== k) { play.dataset.k = k; play.innerHTML = k === 'p' ? ICO_RT.play : ICO_RT.pausa; } }
     play.setAttribute('aria-label', RELOJ.pausa ? 'Reanudar el día' : 'Pausar el día');
     vel.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausa && +b.dataset.v === RELOJ.vel));
     bSalto.disabled = bSalto6.disabled = !RELOJ.arrancado || RELOJ.saltando;
-    playA.textContent = RELOJ.pausaSem ? '▶' : '❚❚';
+    { const k = RELOJ.pausaSem ? 'p' : 'c'; if (playA.dataset.k !== k) { playA.dataset.k = k; playA.innerHTML = k === 'p' ? ICO_RT.play : ICO_RT.pausa; } }
     playA.setAttribute('aria-label', RELOJ.pausaSem ? 'Correr los años' : 'Pausar los años');
     velA.querySelectorAll('button').forEach(b => b.classList.toggle('on', !RELOJ.pausaSem && +b.dataset.v === RELOJ.velSem));
     fechaA.textContent = txtAños(RELOJ);

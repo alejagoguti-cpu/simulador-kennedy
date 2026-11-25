@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Simulador · Kennedy</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="icon" href="logo_kennedy.png" type="image/png"><link rel="apple-touch-icon" href="logo_kennedy_180.png">
 <!-- MODO SIMPLE por defecto (data3d/modo_simple.js): esconde los paneles de detalle; «Ver todo» lo quita. Con ?modo=completo o ?reloj=quieto (pruebas) arranca en modo completo -->
 <link id="ms-css" rel="stylesheet" href="data3d/modo_simple.css?v=8">
@@ -163,7 +163,7 @@
   #trafficPlay{padding:3px 10px;font-size:14px;line-height:1;border-radius:7px;cursor:pointer}
   #trafficTime{width:100%;accent-color:#22d3ee;cursor:pointer}
 </style>
-<link rel="stylesheet" href="data3d/urbia.css?v=6">
+<link rel="stylesheet" href="data3d/urbia.css?v=7">
 </head>
 <body>
 <style>
@@ -174,7 +174,7 @@
 #urbia-intro h1{font-size:clamp(20px,3vw,34px);margin:0 0 12px;text-shadow:0 2px 12px #000}
 #urbia-intro .intro-creditos{font:400 clamp(11px,2vw,14px)/1.5 system-ui;color:#e6e8e0;margin:0 12px 14px;text-shadow:0 1px 6px #000}
 #urbia-start{pointer-events:auto;cursor:pointer}
-#urbia-start:is(:hover,:focus-visible){outline:2px solid #d5ff3f;outline-offset:4px}
+#urbia-start:is(:hover,:focus-visible){outline:2px solid var(--ui-acc,#d4ecb0);outline-offset:4px}
 </style>
 <section id="urbia-intro" aria-labelledby="urbia-intro-title">
 <iframe src="data3d/urbia-escena.html?v=4" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div class="hud" id="hud-l">
   <div class="t">SIMULADOR · TERRITORIO KENNEDY</div>
   <div class="s">Satélite real + edificios 3D + árboles 3D + agua animada + relieve. Motor de vuelo jugable.</div>
-  <div id="modebadge">MODO: 🏙️ FOTORREALISTA · v41</div>
+  <div id="modebadge">MODO: FOTORREALISTA · v41</div>
   <div id="poi-list"></div>
   <div id="mission">▶ Misión: reconoce el territorio</div>
 </div>
@@ -270,19 +270,19 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <div class="hud" id="hud-c">
-  <button id="b-sat" hidden style="display:none">🛰️ Satélite</button>
+  <button id="b-sat" hidden style="display:none">Satélite</button>
   <button id="b-todo" class="on"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5"/><path d="M12 12v10"/></svg>Maqueta 3D</button>
   <button id="b-giro" onclick="location.href='giro_render.html'" title="Recorrido 3D libre por toda la localidad de Kennedy"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Render</button>
-  <button id="b-splat" hidden style="display:none">🌀 Splat Humedal</button>
-  <button id="b-hd" hidden style="display:none">📦 HD</button>
-  <button id="b-tour" hidden style="display:none">▶ Tour Kennedy</button>
-  <button id="b-next" hidden style="display:none">Siguiente punto ➜</button>
-  <button id="b-trees" class="on">🌳 Árboles 3D</button>
-  <button id="b-water" class="on">🌊 Agua 3D</button>
-  <button id="b-aves" class="on">🦆 Aves</button>
+  <button id="b-splat" hidden style="display:none">Splat Humedal</button>
+  <button id="b-hd" hidden style="display:none">HD</button>
+  <button id="b-tour" hidden style="display:none">Tour Kennedy</button>
+  <button id="b-next" hidden style="display:none">Siguiente punto </button>
+  <button id="b-trees" class="on">Árboles 3D</button>
+  <button id="b-water" class="on">Agua 3D</button>
+  <button id="b-aves" class="on">Aves</button>
   <button id="b-night"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Noche</button>
-  <button id="b-home">🏠 Vista general</button>
-  <button id="b-pie">🚶 A pie</button>
+  <button id="b-home">Vista general</button>
+  <button id="b-pie">A pie</button>
   <button id="b-pajaro"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.3-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3"/><path d="M14 17.8V21"/><path d="M7.5 18a6 6 0 0 0 3.5-5.5"/></svg>JUGAR</button>
 </div>
 
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded',()=>{
    RELOJ.cuadro(): corre los pasos fijos de 1 s simulado que tocan (tráfico, agentes, fauna, aves, semanas) y después los dibujos registrados.
    El control de tiempo (pausa, velocidad, fecha y hora) está en data3d/reloj_ui.js. */
 import { RELOJ, vistaT3 } from './data3d/reloj.js?v=5';
-import { crearControlTiempo } from './data3d/reloj_ui.js?v=9';
+import { crearControlTiempo } from './data3d/reloj_ui.js?v=10';
 crearControlTiempo(); // control de tiempo único (pausa, velocidad, fecha y hora) dentro de #trafficHud
 // caché de JSON compartida: cada archivo se descarga y se lee UNA vez aunque lo pidan varios módulos (giro_sim.json, trees.json, estrategias.json…)
 window.cargarJSON = window.cargarJSON || ((c) => (u) => c[u] || (c[u] = fetch(u).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })))({});
@@ -454,7 +454,7 @@ let layer3d = null, waterGroup = null, treeGroup = null, waterU = null;
 async function init3D() {
   let THREE;
   try { THREE = await import('three'); }
-  catch (e) { console.warn('3D overlay desactivado:', e); say('⚠️ Sin conexión a librería 3D: árboles/agua pausados'); return; }
+  catch (e) { console.warn('3D overlay desactivado:', e); say('Sin conexión a librería 3D: árboles/agua pausados'); return; }
 
   waterU = {
     uTime: { value: 0 },
@@ -594,7 +594,7 @@ async function init3D() {
   try {
     map.addLayer(layer3d);
     $('o-st').textContent = 'satélite + 3D + ' + total.toLocaleString('es-CO') + ' árboles';
-    say('🌳 ' + total.toLocaleString('es-CO') + ' árboles 3D + 🌊 agua animada listos');
+    say('' + total.toLocaleString('es-CO') + ' árboles 3D + agua animada listos');
   } catch (e) { console.warn('No se pudo añadir capa 3D:', e); }
 }
 
@@ -602,19 +602,19 @@ $('b-trees').onclick = e => {
   const on = !e.target.classList.contains('on');
   e.target.classList.toggle('on', on);
   if (treeGroup) treeGroup.visible = on;
-  say(on ? '🌳 Árboles 3D activados' : '🌳 Árboles 3D ocultos');
+  say(on ? 'Árboles 3D activados' : 'Árboles 3D ocultos');
 };
 $('b-water').onclick = e => {
   const on = !e.target.classList.contains('on');
   e.target.classList.toggle('on', on);
   if (waterGroup) waterGroup.visible = on;
-  say(on ? '🌊 Agua 3D activada' : '🌊 Agua 3D oculta');
+  say(on ? 'Agua 3D activada' : 'Agua 3D oculta');
 };
 $('b-aves').onclick = e => {
   const on = !e.target.classList.contains('on');
   e.target.classList.toggle('on', on);
   if (AVES) AVES.grp.visible = on;
-  say(on ? '🦆 Simulación de aves activada: patos, tinguas y garzas' : '🦆 Aves ocultas');
+  say(on ? 'Simulación de aves activada: patos, tinguas y garzas' : 'Aves ocultas');
 };
 
 /* ============================================================ */
@@ -733,71 +733,71 @@ function setMode(m) {
     })();
     setTimeout(() => {
       if (mode === 'splat' && !SPLAT) {
-        say('⚠️ El visor 3D no respondió a tiempo: tu equipo o red lo bloquean. Te paso al TODO 3D.', 8000);
+        say('El visor 3D no respondió a tiempo: tu equipo o red lo bloquean. Te paso al TODO 3D.', 8000);
         setMode('todo');
       }
     }, 700000);
   }
 }
-$('b-sat').onclick = () => { setMode('sat'); say('🛰️ Modo satélite'); };
+$('b-sat').onclick = () => { setMode('sat'); say('Modo satélite'); };
 // solo la Maqueta 3D (y su modo pájaro · VR): se abre directo
 setMode('todo');
 if (new URLSearchParams(location.search).get('splat') === '1') setMode('splat');
 function flyTo(i, z) {
   const p = POIS[i]; idx = i;
   if (mode === 'splat') {
-    if (!SPLAT) { say('⏳ Splat aún cargando…'); return; }
-    splatHome(); say('🌀 Explora libre el humedal · WASD para volar'); return;
+    if (!SPLAT) { say('Splat aún cargando…'); return; }
+    splatHome(); say('Explora libre el humedal · WASD para volar'); return;
   }
   if (mode === 'todo') {
-    if (!T3) { say('⏳ Mundo 3D aún cargando…'); return; }
-    flyTodo(i); say('🎯 ' + p.n); return;
+    if (!T3) { say('Mundo 3D aún cargando…'); return; }
+    flyTodo(i); say('' + p.n); return;
   }
   map.flyTo({ center: [p.lng, p.lat], zoom: z || p.z, pitch: 64,
     bearing: (map.getBearing() + 118) % 360, duration: 5200, curve: 1.45, essential: true });
-  $('mission').textContent = '➜ Misión: ' + p.n;
-  say('🎯 ' + p.n + ' · ' + p.d);
+  $('mission').textContent = 'Misión: ' + p.n;
+  say('' + p.n + ' · ' + p.d);
 }
 let tour = null;
 $('b-tour').onclick = e => {
   if (mode === 'splat') {
-    if (!SPLAT || !SPLAT.viewer.controls) { say('⏳ Splat aún cargando…'); return; }
+    if (!SPLAT || !SPLAT.viewer.controls) { say('Splat aún cargando…'); return; }
     const c = SPLAT.viewer.controls;
     const on = !(c.autoRotate === true);
     c.autoRotate = on; c.autoRotateSpeed = 0.8;
     e.target.classList.toggle('on', on);
-    e.target.textContent = on ? '⏸ Detener tour' : '▶ Tour Kennedy';
-    say(on ? '🌀 Órbita automática del humedal' : 'Tour detenido'); return;
+    e.target.textContent = on ? 'Detener tour' : 'Tour Kennedy';
+    say(on ? 'Órbita automática del humedal' : 'Tour detenido'); return;
   }
   if (mode === 'todo') {
-    if (tourT) { clearInterval(tourT); tourT = null; e.target.classList.remove('on'); e.target.textContent = '▶ Tour Kennedy'; say('Tour detenido'); return; }
-    if (!T3) { say('⏳ Mundo 3D aún cargando…'); return; }
-    e.target.classList.add('on'); e.target.textContent = '⏸ Detener tour';
+    if (tourT) { clearInterval(tourT); tourT = null; e.target.classList.remove('on'); e.target.textContent = 'Tour Kennedy'; say('Tour detenido'); return; }
+    if (!T3) { say('Mundo 3D aún cargando…'); return; }
+    e.target.classList.add('on'); e.target.textContent = 'Detener tour';
     let k3 = 0; flyTodo(0);
     tourT = setInterval(() => { k3 = (k3 + 1) % POIS.length; flyTodo(k3); }, 7000);
-    say('▶ Recorrido TODO 3D por Kennedy'); return;
+    say('Recorrido TODO 3D por Kennedy'); return;
   }
   if (tour) {
     clearInterval(tour); tour = null; e.target.classList.remove('on');
-    e.target.textContent = '▶ Tour Kennedy'; say('Tour detenido'); return;
+    e.target.textContent = 'Tour Kennedy'; say('Tour detenido'); return;
   }
-  e.target.classList.add('on'); e.target.textContent = '⏸ Detener tour';
+  e.target.classList.add('on'); e.target.textContent = 'Detener tour';
   flyTo(0); let k2 = 0;
   tour = setInterval(() => { k2 = (k2 + 1) % POIS.length; flyTo(k2); }, 6000);
-  say('▶ Recorrido automático por Kennedy');
+  say('Recorrido automático por Kennedy');
 };
 $('b-next').onclick = () => flyTo((idx + 1) % POIS.length);
 $('b-home').onclick = () => {
-  if (mode === 'splat') { if (SPLAT) { splatHome(); say('🏠 Vista inicial del humedal'); } return; }
-  if (mode === 'todo') { if (T3) { flyTodoHome(); say('🏠 Vista general TODO 3D'); } return; }
+  if (mode === 'splat') { if (SPLAT) { splatHome(); say('Vista inicial del humedal'); } return; }
+  if (mode === 'todo') { if (T3) { flyTodoHome(); say('Vista general TODO 3D'); } return; }
   map.flyTo({ center: [KENNEDY.lng, KENNEDY.lat], zoom: KENNEDY.zoom,
     pitch: KENNEDY.pitch, bearing: KENNEDY.bearing, duration: 4200, essential: true });
-  $('mission').textContent = '▶ Misión: reconoce el territorio';
-  say('🏠 Vista general del territorio de Kennedy');
+  $('mission').textContent = 'Misión: reconoce el territorio';
+  say('Vista general del territorio de Kennedy');
 };
 function flyPie() {
   map.flyTo({ center: [-74.1626, 4.6216], zoom: 18, pitch: 70, bearing: -18, duration: 4000, essential: true });
-  say('🚶 A nivel de calle (satélite)');
+  say('A nivel de calle (satélite)');
 }
 $('b-pie').onclick = flyPie;
 
@@ -807,9 +807,9 @@ $('b-night').onclick = e => {
   night = !night;
   e.currentTarget.classList.toggle('on', night);
   e.currentTarget.innerHTML = night ? ICONO_SOL + 'Día' : ICONO_LUNA + 'Noche';
-  if (mode === 'todo' && T3 && KEN) { RELOJ.irAMinuto(night ? 20 * 60 + 30 : 6 * 60); say(night ? '🌙 La simulación avanza hasta las 20:30' : '🌅 La simulación avanza hasta el amanecer (6:00)'); return; } // Kennedy: el cielo sigue la hora del reloj universal; el reloj AVANZA hasta esa hora (no salta)
-  if (mode === 'todo') { todoNight(night); say(night ? '🌙 Noche TODO 3D' : '☀️ Día TODO 3D'); return; }
-  if (mode === 'splat' && SPLAT && SPLAT.canvas) { SPLAT.canvas.classList.toggle('splat-night', night); say(night ? '🌙 Noche en el humedal' : '☀️ Día en el humedal'); return; }
+  if (mode === 'todo' && T3 && KEN) { RELOJ.irAMinuto(night ? 20 * 60 + 30 : 6 * 60); say(night ? 'La simulación avanza hasta las 20:30' : 'La simulación avanza hasta el amanecer (6:00)'); return; } // Kennedy: el cielo sigue la hora del reloj universal; el reloj AVANZA hasta esa hora (no salta)
+  if (mode === 'todo') { todoNight(night); say(night ? 'Noche TODO 3D' : 'Día TODO 3D'); return; }
+  if (mode === 'splat' && SPLAT && SPLAT.canvas) { SPLAT.canvas.classList.toggle('splat-night', night); say(night ? 'Noche en el humedal' : 'Día en el humedal'); return; }
   map.setPaintProperty('sat', 'raster-brightness-min', night ? -0.22 : 0);
   map.setPaintProperty('sat', 'raster-brightness-max', night ? -0.28 : 1);
   map.setPaintProperty('sat', 'raster-saturation', night ? -0.85 : -0.08);
@@ -820,7 +820,7 @@ $('b-night').onclick = e => {
   $('grade').style.background = night
     ? 'radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 40%,rgba(0,2,8,.85) 100%)'
     : 'radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(2,6,12,.55) 100%)';
-  say(night ? '🌙 Modo nocturno' : '☀️ Modo día');
+  say(night ? 'Modo nocturno' : 'Modo día');
 };
 
 const k = {};
@@ -1080,7 +1080,7 @@ async function crearMallaGoogle(T) {
   T.tilesErr = 0; T.tilesT0 = performance.now(); T.mallaMostrada = false;
   tiles.addEventListener('load-error', (e) => { // antes los errores de Google se perdían en silencio
     T.tilesErr++;
-    if (T.tilesErr === 1 || T.tilesErr === 20) say('⚠️ Google no entregó algunas teselas: ' + String(e && e.error && e.error.message || e && e.url || 'error de red').slice(0, 110), 7000);
+    if (T.tilesErr === 1 || T.tilesErr === 20) say('Google no entregó algunas teselas: ' + String(e && e.error && e.error.message || e && e.url || 'error de red').slice(0, 110), 7000);
     console.warn('tesela con error:', e && e.error && e.error.message);
   });
   tiles.group.matrixAutoUpdate = false;
@@ -1305,7 +1305,7 @@ function actualizarMalla(T, dt) {
   const tl = T.tiles; if (!tl) return;
   try { actualizarMallaIn(T, tl, dt); }
   catch (e) { // un fallo de la malla nunca debe congelar el resto de la escena
-    if (!T.mallaFallo) { T.mallaFallo = true; console.warn('malla:', e); say('⚠️ Error en la malla fotorrealista: ' + String(e && e.message || e).slice(0, 100), 8000); }
+    if (!T.mallaFallo) { T.mallaFallo = true; console.warn('malla:', e); say('Error en la malla fotorrealista: ' + String(e && e.message || e).slice(0, 100), 8000); }
   }
 }
 function actualizarMallaIn(T, tl, dt) {
@@ -1455,7 +1455,7 @@ async function initTodoReal() {
       window.cargarJSON('data3d/net.json')
     ]);
     const pMalla = crearMallaGoogle(T3).catch(e => { // sin la foto de Google queda el suelo de concreto de siempre
-      console.warn('malla de Google:', e); T3.tiles = null; marcarPaso('foto'); say('⚠️ No cargó la foto del suelo: ' + String(e && e.message || e).slice(0, 100), 6000);
+      console.warn('malla de Google:', e); T3.tiles = null; marcarPaso('foto'); say('No cargó la foto del suelo: ' + String(e && e.message || e).slice(0, 100), 6000);
       const gGeo = new THREE.PlaneGeometry(13000, 9500);
       { const uv = gGeo.attributes.uv, ps = gGeo.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, ps.getX(i) / 7, -ps.getY(i) / 7); }
       const ground = new THREE.Mesh(gGeo, suelo ? suelo.piso : new THREE.MeshLambertMaterial({ color: 0x9a9a96 }));
@@ -1559,7 +1559,7 @@ async function initTodoReal() {
         if (!falta) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
-    say(REALISTA ? 'Kennedy fotorrealista · cargando la malla 3D de Google y el tráfico…' : '🧱 TODO 3D listo · ' + B.length.toLocaleString('es-CO') + ' edificios · cargando árboles 3D y tráfico…', 5000);
+    say(REALISTA ? 'Kennedy fotorrealista · cargando la malla 3D de Google y el tráfico…' : 'TODO 3D listo · ' + B.length.toLocaleString('es-CO') + ' edificios · cargando árboles 3D y tráfico…', 5000);
     // 2) lo pesado se carga después, en segundo plano y sin bloquear (si algo falla queda lo liviano)
     const pastoRespaldo = () => {
       try { buildReeds(THREE, W); } catch (e) { console.warn('reeds:', e); }
@@ -1605,7 +1605,7 @@ async function initTodoReal() {
         if (KEN) { T3.opArboles = 0.55; if (T3.trees && T3.trees.opacidad) T3.trees.opacidad(T3.opArboles); } // simulador: árboles semitransparentes (la autora pidió bajarles la opacidad); arboles_splat.js toma T3.opArboles
         if (T3.splatLejos && T3.trees && T3.trees.pos) setTimeout(() => import('./data3d/arboles_splat.js?v=10').then(m => { T3.arbolesSplat = m.crearArbolesSplat({ THREE, T3, movil: MOVIL, cerca: 230 }); }).catch(e => console.warn('árboles splat:', e)), 6000); /* rendimiento: las copas lejanas se arman 6 s después */ // de cerca árboles reales modelados (tronco y follaje); de lejos copas tipo gaussian splat
         T3.counts.t = T.t.length;
-        say('🌳 Árboles reales 3D cargados', 3000);
+        say('Árboles reales 3D cargados', 3000);
       } catch (e) { console.warn('arboles reales:', e); T3.trees = null; try { await buildTreesReal(THREE, T); } catch (e2) { console.warn('trees:', e2); } }
       marcarPaso('arboles'); T3.arbolesOk();
       if (!REALISTA) try { if (!T3.movil) T3.plants = await T3.R.buildNearPlants(T3, W, lw, T3.env, P); } // en celular no se descargan las plantas 3D (varios MB)
@@ -1615,7 +1615,7 @@ async function initTodoReal() {
   } catch (e) {
     $('loader').classList.add('hidden');
     console.warn('TODO3D:', e);
-    say('⚠️ No cargó el mundo 3D: ' + String(e && e.message || e).slice(0, 110), 6000);
+    say('No cargó el mundo 3D: ' + String(e && e.message || e).slice(0, 110), 6000);
     return false;
   }
 }
@@ -3253,7 +3253,7 @@ function flyTodo(i, instant) {
   } else {
     T3.anim = { t: 0, dur: 1.8, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(), p1, c1 };
   }
-  $('mission').textContent = '➜ Misión: ' + p.n;
+  $('mission').textContent = 'Misión: ' + p.n;
 }
 // vuelo de llegada: la cámara baja desde lo alto hasta la vista inicial mientras se desvanece la portada
 function vueloLlegada() {
@@ -3287,7 +3287,7 @@ function flyTodoHome() {
     t: 0, dur: 2.2, p0: T3.camera.position.clone(), c0: T3.orbit.target.clone(),
     p1: new T3.THREE.Vector3(3000, 5200, 3000), c1: new T3.THREE.Vector3(0, 0, 0)
   };
-  $('mission').textContent = '▶ Misión: reconoce el territorio';
+  $('mission').textContent = 'Misión: reconoce el territorio';
 }
 let REFL = null;
 /* ============ SIMULACIÓN DE AVES del humedal (tinguas, garzas, patos) ============ */
@@ -3625,7 +3625,7 @@ async function asegurarPajaro() {
           await esperarHasta(() => !!T3.trees || T3.trees === null, 120000).catch(() => {});
         }
       });
-    } catch (e) { console.warn('modo pájaro:', e); say('⚠️ No cargó el modo pájaro: ' + String(e && e.message || e).slice(0, 100), 6000); return false; }
+    } catch (e) { console.warn('modo pájaro:', e); say('No cargó el modo pájaro: ' + String(e && e.message || e).slice(0, 100), 6000); return false; }
   }
   return true;
 }
@@ -3699,12 +3699,12 @@ async function initSplat() {
       $('loader').classList.add('hidden');
       hideNew();
       console.warn('SPLAT:', e2);
-      say('⚠️ No cargó el splat: ' + String(e2 && e2.message || e2).slice(0, 110), 7000);
+      say('No cargó el splat: ' + String(e2 && e2.message || e2).slice(0, 110), 7000);
       return false;
     }
   }
   $('loader').classList.add('hidden');
-  say('🌀 Splat del humedal listo · arrastra para orbitar, WASD para volar');
+  say('Splat del humedal listo · arrastra para orbitar, WASD para volar');
   return true;
 }
 function splatHome() {
@@ -3742,10 +3742,10 @@ function splatKeys() {
 }
 $('b-splat').onclick = async () => { setMode('splat'); };
 $('b-hd').onclick = async () => {
-  if (mode !== 'splat') { say('Entra primero a 🌀 Splat Humedal'); return; }
-  if (!SPLAT) { say('⏳ Espera que cargue el splat…'); return; }
+  if (mode !== 'splat') { say('Entra primero a Splat Humedal'); return; }
+  if (!SPLAT) { say('Espera que cargue el splat…'); return; }
   if (SPLAT.hd) { say('Ya estás en HD'); return; }
-  say('📦 Cargando versión HD (76 MB)…');
+  say('Cargando versión HD (76 MB)…');
   try {
     if (SPLAT.canvas) SPLAT.canvas.style.display = 'none';
     const G = await import('@mkkellogg/gaussian-splats-3d');
@@ -3766,9 +3766,9 @@ $('b-hd').onclick = async () => {
     const cv = added[added.length - 1] || null;
     if (cv) { cv.style.position = 'fixed'; cv.style.inset = '0'; cv.style.zIndex = '1'; }
     SPLAT = { viewer, canvas: cv, hd: true };
-    say('📦 HD listo · 1 millón de puntos');
+    say('HD listo · 1 millón de puntos');
   } catch (e) {
-    say('⚠️ No cargó el HD: ' + String(e && e.message || e).slice(0, 90));
+    say('No cargó el HD: ' + String(e && e.message || e).slice(0, 90));
     if (SPLAT && SPLAT.canvas) SPLAT.canvas.style.display = '';
   }
 };
@@ -3782,7 +3782,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=55'), import('./data3d/estrategias.js?v=32'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=32'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3794,8 +3794,8 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       // selector ESTADO ACTUAL / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
       import('./data3d/escenario.js?v=117').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
-      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=131').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
-      ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=5'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=132').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
+      ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=6'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3847,9 +3847,9 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         b5.insertAdjacentElement('afterend', b6);
       }
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
-        const fb = document.getElementById('fb-btn'), b = document.createElement('button'); b.id = 'vi-btn'; b.textContent = '✦ Visión'; b.title = 'Ver la propuesta: Bavaria Común, Corabastos, red de huertas y humedales'; b.style.cssText = 'width:100%;margin-top:6px;background:linear-gradient(100deg,#2a1d6b,#5b3fd6);color:#fff;border:1px solid #8b74ff;letter-spacing:.2em';
+        const fb = document.getElementById('fb-btn'), b = document.createElement('button'); b.id = 'vi-btn'; b.textContent = 'Visión'; b.title = 'Ver la propuesta: Bavaria Común, Corabastos, red de huertas y humedales'; b.style.cssText = 'width:100%;margin-top:6px;background:linear-gradient(100deg,#2a1d6b,#5b3fd6);color:#fff;border:1px solid #8b74ff;letter-spacing:.2em';
         let V = null, pV = null;
-        b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=7').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? '✦ Salir de la visión' : '✦ Visión'; } catch (e) { console.warn('visión:', e); say('⚠️ No cargó la visión', 5000); } b.disabled = false; };
+        b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=7').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? 'Salir de la visión' : 'Visión'; } catch (e) { console.warn('visión:', e); say('No cargó la visión', 5000); } b.disabled = false; };
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
       return import('./data3d/cielo.js?v=12');

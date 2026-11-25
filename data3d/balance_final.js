@@ -56,43 +56,54 @@ async function archivo(r){
  try{return await new Promise((res,rej)=>{const tx=db.transaction('corridas','readwrite'),s=tx.objectStore('corridas');if(r.sem===HORIZONTE||r.go)s.put(r);const q=s.getAll();tx.oncomplete=()=>res(q.result);tx.onerror=tx.onabort=()=>rej(tx.error);});}finally{db.close()}
 }
 function descargar(data,nombre,tipo){const url=URL.createObjectURL(new Blob([data],{type:tipo})),a=document.createElement('a');a.href=url;a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function trayectoria(rows,k){
- const vs=rows.map(p=>p[k]).filter(Number.isFinite);if(!vs.length)return 'Sin dato';
- const lo=Math.min(...vs),hi=Math.max(...vs);
- return '<svg viewBox="0 0 300 56" role="img" aria-label="Serie semanal"><path stroke="#add65d" stroke-width="1.6" fill="none" d="'+rows.filter(p=>Number.isFinite(p[k])).map((p,i)=>(i?'L':'M')+(3+294*(p.sem-1)/Math.max(1,rows.at(-1).sem-1)).toFixed(1)+' '+(50-44*(p[k]-lo)/(hi-lo||1)).toFixed(1)).join(' ')+'"/></svg>';
+/* trayectoria semanal con ejes (años 1–15, mínimo y máximo rotulados) y la semana elegida marcada */
+function trayectoria(rows,k,sem){
+ const P=rows.filter(p=>Number.isFinite(p[k]));if(!P.length)return '<p>Sin dato</p>';
+ const vs=P.map(p=>p[k]),lo=Math.min(...vs),hi=Math.max(...vs),W=640,H=150,L=52,R=10,T=10,B=24,pw=W-L-R,ph=H-T-B,n=Math.max(HORIZONTE,rows.at(-1).sem);
+ const x=w=>L+pw*(w-1)/Math.max(1,n-1),y=v=>T+ph-(ph*(v-lo)/(hi-lo||1));
+ let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Serie semanal de '+safe(k)+', semanas 1 a '+rows.at(-1).sem+'">';
+ for(const v of hi>lo?[lo,(lo+hi)/2,hi]:[lo])s+='<line class="gr" x1="'+L+'" x2="'+(L+pw)+'" y1="'+y(v).toFixed(1)+'" y2="'+y(v).toFixed(1)+'"/><text class="ax" x="'+(L-6)+'" y="'+(y(v)+4).toFixed(1)+'" text-anchor="end">'+numero(v)+'</text>';
+ s+='<line class="bl" x1="'+L+'" x2="'+(L+pw)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
+ for(const a of [1,5,10,15])s+='<text class="ax" x="'+x((a-.5)*52).toFixed(1)+'" y="'+(T+ph+17)+'" text-anchor="middle">'+(a===1?'año 1':a)+'</text>';
+ s+='<path class="ln" d="'+P.map((p,i)=>(i?'L':'M')+x(p.sem).toFixed(1)+' '+y(p[k]).toFixed(1)).join(' ')+'"/>';
+ const q=P.find(p=>p.sem===sem);if(q)s+='<line class="cr" x1="'+x(q.sem).toFixed(1)+'" x2="'+x(q.sem).toFixed(1)+'" y1="'+T+'" y2="'+(T+ph)+'"/><circle class="dot" r="4.5" cx="'+x(q.sem).toFixed(1)+'" cy="'+y(q[k]).toFixed(1)+'"/>';
+ return s+'</svg>';
 }
+const claseEstado=e=>/Game Over|Colapso|Deterioro|Umbral/.test(e)?'mal':/Alerta/.test(e)?'parte':/mantenida/.test(e)?'bien':'';
 export async function adjuntarBalance(root,args){
- const r=resumen(args),section=document.createElement('section');section.className='i2-sec';root.insertBefore(section,root.children[1]||null);
- section.innerHTML='<h2>Balance de sostenibilidad</h2><p>'+safe(r.n)+' · '+(r.propuesta?'Con Bavaria Común':'Sin propuesta')+' · '+fecha(r.sem)+' · semilla '+r.semilla+'</p><p>Umbrales de prueba: cobertura &lt;80 %, almacenamiento &gt;100 % o pérdida de presencia ≥30 %. Una a tres semanas dan alerta. Cuatro consecutivas en el mismo lugar confirman colapso local. Cuatro consecutivas en el agregado de Kennedy terminan la corrida.</p>'+
- (r.go?'<p><b>Game Over · Kennedy</b> · '+safe(r.go.motivo)+' · '+fecha(r.go.sem)+' · valor '+numero(r.go.valor)+' %. Incumplimiento desde la semana '+(r.go.sem-3)+'. '+safe(causas(r))+'</p>':'')+
+ const r=resumen(args),section=document.createElement('section');section.className='i2-sec rv vis';
+ const host=root.querySelector('[data-i2-bal]');if(host)host.appendChild(section);else root.insertBefore(section,root.children[1]||null);
+ const btn='class="i2-btn" type="button"';
+ section.innerHTML='<div class="i2-sh"><div><span class="i2-lab">Evaluación por sistema</span><h3 class="i2-st">Balance de sostenibilidad</h3></div><p class="i2-sd">'+safe(r.n)+' · '+(r.propuesta?'Con Bavaria Común':'Sin propuesta')+' · '+fecha(r.sem)+' · semilla '+r.semilla+'</p></div>'+
+ '<div class="i2-box i2-panel i2-bal"><p>Umbrales de prueba: cobertura &lt;80 %, almacenamiento &gt;100 % o pérdida de presencia ≥30 %. Una a tres semanas dan alerta. Cuatro consecutivas en el mismo lugar confirman colapso local. Cuatro consecutivas en el agregado de Kennedy terminan la corrida.</p>'+
+ (r.go?'<p class="i2-bgo"><b>Game Over · Kennedy</b> · '+safe(r.go.motivo)+' · '+fecha(r.go.sem)+' · valor '+numero(r.go.valor)+' %. Incumplimiento desde la semana '+(r.go.sem-3)+'. '+safe(causas(r))+'</p>':'')+
  '<p>Primer colapso local: '+(r.colapsos[0]?safe(r.colapsos[0].n)+' · '+fecha(r.colapsos[0].sem):'ninguno registrado')+'</p>'+
- grupos.map(g=>'<h3>'+g.n+' · '+estado(r,g)+'</h3><p>'+safe(g.metricas[g.principal])+': '+numero(r.serie[0][g.principal])+' → '+numero(r.serie.at(-1)[g.principal])+'. Falta para la evaluación completa: '+g.falta+'</p>').join('')+
+ '<div class="i2-bgr">'+grupos.map(g=>{const e=estado(r,g);return '<div><h4>'+g.n+'</h4><span class="i2-est '+claseEstado(e)+'">'+safe(e)+'</span><p>'+safe(g.metricas[g.principal])+': <b>'+numero(r.serie[0][g.principal])+' → '+numero(r.serie.at(-1)[g.principal])+'</b></p><p class="i2-nota">Falta para la evaluación completa: '+g.falta+'</p></div>';}).join('')+'</div>'+
  '<p>Parámetros para revisar según la función afectada: '+grupos.filter(g=>/Colapso|Game Over|Deterioro|Umbral|Alerta/.test(estado(r,g))).map(g=>g.regla==='abasto'?'demanda y capacidad de entrega por sector':g.regla==='residuos'?'inventario pendiente, recogida y capacidad de planta':'calidad de hábitat y ocupación inicial por especie').join(' · ')+(grupos.every(g=>!/Colapso|Game Over|Deterioro|Umbral|Alerta/.test(estado(r,g)))?'sin señal crítica en estas reglas.':'.')+'</p>'+
- '<p>El deterioro se señala cuando empeoran tres medias consecutivas de 13 semanas del indicador principal. La conclusión se limita a las funciones medidas.</p>'+
- '<label>Trayectoria semanal <select>'+grupos.map(g=>'<optgroup label="'+g.n+'">'+Object.entries(g.metricas).map(([k,n])=>'<option value="'+k+'">'+n+'</option>').join('')+'</optgroup>').join('')+'</select></label><div data-curva></div><label>Semana <input type="range" min="1" max="'+r.sem+'" value="'+r.sem+'"></label> <output></output>'+
- '<details><summary>Colapsos locales y territorio</summary>'+r.colapsos.map(p=>'<p>'+fecha(p.sem)+' · '+safe(p.n)+' · '+safe(p.indicador)+' · '+numero(p.valor)+' %'+(p.especies?.length?' · ausentes: '+safe(p.especies.join(', ')):'')+'</p>').join('')+'</details>'+
+ '<p class="i2-nota">El deterioro se señala cuando empeoran tres medias consecutivas de 13 semanas del indicador principal. La conclusión se limita a las funciones medidas.</p>'+
+ '<div class="i2-tray"><div class="i2-trc"><label>Trayectoria semanal <select>'+grupos.map(g=>'<optgroup label="'+g.n+'">'+Object.entries(g.metricas).map(([k,n])=>'<option value="'+k+'">'+n+'</option>').join('')+'</optgroup>').join('')+'</select></label><label>Semana <input type="range" min="1" max="'+r.sem+'" value="'+r.sem+'"></label><output></output></div><div data-curva></div></div>'+
+ '<details><summary>Colapsos locales y territorio</summary>'+(r.colapsos.map(p=>'<p>'+fecha(p.sem)+' · '+safe(p.n)+' · '+safe(p.indicador)+' · '+numero(p.valor)+' %'+(p.especies?.length?' · ausentes: '+safe(p.especies.join(', ')):'')+'</p>').join('')||'<p>Ninguno registrado.</p>')+'</details>'+
  '<details><summary>Distribución final por mercado</summary>'+r.mercados.map(p=>'<p>'+safe(p.n)+' · '+numero(p.t)+' t/día</p>').join('')+'</details>'+
- '<details><summary>Configuración utilizada</summary>'+Object.entries(r.parametros).map(([k,v])=>'<p>'+safe(k)+' = '+numero(v)+'</p>').join('')+'</details><button data-json>Descargar datos y configuración</button> <button data-pdf>Descargar PDF</button><div data-pares></div>';
+ '<details><summary>Configuración utilizada</summary>'+Object.entries(r.parametros).map(([k,v])=>'<p>'+safe(k)+' = '+numero(v)+'</p>').join('')+'</details><div class="i2-acc" style="display:flex"><button '+btn+' data-json>Descargar datos y configuración</button><button '+btn+' data-pdf>Descargar PDF</button></div><div data-pares></div></div>';
  const select=section.querySelector('select'),slider=section.querySelector('input'),output=section.querySelector('output');
- const leer=()=>{const p=r.serie.find(v=>v.sem===+slider.value);output.textContent='Semana '+slider.value+' · '+numero(p?.[select.value]);};
- select.onchange=()=>{section.querySelector('[data-curva]').innerHTML=trayectoria(r.serie,select.value);leer()};slider.oninput=leer;select.onchange();
+ const pintar=()=>{section.querySelector('[data-curva]').innerHTML=trayectoria(r.serie,select.value,+slider.value);const p=r.serie.find(v=>v.sem===+slider.value);output.textContent='Semana '+slider.value+' · '+numero(p?.[select.value]);};
+ select.onchange=pintar;slider.oninput=pintar;pintar();
  section.querySelector('[data-json]').onclick=()=>descargar(JSON.stringify(r),'kennedy-sim-'+r.sim+'.json','application/json');
  let conclusiones=[];
  section.querySelector('[data-pdf]').onclick=()=>pdf('Bavaria Comun - simulacion '+r.sim,[r],conclusiones);
  const box=section.querySelector('[data-pares]');
  try{const all=await archivo(r),other=all.find(p=>p.firma===r.firma&&p.propuesta!==r.propuesta);
  if(other){conclusiones=r.propuesta?comparar(other,r):comparar(r,other);}
- box.innerHTML='<h3>Comparación con la pareja</h3>'+ (conclusiones.length?conclusiones.map(p=>'<p>'+safe(p)+'</p>').join(''):'Falta una ejecución finalizada de la pareja con la misma semilla y configuración compartida.');
+ box.innerHTML='<h4 class="par">Comparación con la pareja</h4>'+ (conclusiones.length?conclusiones.map(p=>'<p>'+safe(p)+'</p>').join(''):'<p>Falta una ejecución finalizada de la pareja con la misma semilla y configuración compartida.</p>');
  const pares=[];for(let par=1;par<=6;par++){const candidatas=all.filter(p=>p.par===par&&!p.propuesta).sort((a,b)=>b.guardado-a.guardado);for(const a of candidatas){const b=all.find(p=>p.firma===a.firma&&p.propuesta);if(b){pares.push([a,b]);break;}}}
  box.insertAdjacentHTML('beforeend','<p>Pares completos guardados en este navegador: '+pares.length+' de 6.</p>');
- if(pares.length===6){const general=pares.flatMap(([a,b])=>['Par '+a.par,...comparar(a,b)]);box.insertAdjacentHTML('beforeend','<details><summary>Informe general de los seis pares</summary>'+general.map(p=>'<p>'+safe(p)+'</p>').join('')+'</details><button data-general>Descargar informe general PDF</button>');box.querySelector('[data-general]').onclick=()=>pdf('Bavaria Comun - seis pares',pares.flat(),general);}
- }catch{box.textContent='Almacenamiento local no disponible. Puedes descargar los resultados de esta ejecución.'}
-}
-function pdf(titulo,runs,comparaciones){
+ if(pares.length===6){const general=pares.flatMap(([a,b])=>['Par '+a.par,...comparar(a,b)]);box.insertAdjacentHTML('beforeend','<details><summary>Informe general de los seis pares</summary>'+general.map(p=>'<p>'+safe(p)+'</p>').join('')+'</details><button '+btn+' data-general>Descargar informe general PDF</button>');box.querySelector('[data-general]').onclick=()=>pdf('Bavaria Comun - seis pares',pares.flat(),general);}
+ }catch{box.innerHTML='<p>Almacenamiento local no disponible. Puedes descargar los resultados de esta ejecución.</p>'}
+}function pdf(titulo,runs,comparaciones){
  const pages=[];let commands='',y=775;
  const clean=s=>String(s).replace(/×/g,'x').replace(/→/g,' a ').replace(/≥/g,'>=').replace(/≤/g,'<=').replace(/[–—]/g,'-');
  const hex=s=>Array.from(clean(s),c=>Math.min(255,c.charCodeAt(0)).toString(16).padStart(2,'0')).join('');
- function page(){if(commands)pages.push(commands);commands='0.14 0.18 0.15 rg 0 790 595 52 re f\nBT /F 14 Tf 0.85 1 0.3 rg 36 811 Td <'+hex(titulo)+'> Tj ET\n';y=768;}
+ function page(){if(commands)pages.push(commands);commands='0.14 0.18 0.15 rg 0 790 595 52 re f\nBT /F 14 Tf 0.80 0.91 0.74 rg 36 811 Td <'+hex(titulo)+'> Tj ET\n';y=768;}
  function line(s,size=10){for(const part of clean(s).match(/.{1,87}(?:\s|$)|.{1,87}/g)||['']){if(y<55)page();commands+='BT /F '+size+' Tf 0.13 0.17 0.14 rg 36 '+y+' Td <'+hex(part)+'> Tj ET\n';y-=size+5;}}
  function chart(rows,k){const vs=rows.map(p=>p[k]).filter(Number.isFinite);if(!vs.length)return;if(y<112)page();const lo=Math.min(...vs),hi=Math.max(...vs);commands+='0.26 0.42 0.12 RG 1 w\n';let pen=false;
  for(const p of rows){if(!Number.isFinite(p[k])){pen=false;continue;}commands+=(36+503*(p.sem-1)/Math.max(1,rows.at(-1).sem-1)).toFixed(2)+' '+(y-40+37*(p[k]-lo)/(hi-lo||1)).toFixed(2)+(pen?' l\n':' m\n');pen=true;}commands+='S\n';y-=53;line('Semanas 1-'+rows.at(-1).sem+'   |   min. '+numero(lo)+'   max. '+numero(hi),8);}
