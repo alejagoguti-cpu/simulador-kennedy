@@ -25,7 +25,7 @@ import { PAR as PARSIM, SIMST } from './sim_modelos.js?v=7';
 export const CORA = [1132.1, 948.6], BAVC = [4136, 96];
 export const PAR = {
   CEL: 500,                       // [SUP] zonas de demanda: celdas de 500 m
-  POB: 1034000, PERS_HOG: 3.0,    // población de Kennedy (DANE 2024 aprox., la de sim_vida) · [SUP] personas por hogar
+  POB: 1080742, PERS_HOG: 3.0,    // población de Kennedy 2026 (DANE-SDP con ajuste Covid, SED 2024 Tabla 2; la de sim_vida) · [SUP] personas por hogar
   TASA_HOG: 0.04,                 // [SUP] viajes/día por hogar en carro o moto a comprar frescos al por mayor (≈ 1 cada 25 días)
   FR_COM_ALIM: 0.35, TASA_COM: 0.45, // [SUP] 35 % de los comercios venden alimentos; cada uno se surte 0,45 veces/día (≈ 3 por semana)
   MADR: { hog: 0.12, com: 0.75 }, // [SUP] parte de los viajes entre 2:00 y 6:00 (la venta mayorista de Corabastos abre a las 2:00)

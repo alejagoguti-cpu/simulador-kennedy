@@ -7,7 +7,7 @@
    · Pestañas (una por sistema). Cada una: indicadores clave con chispa, gráficas propias del sistema y una tabla en tiempo real ordenable.
    · Rendimiento: solo se dibuja la pestaña visible, solo cuando avanzan las semanas, como mucho 4 veces por segundo y en tiempo ocioso;
      las gráficas de línea y el mapa de calor reutilizan sus nodos SVG (solo cambian atributos). Primitivas: graficas_vivas.js. */
-import { COL, CAT, ESTADO, icono, esc, fin, num, año, clave, tip, Linea, Apilada, Chispa, MapaCalor, barrasH, columnasAño, sankey, nodo } from './graficas_vivas.js?v=1';
+import { COL, CAT, ESTADO, icono, esc, fin, num, año, clave, tip, Linea, Apilada, Chispa, MapaCalor, barrasH, columnasAño, sankey, nodo, marcas, fmtEje, barraV } from './graficas_vivas.js?v=1';
 
 const T = (I) => (I && I.evaluacion && I.evaluacion.territorio) || {};
 const ev = (f, I) => { if (!I) return null; try { return fin(f(I)); } catch (e) { return null; } };
@@ -463,10 +463,72 @@ export function iniciarPanelDatos({ R, getM, getFIN }) {
     return U;
   }
 
+  /* =================== 01 ABASTECIMIENTO: llegadas a Corabastos por hora y por tipo de vehículo (simulaciones12.js AB01) ===================
+     Solo se ven cuando la corrida trae I.abasto.ab01 (par 01). Con propuesta continua (relleno); la otra mitad del par, hueca y punteada. */
+  const corrida = (c, I) => (I && I.abasto && I.abasto.ab01) || null;
+  function abasto01(div) {
+    const U = [];
+    { const { sec, cu, der } = seccion(div, 'Llegadas a Corabastos por hora', 'Toneladas que entran en cada hora del día esta semana. Franjas de ingreso de Corabastos (12–20 h hortalizas, 20–24 h papa, 4–6 h frutas y granos) × grupos DANE-SIPSA 2025: confianza baja. Raya roja: lo máximo que la central recibe en la franja (tope). Línea blanca: la hora del reloj.');
+      const B1 = bloque(cu), B2 = bloque(cu); let geo = null;
+      U.push((c) => { const X = corrida(c, c.I); sec.hidden = !X; if (!X) return; const Xb = corrida(c, c.Bk), M = getM() || {}, FR = (M.AB01 && M.AB01.FRANJAS) || [];
+        const W = c.W, alto = 118, pl = 34, pr = 4, pt = 8, pb = 15, iw = W - pl - pr, ih = alto - pt - pb, sw = iw / 24;
+        const por = (Y, h) => (Y.franjas || []).find((F) => h >= F.h0 && h < F.h1) || null, mx = Math.max(...X.franjas.map((F) => Math.max(F.t_h, F.tope_h)), ...(Xb ? Xb.franjas.map((F) => F.t_h) : [0]));
+        const m = marcas(0, mx, 3), Y = (v) => pt + ih - v / (m.b || 1) * ih, col = c.prop ? COL.con : COL.sin, colO = c.prop ? COL.sin : COL.con; geo = { pl, sw, pt, ih };
+        let s = `<svg class="tb-svg" width="${W}" height="${alto}" viewBox="0 0 ${W} ${alto}" role="img" aria-label="Toneladas por hora que llegan a Corabastos: ${X.franjas.map((F) => `franja ${F.n} ${num(F.t_h)} t/h`).join(', ')}">`;
+        for (const t of m.t) s += `<line x1="${pl}" x2="${W - pr}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="${t === 0 ? 'var(--tb-axis)' : 'var(--tb-grid)'}"/><text x="${pl - 4}" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${fmtEje(t, m.paso)}</text>`;
+        for (let h = 0; h < 24; h++) { const F = por(X, h), Fb = Xb ? por(Xb, h) : null, x = pl + h * sw, v = F ? F.t_h : 0, vb = Fb ? Fb.t_h : null, q = FR.find((f) => f.n === (F && F.n));
+          s += `<g data-tt="${esc(`${String(h).padStart(2, '0')}:00–${String(h + 1).padStart(2, '0')}:00|${F ? `Llegan ${num(v)} t/h · ${num(F.veh_h)} vehículos/h|Franja ${F.n}${q ? ': ' + q.que : ''}|Máximo en la franja: ${num(F.tope_h)} t/h` : 'Sin ingreso de carga en esta hora'}${vb != null ? `|${c.otro} propuesta: ${num(vb)} t/h` : ''}`)}"><rect x="${x.toFixed(1)}" y="0" width="${sw.toFixed(1)}" height="${alto}" fill="transparent"/>`;
+          if (v > 0) s += `<path class="tb-m" d="${barraV(x + 1.5, Y(v), Math.max(1, sw - 3), pt + ih - Y(v), 2)}" fill="${col}"/>`;
+          if (vb) s += `<rect x="${(x + 2).toFixed(1)}" y="${Y(vb).toFixed(1)}" width="${Math.max(1, sw - 4).toFixed(1)}" height="${(pt + ih - Y(vb)).toFixed(1)}" fill="${colO}" fill-opacity=".12" stroke="${colO}" stroke-dasharray="3 2"/>`;
+          s += '</g>'; if (h % 3 === 0) s += `<text x="${(x + sw / 2).toFixed(1)}" y="${alto - 2}" text-anchor="middle">${h}</text>`; }
+        for (const F of X.franjas) s += `<line x1="${(pl + F.h0 * sw).toFixed(1)}" x2="${(pl + F.h1 * sw).toFixed(1)}" y1="${Y(F.tope_h).toFixed(1)}" y2="${Y(F.tope_h).toFixed(1)}" stroke="${COL.lim}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+        s += `<line data-hora x1="0" x2="0" y1="${pt}" y2="${pt + ih}" stroke="var(--ui-tx,#f1f3ee)" stroke-width="1.5" visibility="hidden"/></svg>`;
+        B1(s); der.textContent = `${num(X.lleg)} t/día · ${num(X.vehDia)} veh/día`;
+        B2(`<div class="tb-ley"><span>${clave(col, 'barra')}${c.prop ? 'Con' : 'Sin'} propuesta (esta corrida)</span>${Xb ? `<span>${clave(colO, 'hueca')}${c.otro} propuesta</span>` : ''}<span>${clave(COL.lim, 'pun')}Máximo de la franja</span><span>${clave('var(--ui-tx,#f1f3ee)', 'tick')}Hora del reloj</span></div>`); });
+      const hora = () => { const ln = cu.querySelector('line[data-hora]'), RL = window.KEN_RELOJ; if (!ln || !geo || sec.hidden) return; const md = RL && RL.minutoDia != null ? RL.minutoDia : null; if (md == null) return;
+        const x = (geo.pl + (md / 60) * geo.sw).toFixed(1); ln.setAttribute('x1', x); ln.setAttribute('x2', x); ln.setAttribute('visibility', 'visible'); };
+      const iv = setInterval(() => { if (!cu.isConnected) { clearInterval(iv); return; } hora(); }, 1000); U.push(hora); }
+    { const { sec, cu, der } = seccion(div, 'Vehículos de carga por tipo', 'Vehículos que traen comida a Corabastos por día: llegadas / 6,21 t por vehículo (DANE-SIPSA 2025). Mezcla: aforo SDM 2020 en la Av. Agoberto Mejía × parte pesada SIPSA (91,3 %); la carga útil por tipo es un supuesto.');
+      const B1 = bloque(cu);
+      U.push((c) => { const X = corrida(c, c.I); sec.hidden = !X; if (!X) return; const Xb = corrida(c, c.Bk), M = getM() || {}, TP = (M.AB01 && M.AB01.TIPOS) || [];
+        const filas = [[c.prop ? 'Con propuesta' : 'Sin propuesta', X, false], ...(Xb ? [[c.prop ? 'Sin propuesta' : 'Con propuesta', Xb, true]] : [])];
+        const W = c.W, Lw = 86, x0 = Lw + 6, x1 = W - 52, bw = x1 - x0, h = 22, mx = Math.max(...filas.map((f) => f[1].vehDia)), H = filas.length * h + 2;
+        let s = `<svg class="tb-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Vehículos de carga por día y tipo: ${X.tipos.map((t) => `${t.n} ${num(t.veh_dia)}`).join(', ')}">`;
+        filas.forEach(([n, Z, hueca], i) => { const y = i * h + 5; let x = x0;
+          s += `<text class="tb-tn" x="${Lw}" y="${y + 9}" text-anchor="end">${esc(n)}</text>`;
+          Z.tipos.forEach((t, k) => { const w = t.veh_dia / mx * bw, T = TP[k] || {}; if (w < 0.3) return;
+            s += `<rect data-tt="${esc(`${t.n}|${num(t.veh_dia)} vehículos/día · ${num(t.t_dia)} t/día|Carga útil supuesta: ${num(T.c, 1)} t|${n}`)}" x="${x.toFixed(1)}" y="${y}" width="${Math.max(0.5, w - 1).toFixed(1)}" height="12" rx="1.5" fill="${T.col || CAT[k % 4]}"${hueca ? ' fill-opacity=".35" stroke="' + (T.col || CAT[k % 4]) + '" stroke-dasharray="2 1.5"' : ''}/>`; x += w; });
+          s += `<text class="tb-tv" x="${x1 + 5}" y="${y + 9}">${num(Z.vehDia)}</text>`; });
+        B1(s + '</svg>' + `<div class="tb-ley" style="margin-top:6px">${X.tipos.map((t, k) => `<span>${clave((TP[k] || {}).col || CAT[k % 4], 'barra')}${esc(t.n.replace(/ \(.*\)$/, ''))} <b>${num(t.veh_dia)}</b></span>`).join('')}</div>`
+          + `<p class="tb-nota">Hoy (2025) entran 1.040 vehículos de carga al día, 6,21 t cada uno (DANE-SIPSA). En la franja más cargada (4–6 h) llegan ${num(X.franjas[2] ? X.franjas[2].veh_h : 0)} por hora.</p>`);
+        der.textContent = `${num(X.vehDia)} veh/día`; }); }
+    { const { sec, cu, der } = seccion(div, 'Corabastos frente a su tope', 'Lo que se le pide a Corabastos (toda la ciudad y la región) frente a su tope; tope = 6.460 t/día × (1 + tope elegido), inferencia SDDE-FAO 2018.'), med = medidor(cu), med2 = medidor(cu);
+      U.push((c) => { const X = corrida(c, c.I); sec.hidden = !X; if (!X) return; const v = X.L / X.tope * 100;
+        med({ v, max: Math.max(115, v * 1.05), u: 100, cer: 90, a: `Pedido ${num(X.L)} t/día · tope ${num(X.tope)} · llegan ${num(X.lleg)}`, b: num(v) + ' %', e0: '0 %', e1: 'cerca 90 % · tope 100 %', estado: v >= 100 ? 'critico' : v >= 90 ? 'riesgo' : 'sano' });
+        const vk = X.coraK / Math.max(1e-9, X.coraPedK) * 100;
+        med2({ v: vk, max: 100, u: 80, a: `Kennedy pide ${num(X.coraPedK)} t/día a Corabastos y recibe ${num(X.coraK)} (${num(X.coraK / Math.max(1e-9, X.lleg) * 100, 1)} % de lo que llega)`, b: num(vk) + ' %', e0: '0 %', e1: 'game over por sector bajo 80 %', estado: vk < 80 ? 'critico' : vk < 87 ? 'riesgo' : 'sano' });
+        der.textContent = `oferta ${num(X.S)} t/día`; }); }
+    { const { sec, cu, der } = seccion(div, 'Oferta frente a demanda de Kennedy', 'Componentes de la comida fresca que recibe Kennedy esta semana (t/día) frente a su demanda. Autoconsumo: supuesto; mercados: 17 t/día cada uno (Contraloría 2025, derivado).'), B1 = bloque(cu);
+      U.push((c) => { const X = corrida(c, c.I); sec.hidden = !X; if (!X) return; const Xb = corrida(c, c.Bk);
+        const fila = (n, Z) => ({ n, v: Z.coraK + Z.mercT + Z.autoT, segs: [[Z.coraK, CAT[0], 'Corabastos'], [Z.mercT, CAT[1], 'Mercados'], [Z.autoT, CAT[2], 'Autoconsumo']], dem: Z.demK });
+        const filas = [fila(c.prop ? 'Con propuesta' : 'Sin propuesta', X), ...(Xb ? [fila(c.prop ? 'Sin propuesta' : 'Con propuesta', Xb)] : [])];
+        const W = c.W, Lw = 86, x0 = Lw + 6, x1 = W - 52, bw = x1 - x0, h = 24, mx = Math.max(...filas.map((f) => Math.max(f.v, f.dem))) * 1.04, H = filas.length * h + 4;
+        let s = `<svg class="tb-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Oferta frente a demanda de Kennedy">`;
+        filas.forEach((f, i) => { const y = i * h + 6; let x = x0; s += `<text class="tb-tn" x="${Lw}" y="${y + 9}" text-anchor="end">${esc(f.n)}</text>`;
+          for (const [v, col, n] of f.segs) { const w = v / mx * bw; if (w < 0.3) continue; s += `<rect data-tt="${esc(`${n}|${num(v, 1)} t/día|${num(v / Math.max(1e-9, f.dem) * 100, 1)} % de la demanda|${f.n}`)}" x="${x.toFixed(1)}" y="${y}" width="${Math.max(0.5, w - 1).toFixed(1)}" height="12" rx="1.5" fill="${col}"${i ? ' fill-opacity=".4"' : ''}/>`; x += w; }
+          const xd = x0 + f.dem / mx * bw, x80 = x0 + 0.8 * f.dem / mx * bw;
+          s += `<line x1="${xd.toFixed(1)}" x2="${xd.toFixed(1)}" y1="${y - 3}" y2="${y + 15}" stroke="var(--ui-tx,#f1f3ee)" stroke-width="2"/><line x1="${x80.toFixed(1)}" x2="${x80.toFixed(1)}" y1="${y - 3}" y2="${y + 15}" stroke="${COL.lim}" stroke-dasharray="3 2"/>`
+            + `<text class="tb-tv" x="${x1 + 5}" y="${y + 9}">${num(f.v / Math.max(1e-9, f.dem) * 100)} %</text>`; });
+        B1(s + `</svg><div class="tb-ley" style="margin-top:6px"><span>${clave(CAT[0], 'barra')}Corabastos <b>${num(X.coraK)}</b></span><span>${clave(CAT[1], 'barra')}Mercados <b>${num(X.mercT, 1)}</b></span><span>${clave(CAT[2], 'barra')}Autoconsumo <b>${num(X.autoT, 1)}</b></span><span>${clave('var(--ui-tx,#f1f3ee)', 'tick')}Demanda ${num(X.demK)}</span><span>${clave(COL.lim, 'tick')}80 %</span></div>`);
+        der.textContent = `${num(X.cobK * 100, 1)} % cubierto`; }); }
+    return U;
+  }
+
   /* =================== COMERCIO =================== */
   function tabCom(div, c0) {
     div.insertAdjacentHTML('beforeend', leyenda(c0));
     const U = [kpis(div, ['minSector', 'cobertura', 'autonomia'])];
+    U.push(...abasto01(div));
     // cobertura por sector: distribución ordenada (cada punto un sector, del peor al mejor) + la otra mitad como escalón punteado
     { const { cu, der } = seccion(div, 'Cobertura por sector', 'Los sectores de Kennedy ordenados del peor al mejor según el % de su demanda de alimentos que reciben. Bajo 80 % durante 4 semanas: game over.');
       const alto = 104, pl = 34, pr = 6, pt = 8, pb = 15, svg = nodo('svg', { class: 'tb-svg', height: alto, tabindex: 0, role: 'img' }, cu), lista = document.createElement('p'); lista.className = 'tb-nota'; cu.appendChild(lista);
@@ -509,8 +571,10 @@ export function iniciarPanelDatos({ R, getM, getFIN }) {
         A.update({ W: c.W, FIN: c.FIN, xs: a.xs, ys: [a.a, b.a, l.a], ref: d.a }); const t = T(c.I); der.textContent = `${num(t.cobertura / 100 * t.demanda)} de ${num(t.demanda)} t/día`; }); }
     U.push(multiples(div, ['concentracion', 'autonomia', 'produccion', 'acopio'], 'Dependencia y producción local'));
     { const { cu, der } = seccion(div, 'Corabastos y mercados', 'Carga de Corabastos frente a su tope y los mercados de barrio que más mueven.'), med = medidor(cu), B1 = bloque(cu);
-      U.push((c) => { const A = c.I.abasto || {}, k = A.cora; if (k && k.tope_t_dia) { const v = k.carga * 100; med({ v, max: Math.max(110, v * 1.05), u: 100, a: `Corabastos: ${num(k.pedido_t_dia)} t/día pedidas de ${num(k.tope_t_dia)} de tope${k.aplica ? '' : ' (el tope no aplica en este escenario)'}`, b: num(v) + ' %', e0: '0 %', e1: 'tope 100 %', estado: v >= 100 ? 'critico' : v >= 90 ? 'riesgo' : 'sano' }); }
-        const m = (A.mercados || []).filter((x) => x.activo && x.t_dia > 0).sort((a, b) => b.t_dia - a.t_dia); der.textContent = m.length ? `${m.length} mercados activos` : '';
+      U.push((c) => { const A = c.I.abasto || {}, k = A.cora; med.el = med.el || cu.querySelector('.tb-meter'); if (med.el) med.el.hidden = !!A.ab01; if (k && k.tope_t_dia && !A.ab01) { const v = k.carga * 100; med({ v, max: Math.max(110, v * 1.05), u: 100, a: `Corabastos: ${num(k.pedido_t_dia)} t/día pedidas de ${num(k.tope_t_dia)} de tope${k.aplica ? '' : ' (el tope no aplica en este escenario)'}`, b: num(v) + ' %', e0: '0 %', e1: 'tope 100 %', estado: v >= 100 ? 'critico' : v >= 90 ? 'riesgo' : 'sano' }); }
+        const m = (A.mercados || []).filter((x) => x.activo && x.t_dia > 0).sort((a, b) => (A.ab01 ? b.carga - a.carga : b.t_dia - a.t_dia)); der.textContent = m.length ? `${m.length} mercados activos` : '';
+        if (A.ab01) { B1(m.length ? barrasH(m.slice(0, 10).map((x) => ({ n: x.real ? x.n.replace('Plaza Distrital de Mercado', 'Plaza Distrital') : x.n, v: x.carga * 100, txt: num(x.carga * 100) + ' %', col: x.carga >= 1 - 1e-6 ? ESTADO.critico.c : x.carga >= 0.9 ? ESTADO.riesgo.c : c.prop ? COL.con : COL.sin, tt: `${x.n}${x.real ? ' (plaza existente)' : ' (sitio de la propuesta)'}|Mueve ${num(x.t_dia, 1)} de ${num(x.cap_t_dia)} t/día|Uso: ${num(x.carga * 100)} %|Abre en la semana ${num(x.desde)}` })), c.W, { aria: 'Uso de los mercados frente a su capacidad', vw: 40, max: 110, lim: 100, limU: ' %' })
+            + `<p class="tb-nota">Uso de cada mercado frente a sus 17 t/día (los 10 más usados). ${A.mercados.length - m.length > 0 ? `${A.mercados.length - m.length} por abrir.` : ''}</p>` : '<p class="tb-nota">Sin mercados en esta corrida: todo lo que Kennedy compra pasa por Corabastos.</p>'); return; }
         B1(m.length ? barrasH(m.slice(0, 8).map((x) => ({ n: x.n, v: x.t_dia, max: x.cap_t_dia, txt: num(x.t_dia, 1), col: c.prop ? COL.con : COL.sin, tt: `${x.n}|Mueve ${num(x.t_dia, 2)} t/día|Capacidad: ${num(x.cap_t_dia, 2)} t/día|Carga: ${num(x.carga * 100)} %` })), c.W, { aria: 'Mercados de barrio que más mueven', vw: 36 })
           + '<p class="tb-nota">Barra: t/día movidas; fondo: capacidad del mercado.</p>' : '<p class="tb-nota">Sin red de mercados de barrio en esta corrida: todo pasa por Corabastos.</p>'); }); }
     U.push(tabla(div, ['minSector', 'cobertura', 'demanda', 'concentracion', 'autonomia', 'produccion', 'acopio', 'huertas']));

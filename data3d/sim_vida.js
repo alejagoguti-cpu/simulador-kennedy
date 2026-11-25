@@ -21,7 +21,10 @@
 import { ZONAS, FUENTES, COSTO, LARGO, CIERRES, MERCADOS as MERC_D, PARCHES, BODEGAS, AREA_NAVES } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
 import { PLAN_BAV } from './plan_bavaria_datos.js?v=2'; // escenario D: Plan Parcial Fábrica Bavaria (tools/plan_bavaria_build.mjs) // tráfico cerca de cada parche y entre parches (tools/exposicion_trafico_build.mjs)
-export const AÑO = 52, POB_K = 1034000;
+/* POB_K: población de Kennedy 2026 = 1.080.742 hab (proyección DANE-SDP, CNPV 2018 ajustado por efecto Covid; SED, Boletín estadístico
+   Localidad Kennedy 2024, Tabla 2, https://www.educacionbogota.edu.co/portal_institucional/sites/default/files/inline-files/2022/08%20Boleti%CC%81n%20Kennedy%202024.pdf).
+   Antes 1.034.000 («DANE 2024 aprox.»). Ver docs/fuentes_abastecimiento.md §5. */
+export const AÑO = 52, POB_K = 1080742;
 export const ARRANQUE = 0; // las reglas cuentan desde la semana 1: los tres escenarios se evalúan el mismo periodo, montaje incluido
 export const MERCADOS = MERC_D;
 
@@ -50,8 +53,10 @@ export const NOMBRE_EV = { cierre: 'Cierre de vía' };
 
 /* ---------- supuestos de los tres subsistemas ---------- */
 export const SUP = {
-  KG_PERS: 0.4,      // kg/día de alimentos frescos por persona (OMS, el mismo de G2): lo que «necesita» cada zona
-  HOLGURA: 0.10,     // [SUP] el mayorista y las flotas trabajan con 10 % de holgura sobre lo que les piden
+  KG_PERS: 0.65,     // kg/día de alimentos frescos por persona que llegan vía Corabastos (rango 0,61–0,69): 6.460 t/día (DANE-SIPSA 2025) × 85 % que se queda en la ciudad
+                     // (Corabastos en DTS logística Gobernación de Cundinamarca 2022, p. 14) / 7,93–8,97 M hab. Antes 0,4 «OMS»: los 400 g de la OMS son una recomendación
+                     // de frutas y verduras sin papa, no un consumo. Derivado, confianza baja-media (docs/fuentes_abastecimiento.md §5)
+  HOLGURA: 0.06,     // el mayorista y las flotas trabajan con 6 % de holgura: la punta mensual de Corabastos en 2025 (julio, 6.839 t/día) fue 5,9 % sobre el promedio (DANE-SIPSA 2025). Antes 0,10 [SUP]
   TAU_A: 6,          // [SUP] semanas en que la logística se reacomoda sola (A, sin coordinación)
   TAU_BC: 3,         // [SUP] B y C: 3 semanas + el tiempo de resolución de las solicitudes (la respuesta llega cuando se decide)
   RADIO_MERC: 2.0,   // [SUP] un mercado nodo surte zonas a 2 km generalizados o menos por la red

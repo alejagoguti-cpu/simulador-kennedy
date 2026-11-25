@@ -12,7 +12,7 @@ const num = (v) => (Math.round(v * 1000) / 1000).toLocaleString('es-CO');
    (el comentario de cabecera del 01 todavía describe el corte de suministro anterior). */
 const COMUN = 'Las dos corridas del par arrancan iguales, con la misma semilla, la misma prueba y los mismos deslizadores; la única diferencia es la infraestructura propuesta. El metro Línea 1 (contexto real) está en todas. Horizonte: 15 años (780 semanas), en tres plazos.';
 const MODELO = {
-  1: 'La demanda de alimentos crece con la población (deslizador «Crecimiento de la demanda de alimentos») y Corabastos solo puede recibir y despachar hasta su tope («Tope de Corabastos», % sobre la demanda de hoy). Sin propuesta todo pasa por Corabastos; con propuesta los mercados de barrio y los puntos de acopio compran directo a productores de la región hasta su capacidad.',
+  1: 'Cada semana: demanda de frescos de Kennedy = población (1.080.742 en 2026, DANE-SDP) × 0,65 kg/hab/día × «Demanda» × mes del año (patrón DANE-SIPSA 2025); el «Autoconsumo» sale de huertas y no se compra. A Corabastos le pide toda la ciudad y la región (6.460 t/día hoy, DANE-SIPSA 2025); la región manda el «Volumen» y la central recibe como mucho su tope (6.460 × (1 + «Tope»), inferencia SDDE-FAO 2018). Si no alcanza, todos los compradores reciben la misma fracción y en Kennedy pierden más las zonas lejos de Corabastos. Con propuesta, cada mercado (17 t/día, Contraloría 2025) vende a los hogares a 1 km y cubre parte de lo que falta. Las llegadas se reparten por tipo de vehículo (6,21 t por vehículo, SIPSA; mezcla SDM 2020) y por franja horaria (12–20 h, 20–24 h, 4–6 h).',
   2: 'Cierre temporal de la Av. de las Américas (cierre forzado de sim_vida.js + cierre gradual y desvíos). Con propuesta, los pasajes y conexiones de Bavaria Común y los mercados distribuidos suman una tercera ruta de desvío: el tráfico desviado se reparte en tres y no en dos [SUP].',
   3: 'Aumento de los residuos orgánicos: los kg/persona·día suben el porcentaje elegido, en un año desde la semana de inicio. Sin propuesta: relleno Doña Juana (capacidad de referencia). Con propuesta: Estaciones Circulares en los mercados nodo (compost de proximidad).',
   4: 'Pérdida de una parte de un parche ecológico: la calidad del parche para todas sus especies baja como la raíz del área que queda. Con propuesta: conexiones vegetales (+0,2 de árboles en parques en 5 años), refugios (los módulos de huertas son hábitat) y restauración (recuperación del humedal × 1,5) [SUP: acciones de la propuesta].',
@@ -21,7 +21,7 @@ const MODELO = {
 };
 /* sim_ui.js CADENA: los pasos de la historia de cada par (las cifras en vivo están en el panel de datos) */
 const CADENA = {
-  1: ['Lo que se le pide a Corabastos', 'Corabastos frente a su tope', 'Basura sin recoger', 'Humedales que funcionan', 'Interacciones entre especies'],
+  1: ['Demanda de frescos de Kennedy', 'Lo que se le pide a Corabastos', 'Corabastos frente a su tope', 'Mercados y autoconsumo', 'Sector peor abastecido'],
   2: ['Vía cerrada', 'Tráfico en las calles del desvío', 'Comida en la zona peor servida', 'Ruido promedio', 'Interacciones entre especies'],
   3: ['Orgánicos generados', 'Tratados en estaciones / relleno', 'Economía circular', 'Basura sin recoger', 'Humedales que funcionan'],
   4: ['Parche perdido', 'Corredores y refugios', 'Territorio con fauna', 'Especies de fauna', 'Interacciones entre especies'],
@@ -31,10 +31,10 @@ const CADENA = {
 /* sim_ui.js HISTORIA: capas que quedan visibles mientras corre el par */
 const HISTORIA = { 1: ['abasto_cont', 'basura', 'degradacion', 'predio', 'caminos'], 2: ['cierre', 'biotica', 'predio', 'caminos'], 3: ['residuos', 'basura', 'degradacion', 'predio', 'caminos'],
   4: ['biodiversidad', 'biotica', 'degradacion', 'predio', 'caminos'], 5: ['suelo', 'predio', 'caminos'], 6: ['gobernanza', 'caminos'] };
-const CAPA_N = { abasto_cont: 'Contenedor de Corabastos', basura: 'Basura', degradacion: 'Degradación', predio: 'Predio de Bavaria', caminos: 'Caminos', cierre: 'Cierre de vía',
+const CAPA_N = { abasto_cont: 'Medidores de capacidad (Corabastos y mercados)', basura: 'Basura', degradacion: 'Degradación', predio: 'Predio de Bavaria', caminos: 'Caminos', cierre: 'Cierre de vía',
   biotica: 'Red biótica', residuos: 'Residuos', biodiversidad: 'Biodiversidad', suelo: 'Suelo', gobernanza: 'Gobernanza' };
 /* reglas cuyo indicador aparece en la cadena del par */
-const REGLA_PAR = { 1: ['abasto', 'humedal'], 2: ['trafico', 'ruido', 'abasto'], 3: ['residuos', 'humedal'], 4: ['fauna', 'habitat'], 5: ['trafico'], 6: [] };
+const REGLA_PAR = { 1: ['abasto'], 2: ['trafico', 'ruido', 'abasto'], 3: ['residuos', 'humedal'], 4: ['fauna', 'habitat'], 5: ['trafico'], 6: [] };
 
 const ICO = {
   prev: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -44,7 +44,28 @@ const ICO = {
 };
 
 let M = null;
-const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=27').then(m => (M = m));
+const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=28').then(m => (M = m));
+/* par 01: diapositivas «Datos» y «Fuentes» con las cifras del dossier (docs/fuentes_abastecimiento.md; simulaciones12.js AB01 y AB01_FUENTES) */
+function slides01() {
+  const A = M.AB01, F = M.AB01_FUENTES || []; if (!A) return [];
+  const fila = (n, v, f) => `<dt>${esc(n)}</dt><dd><b>${v}</b> <span class="sl-tenue">· ${esc(f)}</span></dd>`;
+  const datos = `<p class="sl-kick">Datos del modelo · todos con fuente o marcados como supuesto</p><dl class="sl-dl">
+    ${fila('Entra a Corabastos', '6.460 t/día (2.357.973 t en 2025)', 'DANE-SIPSA 2025 · alta')}
+    ${fila('Mes más alto y más bajo', 'julio 6.839 · noviembre 6.097 t/día', 'DANE-SIPSA 2025 · alta')}
+    ${fila('Vehículos de carga', '1.040 al día, 91,3 % pesados, 6,21 t cada uno', 'DANE-SIPSA 2025 · alta')}
+    ${fila('Tipos de camión', `${A.TIPOS.map(T => `${T.n.replace(/ \(.*\)$/, '')} ${num(Math.round(T.p * 1000) / 10)} %`).join(' · ')}`, 'SDM 2020 × SIPSA · media; carga útil 0,8/5/9/17/30 t: supuesto')}
+    ${fila('Franjas de ingreso', A.FRANJAS.map(Fr => `${Fr.n} ${num(Math.round(Fr.p * 1000) / 10)} %`).join(' · '), 'horarios de Corabastos × grupos SIPSA · confianza baja')}
+    ${fila('Población de Kennedy', '1.080.742 hab (2026)', 'SED 2024, DANE-SDP · alta')}
+    ${fila('Frescos por persona', '0,65 kg/día (0,61–0,69) ≈ 702 t/día en Kennedy', 'derivado de SIPSA × 85 % · baja-media')}
+    ${fila('Tope de Corabastos', '+11 % sobre 6.460 t/día (rango 5–25 %)', 'ocupación 90 %, SDDE-FAO 2018 · inferencia')}
+    ${fila('Plaza Distrital de Kennedy', '215 puestos, 131 ocupados ≈ 17 t/día', 'Contraloría 2025 · volumen derivado')}
+    ${fila('Las 19 plazas distritales', '≈342 t/día', 'Contraloría 2025 con datos IPES 2024 · media-alta')}
+    ${fila('Corabastos en Bogotá', '94 % de lo que entra a las centrales mayoristas; cerca de la mitad de todo lo que entra a la ciudad', 'SIPSA · alta / DTS 2022 · baja')}
+    </dl><p class="sl-txt sl-tenue">Cambios frente a la versión anterior: población 1.034.000 → 1.080.742; 0,4 → 0,65 kg/hab/día (los 400 g de la OMS eran una recomendación, no un consumo); tope 22 % → 11 %; holgura del mayorista 10 % → 6 %; crecimiento 1,6 → 0,5 %/año; red de mercados 600 → ≈200 t/día.</p>`;
+  const fuentes = `<p class="sl-kick">Fuentes · cita corta y enlace</p><ul class="sl-reglas">${F.map(f => `<li><div class="sl-rh"><b>${esc(f.c)}</b></div><p>${esc(f.d)}. <a href="${esc(f.u)}" target="_blank" rel="noopener">${esc(f.u.replace(/^https?:\/\//, '').split('/')[0])}</a></p></li>`).join('')}</ul>
+    <p class="sl-txt sl-tenue">Detalle, cálculos y vacíos de información en docs/fuentes_abastecimiento.md y data3d/abasto_fuentes.json.</p>`;
+  return [{ t: 'Datos', h: datos }, { t: 'Fuentes', h: fuentes }];
+}
 
 function slidesDe(par, con) {
   const P = M.PARES.find(p => p.par === par), S = M.SIMS.find(s => s.par === par && s.propuesta === con);
@@ -74,12 +95,14 @@ function slidesDe(par, con) {
     { t: 'Modelo', h: `<p class="sl-kick">Cómo se simula</p><p class="sl-txt">${esc(MODELO[par] || '')}</p>
         <p class="sl-txt sl-tenue">${esc(COMUN)}</p>
         <dl class="sl-dl"><dt>Escenario de esta corrida</dt><dd>${esc(S.desc)}</dd></dl>` },
+    ...(par === 1 ? slides01().slice(0, 1) : []),
     { t: 'Cadena causa y efecto', h: `<p class="sl-kick">Cadena causa → efecto</p>${flujo}
         <p class="sl-kick">Capas que se prenden en el mapa</p><div class="sl-chips">${capas}</div>` },
     { t: 'Variables', h: `<p class="sl-kick">Variables · ${sl.length} deslizadores (valor inicial, rango)</p><ul class="sl-vars">${vars}</ul>
         <p class="sl-txt sl-tenue">Se ajustan en el bloque Variables del panel izquierdo; al moverlas el modelo se recalcula hasta la semana en curso.</p>` },
     { t: 'Reglas de game over', h: `<p class="sl-kick">Reglas de game over · iguales para las 12 simulaciones</p><ul class="sl-reglas">${reglas}</ul>
         ${rel.length ? '<p class="sl-txt sl-tenue">Marcadas: reglas cuyo indicador aparece en la cadena de este par.</p>' : ''}` },
+    ...(par === 1 ? slides01().slice(1) : []),
     { t: 'Sin y con propuesta', h: `<p class="sl-kick">Qué cambia con la propuesta</p>
         <div class="sl-comp"><section class="${con ? '' : 'act'}"><h4>Kennedy sin propuesta</h4><p>${esc(P.sin)}</p><p class="sl-tenue">${esc(P.pregSin)}</p></section>
         <section class="con ${con ? 'act' : ''}"><h4>Kennedy con propuesta</h4><p>${esc(P.con)}</p><p class="sl-tenue">${esc(P.pregCon)}</p></section></div>

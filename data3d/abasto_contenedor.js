@@ -1,62 +1,79 @@
-/* ============ CORABASTOS COMO CONTENEDOR (par 01 · data3d/simulaciones12.js ind().abasto) ============
-   window.KEN_CONT = { poner(abasto), ver(on) }
-   · Usa LA FORMA REAL de Corabastos: copia las mallas del grupo 'corabastos' (sus bodegas) como un «vaso» de vidrio más alto y, adentro,
-     las mismas formas como un líquido que sube. Arranca vacío en el año 1 y se llena a medida que crece lo que se le pide; arriba (línea
-     roja = su tope) la comida ya no alcanza. Color verde → ámbar → rojo.
-   · Nada más: sin cilindros, sin rutas, sin puntos (los mercados de la propuesta se ven como sus edificios).
-   Grupo 'abasto_cont' (KEN_FOCO lo deja en color). */
+/* ============ MEDIDORES DE CAPACIDAD DEL ABASTECIMIENTO (par 01 · data3d/simulaciones12.js ind().abasto.ab01) ============
+   window.KEN_CONT = { poner(abasto), ver(on), grupo }
+   · Corabastos: un tubo de vidrio vertical anclado en el centro de sus bodegas. El llenado sube y baja EN TIEMPO REAL con la hora del
+     reloj: en cada franja de ingreso de carga (12–20 h, 20–24 h, 4–6 h; horarios de Corabastos × grupos DANE-SIPSA 2025) llega una parte de
+     las toneladas del día y el nivel es lo que llega frente a lo máximo que la central puede recibir en esa franja (tope × parte de la
+     franja). Fuera de las franjas no entra carga y el tubo se vacía hasta un fondo. El anillo rojo es el tope (6.460 t/día × (1 + tope)).
+     Si a Corabastos le piden más que su tope, el exceso se dibuja como una columna roja translúcida por encima del anillo.
+     Verde < 90 % del tope · ámbar 90–100 % · rojo ≥ 100 %.
+   · Con propuesta: un tubo más pequeño por mercado abierto (Plaza Distrital de Kennedy y sitios de la propuesta), lleno según las
+     t/día que mueve frente a sus 17 t/día.
+   · Etiquetas HTML (vidrio) con t/día y %. Solo materiales básicos y unas 50 mallas: no pesa en los cuadros por segundo.
+   Grupo 'abasto_cont' (sim_ui.js lo deja visible en la historia del par 01 y KEN_FOCO lo deja en color). */
 import { RELOJ } from './reloj.js?v=5';
 
+const ESCALA = 1.25; // el tubo muestra hasta 125 % del tope (el anillo rojo queda al 80 % de la altura)
 export function crearContenedores({ T3 }) {
   if (window.KEN_CONT) return window.KEN_CONT;
   const THREE = T3.THREE, G = new THREE.Group(); G.name = 'abasto_cont'; G.visible = false; T3.scene.add(G);
-  const ALTO = 6;          // el vaso es 5 veces más alto que las bodegas (14 m -> 70 m): se lee desde la vista alta
-  const plano = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0); // corta el líquido a la altura del nivel
-  const vidrio = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
-  const liq = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.55, depthWrite: false, clippingPlanes: [plano], side: THREE.DoubleSide, toneMapped: false }); // color plano y brillante: se lee desde lejos
-  const bordeTope = new THREE.LineBasicMaterial({ color: 0xff4d4d, transparent: true, opacity: 0.95 });
-  let armado = false, y0 = 0, hVaso = 70, cx = 0, cz = 0;
-  function armar() {
-    const cora = T3.scene.getObjectByName('corabastos'); if (!cora) return false;
-    if (T3.renderer) T3.renderer.localClippingEnabled = true;
-    cora.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(cora); if (box.isEmpty()) return false;
-    y0 = box.min.y; const hB = Math.max(6, box.max.y - box.min.y); hVaso = hB * ALTO; const c = box.getCenter(new THREE.Vector3()); cx = c.x; cz = c.z;
-    cora.traverse(o => { if (!o.isMesh || !o.geometry) return;
-      const g = o.geometry, M = o.matrixWorld.clone();
-      // escala vertical alrededor del piso de Corabastos: el vaso y el líquido tienen la planta exacta de las bodegas
-      const S = new THREE.Matrix4().makeTranslation(0, y0, 0).multiply(new THREE.Matrix4().makeScale(1, ALTO, 1)).multiply(new THREE.Matrix4().makeTranslation(0, -y0, 0)).multiply(M);
-      const v = new THREE.Mesh(g, vidrio); v.matrixAutoUpdate = false; v.matrix.copy(S); v.renderOrder = 13; G.add(v);
-      const l = new THREE.Mesh(g, liq); l.matrixAutoUpdate = false; l.matrix.copy(S); l.renderOrder = 12; G.add(l); });
-    // línea roja del tope: el contorno de la planta (caja) arriba del vaso
-    const s = box.getSize(new THREE.Vector3()), r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(s.x, s.z).rotateX(-Math.PI / 2)), bordeTope);
-    r.position.set(cx, y0 + hVaso + 0.5, cz); r.renderOrder = 30; G.add(r); G.userData.tope = r; /* línea del tope: arriba del vaso = lo máximo que Corabastos puede mover */
-    // contorno blanco del vaso completo (las 12 aristas de la caja) para leer el tope desde la vista alta
-    const caja = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s.x, hVaso, s.z)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })); caja.position.set(cx, y0 + hVaso / 2, cz); /* sin caja blanca */
-    armado = true; return true;
+  const y0 = () => (T3.sueloY != null ? T3.sueloY : 0.3) + 0.5;
+  const COL = { v: new THREE.Color(0x4ade80), a: new THREE.Color(0xfbbf24), r: new THREE.Color(0xef4444) };
+  const colorDe = (k, c) => c.copy(k < 0.9 ? COL.v : k < 1 ? COL.a : COL.r);
+  const geoTubo = new THREE.CylinderGeometry(1, 1, 1, 40, 1, true).translate(0, 0.5, 0);
+  const geoLleno = new THREE.CylinderGeometry(1, 1, 1, 40, 1, false).translate(0, 0.5, 0);
+  const geoAnillo = new THREE.TorusGeometry(1, 0.035, 6, 48).rotateX(Math.PI / 2);
+  const geoBase = new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2);
+  function tubo(R, H, op = {}) {
+    const g = new THREE.Group(); G.add(g);
+    const vid = new THREE.Mesh(geoTubo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.13, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+    vid.scale.set(R, H, R); vid.renderOrder = 14;
+    const base = new THREE.Mesh(geoBase, new THREE.MeshBasicMaterial({ color: 0x101418, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false })); base.scale.set(R * 1.25, 1, R * 1.25); base.position.y = 0.2; base.renderOrder = 11;
+    const lle = new THREE.Mesh(geoLleno, new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.82, depthWrite: false, toneMapped: false })); lle.scale.set(R * 0.86, 0.01, R * 0.86); lle.renderOrder = 12;
+    const exc = new THREE.Mesh(geoLleno, new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false })); exc.scale.set(R * 0.86, 0.01, R * 0.86); exc.visible = false; exc.renderOrder = 12;
+    const tope = new THREE.Mesh(geoAnillo, new THREE.MeshBasicMaterial({ color: 0xff4d4d, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false })); tope.scale.set(R * 1.12, R * 1.12, R * 1.12); tope.position.y = H / ESCALA; tope.renderOrder = 15;
+    const borde = new THREE.Mesh(geoAnillo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false })); borde.scale.set(R, R * 0.6, R); borde.position.y = H; borde.renderOrder = 15;
+    g.add(base, vid, lle, exc, tope, borde);
+    return { g, lle, exc, tope, R, H, nivel: 0, meta: 0, excMeta: 0, excNivel: 0, col: new THREE.Color(0x4ade80), ...op };
   }
-  const et = document.createElement('div'); et.id = 'cont-et';
-  et.style.cssText = 'position:fixed;z-index:6;pointer-events:none;transform:translate(-50%,-100%);padding:7px 11px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#f2f3f5;font:500 11.5px/1.35 system-ui,sans-serif;white-space:nowrap;display:none';
-  document.body.appendChild(et);
-  let A = null, c0 = null, nivel = 0, meta = 0, tPrev = 0; const col = new THREE.Color(), V = new THREE.Color(0x4ade80), Am = new THREE.Color(0xfbbf24), Ro = new THREE.Color(0xef4444), p = new THREE.Vector3();
-  const fmt = (v) => Math.round(v).toLocaleString('es-CO');
+  const C = tubo(70, 230); // Corabastos
+  const MK = []; // mercados (se crean cuando aparecen)
+  const css = 'position:fixed;z-index:6;pointer-events:none;transform:translate(-50%,-100%);padding:6px 10px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.74),rgba(20,22,28,.86));border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#f2f3f5;font:500 11.5px/1.35 Inter,system-ui,sans-serif;white-space:nowrap;display:none;font-variant-numeric:tabular-nums';
+  const et = document.createElement('div'); et.id = 'cont-et'; et.style.cssText = css; document.body.appendChild(et);
+  const etM = []; const etq = (i) => { if (!etM[i]) { const d = document.createElement('div'); d.className = 'cont-etm'; d.style.cssText = css + ';padding:3px 7px;border-radius:8px;font-size:10px;font-weight:500'; document.body.appendChild(d); etM[i] = d; } return etM[i]; };
+  let A = null, tPrev = 0, tTxt = 0; const p = new THREE.Vector3();
+  const fmt = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (+v).toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d }));
+  function franjaDe(U, h) { return (U.franjas || []).find(F => h >= F.h0 && h < F.h1) || null; }
   function poner(ab) {
-    if (!ab || !ab.cora) { G.visible = false; et.style.display = 'none'; return; }
-    if (!armado && !armar()) return; A = ab;
-    if (c0 == null) c0 = ab.cora.carga; // la carga del año 1 = vaso vacío; el tope (carga 1) = vaso lleno
-    meta = Math.max(0, Math.min(1, (ab.cora.carga - c0) / Math.max(0.02, 1 - c0)));
+    if (!ab || !ab.cora || !ab.ab01) { A = null; G.visible = false; et.style.display = 'none'; etM.forEach(d => { d.style.display = 'none'; }); return; }
+    A = ab; C.g.position.set(ab.cora.x, y0(), ab.cora.z);
+    const ms = (ab.mercados || []).filter(m => m.activo);
+    while (MK.length < ms.length) MK.push(tubo(22, 95));
+    MK.forEach((M, i) => { const m = ms[i]; M.g.visible = !!m; if (!m) return; M.g.position.set(m.x, y0(), m.z); M.m = m; M.meta = Math.min(ESCALA, m.carga || 0); });
   }
+  function mover(T, dt, kc) { T.nivel += (T.meta - T.nivel) * (1 - Math.exp(-dt * 3)); T.excNivel += (T.excMeta - T.excNivel) * (1 - Math.exp(-dt * 3));
+    const h = Math.max(0.01, Math.min(ESCALA, T.nivel)) / ESCALA * T.H; T.lle.scale.y = h;
+    T.exc.visible = T.excNivel > 0.005; if (T.exc.visible) { const hT = T.H / ESCALA, he = Math.min(ESCALA - 1, T.excNivel) / ESCALA * T.H; T.exc.position.y = hT; T.exc.scale.y = Math.max(0.01, he); }
+    colorDe(kc != null ? kc : T.nivel + T.excNivel, T.col); T.lle.material.color.lerp(T.col, Math.min(1, dt * 4)); }
+  function enPantalla(x, y, z, el) { p.set(x, y, z).project(T3.camera); if (p.z < 1 && Math.abs(p.x) < 1.05 && Math.abs(p.y) < 1.05) { el.style.display = 'block'; el.style.left = ((p.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - p.y) / 2 * innerHeight) + 'px'; return true; } el.style.display = 'none'; return false; }
   RELOJ.alDibujar(() => {
     if (!G.visible || !A) return;
     const now = performance.now(), dt = tPrev ? Math.min(0.1, (now - tPrev) / 1000) : 0; tPrev = now;
-    nivel += (meta - nivel) * (1 - Math.exp(-dt * 2.5));
-    plano.constant = y0 + 0.3 + Math.max(0.04, nivel) * hVaso; // siempre se ve un fondo de líquido // el líquido se ve hasta esta altura
-    if (nivel < 0.6) col.copy(V).lerp(Am, nivel / 0.6); else col.copy(Am).lerp(Ro, Math.min(1, (nivel - 0.6) / 0.4)); liq.color.copy(col);
-    const r = G.userData.tope; if (r) r.material.opacity = nivel > 0.85 ? 0.55 + 0.45 * Math.abs(Math.sin(now / 220)) : 0.95;
-    p.set(cx, y0 + hVaso + 30, cz).project(T3.camera);
-    if (p.z < 1 && Math.abs(p.x) < 1.1 && Math.abs(p.y) < 1.1) { et.style.display = 'block'; et.style.left = ((p.x + 1) / 2 * innerWidth) + 'px'; et.style.top = ((1 - p.y) / 2 * innerHeight) + 'px';
-      const pc = Math.round(Math.min(1.2, A.cora.carga) * 100), txt = `<b style="font-size:13px">Corabastos · ${pc} % de su tope</b><br>Le piden ${fmt(A.cora.pedido_t_dia)} de ${fmt(A.cora.tope_t_dia)} t/día que puede mover${pc >= 100 ? '<br><span style="color:#ff8a80">Lleno: la comida ya no alcanza</span>' : ''}`;
-      if (et._t !== txt) { et.innerHTML = txt; et._t = txt; } } else et.style.display = 'none';
+    const U = A.ab01, hora = ((RELOJ.minutoDia != null ? RELOJ.minutoDia : 0) / 60) % 24, F = franjaDe(U, hora), k = U.L / U.tope;
+    // Corabastos: dentro de una franja, lo que llega frente a lo máximo de la franja (= llegadas / tope) y el exceso pedido; fuera, el fondo
+    C.meta = F ? U.lleg / U.tope : 0.04; C.excMeta = F && k > 1 ? Math.min(ESCALA - 1, k - 1) : 0; mover(C, dt, k);
+    C.tope.material.opacity = k > 0.97 ? 0.55 + 0.45 * Math.abs(Math.sin(now / 220)) : 0.95;
+    for (const M of MK) if (M.g.visible) { M.excMeta = 0; mover(M, dt); }
+    const cam = T3.camera.position, dist = Math.hypot(cam.x - A.cora.x, cam.z - A.cora.z, cam.y);
+    if (enPantalla(A.cora.x, y0() + C.H + 24, A.cora.z, et) && now - tTxt > 200) { tTxt = now;
+      const pc = Math.round(k * 100), est = pc >= 100 ? '#ff8a80' : pc >= 90 ? '#ffd27a' : '#9be8b0';
+      const lin2 = F ? `Franja ${F.n}: ${fmt(F.t_h)} t/h de ${fmt(F.tope_h)} posibles · ${fmt(F.veh_h)} vehículos/h` : `Ahora no entra carga (ingreso 12–24 h y 4–6 h)`;
+      const txt = `<b style="font-size:12.5px">Corabastos · <span style="color:${est}">${pc} % de su tope</span></b><br>${lin2}<br><span style="opacity:.8">Le piden ${fmt(U.L)} t/día · tope ${fmt(U.tope)} · llegan ${fmt(U.lleg)}</span>${pc >= 100 ? '<br><span style="color:#ff8a80">Sobre el tope: no todo lo pedido entra</span>' : ''}`;
+      if (et._t !== txt) { et.innerHTML = txt; et._t = txt; } }
+    let j = 0; for (const M of MK) { if (!M.g.visible || !M.m) continue; const el = etq(j++);
+      if (dist > 9000 || !enPantalla(M.m.x, y0() + M.H + 10, M.m.z, el)) { el.style.display = 'none'; continue; }
+      const txt = `${M.m.real ? 'Plaza Kennedy' : M.m.n.length > 18 ? M.m.n.slice(0, 17) + '…' : M.m.n} · ${fmt(M.m.t_dia, 1)} t/día · ${Math.round((M.m.carga || 0) * 100)} %`; if (el._t !== txt) { el.textContent = txt; el._t = txt; } }
+    for (; j < etM.length; j++) etM[j].style.display = 'none';
   });
-  const api = window.KEN_CONT = { poner, ver(on) { G.visible = !!on; if (!on) { et.style.display = 'none'; c0 = null; nivel = 0; } }, grupo: G };
+  const api = window.KEN_CONT = { poner, ver(on) { G.visible = !!on; if (!on) { et.style.display = 'none'; etM.forEach(d => { d.style.display = 'none'; }); C.nivel = 0; MK.forEach(M => { M.nivel = 0; }); } }, grupo: G };
   return api;
 }

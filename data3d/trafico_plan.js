@@ -5,7 +5,7 @@
    entre el predio y 16 destinos repartidos por Kennedy (centros de las zonas de 500 m más pobladas de cada sector). Movimiento cosmético
    (reloj universal, RELOJ.tAnim); carros como los del tráfico SUMO grabado pero pintados de violeta para distinguirlos. Solo en el escenario D. */
 import { RELOJ } from './reloj.js?v=5';
-import { construirRed, arbol } from './viajes_mercados.js?v=9';
+import { construirRed, arbol } from './viajes_mercados.js?v=10';
 import { ZONAS } from './sim_red_datos.js?v=2';
 
 const POR_CARRO = 60, VEL = 14, MAXC = 500, POR_VEH = 36; /* Escala visual: 1 carro por cada 36 vehículos/día (~470 con el plan terminado). Menos carros en pantalla para dejar más espacio; los viajes del modelo no cambian. */ // autos por carro dibujado · m/s en pantalla · tope de carros dibujados

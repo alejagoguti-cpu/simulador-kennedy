@@ -19,7 +19,7 @@ import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=7'
 import { RELOJ } from './reloj.js?v=5';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con un solo evento al azar, el cierre de una vía (semilla = SIMST.semilla), y reglas de game over fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
-import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=7';
+import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=8';
 import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=4'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;

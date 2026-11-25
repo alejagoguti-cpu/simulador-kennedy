@@ -1,4 +1,5 @@
 import {adjuntarBalance} from './balance_final.js?v=2';
+import { conclusionAbasto } from './conclusion_abasto.js?v=1'; // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
    Pinta en `cont` (la caja de vidrio #su-inf .caja) un informe para no expertos (y para proyectar ante un jurado):
@@ -670,6 +671,11 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
       : `Sin game over, pero mejoran ${mejor.length} y empeoran ${peor.length} indicadores clave ${frente}.`;
     if (!completo) { V.eye = `Informe parcial · año ${añoDe(wFin)} de 15 · hasta ahora: ${V.t}`; V.big = 'En curso'; V.cls = 'curso'; frase = 'Hasta ahora: ' + min1(frase); }
     razon = frase; }
+  /* par 01: el veredicto sale de data3d/conclusion_abasto.js (Sostenible / Plausible con condiciones / Game over, reglas fijas) */
+  let C01 = null;
+  if (def.par === 1) { try { C01 = conclusionAbasto({ H, B: base && base.length ? base : null, go, def, parametros, completo }); } catch (e) { console.warn('conclusión del par 01:', e); } }
+  if (C01 && !go) { V = { t: C01.veredicto, cls: C01.estado === 'sostenible' ? 'ok' : 'parte', big: C01.big, eye: completo ? C01.eye : `Informe parcial · año ${añoDe(wFin)} de 15 · hasta ahora: ${C01.big}` };
+    frase = completo ? C01.frase : 'Hasta ahora: ' + min1(C01.frase); razon = frase; }
 
   let alerta = '';
   if (goB && conProp) { const qué = goB.regla ? ` por ${CORTO_R[goB.regla] || min1(goB.n || goB.regla)}` : '';
@@ -775,7 +781,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const link = (t) => esc(t).replace(/https?:\/\/[^\s)<]+/g, (u) => { const m = u.match(/[.,;]+$/), uu = m ? u.slice(0, -m[0].length) : u; return `<a href="${uu}" target="_blank" rel="noopener">${uu}</a>${m ? m[0] : ''}`; });
   const htmlNotas = `<details class="i2-fold i2-panel"><summary>Notas y fuentes<span>Reglas de game over, cómo se decide el veredicto y supuestos</span></summary><div class="i2-fb i2-notas">
     <h4>Evaluación</h4><p>Umbrales experimentales de Bavaria Común. Cuatro semanas consecutivas en un sector, estación o parche confirman un colapso local. La ejecución completa termina cuando el indicador agregado de Kennedy incumple durante cuatro semanas.</p>
-    <h4>Cómo se decide el veredicto</h4><ul><li><b>Game over (No)</b>: se cumplió una regla de game over durante 4 semanas seguidas.</li><li><b>Sostenible (Sí)</b>: sin game over, ningún indicador de las reglas a 2/3 o más del camino a su límite, y mejoran más indicadores clave de los que empeoran.</li><li><b>En parte</b>: el resto. Con pareja se compara en la misma semana; sin pareja, año 1 → final.</li></ul>
+    <h4>Cómo se decide el veredicto</h4><ul><li><b>Game over (No)</b>: se cumplió una regla de game over durante 4 semanas seguidas.</li><li><b>Sostenible (Sí)</b>: sin game over, ningún indicador de las reglas a 2/3 o más del camino a su límite, y mejoran más indicadores clave de los que empeoran.</li><li><b>En parte</b>: el resto. Con pareja se compara en la misma semana; sin pareja, año 1 → final.</li>${def.par === 1 ? '<li><b>Par 01 · Abastecimiento</b>: <b>Sostenible</b> si no hay game over, ningún sector baja de 87 % de su demanda y lo que se le pide a Corabastos nunca pasa su tope; <b>Plausible con condiciones</b> si no hay game over pero falla alguna de las otras dos; <b>Game over</b> si un sector recibe menos de 80 % cuatro semanas seguidas. La recomendación es la palanca (autoconsumo, mercados, tope o volumen) que más mueve la cobertura o la carga en la semana crítica al moverla un cuarto de su rango, con las mismas ecuaciones del modelo. Fuentes en docs/fuentes_abastecimiento.md.</li>' : ''}</ul>
     <h4>Reglas de game over · iguales para las 12 simulaciones</h4>
     <div class="i2-reg">${RG.map(r => { const e = estR.find(x => x.r.k === r.k), es = go && go.regla === r.k; return `<div class="${es ? 'go' : ''}"><b>${esc(r.n)}</b>: game over si ${esc(r.txt || '')}.${e ? ` <span class="fin ${es || e.pF >= 2 / 3 ? 'mal' : ''}">Al final: ${esc(fmtR(r.k, e.vF))}${es ? ' · se cumplió' : ''}.</span>` : ''}${r.fuente ? `<p>Fuente: ${link(r.fuente)}</p>` : ''}</div>`; }).join('')}</div>
     <h4>Supuestos de este informe</h4><ul>
@@ -792,7 +798,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
       <span class="i2-sub" data-a style="--d:1000"><b>${esc(titulo)}</b>${def.pregunta ? `<span>${esc(def.pregunta)}</span>` : ''}</span></h1>
     <div class="i2-ver i2-panel" data-a style="--d:1200">${go ? htmlRegla : `<div class="i2-vlab">Veredicto · ${esc(V.t)}</div><p class="i2-vf">${esc(frase)}</p>`}
       <div class="i2-vs"><span class="i2-cnt bien">${icono('sube')}<b>${mejor.length}</b> mejoran</span><span class="i2-cnt mal">${icono('baja')}<b>${peor.length}</b> empeoran</span><span class="i2-cnt">${icono('igual')}<b>${igual.length}</b> casi iguales</span><span class="i2-cntt">de ${comps.length} indicadores clave, ${esc(frente)}</span></div>${alerta}</div>
-    ${acciones('m')}${htmlKpis}${htmlMain}${htmlCad}${htmlTl}</section>`;
+    ${C01 ? C01.html : ''}${acciones('m')}${htmlKpis}${htmlMain}${htmlCad}${htmlTl}</section>`;
 
   cont.scrollTop = 0;
   cont.innerHTML = `<div class="inf2 ${V.cls}">${htmlTop}${htmlStage}<div class="i2-completo i2-in"><div class="i2-div" id="i2-completo">Informe completo</div>${htmlGr}<div data-i2-bal></div>${htmlRed}${htmlEv}<section class="i2-sec rv" style="margin-top:40px">${htmlTab}${htmlNotas}</section>
@@ -846,6 +852,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
         tip.innerHTML = `<b>Año ${añoDe(best.e.sem)}</b> · semana ${nf(best.e.sem)}<br>${esc(best.e.titulo)}`; tip.style.display = 'block';
         const tw = tip.offsetWidth, fx = best.x * (bb.width / W); tip.style.left = Math.max(0, Math.min(tb.clientWidth - tw, fx - tw / 2)) + 'px'; tip.style.top = Math.max(-40, best.y * (bb.width / W) - 56) + 'px'; });
       svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; }); }
+    if (C01) try { C01.pintar(root); } catch (e) { console.warn('conclusión del par 01:', e); }
   }
   let RD = null;
   function pintarRed() {

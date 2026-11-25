@@ -4,7 +4,7 @@
    Muestra TODAS las corridas: % que cierra por cada regla, semana mediana de cierre, supervivencia, zona peor abastecida (corridas + mediana),
    tiempo de resolución de solicitudes (B y C), alimento por mercado en C, y la lista
    completa de semillas (cada una se puede ver en el mapa). */
-import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=7';
+import { REGLAS, EVENTOS, CIERRE, AÑO, corrida, resumen, ESCENARIOS, MERCADOS } from './sim_vida.js?v=8';
 const R_CORRIDAS = 30, AÑOS = 10; // el mismo periodo para A, B y C
 const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOM = Object.fromEntries(Object.entries(ESCENARIOS).map(([k, v]) => [k, v.n]));
 const NREG = Object.fromEntries(REGLAS.map(R => [R.k, R.n.toLowerCase()]));

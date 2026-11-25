@@ -40,7 +40,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=27'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=28'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -197,7 +197,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!M || !R.sim || !hasta) return; const id = ++idAlDia, s = M.crear(R.sim, SEMILLA, R.valores), H = []; R.s = null; R.hist = [];
     const lote = () => { if (id !== idAlDia) return; for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); if(M.gameOver(s))break; }
       if (!M.gameOver(s) && H.length < hasta) return void setTimeout(lote, 0);
-      R.s = s; R.hist = H; if(M.gameOver(s)){gameOver(M.gameOver(s));return;} const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); } };
+      R.s = s; R.hist = H; if(M.gameOver(s)){gameOver(M.gameOver(s));return;} const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); ponerCapaPar(L); } };
     lote();
   }
   function preparar(id, opc) {
@@ -584,15 +584,15 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     LUG.ver(false); /* vista limpia: sin pines de tiendas (los mercados se ven como volúmenes en el reparto) */ /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
   let CONT = null, pCont = null, REP = null, pRep = null;
-  function ponerCapaPar(I) { if (SIN_CAPAS) I = null;
+  function ponerCapaPar(I) { const p01 = !!(I && I.abasto && I.abasto.ab01); if (SIN_CAPAS && !p01) I = null; /* par 01: los medidores de capacidad sí se ven (pedido de la autora, 2026-11-25) */
     const c = I ? capaPar() : null;
-    // par 01: contenedores (Corabastos con su tope y los mercados) en vez de nodos y rutas
-    /* con propuesta: la carga de Corabastos se reparte entre los mercados (volúmenes proporcionales a las t/día, data3d/reparto.js) */
-    const repartir = c === 'abasto' && R.def && R.def.propuesta && I.abasto;
+    // par 01: medidores de capacidad (data3d/abasto_contenedor.js): Corabastos y, con propuesta, uno por mercado
+    /* antes, con propuesta: data3d/reparto.js (volúmenes proporcionales); ahora los mismos medidores muestran el reparto */
+    const repartir = false;
     { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP); }
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=7').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=8').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -614,11 +614,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   };
   const pct = (a, b) => (b ? (a / b - 1) * 100 : 0), sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
   const CADENA = { // pasos de la historia: [texto, valor(I, I1), formato]
-    1: [['Lo que se le pide a Corabastos', (I, I1) => sg(pct(I.abasto && I.abasto.cora ? I.abasto.cora.pedido_t_dia : 0, I1.abasto && I1.abasto.cora ? I1.abasto.cora.pedido_t_dia : 0)) + ' %'],
+    1: [['Demanda de frescos de Kennedy', (I) => I.abasto && I.abasto.ab01 ? fmt(I.abasto.ab01.demK) + ' t/día' : '—'],
+        ['Lo que se le pide a Corabastos', (I, I1) => I.abasto && I.abasto.cora ? fmt(I.abasto.cora.pedido_t_dia) + ' t/día (' + sg(pct(I.abasto.cora.pedido_t_dia, I1.abasto && I1.abasto.cora ? I1.abasto.cora.pedido_t_dia : 0)) + ' %)' : '—'],
         ['Corabastos frente a su tope', (I) => I.abasto && I.abasto.cora ? Math.round(I.abasto.cora.carga * 100) + ' %' : '—'],
-        ['Basura sin recoger', (I) => fmt(I.basura ? I.basura.acumulada : 0) + ' t'],
-        ['Humedales que funcionan', (I) => Math.round(I.humedalFuncional || 0) + ' %'],
-        ['Interacciones entre especies', (I, I1) => sg(pct(I.red, I1.red)) + ' %']],
+        ['Mercados y autoconsumo', (I) => I.abasto && I.abasto.ab01 ? fmt(I.abasto.ab01.mercT + I.abasto.ab01.autoT) + ' t/día' : '—'],
+        ['Sector peor abastecido', (I) => Math.round((I.comidaMin || 0) * 100) + ' %']],
     2: [['Vía cerrada', (I) => I.cierre && I.cierre.fase ? Math.round(I.cierre.fase * 100) + ' % cerrada' : 'abierta'],
         ['Tráfico en las calles del desvío', (I) => I.cierre && I.cierre.traficoDesvio ? '+' + Math.round((I.cierre.traficoDesvio - 1) * 100) + ' %' : '—'],
         ['Comida en la zona peor servida', (I) => Math.round((I.comidaMin || 0) * 100) + ' %'],
@@ -785,7 +785,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
   /* el tablero estadístico en tiempo real vive en la columna derecha, aside#lp-tablero (panel_datos.js + graficas_vivas.js) */
-  import('./panel_datos.js?v=2').then(m => m.iniciarPanelDatos({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de datos:', e));
+  import('./panel_datos.js?v=3').then(m => m.iniciarPanelDatos({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de datos:', e));
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
@@ -950,7 +950,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=5');
+    try { const { abrirInforme2 } = await import('./informe.js?v=6');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];
