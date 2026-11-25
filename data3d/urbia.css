@@ -131,3 +131,23 @@ html.limpio body #su-tab .ee-clear:hover{background:#d5ff321c;color:#eff8d4}
  html.limpio body #gs-izq,html.limpio body #lp-der{padding:9px!important}
  html.limpio body #su-tab{padding:10px!important}
 }
+
+#urbia-intro{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 46%,#424a40 0,#202723 36%,#101512 78%);color:#f4f3ef;font-family:Manrope,system-ui,sans-serif;transition:opacity .75s ease,visibility .75s}
+#urbia-intro::before,#urbia-intro::after{content:"";position:absolute;width:min(76vw,780px);aspect-ratio:1;border:1px solid #e6eddb18;border-radius:50%;pointer-events:none}
+#urbia-intro::after{width:min(58vw,600px);border-color:#d5ff321c;transform:rotateX(68deg) rotate(-20deg)}
+#urbia-intro.ui-leaving{opacity:0;visibility:hidden;pointer-events:none}
+.ui-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(90vw,560px)}
+.ui-logo{width:min(245px,58vw);height:auto;filter:drop-shadow(0 0 25px #d5ff3224);animation:ui-float 4s ease-in-out infinite,ui-glow 4s ease-in-out infinite}
+.ui-kicker{margin-top:26px;color:#c6d0b9;font:10px monospace;letter-spacing:.23em}
+.ui-center h1{font-size:clamp(34px,6vw,62px);line-height:1.02;font-weight:300;letter-spacing:-.055em;margin:19px 0 10px}
+.ui-center h1 em{font-weight:500;color:#d5ff32}
+.ui-center p{max-width:370px;color:#c5cabe;font-size:13px;line-height:1.7;margin:4px 0 23px}
+#urbia-start{display:flex;align-items:center;gap:33px;background:#d5ff32;color:#202619;border:0;border-radius:999px;padding:13px 17px 13px 25px;font-weight:700;font-size:13px;box-shadow:0 0 32px #d5ff322c;transition:transform .2s,box-shadow .2s}
+#urbia-start span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#202619;color:#d5ff32;font-size:17px}
+#urbia-start:hover{transform:translateY(-2px);box-shadow:0 0 42px #d5ff3266}
+.ui-foot{position:absolute;bottom:25px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;white-space:nowrap;color:#aeb6a8;font:9px monospace;letter-spacing:.14em}
+.ui-foot i{height:13px;border-left:1px solid #d5ff3266}
+@keyframes ui-float{0%,100%{transform:translateY(0) rotateY(-5deg)}50%{transform:translateY(-10px) rotateY(5deg)}}
+@keyframes ui-glow{50%{filter:drop-shadow(0 0 36px #d5ff3260)}}
+@media(max-width:600px){.ui-kicker{font-size:9px}.ui-center p{font-size:12px;max-width:290px}.ui-foot{font-size:8px;letter-spacing:.08em}}
+@media(prefers-reduced-motion:reduce){.ui-logo{animation:none}#urbia-intro,#urbia-start{transition:none}}

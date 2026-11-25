@@ -163,9 +163,17 @@
   #trafficPlay{padding:3px 10px;font-size:14px;line-height:1;border-radius:7px;cursor:pointer}
   #trafficTime{width:100%;accent-color:#22d3ee;cursor:pointer}
 </style>
-<link rel="stylesheet" href="data3d/urbia.css?v=4">
+<link rel="stylesheet" href="data3d/urbia.css?v=3">
+<link rel="stylesheet" href="data3d/urbia.css?v=5">
 </head>
 <body>
+<section id="urbia-intro" aria-labelledby="urbia-intro-title"><div class="ui-orbit" aria-hidden="true"></div><div class="ui-center"><img class="ui-logo" src="data3d/urbia-logo-full.svg" alt="urbia"><span class="ui-kicker">KENNEDY · ECOLOGÍA URBANA</span><h1 id="urbia-intro-title">Modelamiento<br><em>dinámico</em></h1><p>Un territorio vivo. Quince años para observar cómo cambian sus relaciones ecológicas.</p><button id="urbia-start" type="button">Iniciar <span aria-hidden="true">→</span></button></div><span class="ui-foot">PONTIFICIA UNIVERSIDAD JAVERIANA <i></i> BOGOTÁ · COLOMBIA</span></section>
+<script>
+(()=>{const intro=document.getElementById('urbia-intro'),button=document.getElementById('urbia-start');if(!intro||!button)return;
+const enter=()=>{intro.classList.add('ui-leaving');document.body.classList.add('urbia-ready');setTimeout(()=>intro.remove(),800);};
+button.addEventListener('click',enter);document.addEventListener('keydown',e=>{if(e.key==='Enter'&&intro.isConnected)enter();});
+})();
+</script>
 <div id="urbia-brand"><img src="data3d/urbia-logo.svg" alt="urbia" width="96" height="37"><span>KENNEDY<br>SIMULADOR ECOLÓGICO</span></div>
 
 <div id="map" class="hidden"></div>
