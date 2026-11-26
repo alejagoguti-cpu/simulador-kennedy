@@ -103,7 +103,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   /* APERTURA AÑO A AÑO (data3d/escenarios_sim.js llama fraccion(f)): las cubiertas se abren desde Bavaria Común hacia afuera, donde se forman
      los promotores, con algo de azar; ORD[ti] en [0, 1] y solo se dibujan las cubiertas con ORD <= frac */
   const ORD = new Map(); { const BAV = [4136, 96], L = [...new Set(Object.values(INST).flat().map(p => p[5]))].map(ti => { const c = TCEN.get(ti) || [0, 0, 0]; return [ti, Math.hypot(c[0] - BAV[0], c[2] - BAV[1]) * (0.75 + rnd() * 0.5)]; }).sort((a, b) => a[1] - b[1]);
-    L.forEach(([ti], i) => ORD.set(ti, L.length > 1 ? i / (L.length - 1) : 0)); }
+    L.forEach(([ti], i) => ORD.set(ti, (i + 1) / L.length)); }
   let frac = 1;
   /* CUBIERTA VERDE: cada techo con huerta queda entero de verde (techo vegetal de pasto y sedum entre los racks). Una sola malla para todos los
      techos; cada vértice lleva el orden de apertura de su techo (aOrd) y el sombreador descarta los techos que aún no se abren (uFrac) */
@@ -368,6 +368,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
       sucioFrac = true; if (grupo.visible && performance.now() - tFrac > 330) { tFrac = performance.now(); sucioFrac = false; ultimo = null; recalcular(); } }, // tope ~3 veces/s; el resto lo hace el tick de cuadro()
     get frac() { return frac; },
     centros: () => [...ORD].map(([ti, o]) => [TCEN.get(ti), o]), // [centro, orden] de cada cubierta con huerta
+    ordenes: () => new Map(ORD), // índice original de cubierta -> fase de instalación, para sincronizar el mapa y el 3D
     ver: (on) => { grupo.visible = on; panel.style.display = on ? 'flex' : 'none'; const v = on ? '1' : '0'; if (panel.dataset.on !== v) { panel.dataset.on = v; dispatchEvent(new Event('dock-cambio')); } if (on) { ultimo = null; recalcular(); } }
   };
 }

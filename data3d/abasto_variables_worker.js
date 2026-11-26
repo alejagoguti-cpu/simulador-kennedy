@@ -14,14 +14,22 @@ async function calcular() {
   try {
     await listo;
     const E = S.crear(2, 1, actual.valores), serie = [];
-    for (let i = 0; i < 520; i++) {
-      S.paso(E);
-      if ((i + 1) % 52 !== 0) continue;
+    const metaAutoconsumo = E.ab01.auto;
+    const muestra = anio => {
       const I = S.ind(E), A = I.abasto, go = S.gameOver(E);
-      serie.push({ anio:(i + 1) / 52, cobertura:A.ab01.cobK * 100,
+      return { anio, cobertura:A.ab01.cobK * 100,
         peorZona:A.ab01.zMin * 100, cargaCorabastos:A.cora.carga * 100,
         mercados:A.mercados.filter(m => m.activo).length,
-        gameOver:go ? { regla:go.regla, sem:go.sem, motivo:go.motivo, lugar:go.lugar } : null });
+        gameOver:go ? { regla:go.regla, sem:go.sem, motivo:go.motivo, lugar:go.lugar } : null };
+    };
+    E.ab01.auto = 0;
+    S.paso(E); // semana 1 como lectura inicial; ind() requiere un paso previo
+    serie.push(muestra(0));
+    for (let i = 1; i < 520; i++) {
+      E.ab01.auto = metaAutoconsumo * (i + 1) / 520;
+      S.paso(E);
+      if ((i + 1) % 52 !== 0) continue;
+      serie.push(muestra((i + 1) / 52));
     }
     postMessage({ id: actual.id, serie });
   } catch (error) { postMessage({ id: actual.id, error: String(error.message || error) }); }

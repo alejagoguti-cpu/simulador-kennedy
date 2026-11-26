@@ -41,11 +41,12 @@ Consulta realizada el 25 de noviembre de 2026. El archivo
   indicadores de abastecimiento sobre el panorama. El edificio elegido es el
   más cercano al punto de Corabastos entre los verificados con exactamente
   15 pisos: 1,46 km; no se presenta como contiguo.
-- La tercera vista recalcula 520 semanas con el motor existente, permite
-  recorrer los 10 años y muestra su condición de game over cuando ocurre.
-  El número de cubiertas verdes que aparece con el deslizador de autoconsumo
-  es una visualización proporcional de ese supuesto, no un cálculo de
-  producción ni de capacidad de cubierta.
+- La tercera vista recalcula 520 semanas con el motor existente. Play instala
+  una a una las cubiertas planas con módulos durante los 10 años, mueve los
+  indicadores y se detiene en el game over. El reparto de instalaciones en el
+  tiempo es una visualización supuesta. La meta de autoconsumo del deslizador
+  se aplica gradualmente al modelo semanal; no se deriva de la cantidad de
+  cubiertas ni calcula producción o capacidad física.
 
 ## Estado del código existente
 

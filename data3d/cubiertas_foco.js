@@ -51,6 +51,8 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
   const mercado = T3.llAMundo(-74.15916, 4.63069);
   const centro = t => [t.W.reduce((s, p) => s + p[0], 0) / t.W.length, t.W.reduce((s, p) => s + p[1], 0) / t.W.length];
   const exactos = techos.filter(t => t.pisos === 15);
+  const ordenes = hidro.ordenes();
+  const planos = techos.map((techo, i) => ({ techo, orden: ordenes.get(i) })).filter(x => x.orden != null);
   const elegido = exactos.sort((a, b) => {
     const ca = centro(a), cb = centro(b);
     return Math.hypot(ca[0] - mercado[0], ca[1] - mercado[1]) - Math.hypot(cb[0] - mercado[0], cb[1] - mercado[1]);
@@ -77,9 +79,10 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     <p class="cf-note">Corte esquemático, sin escala vertical del edificio. Módulos blancos como referencia visual aportada.</p>
     <button type="button" id="cf-variables-ir">Cambiar variables →</button><button type="button" class="cf-return" id="cf-volver">← Ver todas</button></div>
     <div class="cf-variables"><div class="cf-kicker">02 / Simulación · 10 años</div><h2>¿Qué cambia al intervenir?</h2>
-    <p>Mueve las variables. Los indicadores se recalculan con el modelo semanal del escenario 01; el número de cubiertas verdes es una visualización proporcional del autoconsumo supuesto.</p>
+    <p>Al reproducir, las cubiertas planas con módulos aparecen una a una durante diez años. Los indicadores salen del modelo semanal. El autoconsumo es un supuesto independiente que puedes ajustar.</p>
     <div id="cf-controles">Cargando variables…</div>
     <button type="button" id="cf-play">▶ Reproducir 10 años</button>
+    <div class="cf-data" id="cf-instaladas" aria-live="polite">0 / ${planos.length} cubiertas instaladas</div>
     <div class="cf-trace" id="cf-trace" aria-label="Cobertura de la zona peor servida, años uno a diez"></div>
     <div class="cf-metrics" aria-live="polite"><div><strong id="cf-cob">—</strong><small>Cobertura Kennedy</small></div><div><strong id="cf-peor">—</strong><small>Zona peor servida</small></div><div><strong id="cf-cora">—</strong><small>Carga de Corabastos</small></div><div><strong id="cf-merc">—</strong><small>Mercados activos</small></div></div>
     <div class="cf-data" id="cf-estado">Esperando cálculo…</div>
@@ -92,7 +95,7 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
   panel.querySelector('#cf-play').addEventListener('click', reproducir);
 
   let activo = false, fase = 'overview', frame = 0, vistaGeneral = null;
-  let worker = null, solicitud = 0, demora = null, variablesListas = false, fraccionVisual = 1;
+  let worker = null, solicitud = 0, demora = null, variablesListas = false, fraccionVisual = 0;
   let serie = [], reproduccion = null, valoresActuales = {};
   const p = new THREE.Vector3();
   const modulos = (() => {
@@ -115,7 +118,7 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, ancho, alto);
     const rect = canvas3d.getBoundingClientRect();
     const pulso = 0.5 + 0.5 * Math.sin(tiempo * .003);
-    const visibles = fase === 'detail' ? (elegido ? [elegido] : []) : fase === 'variables' ? techos.slice(0, Math.round(techos.length * fraccionVisual)) : techos;
+    const visibles = fase === 'detail' ? (elegido ? [elegido] : []) : fase === 'variables' ? planos.filter(x => x.orden <= fraccionVisual).map(x => x.techo) : techos;
     for (const t of visibles) {
       const puntos = t.W.map(([x,z]) => {
         p.set(x,t.h - .7,z).project(T3.camera);
@@ -173,6 +176,7 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     if (!activo) return;
     destacarTorres(false);
     fase = 'variables'; panel.dataset.phase = fase;
+    hidro.fraccion(0); fraccionVisual = 0;
     canvas3d.style.filter = 'grayscale(1) brightness(.72)';
     if (vistaGeneral) T3.anim = { t:0, dur:2.2, p0:T3.camera.position.clone(), c0:T3.orbit.target.clone(), p1:vistaGeneral.p.clone(), c1:vistaGeneral.c.clone() };
     overlay.style.display = 'block'; cancelAnimationFrame(frame); frame = requestAnimationFrame(dibujar);
@@ -182,14 +186,14 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
       const sim = await import('./simulaciones12.js?v=ab01');
       const controles = panel.querySelector('#cf-controles');
       const sliders = sim.SIMS.find(s => s.id === 2).sliders;
-      controles.innerHTML = sliders.map(s => `<label class="cf-slider"><span>${s.n}<output data-v="${s.k}">${s.val} ${s.unidad}</output></span><input type="range" data-k="${s.k}" min="${s.min}" max="${s.max}" step="${s.paso}" value="${s.val}" aria-label="${s.n}" title="${s.ayuda}"></label>`).join('') + '<label class="cf-slider"><span>Año de lectura<output data-v="anio">10</output></span><input type="range" data-k="anio" min="1" max="10" step="1" value="10" aria-label="Año de lectura"></label>';
-      worker = new Worker(new URL('./abasto_variables_worker.js?v=2', import.meta.url), { type:'module' });
+      controles.innerHTML = sliders.map(s => `<label class="cf-slider"><span>${s.n}<output data-v="${s.k}">${s.val} ${s.unidad}</output></span><input type="range" data-k="${s.k}" min="${s.min}" max="${s.max}" step="${s.paso}" value="${s.val}" aria-label="${s.n}" title="${s.ayuda}"></label>`).join('') + '<label class="cf-slider"><span>Año de lectura<output data-v="anio">0</output></span><input type="range" data-k="anio" min="0" max="10" step="0.001" value="0" aria-label="Año de lectura"></label>';
+      worker = new Worker(new URL('./abasto_variables_worker.js?v=3', import.meta.url), { type:'module' });
       worker.onmessage = ({data}) => {
         if (data.id !== solicitud || !activo || fase !== 'variables') return;
         const estado = panel.querySelector('#cf-estado');
         if (data.error) { estado.textContent = 'No se pudo calcular: ' + data.error; return; }
         serie = data.serie;
-        panel.querySelector('#cf-trace').innerHTML = serie.map((p,i) => `<i data-year="${i+1}" data-go="${p.gameOver?1:0}" style="height:${Math.max(4,Math.min(100,p.peorZona))}%" title="Año ${i+1}: zona peor servida ${p.peorZona.toFixed(1)} %"></i>`).join('');
+        panel.querySelector('#cf-trace').innerHTML = serie.slice(1).map((p,i) => `<i data-year="${i+1}" data-go="${p.gameOver?1:0}" style="height:${Math.max(4,Math.min(100,p.peorZona))}%" title="Año ${i+1}: zona peor servida ${p.peorZona.toFixed(1)} %"></i>`).join('');
         mostrarAnio();
       };
       controles.addEventListener('input', event => {
@@ -213,24 +217,26 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
   }
   function mostrarAnio() {
     const input = panel.querySelector('#cf-controles input[data-k="anio"]'); if (!input) return;
-    const anio = Number(input.value), dato = serie[anio-1];
-    fraccionVisual = Math.max(0, Math.min(1, (valoresActuales.autoconsumo || 0) / 30 * anio / 10));
+    const anio = Number(input.value), anterior = serie[Math.floor(anio)], siguiente = serie[Math.ceil(anio)];
+    fraccionVisual = Math.max(0, Math.min(1, anio / 10));
     hidro.fraccion(fraccionVisual);
-    panel.querySelector('#cf-controles [data-v="anio"]').textContent = String(anio);
-    panel.querySelectorAll('#cf-trace i').forEach((el,i) => el.dataset.active = i+1 === anio ? '1' : '0');
-    if (!dato) return;
+    panel.querySelector('#cf-instaladas').textContent = `${planos.filter(x => x.orden <= fraccionVisual).length} / ${planos.length} cubiertas instaladas · despliegue visual supuesto`;
+    panel.querySelector('#cf-controles [data-v="anio"]').textContent = anio.toFixed(1).replace('.', ',');
+    panel.querySelectorAll('#cf-trace i').forEach((el,i) => el.dataset.active = i+1 === Math.ceil(anio) ? '1' : '0');
+    if (!anterior || !siguiente) return;
+    const f = anio - Math.floor(anio), interp = k => anterior[k] + (siguiente[k] - anterior[k]) * f;
     const pct = x => Number.isFinite(x) ? x.toFixed(1).replace('.', ',') + ' %' : '—';
-    panel.querySelector('#cf-cob').textContent = pct(dato.cobertura);
-    panel.querySelector('#cf-peor').textContent = pct(dato.peorZona);
-    panel.querySelector('#cf-cora').textContent = pct(dato.cargaCorabastos);
-    panel.querySelector('#cf-merc').textContent = String(dato.mercados);
+    panel.querySelector('#cf-cob').textContent = pct(interp('cobertura'));
+    panel.querySelector('#cf-peor').textContent = pct(interp('peorZona'));
+    panel.querySelector('#cf-cora').textContent = pct(interp('cargaCorabastos'));
+    panel.querySelector('#cf-merc').textContent = String(Math.round(interp('mercados')));
     const estado = panel.querySelector('#cf-estado');
-    estado.classList.toggle('cf-go', !!dato.gameOver);
-    estado.textContent = dato.gameOver ? `GAME OVER · semana ${dato.gameOver.sem} · ${dato.gameOver.motivo}` : `Año ${anio} · escenario en curso · cálculo semanal`;
-    if (dato.gameOver && reproduccion) pausar();
+    const gameOver = siguiente.gameOver && anio >= siguiente.gameOver.sem / 52 ? siguiente.gameOver : null;
+    estado.classList.toggle('cf-go', !!gameOver);
+    estado.textContent = gameOver ? `GAME OVER · semana ${gameOver.sem} · ${gameOver.motivo}` : `Año ${anio.toFixed(1).replace('.', ',')} · escenario en curso · cálculo semanal`;
   }
   function pausar() {
-    if (reproduccion) clearInterval(reproduccion);
+    if (reproduccion) cancelAnimationFrame(reproduccion);
     reproduccion = null;
     panel.querySelector('#cf-play').textContent = '▶ Reproducir 10 años';
   }
@@ -238,15 +244,24 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     if (reproduccion) { pausar(); return; }
     if (!serie.length) return;
     const input = panel.querySelector('#cf-controles input[data-k="anio"]');
-    input.value = '1'; mostrarAnio();
-    if (serie[0].gameOver) return;
+    if (Number(input.value) >= 10) { input.value = '0'; mostrarAnio(); }
+    const desde = Number(input.value), inicio = performance.now();
+    const primerGameOver = serie.find(p => p.gameOver)?.gameOver;
+    const fin = primerGameOver ? Math.min(10, primerGameOver.sem / 52) : 10;
+    if (desde >= fin) { input.value = '0'; mostrarAnio(); }
+    const origen = Number(input.value);
     panel.querySelector('#cf-play').textContent = 'Ⅱ Pausar';
-    reproduccion = setInterval(() => {
-      const siguiente = Number(input.value) + 1;
-      if (siguiente > 10) { pausar(); return; }
-      input.value = String(siguiente); mostrarAnio();
-      if (siguiente === 10) pausar();
-    }, 1300);
+    const avanzar = ahora => {
+      input.value = String(Math.min(fin, origen + (ahora - inicio) / 1600));
+      mostrarAnio();
+      if (Number(input.value) >= fin - .001) {
+        input.value = String(Math.ceil(fin * 1000) / 1000);
+        mostrarAnio();
+        pausar();
+      }
+      else reproduccion = requestAnimationFrame(avanzar);
+    };
+    reproduccion = requestAnimationFrame(avanzar);
   }
   function destacarTorres(on) {
     for (const im of hidro.grupo.children) if (im.userData.tipo === 'torre') {
