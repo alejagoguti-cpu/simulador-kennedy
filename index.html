@@ -2090,6 +2090,20 @@ function usoDe0(b) { /* código de uso (0 = sin dato) por la celda de 2 m del ce
 }
 function buildChunks(THREE, B) {
   const torresFoto = [];
+  if (KEN && !LIVIANO && !T3.roof2Group) {
+    T3.roof2Group = new THREE.Group(); T3.roof2Group.name = 'huertas-cubiertas-2-pisos';
+    T3.roof2Group.visible = false; T3.scene.add(T3.roof2Group);
+    T3.roof2Frac = { value: 0 }; T3.roof2Orders = []; T3.roof2Example = null;
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -5 });
+    material.userData._gris = true; // las cubiertas intervenidas conservan el verde en los recorridos
+    material.onBeforeCompile = sh => {
+      sh.uniforms.uRoof2Frac = T3.roof2Frac;
+      sh.vertexShader = 'attribute float aOrden; varying float vOrden; varying vec2 vPlano;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vOrden = aOrden; vPlano = position.xz;');
+      sh.fragmentShader = 'uniform float uRoof2Frac; varying float vOrden; varying vec2 vPlano;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n if (vOrden > uRoof2Frac) discard; float surco = step(0.45, fract(vPlano.x * 0.52)); diffuseColor.rgb = mix(vec3(0.16, 0.49, 0.19), vec3(0.72, 0.93, 0.47), surco);');
+    };
+    material.customProgramCacheKey = () => 'huertas-2-pisos-v1';
+    T3.roof2Material = material;
+  }
   const CELL = LIVIANO ? 350 : KEN ? 500 : 1500; // bloques de 500 m: la tarjeta gráfica descarta los que quedan fuera de la vista (antes 1.500 m: casi todo se dibujaba siempre)
   const cells = new Map();
   let skipped = 0, total = 0;
@@ -2113,7 +2127,7 @@ function buildChunks(THREE, B) {
   if (!T3.edificios) T3.edificios = [];
   const techosHuerta = []; // Kennedy: terrazas de los edificios de más de 5 pisos (>= 6 pisos de 3 m) que se vuelven huerta
   for (const list of cells.values()) {
-    const P = [], C = [], I = [], WL = [], BDc = [], BDr = [], BID = [], PR = { tanque: [], antena: [], claraboya: [] };
+    const P = [], C = [], I = [], WL = [], BDc = [], BDr = [], BID = [], PR = { tanque: [], antena: [], claraboya: [] }, P2 = [], O2 = [];
     let vc = 0;
     for (const bi of list) {
       const b = B[bi], h = b.h, ring = b.pts.slice(0, -1), n = ring.length;
@@ -2155,6 +2169,13 @@ function buildChunks(THREE, B) {
       else try { tri = THREE.ShapeUtils.triangulateShape(WT.map(q => new THREE.Vector2(q[0], q[1])), []); } catch (e) {}
       if (tri.length) { for (const t of tri) I.push(base + 2 * n + 1 + t[0], base + 2 * n + 1 + t[1], base + 2 * n + 1 + t[2]); }
       else for (let i = 0; i < n; i++) I.push(base + 2 * n, base + 2 * n + 1 + i, base + 2 * n + 1 + (i + 1) % n);
+      if (T3.roof2Group && h === 6 && Wi && tri.length) {
+        const orden = ((Math.sin(bi * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1;
+        for (const t of tri) for (const j of t) { P2.push(WT[j][0], hT + 0.06, WT[j][1]); O2.push(orden); }
+        T3.roof2Orders.push(orden);
+        const dist = Math.hypot(cx - 896, cz - 1146);
+        if (!T3.roof2Example || dist < T3.roof2Example.dist) T3.roof2Example = { W: WT, h: hT + 0.06, dist, pisos: 2, estimado: true };
+      }
       vc = base + 3 * n + 1;
       if (Wi) { // remate del antepecho (anillo plano entre el borde y el offset) y su cara interior hasta la losa
         const cR = [0.86, 0.85, 0.82], cI = [col.w[0] * 0.72, col.w[1] * 0.72, col.w[2] * 0.72]; // remate de concreto claro de 75 cm
@@ -2187,6 +2208,10 @@ function buildChunks(THREE, B) {
     const bm = new THREE.Mesh(g, mat);
     bm.castShadow = !LIVIANO; bm.receiveShadow = !LIVIANO;
     T3.scene.add(bm);
+    if (P2.length) {
+      const gp = new THREE.BufferGeometry(); gp.setAttribute('position', new THREE.Float32BufferAttribute(P2, 3)); gp.setAttribute('aOrden', new THREE.Float32BufferAttribute(O2, 1)); gp.computeBoundingSphere();
+      const mp = new THREE.Mesh(gp, T3.roof2Material); mp.frustumCulled = true; mp.renderOrder = 5; T3.roof2Group.add(mp);
+    }
     if (KEN && !LIVIANO) objetosTecho(THREE, bm, PR);
     g.computeBoundingSphere(); T3.edificios.push({ mesh: bm, cx: g.boundingSphere.center.x, cz: g.boundingSphere.center.z, r: g.boundingSphere.radius });
   }
@@ -3790,7 +3815,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=43'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=44'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3802,7 +3827,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       // selector ESTADO ACTUAL / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
       import('./data3d/escenario.js?v=118').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
-      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=154').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=155').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
       ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=7'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas

@@ -323,8 +323,11 @@ export function crearCapas01({ T3 }) {
   function ponerHidro() { const H = window.KEN_HIDRO, U = I && I.propuesta && I.abasto && I.abasto.ab01;
     if (!U || U.nH == null) { if (window.KEN_HIDRO_FIJA != null) { window.KEN_HIDRO_FIJA = null; hidroUlt = -1; if (H && hidroPrendida && H.ver) H.ver(false); hidroPrendida = false; } return; }
     if (!H && !hidroPedida && T3.EST && T3.EST.hidroponia) { hidroPedida = true; try { T3.EST.hidroponia(true); } catch (e) { console.warn('huertas 01:', e); } } /* la 01 las arma si no estaban */
-    if (!H || !H.fraccion || !(H.techos > 0)) return; if (!hidroPrendida) { hidroPrendida = true; if (H.ver) H.ver(true); } const f = Math.max(0, Math.min(1, U.nH / H.techos)); window.KEN_HIDRO_FIJA = f;
-    if (Math.abs(f - hidroUlt) > 1e-6) { hidroUlt = f; if (H.ver && !(H.grupo && H.grupo.visible)) H.ver(true); H.fraccion(f); } }
+    if (!H || !H.fraccion || !(H.techos > 0)) return; if (!hidroPrendida) { hidroPrendida = true; if (H.ver) H.ver(true); }
+    const elegibles = Math.max(1, H.cubiertasElegibles ? H.cubiertasElegibles() : H.techos);
+    const meta = U.nHMeta ?? U.nH, progreso = Math.max(0, Math.min(1, (U.sem || 0) / 520));
+    const f = Math.max(0, Math.min(1, meta / elegibles)) * progreso; window.KEN_HIDRO_FIJA = f;
+    if (Math.abs(f - hidroUlt) > 1e-6) { hidroUlt = f; if (H.ver && !(H.grupo?.visible || T3.roof2Group?.visible)) H.ver(true); H.fraccion(f); } }
   const api = window.KEN_AB01C = {
     estado, grupo: raiz,
     poner(x) { I = x || null; raiz.visible = !!I; ponerHidro(); if (!I) return; raiz.traverse(o => { o.castShadow = false; o.receiveShadow = false; }); /* v4: nada de esta capa proyecta sombras (cuadros oscuros sobre el agua) */

@@ -19,8 +19,9 @@ export function conclusionPar({ H, B = null, go = null, def = {}, parametros = {
   const estado = go ? 'go' : 'sostenible', VERD = { go: 'No sostenible', sostenible: 'Sostenible' };
   /* 1 · qué se cambió */
   const dec = (s) => (s.paso < 1 ? 2 : 0);
-  const cambios = sl.filter(s => parametros[s.k] != null && Math.abs(+parametros[s.k] - s.val) > 1e-9).map(s => `${s.n} ${nf(parametros[s.k], dec(s))} ${s.unidad} (por defecto ${nf(s.val, dec(s))})`);
-  const t1 = cambios.length ? `Se cambió: ${cambios.join('; ')}. Lo demás quedó por defecto.` : `Valores por defecto: ${sl.map(s => `${s.n} ${nf(s.val, dec(s))} ${s.unidad}`).join('; ')}.`;
+  const valor = (s, v) => s.opciones ? (s.opciones.find(o => o[0] === +v)?.[1] || '—') : `${nf(v, dec(s))}${s.unidad ? ' ' + s.unidad : ''}`;
+  const cambios = sl.filter(s => parametros[s.k] != null && Math.abs(+parametros[s.k] - s.val) > 1e-9).map(s => `${s.n}: ${valor(s, parametros[s.k])} (por defecto ${valor(s, s.val)})`);
+  const t1 = cambios.length ? `Se cambió: ${cambios.join('; ')}. Lo demás quedó por defecto.` : `Valores por defecto: ${sl.map(s => `${s.n}: ${valor(s, s.val)}`).join('; ')}.`;
   /* 2 · qué pasó: cada gráfica del panel, del año 1 al final */
   const t2 = C.graf.map(g => { const q = g.s[0], a = val(q.f, A1), b = val(q.f, L); return a == null || b == null ? null : `${g.t.replace(/^¿|\?$/g, '')}: ${g.fmt(a)} en el año 1 → ${g.fmt(b)} en el año ${añoDe(L.sem)}`; }).filter(Boolean).join('. ') + '.';
   /* 3 · si aguantó */

@@ -44,7 +44,7 @@ const ICO = {
 };
 
 let M = null;
-const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=39').then(m => (M = m));
+const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=40').then(m => (M = m));
 /* par 01: diapositivas «Datos» y «Fuentes» con las cifras del dossier (docs/fuentes_abastecimiento.md; simulaciones12.js AB01 y AB01_FUENTES) */
 function slides01() {
   const A = M.AB01, F = M.AB01_FUENTES || []; if (!A) return [];
@@ -78,7 +78,8 @@ function slidesDe(par, con) {
       ${cad.map((t, i) => `<li><small>${String(i + 1).padStart(2, '0')}</small><b>${esc(t)}</b></li>`).join('')}
     </ol>`;
   const capas = (HISTORIA[par] || []).map(k => `<span class="sl-chip">${esc(CAPA_N[k] || k)}</span>`).join('');
-  const vars = sl.map(s => { const f = Math.max(0, Math.min(1, (s.val - s.min) / ((s.max - s.min) || 1)));
+  const vars = sl.map(s => { if (s.opciones) return `<li><div class="sl-vh"><b>${esc(s.n)}</b><span>${esc(s.opciones.find(o => o[0] === s.val)?.[1] || '—')}</span></div>${s.ayuda ? `<p>${esc(s.ayuda)}</p>` : ''}</li>`;
+    const f = Math.max(0, Math.min(1, (s.val - s.min) / ((s.max - s.min) || 1)));
     return `<li><div class="sl-vh"><b>${esc(s.n)}</b><span>${num(s.val)} <small>${esc(s.unidad || '')}</small></span></div>
       <div class="sl-rango" style="--f:${(f * 100).toFixed(1)}%"><i></i></div>
       <div class="sl-vr"><span>${num(s.min)}</span><span>${num(s.max)}</span></div>

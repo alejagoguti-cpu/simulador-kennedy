@@ -311,8 +311,9 @@ export function paso(s, PAR) {
   /* ---- RESIDUOS orgánicos: pendientes de tratamiento vs. capacidad de almacenamiento ---- */
   const gen = (POB_K * popF + planPers) * SUP.KG_ORG * 7, cob = prop ? SUP.COB * r0 : 0;
   const sep = prop ? gen * cob * P2.frac * s.adopc : 0, casa = !prop ? gen * 0.02 * s.adopc : 0; // A: 2 % se composta en casa (no queda pendiente)
-  const capComp = prop ? NM * P2.cap * r0 : 0; // B: una planta en Bavaria · C: una estación por nodo abierto (la misma suma)
-  let fr = 0, fc = 0; for (let z = 0; z < NZ; z++) { fr += SHARE[z] * fe(z, JD); fc += SHARE[z] * (e === 'B' ? fe(z, JB) : e === 'C' ? fe(z, 3 + NODO_Z[z]) : 1); } // ruta media al relleno y al compost
+  const estacionObjetivo = e === 'C' && MF && Number.isInteger(MF.estacionObjetivo) ? MF.estacionObjetivo : -1;
+  const capComp = prop ? (estacionObjetivo >= 0 ? (t >= MERC_D[estacionObjetivo].desde ? 1 : 0) : NM) * P2.cap * r0 : 0; // una estación elegida o toda la red
+  let fr = 0, fc = 0; for (let z = 0; z < NZ; z++) { fr += SHARE[z] * fe(z, JD); fc += SHARE[z] * (e === 'B' ? fe(z, JB) : e === 'C' ? fe(z, 3 + (estacionObjetivo >= 0 ? estacionObjetivo : NODO_Z[z])) : 1); } // ruta media al relleno y al compost
   const inR = gen - sep - casa; s.pr += inR; const colR = Math.min(s.pr, s.Kr * fr); s.pr -= colR;
   s.pcs += sep; const colC = Math.min(s.pcs, s.Kcs * fc); s.pcs -= colC; s.pcp += colC;
   const trat = Math.min(s.pcp, capComp); s.pcp -= trat; const Sp = SUP.SEM_PLANTA * capComp; let rechazo = 0;

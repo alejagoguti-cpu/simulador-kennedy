@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=39'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=40'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -61,6 +61,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   .su-sl input[type=range] { width: 100%; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #ffb347 var(--p,50%), rgba(255,255,255,.18) var(--p,50%)); outline: none; }
   .su-sl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #ffb347; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer; }
   .su-sl input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #ffb347; cursor: pointer; }
+  .su-sl select { width:100%;padding:8px 10px;background:#172a29;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:7px;font:12px system-ui,sans-serif; }
   #su-inds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .su-ind { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'n n' 'v c' 'x x' 's s'; gap: 2px 6px; align-items: end; padding: 7px 8px 5px; border-radius: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.07); border-left: 2px solid transparent; }
   .su-ind.mueve.bien { border-left-color: #8ee6a8; } .su-ind.mueve.mal { border-left-color: #ff8a80; }
@@ -312,7 +313,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
     const p01 = !!(d && d.par === 1), pN = !!(d && d.par >= 2 && d.par <= 6);
     der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">${d.prueba}</p>` : ''}${p01 ? AB01P.htmlArriba() : ''}
-      ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
+      ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label>${s.opciones ? `<select data-k="${s.k}" title="${s.ayuda || ''}" aria-label="${s.n}">${s.opciones.map(([v,n]) => `<option value="${v}" ${v === R.valores[s.k] ? 'selected' : ''}>${n}</option>`).join('')}</select>` : `<input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}">`}</div>`).join('') : ''}
       ${p01 ? AB01P.htmlAbajo(!!d.propuesta) : pN ? SP.htmlAbajo(d) : ''}
       <div id="su-inds" hidden></div>
       <h4>Informe</h4><div class="su-seg"><button data-inf>Ver informe ahora</button></div>`;
@@ -322,6 +323,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       inp.oninput = pinta;
       inp.onchange = () => { R.valores[inp.dataset.k] = +inp.value; recalcularAqui(); }; // la simulación se recalcula hasta el año en que va (sin volver al año 1) y los picos cambian
     });
+    der.querySelectorAll('select[data-k]').forEach(sel => {
+      sel.onchange = () => { const sl = d.sliders.find(x => x.k === sel.dataset.k); R.valores[sl.k] = +sel.value; der.querySelector(`[data-v="${sl.k}"]`).textContent = vfmt(sl, +sel.value); if (sl.k === 'tipoCubierta') dispatchEvent(new CustomEvent('ken-cubiertas-tipo', { detail: +sel.value })); recalcularAqui(); };
+    });
+    if (d.id === 2) dispatchEvent(new CustomEvent('ken-cubiertas-tipo', { detail: +(R.valores.tipoCubierta ?? 0) }));
     der.querySelectorAll('.su-lug button').forEach(b => b.onclick = () => irLugar(lugares()[+b.dataset.l], b));
     der.querySelectorAll('.su-seg[data-g] button').forEach(b => b.onclick = () => {
       const g = b.parentNode.dataset.g; b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
@@ -338,7 +343,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       tAb01 = t; try { SP.actualizar(der, R.hist, FIN, R.ecoBase || R.base, R.def); } catch (e) { console.warn('panel de la simulación:', e); } return; }
     if (!forzar && t - tAb01 < 250) { if (!pAb01) pAb01 = setTimeout(() => { pAb01 = 0; grafAb01(true); }, 260); return; }
     tAb01 = t; try { AB01P.actualizar(der, R.hist, FIN, R.ecoBase || R.base, !!(R.def && R.def.propuesta)); } catch (e) { console.warn('diagrama 01:', e); } }
-  const vfmt = (s, v) => (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
+  const vfmt = (s, v) => s.opciones ? (s.opciones.find(o => o[0] === +v)?.[1] || '—') : (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
   /* RESULTADOS EN VIVO: una tarjeta por dato con el valor, cuánto cambió desde el año 1 (flecha y color: verde mejora, rojo empeora) y
      su curva con la línea punteada del año 1. Se compara con el año 1 (semana 52) y no con la semana 0: el modelo tarda ~40 semanas en
      asentarse. Se repinta como mucho 4 veces por segundo. */
@@ -610,7 +615,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
     /* simulación 01 (2026-11-26): capas Bodegas · Residuos · Tráfico (data3d/abasto_capas.js), una vez por semana simulada */
-    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=5').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
+    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=6').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
       else CAP01.poner(I); }
     else if (CAP01) { CAP01.poner(null); CAP01.ver(false); }
     if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=12').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }
@@ -975,7 +980,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=14');
+    try { const { abrirInforme2 } = await import('./informe.js?v=15');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];

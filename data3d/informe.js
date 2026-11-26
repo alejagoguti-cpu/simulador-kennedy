@@ -1,6 +1,6 @@
 import {adjuntarBalance} from './balance_final.js?v=3';
 import { conclusionAbasto } from './conclusion_abasto.js?v=6';
-import { conclusionPar } from './conclusion_par.js?v=2'; /* 02–06: veredicto binario y tarjetas con la misma lógica que la 01 (2026-11-26) */
+import { conclusionPar } from './conclusion_par.js?v=3'; /* 02–06: veredicto binario y tarjetas con la misma lógica que la 01 (2026-11-26) */
 import { PAR_LIM } from './sim_panel.js?v=1';
 import { TiempoRadial } from './graficas_arte.js?v=2'; // 2026-11-26: relojes de 15 años, línea de tiempo de burbujas y dona del veredicto (paleta URBIA + morados de la portada) // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============

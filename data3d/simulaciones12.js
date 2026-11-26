@@ -69,7 +69,7 @@
      motivo = el que anotó data3d/red_trofica.js al extinguirse en ese parche (sin recursos de la red, tráfico y ruido, tala, humedal degradado o
      azar demográfico). */
 import { redCompleta, evaluarEstado } from './evaluacion_ecologica.js?v=1';
-import * as V from './sim_vida.js?v=ab01';
+import * as V from './sim_vida.js?v=ab02';
 import { crearRed, MOTIVOS } from './red_trofica.js?v=2';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
@@ -336,7 +336,7 @@ const PAR_SL = {
   2: [sT0, sDur, { k: 'desvioMayo', n: 'Desvío a la Av. Primero de Mayo', min: 0, max: 100, paso: 5, val: 50, unidad: '%' /* 2026-11-26: menos texto; % del tráfico de la vía cerrada */, ayuda: 'Supuesto: no hay aforo del desvío. Es la única vía principal paralela a 2,5 km o menos en OpenStreetMap; el resto del tráfico se reparte por calles locales.' }, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
-  4: [{ k: 'parche', n: 'Parche que se pierde', min: 1, max: 4, paso: 1, val: 1, unidad: '1 El Burro · 2 Techo · 3 La Vaca · 4 Bosque de Bavaria', ayuda: 'Parche ecológico que pierde parte de su área.' },
+  4: [{ k: 'parche', n: 'Parche que se pierde', val: 1, opciones: [[1,'Humedal El Burro'],[2,'Humedal de Techo'],[3,'Humedal La Vaca'],[4,'Bosque de Bavaria']], ayuda: 'El lugar elegido recibe la pérdida de área y cambia la red de especies.' },
     { k: 'parchePerdida', n: 'Área del parche que se pierde', min: 10, max: 100, paso: 5, val: 50, unidad: '%', ayuda: 'Relleno, obra o fragmentación: la calidad del parche baja como la raíz del área que queda.' },
     { k: 'parcheT0', n: 'Semana en que se pierde', min: 1, max: 1000, paso: 1, val: 104, unidad: 'semana', ayuda: 'Semana del modelo en que ocurre la pérdida.' }, sArb, sRec],
   5: [{ k: 'presionSuelo', n: 'Presión inmobiliaria extra', min: 0, max: 10, paso: 0.5, val: 3, unidad: '%/año', ayuda: 'Alza anual extra del suelo en los sectores que crecen (junto a las estaciones del metro y a Bavaria) [SUP: la prueba].' },
@@ -346,12 +346,16 @@ const PAR_SL = {
     { k: 'P1.rotacion', n: 'Rotación de vocerías', min: 2, max: 52, paso: 1, val: 12, unidad: 'semanas', ayuda: 'Cada cuánto rota la vocería de las asambleas (con propuesta): rotar seguido evita el desgaste de las vocerías.' }, sPob(), { k: 'P1.cupos', n: 'Promotores por cohorte', min: 0, max: 40, paso: 1, val: 12, unidad: 'por trimestre', ayuda: 'Promotores que forma Bavaria Común cada 13 semanas (con propuesta).' }] };
 const SL_MERC = { k: 'mercados', n: 'Cantidad de mercados', min: 0, max: 50, paso: 1, val: 44, unidad: 'mercados', ayuda: 'Mercados de barrio de la propuesta: abren uno tras otro hasta el año 13,5. Capacidad de cada uno 28 t/día (215 puestos como la Plaza Distrital de Kennedy, Contraloría 2025); trabajan hasta 80 %. En parques, al sur de Corabastos y junto a torres con huertas.' };
 /* v3: huertas hidropónicas activas (solo con propuesta). Producción por huerta = 50 m² (SUP_SIMS.M2_HUERTA) × 6 kg/m²·año (P1.rend de sim_modelos.js)
-   [SUP: no hay rendimiento verificado de hidroponía en el proyecto, docs/escenario01_estado.md]. 50 por defecto = las cubiertas de la escena (E8). */
-const SL_HUERTAS = { k: 'huertasH', n: 'Huertas hidropónicas activas', min: 0, max: 2000, paso: 10, val: 50, unidad: 'huertas', ayuda: 'Cada una de 50 m² produce 0,82 kg/día (6 kg/m²·año, valor del modelo de huertas; supuesto: sin rendimiento verificado de hidroponía). Su producción baja la demanda que no cubre la red.' };
+   [SUP: no hay rendimiento verificado de hidroponía en el proyecto, docs/escenario01_estado.md]. 50 por defecto = módulos distribuidos entre las cubiertas elegibles; módulos y cubiertas son cantidades distintas. */
+const SL_HUERTAS = { k: 'huertasH', n: 'Meta de huertas hidropónicas al año 10', min: 0, max: 2000, paso: 10, val: 50, unidad: 'huertas', ayuda: 'Cada una de 50 m² produce 0,82 kg/día (6 kg/m²·año, valor del modelo de huertas; supuesto: sin rendimiento verificado de hidroponía). Se instalan de forma progresiva durante 10 años. Su producción baja la demanda que no cubre la red.' };
+const SL_CUBIERTAS = { k: 'tipoCubierta', n: 'Cubiertas donde instalar huertas', val: 0, opciones: [[0,'Edificios de 15 pisos · Catastro'],[1,'Edificios de 2 pisos · altura estimada']], ayuda: 'Cambia las cubiertas elegibles. Las de 2 pisos se identifican por los 6 m del modelo 3D, no por catastro verificado.' };
+const SL_ESTACION = { k: 'estacionObjetivo', n: 'Dónde instalar Estaciones Circulares', val: -1, opciones: [[-1,'Toda la red de mercados'], ...MERCADOS.map((M,k) => [k,M.n])], ayuda: 'Elegir un mercado limita la intervención, la capacidad y los recorridos a ese punto.' };
+const SL_SUELO = { k: 'zonaSuelo', n: 'Zona de presión y protección', val: -1, opciones: [[-1,'Todas las zonas de crecimiento'], ...METRO_SUP.EST.map((S,k) => [k,'Metro · '+S.n]), [METRO_SUP.EST.length,'Entorno de Bavaria']], ayuda: 'La presión extra y, con propuesta, la protección se aplican en el entorno elegido.' };
+const SL_BARRIO = { k: 'barrioPrioritario', n: 'Barrio priorizado para asignación', val: -1, opciones: [[-1,'Todos los sectores']], ayuda: 'Con propuesta, la asamblea del barrio elegido recibe doble peso en el reparto de recursos; los demás siguen participando.' };
 export const SIMS = [];
 for (const P of PARES) for (const prop of [false, true]) SIMS.push({ id: 2 * P.par - (prop ? 0 : 1), par: P.par, propuesta: prop, parN: P.n, prueba: P.prueba, capa: P.capa,
   n: P.n.slice(3) + (prop ? ' · con propuesta' : ' · sin propuesta'), corto: P.n.slice(3) + (prop ? ' · con' : ' · sin'), base: prop ? 'C' : 'A', grupo: prop ? 'propuesta' : 'actual',
-  pregunta: prop ? P.pregCon : P.pregSin, desc: prop ? P.con : P.sin, visible: P.visible, sliders: P.par === 1 && prop ? [...PAR_SL[1], SL_MERC, SL_HUERTAS] : PAR_SL[P.par] });
+  pregunta: prop ? P.pregCon : P.pregSin, desc: prop ? P.con : P.sin, visible: P.visible, sliders: P.par === 1 && prop ? [...PAR_SL[1], SL_MERC, SL_HUERTAS, SL_CUBIERTAS] : P.par === 3 && prop ? [...PAR_SL[3], SL_ESTACION] : P.par === 5 ? [...PAR_SL[5], SL_SUELO] : P.par === 6 && prop ? [...PAR_SL[6], SL_BARRIO] : PAR_SL[P.par] });
 /* SIMULACIONES BASE (fondo que siempre corre), sin prueba de estrés: 13 = Kennedy hoy (escenario D de sim_vida.js: estado actual + plan parcial Bavaria),
    14 = Kennedy con propuesta (escenario C). Condiciones normales: población +0,5 %/año [SUP: crecimiento moderado, Kennedy ya es una localidad consolidada], carros +1,5 %/año, recolección 84 %; sin corte,
    sin cierre, sin pérdida de parche, sin aumento de orgánicos, sin presión inmobiliaria extra ni falta de recursos. Las reglas de game over siguen activas. */
@@ -458,6 +462,7 @@ export function crear(id, semilla = 1, valores = {}) {
   const PAR = clonar(PRE.PAR); PAR.P1.cierres = SUP_SIMS.CIERRES_AL_AZAR; PAR.P1.crece = false; // la población crece con pobCrece (abajo)
   for (const [k, v] of Object.entries(val)) { const m = k.match(/^(P[123])\.(\w+)$/); if (m) PAR[m[1]][m[2]] = v; }
   const mod = { red: RED }, P = S.par;
+  if (P === 3 && S.propuesta && val.estacionObjetivo >= 0) mod.estacionObjetivo = Math.min(MERCADOS.length - 1, Math.round(val.estacionObjetivo));
   const metro = { red: SUP_SIMS.METRO_RED, desde: SUP_SIMS.METRO_SEM, F: PRE.metroF(SUP_SIMS.METRO_RED) }; // metro Línea 1 en TODAS (proyecto real)
   if (P === 2) mod.cierre = { via: SUP_SIMS.CIERRE_VIA, t0: Math.round(val.cierreT0), dur: Math.round(val.cierreDur) };
   // La restauración depende de las intervenciones del modelo, sin multiplicador por escenario.
@@ -550,7 +555,8 @@ function basuraPaso(E, t) {
   const fCora = o.dep / b.dep0, fPob = s.pob / V.POB_K, org = o.gen > 0 ? Math.min(1, (o.desv || 0) / o.gen) * B.ORGANICO : 0; // orgánicos que la red alcanza a tratar (sube con la capacidad de compost)
   // la fracción sin recoger crece con el arrojo clandestino; la red de la propuesta recoge la parte orgánica según sus nodos abiertos; los techos compostan en casa
   const prop = s.e === 'B' || s.e === 'C', fSin = Math.pow(1 + B.ARROJO_EXTRA, a) * (1 - b.rec) / (1 - B.RECOLECCION);
-  const capt = prop ? B.ORGANICO * Math.min(1, (o.nodos || 0) / MERCADOS.length) : E.techos ? B.ORGANICO * Math.max(Math.min(1, E.techos.m2 * s.supF / SUP_SIMS.M2_HUERTA * PLAN_BAV.PERS_HOG / s.pob), Math.min(1, a / (SUP_SIMS.TECHOS_SEM / 52))) : 0; // techos (sim. 12): los hogares con huerta compostan en casa y, además, Bavaria Común (instituto de tecnologías convergentes) enseña compostaje y abre puntos de compostaje y gestión de residuos al mismo ritmo que se montan los techos [SUP]: recoge la parte orgánica como la red
+  const nodosCaptura = E.par === 3 && E.mod.estacionObjetivo != null ? (t >= MERCADOS[E.mod.estacionObjetivo].desde ? 1 : 0) : (o.nodos || 0);
+  const capt = prop ? B.ORGANICO * Math.min(1, nodosCaptura / MERCADOS.length) : E.techos ? B.ORGANICO * Math.max(Math.min(1, E.techos.m2 * s.supF / SUP_SIMS.M2_HUERTA * PLAN_BAV.PERS_HOG / s.pob), Math.min(1, a / (SUP_SIMS.TECHOS_SEM / 52))) : 0; // techos (sim. 12): los hogares con huerta compostan en casa y, además, Bavaria Común (instituto de tecnologías convergentes) enseña compostaje y abre puntos de compostaje y gestión de residuos al mismo ritmo que se montan los techos [SUP]: recoge la parte orgánica como la red
   b.captura = capt; let acum = 0, capturado = 0;
   /* [SUP] par 01: Corabastos cerca de su tope = bodegas saturadas, más merma y más basura en su entorno y en los bordes de los humedales
      vecinos (La Vaca, El Burro): la generación de esos puntos se multiplica por (1 + 2·sat) en Corabastos y (1 + 0,45·sat) en los bordes, sat = (carga − 0,9) / 0,1 entre 0 y 1 */
@@ -584,10 +590,11 @@ const Z_SUELO = ZONAS.map((Z, z) => z).filter(z => Z_EST[z] > 0 || Z_PLAN[z] > 0
 function sueloIni(E) { return { prot: (E.par === 5 ? (E.prop ? E.val.proteccion || 0 : 0) : (E.prop ? SUELO_SUP.PROT_PROP : 0)) / 100, extra: E.par === 5 ? (E.val.presionSuelo || 0) / 100 : 0, idx: new Float32Array(NZ).fill(1), indice: 1, riesgo: 0 }; }
 function sueloPaso(E) {
   const S = SUELO_SUP, U = E.suelo, s = E.s, t = s.t, M = E.metro, fP = s.pob / V.POB_K;
-  const fM = t >= M.desde ? Math.min(1, (t - M.desde) / S.RAMPA) : 0, fPl = E.plan ? (E.o.plan ? E.o.plan.viviendas : 0) / 14002 : 0, cap = 1 - 0.5 * U.prot;
+  const fM = t >= M.desde ? Math.min(1, (t - M.desde) / S.RAMPA) : 0, fPl = E.plan ? (E.o.plan ? E.o.plan.viviendas : 0) / 14002 : 0;
   let riesgo = 0, num = 0, den = 0;
-  for (let z = 0; z < NZ; z++) { const sube = (S.P_METRO * fM * Z_EST[z] + S.P_PLAN * fPl * Z_PLAN[z] + U.extra * (t / V.AÑO) * Math.max(Z_EST[z], Z_PLAN[z])) * cap; U.idx[z] = 1 + sube; // par 05: presión extra en los sectores que crecen
-    const hog = ZONAS[z][2] / POB_Z * V.POB_K * fP / PLAN_BAV.PERS_HOG; riesgo += hog * S.ARRIENDO * Math.min(1, S.K_DESP * sube) * (1 - U.prot);
+  for (let z = 0; z < NZ; z++) { const objetivo = E.par === 5 ? Math.round(E.val.zonaSuelo ?? -1) : -1, peso = objetivo < 0 ? Math.max(Z_EST[z], Z_PLAN[z]) : objetivo < METRO_SUP.EST.length ? EST_W[objetivo][z] : Z_PLAN[z], prot = E.prop ? U.prot * (objetivo < 0 ? 1 : peso) : 0;
+    const sube = (S.P_METRO * fM * Z_EST[z] + S.P_PLAN * fPl * Z_PLAN[z] + U.extra * (t / V.AÑO) * peso) * (1 - 0.5 * prot); U.idx[z] = 1 + sube; // par 05: presión extra y protección en el lugar elegido
+    const hog = ZONAS[z][2] / POB_Z * V.POB_K * fP / PLAN_BAV.PERS_HOG; riesgo += hog * S.ARRIENDO * Math.min(1, S.K_DESP * sube) * (1 - prot);
     if (Z_EST[z] > 0 || Z_PLAN[z] > 0) { num += U.idx[z] * hog; den += hog; } }
   U.indice = den > 0 ? num / den : 1; U.riesgo = riesgo; }
 
@@ -630,9 +637,10 @@ function desvios(E, t) {
      de la parte proporcional a la población [SUP].
    · cada GOB.COSTO unidades acumuladas en un sector habilitan un equipamiento (huerta, Estación Circular, parque o salón comunal según la necesidad
      principal) que baja su necesidad 5 % [SUP]. equidad = 1 − Gini de la cobertura (asignado / necesidad) de los sectores, ponderado por población. */
-export const GOB_SUP = { BASE: 0.2, REZAGO_INFO: 26, PISO: 0.4, COSTO: 40, EQUIPO: 0.05, ARRASTRE: 0.5 };
+export const GOB_SUP = { BASE: 0.2, REZAGO_INFO: 26, PISO: 0.4, COSTO: 40, EQUIPO: 0.05, ARRASTRE: 0.5, PRIORIDAD: 2 };
 const GOB_BARRIOS = [{"n":"Sector San Carlos","x":296,"z":1365,"jac":{"n":"JAC San Carlos","x":345,"z":1206},"zonas":[2,3,9,10,11,12,18,19,20,25,26,27,28,29,34,35,36,37,38,44,45,46,47,48]},{"n":"Sector Ciudad Granada","x":-548,"z":-503,"jac":{"n":"JAC Ciudad Granada","x":-428,"z":-492},"zonas":[0,1,4,5,6,7,8,13,14,15,16,17,21,22,23,24,30]},{"n":"Sector Campo Hermoso","x":584,"z":-118,"jac":{"n":"JAC Campo Hermoso","x":366,"z":2},"zonas":[31,32,33,41,42,43,53,54,55,56]},{"n":"Sector Rincón de los Ángeles","x":2735,"z":100,"jac":{"n":"JAC Rincón de los Ángeles","x":2941,"z":360},"zonas":[66,67,74,75,76,77,84,85,86,87,88,97,98,99,100,109]},{"n":"Sector Francisco José de Caldas","x":1624,"z":1504,"jac":{"n":"JAC Urbanización Francisco José de Caldas","x":1584,"z":1313},"zonas":[57,58,59,60,68,69,70,71,78,79,80,89,90,91,101,102]},{"n":"Sector Visión de Colombia","x":3556,"z":-1166,"jac":{"n":"JAC Visión de Colombia","x":3702,"z":-1217},"zonas":[83,92,93,94,95,96,103,104,105,106,107,108,114,115,116,117,118,119,125,126,127]},{"n":"Sector Santa Paz","x":1370,"z":-1733,"jac":{"n":"JAC Santa Paz","x":1968,"z":-1649},"zonas":[39,40,49,50,51,52,61,62,63,64,65,72,73]},{"n":"Sector Aloha","x":4226,"z":815,"jac":{"n":"JAC Aloha","x":3934,"z":898},"zonas":[110,111,112,113,120,121,122,123,124,128,129,130,131,132,133]}];
 const GOB_POB = GOB_BARRIOS.map(b => b.zonas.reduce((a, z) => a + (ZONAS[z] ? ZONAS[z][2] : 0), 0) / POB_Z * V.POB_K);
+SL_BARRIO.opciones.push(...GOB_BARRIOS.map((B,k) => [k,B.n]));
 const FRAG_P = ['burro', 'techo', 'vaca', 'bosqueBav'].map(id => PARCHES.findIndex(p => p.id === id));
 const MOD_P = PARCHES.map((p, i) => /^mod/.test(p.t) && p.t !== 'modBavaria' ? i : -1).filter(i => i >= 0);
 const HAB_P = PARCHES.map((p, i) => !/^mod/.test(p.t) && !p.dyn ? i : -1).filter(i => i >= 0);
@@ -794,7 +802,7 @@ function ab01Paso(E) {
   for (const S of act) { const f = pide[S.k] > uMax ? uMax / pide[S.k] : 1;
     for (const [z, w] of S.zonas) { const q = AB_REST[z] * K.CAPTA * Math.min(1, AB_W[z]) * w / AB_W[z] * f; AB_MK[z] += q; A.uso[S.k] += q; } }
   // huertas hidropónicas (con propuesta): su producción se reparte por población y baja lo que falta en cada zona
-  const huertaP = A.nH * KV.HUERTA_T; let huertaT = 0, merc1 = 0;
+  const nHAct = A.nH * Math.min(1, sem / 520), huertaP = nHAct * KV.HUERTA_T; let huertaT = 0, merc1 = 0;
   for (let z = 0; z < NZ; z++) { merc1 += AB_MK[z]; if (huertaP > 0) { const q = Math.min(Math.max(0, AB_REST[z] - AB_MK[z]), huertaP * AB_SH[z]); AB_HU[z] = q; huertaT += q; } }
   // Corabastos: pedido de Kennedy y de la región; inventario semanal (stock y flujo)
   let RK = 0; for (let z = 0; z < NZ; z++) { AB_R[z] = Math.max(0, AB_REST[z] - AB_MK[z] - AB_HU[z]); RK += AB_R[z]; }
@@ -856,7 +864,7 @@ function ab01Paso(E) {
   const sectores = KV.SECTORES.map((S, i) => { let d = 0, r = 0; for (const z of S.zonas) { d += AB_NEED[z]; r += AB_GOT[z]; } const c = d > 0 ? r / d : 1; if (c < secMin) { secMin = c; secArg = i; }
     return { n: S.n, x: S.x, z: S.z, dem: d, rec: r, def: Math.max(0, d - r), cob: c }; });
   const vehDia = lleg / K.T_VEH;
-  A.ult = { sem, mes, est, g, pob, demK, autoT, mercT, huertaT, nH: A.nH, mercCap: act.length * K.MERC_T, nAct: act.length, regT, resto0: KV.RESTO0 * g, coraPedK: RK, coraK, resto, L, S: S_, ing, lleg, a0, tope, f,
+  A.ult = { sem, mes, est, g, pob, demK, autoT, mercT, huertaT, nH: nHAct, nHMeta: A.nH, mercCap: act.length * K.MERC_T, nAct: act.length, regT, resto0: KV.RESTO0 * g, coraPedK: RK, coraK, resto, L, S: S_, ing, lleg, a0, tope, f,
     invIni: inv0, inv, Tp, cC, cCiudad, fMerc, cola, desp: desp / 7, perd: perd / 7, sat: inv / KV.CAP, cap: KV.CAP, carga: inv / KV.CAP, cobK: demK > 0 ? rec / demK : 1, rec, zMin, sectores, secMin, secArg,
     bodMax: A.bodU.max, bodArg: A.bodU.arg, bodGlobal: A.bodU.global, kMax: BOD_KMAX,
     vehDia, tipos: K.TIPOS.map(T => ({ k: T.k, n: T.n, veh_dia: vehDia * T.p, t_dia: lleg * T.p * T.c / K.T_VEH_MEZCLA })),
@@ -1017,6 +1025,7 @@ function gobernanzaPaso(E, x) {
   else { const q = (1 - 0.3 * Math.min(1, E.PAR.P1.rotacion / 52)) * (s.prom >= 1 ? 1 : 0.7), pt = GOB_POB.reduce((a, v) => a + v, 0);
     for (let b = 0; b < 8; b++) w[b] = G.need[b] * (q + (1 - q) * ((b * 7 + G.rondas * 3) % 8) / 7); // reporte imperfecto: error determinista que rota con las rondas
     const sw = w.reduce((a, v) => a + v, 0) || 1; for (let b = 0; b < 8; b++) w[b] = Math.max(w[b] / sw, S.PISO * GOB_POB[b] / pt); }
+  if (E.prop && E.par === 6 && E.val.barrioPrioritario >= 0) w[Math.min(7, Math.round(E.val.barrioPrioritario))] *= S.PRIORIDAD;
   const sw = w.reduce((a, v) => a + v, 0) || 1; let gin = 0, cm = 0, pw = 0;
   for (let b = 0; b < 8; b++) { const a = R * w[b] / sw; G.asig[b] = a; G.acum[b] += a; G.cov[b] = G.need[b] > 0 ? Math.min(1, a / G.need[b]) : 1; G.rez[b] = Math.max(0, G.need[b] - a) * S.ARRASTRE;
     while (G.acum[b] >= S.COSTO * (G.eqn[b] + 1)) { G.eqn[b]++; const Bb = GOB_BARRIOS[b], k = G.eqn[b], ang = k * 2.4;
@@ -1047,7 +1056,7 @@ function indAbasto(E) { /* en todas las simulaciones (la línea del tope de Cora
 function indEstaciones(E) { if (E.par !== 3) return null;
   const o = E.o, s = E.s, t = s.t, H = { x: Math.round(KEN_XZ[0]), z: Math.round(KEN_XZ[1]) };
   const est = [{ n: 'Relleno Doña Juana', x: DJ_XZ[0], z: DJ_XZ[1], tipo: 'relleno', cap_t_dia: (s.Kr || 0) / 7000, tratado_t_dia: (o.relleno || 0) / 7000, acumulado_t: (s.pr || 0) / 1000 }], rec = [];
-  if (s.e === 'C') { const ab = MERCADOS.map((M, k) => k).filter(k => t >= MERCADOS[k].desde), n = Math.max(1, ab.length);
+  if (s.e === 'C') { const objetivo = E.par === 3 ? E.mod.estacionObjetivo : null, ab = MERCADOS.map((M, k) => k).filter(k => t >= MERCADOS[k].desde && (objetivo == null || k === objetivo)), n = Math.max(1, ab.length);
     for (const k of ab) est.push({ n: 'Estación Circular · ' + MERCADOS[k].n, x: Math.round(MERCADOS[k].x), z: Math.round(MERCADOS[k].z), tipo: 'estacion', cap_t_dia: E.PAR.P2.cap / 7000, tratado_t_dia: (o.desv || 0) / 7000 / n, acumulado_t: (s.pcp || 0) / 1000 / n });
     GOB_BARRIOS.forEach((B, b) => { let kb = -1, d = Infinity; for (const k of ab) { const e = Math.hypot(MERCADOS[k].x - B.x, MERCADOS[k].z - B.z); if (e < d) { d = e; kb = k; } }
       if (kb >= 0) rec.push({ de: { x: B.x, z: B.z }, a: { x: Math.round(MERCADOS[kb].x), z: Math.round(MERCADOS[kb].z) }, t_dia: (o.sep || 0) / 7000 * GOB_POB[b] / V.POB_K }); }); }

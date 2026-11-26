@@ -3,7 +3,7 @@
    de apertura proceden de MERCADOS; las cantidades salen de simulaciones12. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearGris } from './gris.js?v=1';
-import { SIMS } from './simulaciones12.js?v=39';
+import { SIMS } from './simulaciones12.js?v=40';
 import { MERCADOS } from './sim_red_datos.js?v=2';
 
 let actual = null;
@@ -12,6 +12,7 @@ const EXC = window.KEN_REC_EXCLUIR || (window.KEN_REC_EXCLUIR = []);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const num = (v, d = 1) => Number.isFinite(v) ? v.toLocaleString('es-CO', { minimumFractionDigits:d, maximumFractionDigits:d }) : '—';
 const limitar = (x, a, b) => Math.max(a, Math.min(b, x));
+const sitioSeleccionado = s => s.con ? MERCADOS[Math.max(0, +s.valores.estacionObjetivo)] : { x:1075,z:72 };
 
 function estilos() {
   if (document.getElementById('rr-css')) return;
@@ -44,6 +45,7 @@ function estilos() {
   #rr .rr-sl span{display:flex;justify-content:space-between;gap:8px}
   #rr .rr-sl output{font:600 12px monospace;color:var(--ac);white-space:nowrap}
   #rr input[type=range]{width:100%;accent-color:var(--ac)}
+  #rr select{width:100%;padding:10px;background:#193127;color:#eaf2ee;border:1px solid #658474;border-radius:8px;font:12px Inter,system-ui,sans-serif}
   #rr svg{width:100%;height:auto;display:block;background:#12221d;border:1px solid #3b5149;margin:13px 0}
   #rr .rr-go{color:#ff9a8d!important}
   @media(max-width:760px){#rr nav{top:8px;left:8px;transform:none}#rr nav button{padding:7px 8px;font-size:10px}#rr .rr-salir{top:8px;right:8px}#rr section,#rr[data-fase="detalle"] section,#rr[data-fase="variables"] section{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:54vh;padding:14px 16px}#rr h2{font-size:22px}#rr[data-fase="detalle"] svg{max-height:125px}}
@@ -53,7 +55,7 @@ function estilos() {
 
 function figura(s) {
   const { THREE, T3, con } = s, G = new THREE.Group();
-  const sitio = con ? MERCADOS[0] : { x:1075, z:72 };
+  const sitio = sitioSeleccionado(s); G.userData.sitio = sitio;
   const y = (T3.sueloY ?? 0.3) + 1.2;
   const base = new THREE.Mesh(new THREE.BoxGeometry(23, .8, 17), new THREE.MeshBasicMaterial({ color:0x758c81 })); base.position.set(sitio.x,y,sitio.z); G.add(base);
   const blanco = new THREE.MeshBasicMaterial({ color:0xe6f0e9 }), verde = new THREE.MeshBasicMaterial({ color:0x70d183 }), ambar = new THREE.MeshBasicMaterial({ color:0xf7b26d });
@@ -83,7 +85,7 @@ function estaciones3D(s) {
 
 function mostrarEstaciones(s) {
   const sem = s.fase === 'territorio' ? Infinity : s.fase === 'variables' ? s.anio * 52 : -1;
-  for (const n of s.estaciones.nodos) n.grupo.visible = n.desde <= sem;
+  for (const [k,n] of s.estaciones.nodos.entries()) n.grupo.visible = n.desde <= sem && (+s.valores.estacionObjetivo < 0 || k === +s.valores.estacionObjetivo);
 }
 
 function panel(s, html) { s.caja.innerHTML = html; s.caja.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => vista(s, b.dataset.ir)); }
@@ -98,33 +100,33 @@ function vista(s, fase) {
   mostrarEstaciones(s);
   if (fase !== 'detalle' && s.general) T3vuelo(s, s.general.p, s.general.c);
   if (fase === 'territorio') {
-    panel(s, `${cabecera(s,'01 / Territorio')}<h2>¿Dónde van los orgánicos?</h2><p>${s.con ? `El modelo ubica ${MERCADOS.length} Estaciones Circulares propuestas en los mercados de barrio. Sus puntos se iluminan cuando abren.` : 'Sin la red propuesta, los orgánicos siguen su recorrido hacia el relleno Doña Juana.'}</p><div class="rr-dato">Puntos de la red: datos del modelo · calendario de apertura: supuesto de simulación</div><div class="rr-acciones"><button class="rr-pri" data-ir="detalle">Explorar un punto →</button></div>`);
+    panel(s, `${cabecera(s,'01 / Territorio')}<h2>¿Dónde van los orgánicos?</h2><p>${s.con ? +s.valores.estacionObjetivo < 0 ? `El modelo ubica ${MERCADOS.length} Estaciones Circulares propuestas en los mercados de barrio. Sus puntos se iluminan cuando abren.` : `La intervención se concentra en ${esc(sitioSeleccionado(s).n)}. Su estación se ilumina al abrir y los recorridos se dirigen allí.` : 'Sin la red propuesta, los orgánicos siguen su recorrido hacia el relleno Doña Juana.'}</p><div class="rr-dato">Puntos de la red: datos del modelo · calendario de apertura: supuesto de simulación</div><div class="rr-acciones"><button class="rr-pri" data-ir="detalle">Explorar un punto →</button></div>`);
   } else if (fase === 'detalle') {
-    const sitio = s.con ? MERCADOS[0] : { x:1075,z:72 };
+    const sitio = sitioSeleccionado(s);
     T3vuelo(s, new s.THREE.Vector3(sitio.x+48,(s.T3.sueloY??0)+70,sitio.z+58),new s.THREE.Vector3(sitio.x,(s.T3.sueloY??0)+3,sitio.z));
-    panel(s, `${cabecera(s,'02 / Corte y 3D')}<h2>${s.con ? 'Estación Circular · Lote recuperado 08' : 'Residuos sin estación local'}</h2><p>${s.con ? 'La primera estación del calendario del modelo recibe orgánicos, los trata y envía compost a la red de huertas.' : 'El corte muestra la separación y la salida de orgánicos hacia el relleno; aquí no aparece una Estación Circular.'}</p>
+    panel(s, `${cabecera(s,'02 / Corte y 3D')}<h2>${s.con ? 'Estación Circular · ' + esc(sitio.n) : 'Residuos sin estación local'}</h2><p>${s.con ? 'La estación elegida recibe orgánicos, los trata y envía compost a la red de huertas.' : 'El corte muestra la separación y la salida de orgánicos hacia el relleno; aquí no aparece una Estación Circular.'}</p>
     <svg viewBox="0 0 360 150" role="img" aria-label="Corte esquemático del proceso de residuos"><path d="M12 119H346" stroke="#81988a" stroke-width="2"/><rect x="24" y="58" width="72" height="61" fill="#e6f0e9"/><path d="M16 58h88" stroke="#a9bdb0" stroke-width="8"/><text x="60" y="137" text-anchor="middle" fill="#d4e2d7" font-size="10">orgánicos</text><path d="M101 88h62" stroke="${s.con?'#66ddaf':'#ffad6a'}" stroke-width="3" marker-end="url(#flecha)"/><defs><marker id="flecha" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5 0 7" fill="${s.con?'#66ddaf':'#ffad6a'}"/></marker></defs>${s.con ? '<rect x="172" y="38" width="80" height="81" rx="10" fill="#66ddaf"/><path d="M208 47v62" stroke="#2d7656" stroke-width="10"/><text x="212" y="137" text-anchor="middle" fill="#d4e2d7" font-size="10">tratamiento</text><path d="M260 88h47" stroke="#66ddaf" stroke-width="3" marker-end="url(#flecha)"/><text x="321" y="96" fill="#d4e2d7" font-size="10">compost</text>' : '<rect x="172" y="55" width="136" height="64" rx="7" fill="#7d6b5a"/><text x="240" y="91" text-anchor="middle" fill="#fff" font-size="12">relleno Doña Juana</text>'}</svg>
     <div class="rr-dato">Corte y volúmenes 3D esquemáticos, sin medidas de obra. Capacidad y tratamiento: modelo semanal.</div><div class="rr-acciones"><button data-ir="territorio">← Territorio</button><button class="rr-pri" data-ir="variables">Cambiar variables →</button></div>`);
   } else {
     const def = SIMS.find(x => x.id === (s.con ? 6 : 5));
-    const controles = def.sliders.map(sl => `<label class="rr-sl"><span>${esc(sl.n)}<output data-v="${esc(sl.k)}">${num(s.valores[sl.k], sl.paso<1?1:0)} ${esc(sl.unidad)}</output></span><input type="range" data-k="${esc(sl.k)}" min="${sl.min}" max="${sl.max}" step="${sl.paso}" value="${s.valores[sl.k]}" title="${esc(sl.ayuda)}"></label>`).join('');
+    const controles = def.sliders.map(sl => `<label class="rr-sl"><span>${esc(sl.n)}<output data-v="${esc(sl.k)}">${sl.opciones ? esc(sl.opciones.find(o=>o[0]===s.valores[sl.k])?.[1]||'—') : num(s.valores[sl.k], sl.paso<1?1:0)+' '+esc(sl.unidad)}</output></span>${sl.opciones ? `<select data-k="${esc(sl.k)}" title="${esc(sl.ayuda)}">${sl.opciones.map(([v,n])=>`<option value="${v}" ${v===s.valores[sl.k]?'selected':''}>${esc(n)}</option>`).join('')}</select>` : `<input type="range" data-k="${esc(sl.k)}" min="${sl.min}" max="${sl.max}" step="${sl.paso}" value="${s.valores[sl.k]}" title="${esc(sl.ayuda)}">`}</label>`).join('');
     panel(s, `${cabecera(s,'03 / Simulación · 15 años')}<h2>Ver el cambio en el tiempo</h2><p>Play avanza semana a semana. ${s.con ? 'Las estaciones se activan según el calendario del modelo.' : 'Sin propuesta, el número de estaciones permanece en cero.'} Los indicadores y el game over responden a las variables.</p><div class="rr-grid" aria-live="polite"><div><b id="rr-org">—</b><small>Orgánicos t/día</small></div><div><b id="rr-comp">—</b><small>Compost t/día</small></div><div><b id="rr-est">—</b><small>Estaciones activas</small></div><div><b id="rr-sin">—</b><small>Sin recoger</small></div></div><div id="rr-estado" class="rr-dato">Calculando…</div><label class="rr-sl"><span>Año<output id="rr-anio">0,0</output></span><input id="rr-tiempo" type="range" min="0" max="15" step="0.001" value="${s.anio}"></label><div class="rr-acciones"><button class="rr-pri" id="rr-play">▶ Reproducir</button><button data-ir="detalle">← Corte</button></div><div class="rr-dato">${s.con ? 'Estaciones y fechas: calendario del modelo, no obras confirmadas.' : 'Sin estaciones propuestas.'} Horizonte: 780 semanas.</div>${controles}`);
     const tiempo=s.caja.querySelector('#rr-tiempo'); tiempo.oninput=()=>{ pausar(s); s.anio=+tiempo.value; pintar(s); };
     s.caja.querySelector('#rr-play').onclick=()=>reproducir(s);
-    s.caja.querySelectorAll('input[data-k]').forEach(i=>{ i.oninput=()=>{ const o=s.caja.querySelector(`output[data-v="${CSS.escape(i.dataset.k)}"]`), sl=def.sliders.find(x=>x.k===i.dataset.k); o.textContent=`${num(+i.value,sl.paso<1?1:0)} ${sl.unidad}`; }; i.onchange=()=>{ pausar(s); s.valores[i.dataset.k]=+i.value; const main=document.querySelector(`#su-der input[data-k="${CSS.escape(i.dataset.k)}"]`); if(main){main.value=i.value;main.dispatchEvent(new Event('input',{bubbles:true}));main.dispatchEvent(new Event('change',{bubbles:true}));} recalcular(s); }; });
+    s.caja.querySelectorAll('input[data-k],select[data-k]').forEach(i=>{ const sl=def.sliders.find(x=>x.k===i.dataset.k); i.oninput=()=>{ const o=s.caja.querySelector(`output[data-v="${CSS.escape(i.dataset.k)}"]`); o.textContent=sl.opciones ? sl.opciones.find(x=>x[0]===+i.value)?.[1]||'—' : `${num(+i.value,sl.paso<1?1:0)} ${sl.unidad}`; }; i.onchange=()=>{ pausar(s); s.valores[i.dataset.k]=+i.value; if(i.dataset.k==='estacionObjetivo'){const viejo=s.modelo.userData.sitio,nuevo=sitioSeleccionado(s);s.modelo.position.set(nuevo.x-viejo.x,0,nuevo.z-viejo.z);mostrarEstaciones(s);} const main=document.querySelector(`#su-der [data-k="${CSS.escape(i.dataset.k)}"]`); if(main){main.value=i.value;main.dispatchEvent(new Event('input',{bubbles:true}));main.dispatchEvent(new Event('change',{bubbles:true}));} recalcular(s); }; });
     if (s.serie.length) pintar(s); else recalcular(s);
   }
 }
 
 function T3vuelo(s, p, c) { s.T3.anim={t:0,dur:2.1,p0:s.T3.camera.position.clone(),c0:s.T3.orbit.target.clone(),p1:p.clone(),c1:c.clone()}; }
 function recalcular(s) {
-  if (!s.worker) { s.worker = new Worker(new URL('./residuos_variables_worker.js?v=4',import.meta.url),{type:'module'}); s.worker.onmessage=({data})=>{ if(actual!==s||data.id!==s.solicitud)return; const estado=s.caja.querySelector('#rr-estado'); if(data.error){if(estado)estado.textContent='No se pudo calcular: '+data.error;return;} s.serie=data.serie; pintar(s); }; }
+  if (!s.worker) { s.worker = new Worker(new URL('./residuos_variables_worker.js?v=5',import.meta.url),{type:'module'}); s.worker.onmessage=({data})=>{ if(actual!==s||data.id!==s.solicitud)return; const estado=s.caja.querySelector('#rr-estado'); if(data.error){if(estado)estado.textContent='No se pudo calcular: '+data.error;return;} s.serie=data.serie; pintar(s); }; }
   s.serie=[]; const estado=s.caja.querySelector('#rr-estado'); if(estado)estado.textContent='Calculando las 780 semanas…'; s.worker.postMessage({id:++s.solicitud,sim:s.con?6:5,valores:{...s.valores}});
 }
 function datos(s) {
   if (!s.serie.length) return null;
   const sem=s.anio*52, i=limitar(Math.floor(sem/13),0,s.serie.length-1), j=Math.min(s.serie.length-1,i+1), a=s.serie[i], b=s.serie[j], f=j===i?0:limitar((sem-a.sem)/(b.sem-a.sem),0,1);
-  return { sem, organicos:a.organicos+(b.organicos-a.organicos)*f, compost:a.compost+(b.compost-a.compost)*f, sinRecoger:a.sinRecoger+(b.sinRecoger-a.sinRecoger)*f, estaciones:s.con?MERCADOS.filter(m=>m.desde<=sem).length:0 };
+  return { sem, organicos:a.organicos+(b.organicos-a.organicos)*f, compost:a.compost+(b.compost-a.compost)*f, sinRecoger:a.sinRecoger+(b.sinRecoger-a.sinRecoger)*f, estaciones:s.con?MERCADOS.filter((m,k)=>m.desde<=sem && (+s.valores.estacionObjetivo<0||k===+s.valores.estacionObjetivo)).length:0 };
 }
 function pintar(s) {
   if (s.fase!=='variables') return;
@@ -135,7 +137,7 @@ function pintar(s) {
   mostrarEstaciones(s);
   const go=s.serie.find(x=>x.gameOver)?.gameOver, ocurrido=go&&d.sem>=go.sem;
   q('#rr-estado').classList.toggle('rr-go',!!ocurrido);
-  q('#rr-estado').textContent=ocurrido?`GAME OVER · semana ${go.sem} · ${go.motivo}`:`Año ${num(s.anio,1)} · ${d.estaciones} / ${s.con?MERCADOS.length:0} estaciones activas`;
+  q('#rr-estado').textContent=ocurrido?`GAME OVER · semana ${go.sem} · ${go.motivo}`:`Año ${num(s.anio,1)} · ${d.estaciones} / ${s.con?(+s.valores.estacionObjetivo<0?MERCADOS.length:1):0} estaciones activas`;
 }
 function pausar(s) { if(s.play){cancelAnimationFrame(s.play);s.play=0;} const b=s.caja.querySelector('#rr-play');if(b)b.textContent='▶ Reproducir'; }
 function reproducir(s) {
@@ -152,8 +154,8 @@ function cuadro(s,tiempo) {
   const ctx=s.ctx;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,w,h);
   const rect=s.canvas3d.getBoundingClientRect(),p=s.p,pulso=.5+.5*Math.sin(tiempo*.003);
   const marca=(x,z,radio,color,solido)=>{p.set(x,(s.T3.sueloY??.3)+6,z).project(s.T3.camera);if(p.z<-1||p.z>1)return;const px=rect.left+(p.x+1)*rect.width/2,py=rect.top+(1-p.y)*rect.height/2;if(px<0||px>w||py<0||py>h)return;ctx.beginPath();ctx.arc(px,py,radio+2*pulso,0,Math.PI*2);ctx.shadowColor=color;ctx.shadowBlur=solido?20:8;ctx.fillStyle=solido?color:'rgba(255,255,255,.09)';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=color;ctx.stroke();};
-  if(s.fase==='detalle'){const t=s.con?MERCADOS[0]:{x:1075,z:72};marca(t.x,t.z,16,s.con?'#66ddaf':'#ffad6a',true);}
-  else if(s.con){const sem=s.fase==='variables'?s.anio*52:Infinity;for(const m of MERCADOS)marca(m.x,m.z,5,m.desde<=sem?'#66ddaf':'#9caf9d',m.desde<=sem);}
+  if(s.fase==='detalle'){const t=sitioSeleccionado(s);marca(t.x,t.z,16,s.con?'#66ddaf':'#ffad6a',true);}
+  else if(s.con){const sem=s.fase==='variables'?s.anio*52:Infinity;for(const [k,m] of MERCADOS.entries())if(+s.valores.estacionObjetivo<0||k===+s.valores.estacionObjetivo)marca(m.x,m.z,5,m.desde<=sem?'#66ddaf':'#9caf9d',m.desde<=sem);}
   else {marca(1075,72,12,'#ffad6a',true);marca(896,1146,7,'#ffad6a',true);}
   ctx.shadowBlur=0;s.frame=requestAnimationFrame(t=>cuadro(s,t));
 }
@@ -165,7 +167,7 @@ export async function abrirRecorridoResiduos({ con=false }={}) {
   const root=document.createElement('div');root.id='rr';root.className=con?'':'sin';root.setAttribute('role','region');root.setAttribute('aria-label','Recorrido de residuos');
   root.innerHTML='<canvas aria-hidden="true"></canvas><nav aria-label="Vistas"><button data-ir="territorio">Territorio</button><button data-ir="detalle">Corte y 3D</button><button data-ir="variables">Simulación</button></nav><button class="rr-salir" aria-label="Salir del recorrido">✕</button><section></section>';
   document.body.appendChild(root);document.documentElement.classList.add('rr-on');
-  const def=SIMS.find(x=>x.id===(con?6:5)),valores={};for(const sl of def.sliders){const main=document.querySelector(`#su-der input[data-k="${CSS.escape(sl.k)}"]`);valores[sl.k]=main?+main.value:sl.val;}
+  const def=SIMS.find(x=>x.id===(con?6:5)),valores={};for(const sl of def.sliders){const main=document.querySelector(`#su-der [data-k="${CSS.escape(sl.k)}"]`);valores[sl.k]=main?+main.value:sl.val;}
   const s={root,caja:root.querySelector('section'),overlay:root.querySelector('canvas'),ctx:root.querySelector('canvas').getContext('2d'),canvas3d:T3.renderer.domElement,filtro:T3.renderer.domElement.style.filter,T3,THREE:T3.THREE,con,valores,anio:0,serie:[],solicitud:0,worker:null,play:0,frame:0,p:new T3.THREE.Vector3(),general:{p:T3.camera.position.clone(),c:T3.orbit.target.clone()}};
   s.modelo=figura(s);s.estaciones=estaciones3D(s);EXC.length=0;EXC.push(s.estaciones.G,s.modelo);
   GR=window.KEN_REC_GRIS || (window.KEN_REC_GRIS=crearGris({T3,excluir:EXC}));actual=s;
