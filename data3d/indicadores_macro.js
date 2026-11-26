@@ -58,6 +58,10 @@ export const IND = [
   { k: 'bienestar', macro: 'eco', n: 'Bienestar de la fauna', c: 'Bienestar', u: '%', d: 0, sube: true, v: (I) => { const b = I.avesRuido && I.avesRuido.bienestarFauna; return b == null ? null : b * 100; } },
   { k: 'saturacion', macro: 'circ', n: 'Saturación de residuos', c: 'Saturación', u: '%', d: 1, sube: false, v: (I) => hayEstaciones(I) ? fin(T(I).saturacion) : null },
   { k: 'aprov', macro: 'circ', n: 'Aprovechamiento de residuos', c: 'Aprovechamiento', u: '%', d: 1, sube: true, v: (I) => fin(T(I).aprovechamiento) },
+  /* 2026-11-26 (docs/sim01_abastecimiento_v2.md): residuos de Kennedy frente al umbral de game over y comida que llega frente a la demanda;
+     corren en todas las simulaciones (simulaciones12.js rcPaso: I.residuosK, I.comidaK) */
+  { k: 'resK', macro: 'circ', n: 'Residuos de Kennedy', c: 'Residuos', u: 't/día', d: 0, sube: false, v: (I) => fin(I && I.residuosK && I.residuosK.gen) },
+  { k: 'llega', macro: 'com', n: 'Comida que llega a Kennedy', c: 'Comida que llega', u: '%', d: 1, sube: true, v: (I) => { const c = I && I.comidaK; return c && c.dem > 0 ? fin(c.llega / c.dem * 100) : null; } },
   { k: 'cobertura', macro: 'com', n: 'Cobertura alimentaria', c: 'Cobertura', u: '%', d: 1, sube: true, v: (I) => { const c = fin(T(I).cobertura); return c == null ? null : Math.min(100, c); } },
   { k: 'autonomia', macro: 'com', n: 'Autonomía alimentaria', c: 'Autonomía', u: '%', d: 2, sube: true, v: (I) => fin(T(I).autonomia) },
   { k: 'acceso', macro: 'com', n: 'Accesibilidad a mercados', c: 'Accesibilidad', u: '%', d: 0, sube: true, v: (I, C) => { const a = acceso(I, C && C.M); return a ? a.pct : null; } },

@@ -64,7 +64,8 @@ export function crearContenedores({ T3 }) {
     C.tope.material.opacity = k > 0.97 ? 0.55 + 0.45 * Math.abs(Math.sin(now / 220)) : 0.95;
     for (const M of MK) if (M.g.visible) { M.excMeta = 0; mover(M, dt); }
     const cam = T3.camera.position, dist = Math.hypot(cam.x - A.cora.x, cam.z - A.cora.z, cam.y);
-    if (enPantalla(A.cora.x, y0() + C.H + 24, A.cora.z, et) && now - tTxt > 200) { tTxt = now;
+    if (!coraOn) et.style.display = 'none';
+    else if (enPantalla(A.cora.x, y0() + C.H + 24, A.cora.z, et) && now - tTxt > 200) { tTxt = now;
       const pc = Math.round(k * 100), est = pc >= 100 ? '#ff8a80' : pc >= 90 ? '#ffd27a' : '#9be8b0';
       const lin2 = F ? `Franja ${F.n}: ${fmt(F.t_h)} t/h de ${fmt(F.tope_h)} posibles · ${fmt(F.veh_h)} vehículos/h` : `Ahora no entra carga (ingreso 12–24 h y 4–6 h)`;
       const txt = `<b style="font-size:12.5px">Corabastos · <span style="color:${est}">${pc} % de su tope</span></b><br>${lin2}<br><span style="opacity:.8">Le piden ${fmt(U.L)} t/día · tope ${fmt(U.tope)} · llegan ${fmt(U.lleg)}</span>${pc >= 100 ? '<br><span style="color:#ff8a80">Sobre el tope: no todo lo pedido entra</span>' : ''}`;
@@ -74,6 +75,8 @@ export function crearContenedores({ T3 }) {
       const txt = `${M.m.real ? 'Plaza Kennedy' : M.m.n.length > 18 ? M.m.n.slice(0, 17) + '…' : M.m.n} · ${fmt(M.m.t_dia, 1)} t/día · ${Math.round((M.m.carga || 0) * 100)} %`; if (el._t !== txt) { el.textContent = txt; el._t = txt; } }
     for (; j < etM.length; j++) etM[j].style.display = 'none';
   });
-  const api = window.KEN_CONT = { poner, ver(on) { G.visible = !!on; if (!on) { et.style.display = 'none'; etM.forEach(d => { d.style.display = 'none'; }); C.nivel = 0; MK.forEach(M => { M.nivel = 0; }); } }, grupo: G };
+  /* verCora(false): sin el tubo de Corabastos cuando la capa «Bodegas» de la simulación 01 (abasto_capas.js) muestra la ocupación nave por nave */
+  let coraOn = true;
+  const api = window.KEN_CONT = { verCora(on) { coraOn = !!on; C.g.visible = coraOn; if (!coraOn) et.style.display = 'none'; }, poner, ver(on) { G.visible = !!on; if (!on) { et.style.display = 'none'; etM.forEach(d => { d.style.display = 'none'; }); C.nivel = 0; MK.forEach(M => { M.nivel = 0; }); } }, grupo: G };
   return api;
 }

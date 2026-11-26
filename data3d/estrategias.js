@@ -88,7 +88,7 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
         .filter(t => { const k = clave(t); if (vistos.has(k)) return false; vistos.add(k); return true; })
         .sort((a, b) => b.h - a.h);
       const lista = cat.concat(resto.map(t => ({ W: t.W, h: t.h })));
-      return Promise.all([m.iniciarHidroponia({ THREE, T3, techos: lista, movil }), import('./cubiertas_foco.js?v=8')]).then(([h, foco]) => { FOCO = foco.crearFocoCubiertas({ THREE, T3, techos: cat, hidro: h }); return h; });
+      return Promise.all([m.iniciarHidroponia({ THREE, T3, techos: lista, movil }), import('./cubiertas_foco.js?v=9')]).then(([h, foco]) => { FOCO = foco.crearFocoCubiertas({ THREE, T3, techos: cat, hidro: h }); return h; });
     }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (on2 && T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er)); return HIDRO_P;
   };
   /* recorrido de las cubiertas de 15 pisos (data3d/cubiertas_foco.js): solo en la simulación 02 Abastecimiento con propuesta (data3d/limpio.js) */

@@ -9,8 +9,8 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { crearSlides } from './slides_sim.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=117';
+import { crearSlides } from './slides_sim.js?v=6';
+import { iniciarSimUI } from './sim_ui.js?v=118';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -196,6 +196,7 @@ export function iniciarLimpio({ T3 }) {
   const esc3 = (n) => { const o = T3.scene && T3.scene.getObjectByName(n); return !!(o && o.visible); };
   let vehG = []; const hayVeh = () => { if (!vehG.length && T3.scene) vehG = T3.scene.children.filter(o => o.name === 'vehiculos');
     for (const g of vehG) { if (!g.visible) continue; for (const o of g.children) if (o.visible && o.isInstancedMesh && o.count > 0) return true; } return false; };
+  const ab01Vis = (k) => { const C = window.KEN_AB01C; return !!(C && C.visible(k)); };
   const HI = () => window.KEN_HIDRO, hidroVis = () => { const H = HI(); return !!(H && H.grupo && H.grupo.visible); };
   const CONV = [
     ['Tráfico (de lejos cada vehículo es una píldora)', [[sw.pil('#fff0d2'), 'Carro', hayVeh], [sw.pil('#ffae1f'), 'Moto', hayVeh], [sw.pil('#ff3d6e'), 'Camión de carga', hayVeh], [sw.pil('#7fe3ff'), 'Bicicleta', hayVeh],
@@ -206,6 +207,16 @@ export function iniciarLimpio({ T3 }) {
       [sw.hidro(), () => { const H = HI(); return `Huertas hidropónicas en cubiertas: ${(H.instaladas || 0).toLocaleString('es-CO')} de ${(H.techos || 0).toLocaleString('es-CO')} instaladas (primero las de 15 pisos o más, luego las más altas)`; }, () => hidroVis() && HI().instaladas > 0],
       [sw.resalte(), 'Cubierta recién instalada: se ilumina unos segundos', hidroVis],
       ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M2 6c2-3 4-3 7 0 3-3 5-3 7 0" fill="none" stroke="#d9dccf" stroke-width="1.5" stroke-linecap="round"/></svg>', 'Fauna en 3D (aves, abejas, anfibios): se mueve según el modelo biótico', () => esc3('biotica')]]],
+    /* simulación 01 (data3d/abasto_capas.js): solo lo que está prendido y a la vista */
+    ['Simulación 01 · capas', [
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="7" width="12" height="3.2" rx="1" fill="#4ade80"/></svg>', 'Bodegas: nave de vidrio; el líquido es su ocupación (recibo × días / tope). Verde hasta 75 %', () => ab01Vis('bodegas')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="4" width="12" height="6.2" rx="1" fill="#fbbf24"/></svg>', 'Ámbar: 90 % de su tope, cerca de llenarse', () => ab01Vis('bodegas')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="3" width="14" height="8" rx="1.5" fill="#ef4444"/><rect x="1" y="0.5" width="16" height="2.4" rx="1" fill="#ef4444" opacity=".55"/></svg>', 'Rojo y lámina que titila encima: llena, no cabe más (4 semanas = game over)', () => ab01Vis('bodegas')],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 3c3-2 5 2 8 0s5 2 8 0v6H1z" fill="#6b4f2e" stroke="#5fb8a6" stroke-width=".8"/></svg>', 'Humedal La Vaca: el velo pasa de verde agua a café con la degradación por residuos sin recoger', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><circle cx="5" cy="5" r="3.4" fill="#2f7d4a"/><path d="M5 8.4V11" stroke="#6b5a48" stroke-width="1.4"/><path d="M13 7.5V11" stroke="#6b5a48" stroke-width="1.6"/></svg>', 'Árboles del inventario en La Vaca; los que quedan en tronco se perdieron (0,5 × degradación)', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M3 9a6 4.5 0 0 1 12 0z" fill="#5a4632"/></svg>', 'Montones de residuos en el borde del humedal: crecen con lo que no se recoge', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="5" y="2" width="8" height="9" rx="3" fill="#22a89d"/></svg>', () => { const C = window.KEN_AB01C, n = C && C.info().estaciones; return `Estación Circular de barrio (con propuesta): 20 t/día de orgánicos · ${n || 0} de 20 abiertas`; }, () => ab01Vis('residuos') && !!(window.KEN_AB01C && window.KEN_AB01C.info().estaciones)],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="1" y="3.5" width="4.5" height="3" rx="1.2" fill="#4ade80"/><rect x="6.8" y="3.5" width="4.5" height="3" rx="1.2" fill="#fbbf24"/><rect x="12.6" y="3.5" width="4.5" height="3" rx="1.2" fill="#ef4444"/></svg>', () => `Tráfico en las vías principales: verde fluye, ámbar se frena, rojo congestión (hoy ${Math.round(((window.KEN_AB01C && window.KEN_AB01C.info().nivel) || 0.62) * 100)} %)`, () => ab01Vis('trafico')]]],
     ['Eventos', [[sw.cruz(), 'Muerte de un animal: cruz con el animal encima (botón «Ver» de un aviso)', () => { const m = document.getElementById('mm-capa'); return esc3('ojo_x') || !!(m && !m.hidden); }], /* la X la pone data3d/ojo_dios.js (grupo 'ojo_x') */
       [sw.pto('#ff5a4f'), 'Hecho que empeora (en pausa)', () => !!ESC.activo && RELOJ.pausaSem && esc3('hechos')], [sw.pto('#5fe08f'), 'Hecho que mejora (en pausa)', () => !!ESC.activo && RELOJ.pausaSem && esc3('hechos')]]],
     ['Capas prendidas', [[sw.halo('#f22914'), 'Ruido de carros: halo rojo alrededor de cada vehículo', () => esc3('ruido-carros')],
@@ -219,7 +230,17 @@ export function iniciarLimpio({ T3 }) {
     conv.querySelector('.lp-db').innerHTML = G.map(([g, L]) => `<p class="lp-cg">${g}</p><ul class="lp-cv">${L.map(([s, t]) => `<li>${s}<span>${t}</span></li>`).join('')}</ul>`).join('');
     conv.querySelector('.lp-ds').textContent = `${n} a la vista`; };
   setInterval(pintarConv, 800); setTimeout(pintarConv, 0);
-  { const cs = document.createElement('style'); cs.textContent = `html.limpio body #gs-izq .lp-lista li .lp-acc{grid-column:1/-1;padding:0 10px 8px 12px;min-width:0}
+  { const cs = document.createElement('style'); cs.textContent = `/* 2026-11-26 (docs/sim01_abastecimiento_v2.md): lista de las 6 simulaciones más compacta: letra y filas más chicas */
+    html.limpio body #gs-izq .lp-lista{gap:1px}
+    html.limpio body #gs-izq #lp-seis .lp-sec{margin:0 0 4px}
+    html.limpio body #gs-izq #lp-seis .lp-sec h5{font-size:13px!important}
+    html.limpio body #gs-izq #lp-seis .lp-sim{min-height:26px;gap:7px;padding:0 6px 0 8px!important}
+    html.limpio body #gs-izq #lp-seis .lp-sim i{font-size:9.5px;width:14px}
+    html.limpio body #gs-izq #lp-seis .lp-sim b{font:500 11.5px/1.15 var(--ui-sans)}
+    html.limpio body #gs-izq #lp-seis .lp-ver{min-height:26px;width:28px!important}
+    html.limpio body #gs-izq #lp-seis .lp-ver svg{width:13px;height:13px}
+    @media (pointer:coarse){html.limpio body #gs-izq #lp-seis .lp-sim,html.limpio body #gs-izq #lp-seis .lp-ver{min-height:34px}}
+    html.limpio body #gs-izq .lp-lista li .lp-acc{grid-column:1/-1;padding:0 10px 8px 12px;min-width:0}
     html.limpio body #gs-izq .lp-lista li:not(.on) .lp-acc,html.limpio body #gs-izq .lp-lista li .lp-acc:empty{display:none}
     html.limpio body #gs-izq .lp-acc #su-der{margin:2px 0 0!important}
     html.limpio body #gs-izq .lp-acc #lp-vars > summary{display:none}
@@ -236,11 +257,11 @@ export function iniciarLimpio({ T3 }) {
   function abrirRecorridoDePar(par, con = false, id = null) {
     /* par 01 con propuesta: recorrido de las cubiertas de 15 pisos (data3d/cubiertas_foco.js, vía data3d/estrategias.js) */
     { const E = T3.EST; if (E && E.focoCubiertas) { if (par === 1 && con) setTimeout(() => { if (ESC.activo === id) E.focoCubiertas(true); }, 150); else E.focoCubiertas(false); } }
-    import('./recorrido_movilidad.js?v=3').then(m => {
+    import('./recorrido_movilidad.js?v=4').then(m => {
       if (par !== 2) return m.cerrarRecorrido();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorrido({ con }).catch(e => console.warn('recorrido movilidad:', e)); }, 150);
     }).catch(e => console.warn('recorrido movilidad:', e));
-    import('./recorrido_residuos.js?v=2').then(m => {
+    import('./recorrido_residuos.js?v=3').then(m => {
       if (par !== 3) return m.cerrarRecorridoResiduos();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorridoResiduos({ con }).catch(e => console.warn('recorrido residuos:', e)); }, 150);
     }).catch(e => console.warn('recorrido residuos:', e));
@@ -248,7 +269,7 @@ export function iniciarLimpio({ T3 }) {
   function refrescarSeis() { const base = escE === 'con' ? 14 : 13; seis.classList.toggle('con', escE === 'con');
     const h = seis.querySelector('.lp-sec'); if (h) h.title = ESC.activo === base ? `Corre Kennedy ${escE === 'con' ? 'con' : 'sin'} propuesta, sin prueba de estrés. Toca una simulación para aplicarla desde ahora y ver sus diapositivas.` : 'Toca otra vez la simulación activa para quitarla.';
     const l = seis.querySelector('.lp-modo'); if (l) l.textContent = escE === 'con' ? 'Con propuesta' : 'Sin propuesta';
-    seis.querySelectorAll('li').forEach(li => { const b = li.querySelector('.lp-sim'), on = ESC.activo === +b.dataset.s; li.classList.toggle('on', on); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.setAttribute('aria-expanded', on); });
+    seis.querySelectorAll('.lp-lista > li').forEach(li => { const b = li.querySelector('.lp-sim'), on = ESC.activo === +b.dataset.s; li.classList.toggle('on', on); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.setAttribute('aria-expanded', on); });
     if (typeof ordenar === 'function') ordenar(); }
   function pintarSeis() {
     /* filas de una línea: número + nombre; la prueba de estrés va en el title (y en la descripción accesible) */
@@ -424,7 +445,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=8', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=8']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=9', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=9']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

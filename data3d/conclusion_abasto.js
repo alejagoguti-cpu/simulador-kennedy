@@ -6,6 +6,10 @@
      · SOSTENIBLE: sin game over, ningún sector bajó de 87 % (zona «cerca» del límite, CERCA.abasto) y lo que se le pide a Corabastos
        nunca pasó su tope.
      · PLAUSIBLE CON CONDICIONES: el resto (sin game over, pero Corabastos pasó su tope alguna semana o algún sector se acercó al límite).
+   2026-11-26 (docs/sim01_abastecimiento_v2.md): el game over puede ser también «bodegas» (una nave de Corabastos llena 4 semanas) o
+     «residuosK» (296 t/día sin recoger 4 semanas). SOSTENIBLE exige además que ninguna bodega llegue a 100 % y que lo sin recoger quede bajo
+     2/3 del camino al game over (247 t/día). Tarjeta 1: comida + bodegas (pasos 1–3); tarjeta 2: residuos y La Vaca (pasos 4–5 y palancas).
+     Con residuos como problema la recomendación es fija: cuánto habría que tratar cerca de la fuente (ninguna palanca del abasto los baja).
    PLANTILLA FIJA de las dos tarjetas: (1) qué se cambió, (2) oferta frente a demanda, (3) si Corabastos y los mercados aguantaron,
    (4) cuándo y dónde falló o por qué aguantó, (5) conclusión y una recomendación: la palanca que más mueve el resultado en la semana
    crítica, calculada con las mismas ecuaciones del modelo (AB01) moviendo cada palanca un cuarto de su rango. */
@@ -28,8 +32,9 @@ function evaluar(U, x) {
   const porM = U.nAct > 0 ? U.mercT / U.nAct : MERC_T * 0.7, escala = U.demK * (1 - U.auto) > 0 ? demK * (1 - auto) / (U.demK * (1 - U.auto)) : 1;
   const mercT = Math.min(x.nM * MERC_T, Math.max(0, U.mercT * escala + (x.nM - U.nAct) * Math.min(MERC_T, porM * escala)), demK * (1 - auto));
   const RK = Math.max(0, demK - autoT - mercT), L = U.resto + RK, S = U.S * x.vol / U.vol, tope = T_DIA * (1 + x.topeF), lleg = Math.min(L, S, tope), f = L > 0 ? lleg / L : 1;
-  return { cob: demK > 0 ? (autoT + mercT + f * RK) / demK : 1, carga: L / tope };
+  return { cob: demK > 0 ? (autoT + mercT + f * RK) / demK : 1, carga: L / tope, occ: U.kMax ? lleg * U.kMax : null }; // occ: bodega más llena (BOD01: ocupación = t/día que llegan × kMax)
 }
+const CERCA_RES = 148 + 2 / 3 * 148; // 2/3 del camino de hoy (148 t/día sin recoger) al game over (296): «cerca», como CERCA de simulaciones12.js
 export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros = {}, completo = true }) {
   const X = (h) => h && h.abasto && h.abasto.ab01; const W = H.filter(X); if (!W.length) return null;
   const L = W[W.length - 1], UL = X(L), prop = !!def.propuesta, sl = def.sliders || [];
@@ -46,46 +51,66 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
   const peores = [...peor.entries()].sort((a, b) => a[1].v - b[1].v).slice(0, 3).map(([n, p]) => ({ n, ...p }));
   const usoM = usoN ? usoS / usoN : 0, a1 = W.slice(0, Math.min(52, W.length)), aN = W.slice(-Math.min(52, W.length));
   const prom = (A, k) => A.reduce((a, h) => a + X(h)[k], 0) / A.length, dem1 = prom(a1, 'demK'), demN = prom(aN, 'demK');
-  const estado = go ? 'go' : minSec >= 87 && sobre === 0 ? 'sostenible' : 'plausible';
+  // bodegas (I.abasto.bodegas) y residuos de Kennedy (I.residuosK), simulaciones12.js BOD01 / RES01
+  const Bo = (h) => h && h.abasto && h.abasto.bodegas, Rk = (h) => h && h.residuosK;
+  let maxB = 0, wMaxB = null, semLlenas = 0, maxR = 0, wMaxR = null, maxD = 0;
+  W.forEach(h => { const b = Bo(h), r = Rk(h); if (b) { if (b.max > maxB) { maxB = b.max; wMaxB = h; } if (b.max >= 1) semLlenas++; } if (r) { if (r.noRec > maxR) { maxR = r.noRec; wMaxR = h; } if (r.D > maxD) maxD = r.D; } });
+  const estado = go ? 'go' : minSec >= 87 && sobre === 0 && maxB < 1 && maxR < CERCA_RES ? 'sostenible' : 'plausible';
   // --- semana crítica y sensibilidad ---
-  const crit = go ? (W.find(h => h.sem === go.sem) || L) : minSec < 87 ? wMinSec : wMaxC || L, UC = X(crit);
+  const crit = go ? (W.find(h => h.sem === go.sem) || L) : minSec < 87 ? wMinSec : maxB >= 0.9 && wMaxB ? wMaxB : maxR >= CERCA_RES && wMaxR ? wMaxR : wMaxC || L, UC = X(crit);
   const base = { dem: UC.dem, vol: UC.vol, topeF: UC.topeF, auto: UC.auto, nM: prop ? UC.nM : 0 }, r0 = evaluar(UC, base);
-  const problema = go || minSec < 87 ? 'cob' : sobre > 0 ? 'tope' : 'margen';
+  const problema = go ? (go.regla === 'bodegas' ? 'bod' : go.regla === 'residuosK' ? 'res' : 'cob') : minSec < 87 ? 'cob' : maxB >= 0.9 ? 'bod' : maxR >= CERCA_RES ? 'res' : sobre > 0 ? 'tope' : 'margen';
   const sens = PAL.map(P => { const x = { ...base }; let de, a;
     if (P.k === 'autoconsumo') { de = base.auto * 100; a = Math.min(P.max, de + P.paso); x.auto = a / 100; }
     else if (P.k === 'mercados') { de = base.nM; a = Math.min(P.max, de + P.paso); x.nM = a; }
     else if (P.k === 'coraTope') { de = base.topeF * 100; a = Math.min(P.max, de + P.paso); x.topeF = a / 100; }
     else { de = base.vol * 100; a = Math.min(P.max, de + P.paso); x.vol = a / 100; }
-    const r = evaluar(UC, x), dCob = (r.cob - r0.cob) * 100, dCar = (r.carga - r0.carga) * 100;
-    return { ...P, de, a, dCob, dCar, score: problema === 'cob' ? dCob + 0.05 * -dCar : -dCar + 0.05 * dCob, agotada: a <= de + 1e-9 }; });
-  const mejor = sens.filter(s => !s.agotada).sort((a, b) => b.score - a.score)[0] || null;
+    const r = evaluar(UC, x), dCob = (r.cob - r0.cob) * 100, dCar = (r.carga - r0.carga) * 100, dOcc = r.occ != null && r0.occ != null ? (r.occ - r0.occ) * 100 : 0;
+    return { ...P, de, a, dCob, dCar, dOcc, score: problema === 'cob' ? dCob + 0.05 * -dCar : problema === 'bod' ? -dOcc + 0.05 * dCob : -dCar + 0.05 * dCob, agotada: a <= de + 1e-9 }; });
+  const mejor = problema === 'res' ? null : sens.filter(s => !s.agotada).sort((a, b) => b.score - a.score)[0] || null; // los residuos no los mueve ninguna de estas palancas (ver t5)
   // --- textos (plantilla fija) ---
   const cambios = sl.filter(s => parametros[s.k] != null && Math.abs(+parametros[s.k] - s.val) > 1e-9).map(s => `${s.n} ${nf(parametros[s.k], s.paso < 1 ? 1 : 0)} ${s.unidad} (por defecto ${nf(s.val, s.paso < 1 ? 1 : 0)}: ${FUENTE[s.k] || 'ver fuentes'})`);
   const t1 = cambios.length ? `Se cambió: ${cambios.join('; ')}. Lo demás quedó en los valores con fuente.` : `Se usaron los valores por defecto, todos con fuente: demanda 0,65 kg/hab/día y 6.460 t/día en Corabastos (DANE-SIPSA 2025), tope +11 % (inferencia SDDE-FAO 2018), crecimiento 0,5 %/año (DANE)${prop ? ', 12 mercados de 17 t/día (Contraloría 2025)' : ''} y autoconsumo 0 % (supuesto).`;
   const pc = (v) => nf(v / sDem * 100, 1);
   const t2 = `La demanda de frescos de Kennedy pasó de ${nf(dem1)} t/día en el año 1 a ${nf(demN)} t/día en el año ${añoDe(L.sem)}. En toda la corrida la cubrieron Corabastos ${pc(sCor)} %, los mercados ${pc(sMer)} % y el autoconsumo ${pc(sAut)} %; Kennedy recibió en su peor semana ${nf(minCob * 100, 1)} % de lo que necesitaba (año ${añoDe(wMinCob.sem)}).`;
+  const cK = (h) => h && h.comidaK, c1 = cK(W[0]), cN = cK(L);
+  const t2b = c1 && cN ? ` Con los otros canales, toda la comida de Kennedy pasó de ${nf(c1.dem)} a ${nf(cN.dem)} t/día y llegaron ${nf(cN.llega)} t/día en la última semana.` : '';
   const mC = X(wMaxC), mesC = MES[mC.mes];
-  const t3 = `Corabastos llegó a ${nf(maxC * 100)} % de su tope (${nf(mC.L)} de ${nf(mC.tope)} t/día, ${mesC} del año ${añoDe(wMaxC.sem)}) y ${sobre ? `le pidieron más que su tope ${nf(sobre)} semanas` : 'nunca le pidieron más que su tope'}${corto ? `; en ${nf(corto)} semanas la región mandó menos de lo pedido` : ''}. ${prop ? (usoN ? `Los mercados usaron en promedio ${nf(usoM * 100)} % de su capacidad (máximo ${nf(usoMax * 100)} %${llenos ? `, ${nf(llenos)} semanas todos llenos` : ', nunca todos llenos'}).` : 'No hubo mercados abiertos.') : 'Sin propuesta no hay mercados que repartan la carga.'}`;
+  const bM = Bo(wMaxB), mB = wMaxB ? X(wMaxB) : null;
+  const t3b = bM ? `La bodega más llena fue ${bM.nombre} (${bM.grupo}) con ${nf(maxB * 100, maxB < 1 && maxB >= 0.995 ? 1 : 0)} % de su tope (${MES[mB.mes]} del año ${añoDe(wMaxB.sem)}); ${semLlenas ? `estuvo llena ${nf(semLlenas)} semana${semLlenas > 1 ? 's' : ''}` : 'ninguna nave se llenó'}. En conjunto las naves usaron ${nf(bM.global * 100)} % de lo que caben (tope sobreestimado: incluye pasillos). ` : '';
+  const t3 = t3b + `Corabastos llegó a ${nf(maxC * 100)} % de su tope (${nf(mC.L)} de ${nf(mC.tope)} t/día, ${mesC} del año ${añoDe(wMaxC.sem)}) y ${sobre ? `le pidieron más que su tope ${nf(sobre)} semanas` : 'nunca le pidieron más que su tope'}${corto ? `; en ${nf(corto)} semanas la región mandó menos de lo pedido` : ''}. ${prop ? (usoN ? `Los mercados usaron en promedio ${nf(usoM * 100)} % de su capacidad (máximo ${nf(usoMax * 100)} %${llenos ? `, ${nf(llenos)} semanas todos llenos` : ', nunca todos llenos'}).` : 'No hubo mercados abiertos.') : 'Sin propuesta no hay mercados que repartan la carga.'}`;
   let t4;
-  if (go) { const U = X(crit) || UC, causa = U.S < U.L - 1e-6 && U.S <= U.tope ? `la región mandó ${nf(U.S)} t/día y se pedían ${nf(U.L)}: faltó volumen` : U.L > U.tope ? `se pedían ${nf(U.L)} t/día y el tope es ${nf(U.tope)}: Corabastos no puede recibir más` : 'el faltante se concentró en las zonas lejos de Corabastos';
+  const rN = Rk(L), rM = Rk(wMaxR);
+  const est = rN && rN.nEst ? ` Las ${nf(rN.nEst)} Estaciones Circulares abiertas (20 t/día cada una) trataban ${nf(rN.trat)} t/día de orgánicos al final.` : '';
+  const t4r = rM ? ` Residuos: lo que no se recoge llegó a ${nf(maxR)} t/día (hoy 148, game over 296) en el año ${añoDe(wMaxR.sem)}; La Vaca se degradó hasta ${nf(maxD * 100)} % y perdió ${nf(maxD * 50)} % de sus árboles e interacciones.${est}` : '';
+  if (go && go.regla === 'bodegas') { const U = X(crit) || UC;
+    t4 = `Falló en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: a Corabastos le llegaban ${nf(U.a0 != null ? U.a0 : U.lleg)} t/día en ${MES[U.mes]} y cada nave recibe su parte; la de ${esc(go.lugar)} empezó la corrida al ${nf(Bo(W[0]) && Bo(W[0]).occ ? Bo(W[0]).occ[go.idx] * 100 : null)} % y es la que tiene menos margen.${t4r}`; }
+  else if (go && go.regla === 'residuosK') { const r = Rk(crit) || rN;
+    t4 = `Falló en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: Kennedy generaba ${nf(r ? r.gen : null)} t/día (hoy 922, +2,7 %/año y 0,19 t por cada tonelada extra de comida) y la recolección ordinaria se queda en 774${r && r.trat > 0.5 ? `; las Estaciones Circulares trataban ${nf(r.trat, 1)} t/día` : ''}.${t4r}`; }
+  else if (go) { const U = X(crit) || UC, causa = U.S < U.L - 1e-6 && U.S <= U.tope ? `la región mandó ${nf(U.S)} t/día y se pedían ${nf(U.L)}: faltó volumen` : U.L > U.tope ? `se pedían ${nf(U.L)} t/día y el tope es ${nf(U.tope)}: Corabastos no puede recibir más` : 'el faltante se concentró en las zonas lejos de Corabastos';
     t4 = `Falló en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.lugar || 'un sector')} recibió ${nf(go.valor, 1)} % de su demanda cuatro semanas seguidas. Causa: ${causa}.`; }
-  else t4 = `No falló${completo ? ' en los 15 años' : ' hasta ahora'}: el sector peor servido fue ${esc(secMin)} con ${nf(minSec, 1)} % (año ${añoDe(wMinSec.sem)}). ${sobre === 0 && minSec >= 87 ? 'Aguantó porque lo pedido a Corabastos quedó bajo su tope' + (prop && sMer > 0 ? ' y los mercados tomaron parte de la carga' : '') + '.' : sobre > 0 ? 'Aguantó porque el exceso sobre el tope fue corto y se repartió entre todos los compradores de la ciudad, pero no hay margen.' : 'Aguantó, aunque algún sector se acercó al límite de 80 %.'}`;
+  else t4 = `No falló${completo ? ' en los 15 años' : ' hasta ahora'}: el sector peor servido fue ${esc(secMin)} con ${nf(minSec, 1)} % (año ${añoDe(wMinSec.sem)}). ${sobre === 0 && minSec >= 87 ? 'Aguantó porque lo pedido a Corabastos quedó bajo su tope' + (prop && sMer > 0 ? ' y los mercados tomaron parte de la carga' : '') + '.' : sobre > 0 ? 'Aguantó porque el exceso sobre el tope fue corto y se repartió entre todos los compradores de la ciudad, pero no hay margen.' : 'Aguantó, aunque algún sector se acercó al límite de 80 %.'}${maxB > 0 ? ` La bodega más llena llegó a ${nf(maxB * 100)} % de su tope${maxB >= 1 ? `, pero no las 4 semanas seguidas del game over` : ''}.` : ''}${t4r}`;
   const accion = (s) => s.k === 'autoconsumo' ? `subir el autoconsumo (huertas y producción propia) de ${nf(s.de)} % a ${nf(s.a)} %`
     : s.k === 'mercados' ? (prop ? `abrir más mercados de 17 t/día: de ${nf(s.de)} a ${nf(s.a)}` : `pasar a la red de la propuesta con ${nf(s.a)} mercados de 17 t/día`)
     : s.k === 'coraTope' ? `ampliar la capacidad de Corabastos o abrir una central satélite (recomendación de SDDE-FAO 2018): tope de +${nf(s.de)} % a +${nf(s.a)} %`
     : `asegurar más oferta de la región (acuerdos con productores y circuitos cortos): volumen de ${nf(s.de)} % a ${nf(s.a)} %`;
-  const efecto = (s) => `${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts de cobertura y ${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts de carga de Corabastos`;
+  const efecto = (s) => problema === 'bod' ? `${s.dOcc <= 0 ? '−' : '+'}${nf(Math.abs(s.dOcc), 1)} pts en la bodega más llena y ${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts de cobertura`
+    : `${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts de cobertura y ${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts de carga de Corabastos`;
   const VERD = { go: 'Game over', sostenible: 'Sostenible', plausible: 'Plausible con condiciones' };
-  const t5 = `${VERD[estado]}${completo || go ? '' : ' (hasta ahora)'}. ${mejor && (Math.abs(mejor.dCob) > 0.05 || Math.abs(mejor.dCar) > 0.05) ? `Recomendación: ${accion(mejor)}. En la semana crítica (año ${añoDe(crit.sem)}) es la palanca que más mueve el resultado: ${efecto(mejor)}.` : 'Recomendación: mantener estas condiciones; ninguna palanca cambia el resultado en la semana crítica.'}`;
+  /* residuos: ninguna palanca del abasto los baja (más comida = más residuos); la recomendación fija es cuánto habría que tratar cerca de la
+     fuente para que lo sin recoger quede bajo 2/3 del camino al game over en la semana crítica (cifras de la corrida) */
+  const rC = Rk(crit) || rN, falta = rC ? Math.max(0, rC.noRec - CERCA_RES) : 0;
+  const recRes = `Recomendación: separar y tratar cerca de la fuente al menos ${nf(Math.ceil(falta))} t/día más de orgánicos (Estaciones Circulares, E4) para que lo sin recoger quede bajo ${nf(CERCA_RES)} t/día en la semana crítica (año ${añoDe(crit.sem)})${rC && rC.trat > 0.5 ? `; hoy tratan ${nf(rC.trat, 1)} t/día${rC.nEst ? ` en ${nf(rC.nEst)} estaciones de 20 t/día` : ''}` : '; sin propuesta no hay Estaciones: la propuesta tiene 20 de 20 t/día que abren por fases'}. Ninguna palanca del abasto los baja: más comida que llega es más residuo.`;
+  const t5 = `${VERD[estado]}${completo || go ? '' : ' (hasta ahora)'}. ${problema === 'res' ? recRes : mejor && (Math.abs(mejor.dCob) > 0.05 || Math.abs(mejor.dCar) > 0.05 || Math.abs(mejor.dOcc) > 0.05) ? `Recomendación: ${accion(mejor)}. En la semana crítica (año ${añoDe(crit.sem)}) es la palanca que más mueve el resultado: ${efecto(mejor)}.` : 'Recomendación: mantener estas condiciones; ninguna palanca cambia el resultado en la semana crítica.'}`;
   // --- tarjetas ---
   const pasos = (arr) => `<ol class="c01-ol">${arr.map(([k, t]) => `<li><b>${k}</b><span>${t}</span></li>`).join('')}</ol>`;
-  const tabla = `<table class="c01-sens"><thead><tr><th>Palanca · un cuarto de su rango</th><th>Cobertura</th><th>Carga</th></tr></thead><tbody>${sens.map(s => `<tr class="${mejor && s.k === mejor.k ? 'mx' : ''}"><td>${esc(s.n)} ${s.agotada ? '(al máximo)' : `${nf(s.de, s.k === 'autoconsumo' ? 1 : 0)} → ${nf(s.a, s.k === 'autoconsumo' ? 1 : 0)}${s.u}`}</td><td>${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts</td><td>${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts</td></tr>`).join('')}</tbody></table>`;
+  const tabla = `<table class="c01-sens"><thead><tr><th>Palanca · un cuarto de su rango</th><th>Cobertura</th><th>Carga</th><th>Bodega más llena</th></tr></thead><tbody>${sens.map(s => `<tr class="${mejor && s.k === mejor.k ? 'mx' : ''}"><td>${esc(s.n)} ${s.agotada ? '(al máximo)' : `${nf(s.de, s.k === 'autoconsumo' ? 1 : 0)} → ${nf(s.a, s.k === 'autoconsumo' ? 1 : 0)}${s.u}`}</td><td>${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts</td><td>${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts</td><td>${s.dOcc <= 0 ? '−' : '+'}${nf(Math.abs(s.dOcc), 1)} pts</td></tr>`).join('')}</tbody></table>`;
   const html = `<section class="c01" data-a style="--d:1300" aria-labelledby="c01-t"><div class="c01-h"><span class="i2-lab">Conclusión general</span><h3 id="c01-t" class="c01-v ${estado}">${VERD[estado]}${completo || go ? '' : ' · hasta el año ' + añoDe(L.sem)}</h3></div>
     <div class="c01-g">
-      <article class="c01-c i2-panel"><h4>¿Alcanza la comida?</h4><p class="c01-s">Comida fresca que recibe Kennedy (t/día): Corabastos, mercados y autoconsumo frente a la demanda y la línea de 80 %.</p><div class="c01-fig" data-c01="1"></div>
-        ${pasos([['1 · Qué se cambió', esc(t1)], ['2 · Oferta y demanda', esc(t2)]])}</article>
-      <article class="c01-c i2-panel"><h4>¿Aguanta el sistema?</h4><p class="c01-s">Lo que se le pide a Corabastos frente a su tope y el uso de los mercados (%), con los sectores peor servidos.</p><div class="c01-fig" data-c01="2"></div>
-        ${pasos([['3 · Corabastos y mercados', esc(t3)], ['4 · Cuándo y dónde', esc(t4)], ['5 · Conclusión', esc(t5)]])}${tabla}</article>
+      <article class="c01-c i2-panel"><h4>¿Alcanza la comida y caben las bodegas?</h4><p class="c01-s">Comida fresca que recibe Kennedy (t/día): Corabastos, mercados y autoconsumo frente a la demanda y la línea de 80 %; abajo, las bodegas más llenas en la semana crítica.</p><div class="c01-fig" data-c01="1"></div>
+        ${pasos([['1 · Qué se cambió', esc(t1)], ['2 · Oferta y demanda', esc(t2 + t2b)], ['3 · Bodegas, Corabastos y mercados', esc(t3)]])}</article>
+      <article class="c01-c i2-panel"><h4>¿Aguantan los residuos y La Vaca?</h4><p class="c01-s">Residuos de Kennedy que no se recogen (t/día) frente al game over de 296 y a los 148 de hoy; abajo, lo que queda del humedal La Vaca.</p><div class="c01-fig" data-c01="2"></div>
+        ${pasos([['4 · Cuándo y dónde', esc(t4)], ['5 · Conclusión', esc(t5)]])}${tabla}</article>
     </div></section>`;
   // --- diagramas (se dibujan al ancho real) ---
   const muestra = []; for (let i = 0; i < W.length; i += 4) muestra.push(W[i]); if (muestra[muestra.length - 1] !== L) muestra.push(L);
@@ -110,28 +135,35 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
     for (const [v, c, n] of seg) { if (!(v > 0)) continue; const a1 = a0 + v / tot * Math.PI * 2 - (v >= tot ? 1e-3 : 0), L = a1 - a0 > Math.PI ? 1 : 0; dona += `<path d="M${Pp(44, a0)}A44 44 0 ${L} 1 ${Pp(44, a1)}L${Pp(29, a1)}A29 29 0 ${L} 0 ${Pp(29, a0)}Z" fill="${c}" stroke="var(--bg)" stroke-width="1.5"><title>${n}: ${nf(v / tot * 100, 1)} %</title></path>`; a0 = a1; }
     dona += `<text x="48" y="47" text-anchor="middle" class="c01-dn">${nf(sCor / tot * 100)}%</text><text x="48" y="59" text-anchor="middle" class="c01-dl">Corabastos</text></svg>`;
     const parte = `<div class="c01-part">${dona}<ul>${seg.map(([v, c, n]) => `<li><i style="background:${c}"></i>${n}<b>${nf(v / tot * 100, 1)} %</b></li>`).join('')}</ul></div>`;
-    return s + '</svg>' + parte + `<div class="c01-ley"><span><i style="background:#7d6bff"></i>Corabastos</span><span><i style="background:#c08f1c"></i>Mercados</span><span><i style="background:#22a89d"></i>Autoconsumo</span><span><i class="l"></i>Demanda</span><span><i class="l r"></i>80 % de la demanda</span></div>`;
+    // bodegas más llenas en la semana crítica (raya = 100 % del tope de cada nave)
+    const bC = Bo(go && go.regla === 'bodegas' ? crit : wMaxB || crit), NOM = bC && bC.occ ? bC.occ.map((o, i) => ({ i, o })).filter(q => q.o > 0).sort((a, b) => b.o - a.o).slice(0, 5) : [];
+    const bods = NOM.length ? `<div class="c01-bs"><small>Bodegas más llenas · ${MES[X(go && go.regla === 'bodegas' ? crit : wMaxB || crit).mes]} del año ${añoDe((go && go.regla === 'bodegas' ? crit : wMaxB || crit).sem)} (raya = su tope)</small>${NOM.map(q => { const v = q.o * 100, n = (bC.nombres && bC.nombres[q.i]) || 'nave ' + q.i; return `<div class="c01-b"><span>${esc(n)}</span><i><b style="width:${Math.max(2, Math.min(100, v / 1.2)).toFixed(1)}%;background:${v >= 100 ? 'var(--s-crit)' : v >= 90 ? 'var(--amb)' : 'var(--s-con)'}"></b><em style="left:${(100 / 1.2).toFixed(1)}%"></em></i><span>${nf(v < 100 ? Math.floor(v) : v)} %</span></div>`; }).join('')}</div>` : '';
+    return s + '</svg>' + parte + `<div class="c01-ley"><span><i style="background:#7d6bff"></i>Corabastos</span><span><i style="background:#c08f1c"></i>Mercados</span><span><i style="background:#22a89d"></i>Autoconsumo</span><span><i class="l"></i>Demanda</span><span><i class="l r"></i>80 % de la demanda</span></div>` + bods;
   }
+  /* residuos sin recoger (t/día) de esta corrida y de la otra mitad, con hoy (148) y el game over (296); La Vaca y los sectores peor servidos */
   function fig2(w) {
-    const h = 200, pl = 42, pr = 10, pt = 10, pb = 22, iw = w - pl - pr, ih = h - pt - pb;
-    const vals = muestra.map(q => X(q).carga * 100).concat(muestraB ? muestraB.map(q => X(q).carga * 100) : []), mn = Math.max(0, Math.floor(Math.min(60, ...vals, ...(usoN ? muestra.map(q => X(q).mercCap ? X(q).mercT / X(q).mercCap * 100 : 100) : [])) / 10) * 10), mx = Math.max(110, Math.ceil(Math.max(...vals) / 10) * 10 + 5);
+    const h = 200, pl = 42, pr = 10, pt = 10, pb = 22, iw = w - pl - pr, ih = h - pt - pb, R = (q) => (Rk(q) ? Rk(q).noRec : null);
+    const vals = muestra.map(R).concat(muestraB ? muestraB.map(R) : []).filter(v => v != null), mn = 0, mx = Math.max(340, Math.ceil(Math.max(0, ...vals) / 50) * 50 + 20);
     const x = (s) => pl + (s - 1) / (FIN - 1) * iw, y = (v) => pt + ih - (v - mn) / (mx - mn) * ih;
-    const lin = (A, f) => A.filter(q => f(X(q)) != null).map((q, i) => `${i ? 'L' : 'M'}${x(q.sem).toFixed(1)} ${y(f(X(q))).toFixed(1)}`).join('');
-    let s = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Carga de Corabastos frente a su tope y uso de los mercados">`;
-    for (let v = mn; v <= mx; v += 20) s += `<line x1="${pl}" x2="${w - pr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--grid)"/><text x="${pl - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${v} %</text>`;
+    const lin = (A) => { let d = '', n = 0; for (const q of A) { const v = R(q); if (v == null) { n = 0; continue; } d += `${n++ ? 'L' : 'M'}${x(q.sem).toFixed(1)} ${y(v).toFixed(1)}`; } return d; };
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Residuos sin recoger de Kennedy frente al game over">`;
+    for (let v = 0; v <= mx; v += 100) s += `<line x1="${pl}" x2="${w - pr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--grid)"/><text x="${pl - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${nf(v)}</text>`;
     s += ejeX(x, w, h);
-    s += `<rect x="${pl}" y="${pt}" width="${iw}" height="${Math.max(0, y(100) - pt).toFixed(1)}" fill="var(--s-lim)" fill-opacity=".08"/><line x1="${pl}" x2="${w - pr}" y1="${y(100).toFixed(1)}" y2="${y(100).toFixed(1)}" stroke="var(--s-lim)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${w - pr}" y="${(y(100) - 4).toFixed(1)}" text-anchor="end" fill="var(--mal)">tope</text>`;
-    if (muestraB) s += `<path d="${lin(muestraB, U => U.carga * 100)}" fill="none" stroke="${prop ? '#f2694a' : '#7d6bff'}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-    s += `<path d="${lin(muestra, U => U.carga * 100)}" fill="none" stroke="${prop ? '#7d6bff' : '#f2694a'}" stroke-width="2"/>`;
-    if (usoN) s += `<path d="${lin(muestra, U => (U.mercCap ? U.mercT / U.mercCap * 100 : null))}" fill="none" stroke="#c08f1c" stroke-width="1.6"/>`;
+    s += `<rect x="${pl}" y="${pt}" width="${iw}" height="${Math.max(0, y(296) - pt).toFixed(1)}" fill="var(--s-lim)" fill-opacity=".08"/><line x1="${pl}" x2="${w - pr}" y1="${y(296).toFixed(1)}" y2="${y(296).toFixed(1)}" stroke="var(--s-lim)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${w - pr}" y="${(y(296) - 4).toFixed(1)}" text-anchor="end" fill="var(--mal)">game over 296</text>`;
+    s += `<line x1="${pl}" x2="${w - pr}" y1="${y(148).toFixed(1)}" y2="${y(148).toFixed(1)}" stroke="var(--mut)" stroke-width="1" stroke-dasharray="2 3"/><text x="${pl + 4}" y="${(y(148) - 4).toFixed(1)}">hoy 148</text>`;
+    if (muestraB) s += `<path d="${lin(muestraB)}" fill="none" stroke="${prop ? '#f2694a' : '#7d6bff'}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    s += `<path d="${lin(muestra)}" fill="none" stroke="${prop ? '#7d6bff' : '#f2694a'}" stroke-width="2"/>`;
+    if (go) s += `<line x1="${x(go.sem).toFixed(1)}" x2="${x(go.sem).toFixed(1)}" y1="${pt}" y2="${pt + ih}" stroke="var(--s-crit)" stroke-dasharray="2 3"/>`;
     s += '</svg>';
+    const rF = Rk(L), vaca = rF ? [['Árboles de La Vaca', rF.arboles * 100], ['Interacciones bióticas en La Vaca', rF.inter * 100]] : [];
+    const bVaca = vaca.length ? `<div class="c01-bs"><small>Humedal La Vaca al final (100 % = hoy; × (1 − 0,5·D), supuesto)</small>${vaca.map(([n, v]) => `<div class="c01-b"><span>${n}</span><i><b style="width:${Math.max(2, Math.min(100, v)).toFixed(1)}%;background:${v < 75 ? 'var(--s-crit)' : v < 90 ? 'var(--amb)' : 'var(--s-con)'}"></b></i><span>${nf(v)} %</span></div>`).join('')}</div>` : '';
     const barras = peores.map(p => `<div class="c01-b"><span>${esc(p.n)}</span><i><b style="width:${Math.max(2, Math.min(100, p.v)).toFixed(1)}%;background:${p.v < 80 ? 'var(--s-crit)' : p.v < 87 ? 'var(--amb)' : 'var(--s-con)'}"></b><em style="left:80%"></em></i><span>${nf(p.v, 1)} % · año ${añoDe(p.sem)}</span></div>`).join('');
-    return s + `<div class="c01-ley"><span><i class="l" style="border-color:${prop ? '#7d6bff' : '#f2694a'}"></i>Corabastos (${prop ? 'con' : 'sin'} propuesta)</span>${muestraB ? `<span><i class="l d" style="border-color:${prop ? '#f2694a' : '#7d6bff'}"></i>${prop ? 'Sin' : 'Con'} propuesta</span>` : ''}${usoN ? '<span><i class="l" style="border-color:#c08f1c"></i>Uso de los mercados</span>' : ''}<span><i class="l r"></i>Tope</span></div><div class="c01-bs"><small>Sectores peor servidos (mínimo de la corrida; raya = 80 %)</small>${barras}</div>`;
+    return s + `<div class="c01-ley"><span><i class="l" style="border-color:${prop ? '#7d6bff' : '#f2694a'}"></i>Sin recoger (${prop ? 'con' : 'sin'} propuesta)</span>${muestraB ? `<span><i class="l d" style="border-color:${prop ? '#f2694a' : '#7d6bff'}"></i>${prop ? 'Sin' : 'Con'} propuesta</span>` : ''}<span><i class="l r"></i>Game over</span></div>${bVaca}<div class="c01-bs"><small>Sectores peor servidos de comida (mínimo de la corrida; raya = 80 %)</small>${barras}</div>`;
   }
   function pintar(root) { if (!document.getElementById('c01-css')) { const st = document.createElement('style'); st.id = 'c01-css'; st.textContent = CSS; document.head.appendChild(st); }
     root.querySelectorAll('[data-c01]').forEach(el => { const w = Math.max(260, Math.floor(el.clientWidth || 320)); el.innerHTML = el.dataset.c01 === '1' ? fig1(w) : fig2(w); }); }
-  const frase = estado === 'go' ? null : estado === 'sostenible' ? `Sin game over${completo ? ' en los 15 años' : ''}: ningún sector bajó de 87 % y lo pedido a Corabastos nunca pasó su tope (máximo ${nf(maxC * 100)} %).`
-    : `Sin game over${completo ? ' en los 15 años' : ''}, con condiciones: ${sobre ? `a Corabastos le pidieron más que su tope ${nf(sobre)} semanas (máximo ${nf(maxC * 100)} %)` : 'Corabastos no pasó su tope'}${minSec < 87 ? ` y el sector peor servido bajó a ${nf(minSec, 1)} %` : ''}.`;
+  const frase = estado === 'go' ? null : estado === 'sostenible' ? `Sin game over${completo ? ' en los 15 años' : ''}: ningún sector bajó de 87 %, ninguna bodega se llenó (máximo ${nf(maxB * 100)} %) y lo sin recoger quedó en ${nf(maxR)} t/día o menos.`
+    : `Sin game over${completo ? ' en los 15 años' : ''}, con condiciones: ${[sobre ? `a Corabastos le pidieron más que su tope ${nf(sobre)} semanas` : '', maxB >= 0.9 ? `la bodega más llena llegó a ${nf(maxB * 100)} % de su tope` : '', maxR >= CERCA_RES ? `lo sin recoger llegó a ${nf(maxR)} t/día (game over en 296)` : '', minSec < 87 ? `el sector peor servido bajó a ${nf(minSec, 1)} %` : ''].filter(Boolean).join('; ') || 'algún indicador se acercó a su límite'}.`;
   return { estado, big: VERD[estado] === 'Plausible con condiciones' ? 'Plausible' : VERD[estado], eye: estado === 'go' ? 'Resultado · condición crítica sostenida' : `¿Fue sostenible? · ${VERD[estado]}`, frase, veredicto: estado === 'sostenible' ? 'Sí' : estado === 'go' ? 'No' : 'En parte', html, pintar, textos: [t1, t2, t3, t4, t5], sens, mejor };
 }
 const CSS = `

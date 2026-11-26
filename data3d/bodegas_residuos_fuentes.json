@@ -1,0 +1,1164 @@
+{
+ "meta": {
+  "descripcion": "Bodegas de Corabastos (recibo y tope), comida que llega a Kennedy, residuos, game over de residuos, humedal La Vaca y congestión. Ver docs/fuentes_bodegas_residuos.md.",
+  "compilado": "2026-11-26",
+  "confianza": "alta = dato oficial verificado en el documento; media = oficial secundario, prensa oficial o estudio contratado; baja = derivado o supuesto [SUP]",
+  "mapeo": "idx_corabastos_json = posición en data3d/corabastos.json .naves (no hay ids). Número de bodega asignado comparando columnas y filas del plano DANE 2012 (Figura 1) con las naves del modelo; validado con la Res. SDP 1888/2024 (bodegas 17 y 5 colindan con el humedal La Vaca = idx 30 y 29, dh 53 y 51 m)."
+ },
+ "reglas_bodegas": {
+  "recibo": "recibe_t_dia(t) = recibe_t_dia(2025) × demanda(t)/demanda(2025)",
+  "stock_pico": "stock = recibe_t_dia × permanencia_dias (frescos 1 día: llegan y se venden en la misma jornada según Corabastos/Horarios; granos 7 días [SUP])",
+  "llenado": "ocupación = stock / tope_t; rojo al acercarse a 1; game over cuando alguna (o el X % del área) llega a 1",
+  "tope": "tope_t = area_m2 × densidad (DANE 2012: papa 100 t/400 m² = 0,25; bulto 50 kg 50 t/225 m² = 0,222; canastilla 25 kg 37,5 t/225 m² = 0,167 t/m²)",
+  "control": "ocupación global 2025 = 0,66; primera bodega llena con +8,7 % (Aguacate), raíces +14 %, hortalizas +33 %: coherente con coraTope 11 % (5-25 %) de docs/fuentes_abastecimiento.md",
+  "expansion_prm": {
+   "ocupacion_actual_m2": 126600.19,
+   "io_actual": 0.3,
+   "ocupacion_propuesta_m2": 144147.01,
+   "io_propuesto": 0.34,
+   "aumento_pct": 13.9,
+   "fuente": "Corabastos/Acosta Irreño (2020) Presentación PRyM, diapositivas 51-52 https://corabastos.com.co/sites/default/files/2020-09/PRyMPRESENTACION.pdf",
+   "confianza": "media"
+  },
+  "tonelaje_grupo_t_dia_2025": {
+   "verduras_hortalizas": 2321.8,
+   "tuberculos_raices_platano": 1811.9,
+   "frutas": 1753.9,
+   "otros": 572.6,
+   "subreparto_tuberculos": {
+    "papa": 0.54,
+    "criolla_yuca_arracacha": 0.31,
+    "platano": 0.15,
+    "fuente": "ACIDC 2022 en DTS comercialización Gob. Cundinamarca 2022 (ver fuentes_abastecimiento.md)",
+    "confianza": "baja"
+   },
+   "fuente": "DANE-SIPSA anexos 2025: 847.458 / 661.339 / 640.179 / 208.997 t ÷ 365",
+   "confianza": "alta"
+  }
+ },
+ "bodegas": [
+  {
+   "idx_corabastos_json": 0,
+   "centro_modelo": [
+    6224.63,
+    2347.83
+   ],
+   "nombre": "B29",
+   "grupo": "frutas",
+   "grupo_codigo": "frutas",
+   "area_m2": 4453,
+   "dist_la_vaca_m": 323,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 433.9,
+   "tope_t": 744,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.583,
+   "crecimiento_hasta_lleno_pct": 71.5,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 1,
+   "centro_modelo": [
+    6314.3,
+    2426.05
+   ],
+   "nombre": "Gran Bodega / Bodega Popular (Mercado Libre)",
+   "grupo": "frutas y verduras (mixto, minorista)",
+   "grupo_codigo": "mixto_fv",
+   "area_m2": 6076,
+   "dist_la_vaca_m": 440,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 690.4,
+   "tope_t": 1015,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.68,
+   "crecimiento_hasta_lleno_pct": 47.1,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "baja",
+    "grupo": "baja",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 2,
+   "centro_modelo": [
+    6310.45,
+    1954.9
+   ],
+   "nombre": "B16",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2024,
+   "dist_la_vaca_m": 114,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.1,
+   "tope_t": 449,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.735,
+   "crecimiento_hasta_lleno_pct": 36.1,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 3,
+   "centro_modelo": [
+    6438.73,
+    1943.65
+   ],
+   "nombre": "B6",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2058,
+   "dist_la_vaca_m": 113,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.9,
+   "tope_t": 457,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 4,
+   "centro_modelo": [
+    6326.35,
+    2139.55
+   ],
+   "nombre": "B13",
+   "grupo": "papa",
+   "grupo_codigo": "papa",
+   "area_m2": 1992,
+   "dist_la_vaca_m": 262,
+   "densidad_t_m2": 0.25,
+   "recibe_t_dia": 194.9,
+   "tope_t": 498,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.391,
+   "crecimiento_hasta_lleno_pct": 155.8,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 5,
+   "centro_modelo": [
+    6670.2,
+    2140.1
+   ],
+   "nombre": "Servicios (zona Martillo, bancos, administracion)",
+   "grupo": "no alimentario (servicios)",
+   "grupo_codigo": "servicios",
+   "area_m2": 1210,
+   "dist_la_vaca_m": 360,
+   "densidad_t_m2": null,
+   "recibe_t_dia": null,
+   "tope_t": null,
+   "permanencia_dias": null,
+   "ocupacion_pico_2025": null,
+   "crecimiento_hasta_lleno_pct": null,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "baja",
+    "grupo": "baja",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 6,
+   "centro_modelo": [
+    6090.29,
+    2097.84
+   ],
+   "nombre": "B26",
+   "grupo": "verduras y hortalizas",
+   "grupo_codigo": "hortalizas",
+   "area_m2": 1985,
+   "dist_la_vaca_m": 42,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 249.8,
+   "tope_t": 331,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.755,
+   "crecimiento_hasta_lleno_pct": 32.5,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 7,
+   "centro_modelo": [
+    6444.15,
+    2005.35
+   ],
+   "nombre": "B7",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2057,
+   "dist_la_vaca_m": 175,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.9,
+   "tope_t": 457,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 8,
+   "centro_modelo": [
+    6321.05,
+    2078.05
+   ],
+   "nombre": "B14",
+   "grupo": "papa",
+   "grupo_codigo": "papa",
+   "area_m2": 1992,
+   "dist_la_vaca_m": 227,
+   "densidad_t_m2": 0.25,
+   "recibe_t_dia": 194.9,
+   "tope_t": 498,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.391,
+   "crecimiento_hasta_lleno_pct": 155.8,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 9,
+   "centro_modelo": [
+    6727.43,
+    2229.98
+   ],
+   "nombre": "Servicios (zona Martillo, bancos, administracion)",
+   "grupo": "no alimentario (servicios)",
+   "grupo_codigo": "servicios",
+   "area_m2": 767,
+   "dist_la_vaca_m": 466,
+   "densidad_t_m2": null,
+   "recibe_t_dia": null,
+   "tope_t": null,
+   "permanencia_dias": null,
+   "ocupacion_pico_2025": null,
+   "crecimiento_hasta_lleno_pct": null,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "baja",
+    "grupo": "baja",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 10,
+   "centro_modelo": [
+    6100.05,
+    2221.3
+   ],
+   "nombre": "B24",
+   "grupo": "verduras y hortalizas",
+   "grupo_codigo": "hortalizas",
+   "area_m2": 2086,
+   "dist_la_vaca_m": 146,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 262.5,
+   "tope_t": 348,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.754,
+   "crecimiento_hasta_lleno_pct": 32.6,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 11,
+   "centro_modelo": [
+    6215.98,
+    2211.23
+   ],
+   "nombre": "B21",
+   "grupo": "verduras y hortalizas",
+   "grupo_codigo": "hortalizas",
+   "area_m2": 1979,
+   "dist_la_vaca_m": 210,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 249.1,
+   "tope_t": 330,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.755,
+   "crecimiento_hasta_lleno_pct": 32.5,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 12,
+   "centro_modelo": [
+    6331.85,
+    2201.1
+   ],
+   "nombre": "B12",
+   "grupo": "verduras y hortalizas",
+   "grupo_codigo": "hortalizas",
+   "area_m2": 2043,
+   "dist_la_vaca_m": 298,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 257.1,
+   "tope_t": 341,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.754,
+   "crecimiento_hasta_lleno_pct": 32.6,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 13,
+   "centro_modelo": [
+    6730.6,
+    2170.25
+   ],
+   "nombre": "Servicios (zona Martillo, bancos, administracion)",
+   "grupo": "no alimentario (servicios)",
+   "grupo_codigo": "servicios",
+   "area_m2": 1465,
+   "dist_la_vaca_m": 417,
+   "densidad_t_m2": null,
+   "recibe_t_dia": null,
+   "tope_t": null,
+   "permanencia_dias": null,
+   "ocupacion_pico_2025": null,
+   "crecimiento_hasta_lleno_pct": null,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "baja",
+    "grupo": "baja",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 14,
+   "centro_modelo": [
+    6200.52,
+    2026.59
+   ],
+   "nombre": "B18",
+   "grupo": "papa y verduras",
+   "grupo_codigo": "papa_verdura",
+   "area_m2": 2081,
+   "dist_la_vaca_m": 97,
+   "densidad_t_m2": 0.2085,
+   "recibe_t_dia": 232.8,
+   "tope_t": 434,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.536,
+   "crecimiento_hasta_lleno_pct": 86.6,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 15,
+   "centro_modelo": [
+    6315.8,
+    2016.5
+   ],
+   "nombre": "B15",
+   "grupo": "papa y verduras",
+   "grupo_codigo": "papa_verdura",
+   "area_m2": 2002,
+   "dist_la_vaca_m": 176,
+   "densidad_t_m2": 0.2085,
+   "recibe_t_dia": 223.9,
+   "tope_t": 417,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.537,
+   "crecimiento_hasta_lleno_pct": 86.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 16,
+   "centro_modelo": [
+    6106.6,
+    2282.6
+   ],
+   "nombre": "B25",
+   "grupo": "verduras y hortalizas",
+   "grupo_codigo": "hortalizas",
+   "area_m2": 2054,
+   "dist_la_vaca_m": 191,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 258.5,
+   "tope_t": 343,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.754,
+   "crecimiento_hasta_lleno_pct": 32.6,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 17,
+   "centro_modelo": [
+    6221.63,
+    2273.1
+   ],
+   "nombre": "B22",
+   "grupo": "yuca, arracacha, papa criolla y plátano",
+   "grupo_codigo": "raices",
+   "area_m2": 2034,
+   "dist_la_vaca_m": 261,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 396.0,
+   "tope_t": 452,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.876,
+   "crecimiento_hasta_lleno_pct": 14.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 18,
+   "centro_modelo": [
+    6336.95,
+    2262.65
+   ],
+   "nombre": "B11",
+   "grupo": "yuca, arracacha, papa criolla y plátano",
+   "grupo_codigo": "raices",
+   "area_m2": 2013,
+   "dist_la_vaca_m": 336,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 391.9,
+   "tope_t": 447,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.877,
+   "crecimiento_hasta_lleno_pct": 14.0,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 19,
+   "centro_modelo": [
+    6677.3,
+    2218.9
+   ],
+   "nombre": "Servicios (zona Martillo, bancos, administracion)",
+   "grupo": "no alimentario (servicios)",
+   "grupo_codigo": "servicios",
+   "area_m2": 2034,
+   "dist_la_vaca_m": 433,
+   "densidad_t_m2": null,
+   "recibe_t_dia": null,
+   "tope_t": null,
+   "permanencia_dias": null,
+   "ocupacion_pico_2025": null,
+   "crecimiento_hasta_lleno_pct": null,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "baja",
+    "grupo": "baja",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 20,
+   "centro_modelo": [
+    6343.76,
+    2333.47
+   ],
+   "nombre": "B30",
+   "grupo": "frutas",
+   "grupo_codigo": "frutas",
+   "area_m2": 4112,
+   "dist_la_vaca_m": 387,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 400.7,
+   "tope_t": 687,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.583,
+   "crecimiento_hasta_lleno_pct": 71.5,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 21,
+   "centro_modelo": [
+    6454.47,
+    2128.78
+   ],
+   "nombre": "B9",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2031,
+   "dist_la_vaca_m": 299,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.3,
+   "tope_t": 451,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 22,
+   "centro_modelo": [
+    6460.25,
+    2190.16
+   ],
+   "nombre": "B10",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2033,
+   "dist_la_vaca_m": 360,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.4,
+   "tope_t": 451,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.735,
+   "crecimiento_hasta_lleno_pct": 36.1,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 23,
+   "centro_modelo": [
+    6206.05,
+    2088.1
+   ],
+   "nombre": "B19",
+   "grupo": "papa",
+   "grupo_codigo": "papa",
+   "area_m2": 1971,
+   "dist_la_vaca_m": 133,
+   "densidad_t_m2": 0.25,
+   "recibe_t_dia": 192.8,
+   "tope_t": 493,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.391,
+   "crecimiento_hasta_lleno_pct": 155.8,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 24,
+   "centro_modelo": [
+    6023.55,
+    2168.85
+   ],
+   "nombre": "Aguacate (B31-B32)",
+   "grupo": "aguacate, banano y plátano",
+   "grupo_codigo": "aguacate",
+   "area_m2": 816,
+   "dist_la_vaca_m": 54,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 125.1,
+   "tope_t": 136,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.92,
+   "crecimiento_hasta_lleno_pct": 8.7,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 25,
+   "centro_modelo": [
+    6096.05,
+    2159.21
+   ],
+   "nombre": "B23",
+   "grupo": "verduras y hortalizas",
+   "grupo_codigo": "hortalizas",
+   "area_m2": 2021,
+   "dist_la_vaca_m": 101,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 254.4,
+   "tope_t": 338,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.753,
+   "crecimiento_hasta_lleno_pct": 32.8,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 26,
+   "centro_modelo": [
+    6211.19,
+    2149.29
+   ],
+   "nombre": "B20",
+   "grupo": "papa",
+   "grupo_codigo": "papa",
+   "area_m2": 2004,
+   "dist_la_vaca_m": 168,
+   "densidad_t_m2": 0.25,
+   "recibe_t_dia": 196.1,
+   "tope_t": 501,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.391,
+   "crecimiento_hasta_lleno_pct": 155.8,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 27,
+   "centro_modelo": [
+    6449.66,
+    2067.28
+   ],
+   "nombre": "B8",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2026,
+   "dist_la_vaca_m": 237,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.2,
+   "tope_t": 450,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 28,
+   "centro_modelo": [
+    6560.25,
+    1995.18
+   ],
+   "nombre": "B4",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2131,
+   "dist_la_vaca_m": 181,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 49.6,
+   "tope_t": 473,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.735,
+   "crecimiento_hasta_lleno_pct": 36.1,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 29,
+   "centro_modelo": [
+    6434.0,
+    1882.26
+   ],
+   "nombre": "B5",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 1993,
+   "dist_la_vaca_m": 51,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 46.4,
+   "tope_t": 442,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.735,
+   "crecimiento_hasta_lleno_pct": 36.1,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 30,
+   "centro_modelo": [
+    6305.6,
+    1893.35
+   ],
+   "nombre": "B17",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2094,
+   "dist_la_vaca_m": 53,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 48.8,
+   "tope_t": 465,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 31,
+   "centro_modelo": [
+    6445.52,
+    2417.16
+   ],
+   "nombre": "Cuartos frios",
+   "grupo": "frutas",
+   "grupo_codigo": "frutas",
+   "area_m2": 1664,
+   "dist_la_vaca_m": 518,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 162.1,
+   "tope_t": 278,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.583,
+   "crecimiento_hasta_lleno_pct": 71.5,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 32,
+   "centro_modelo": [
+    6119.32,
+    2357.38
+   ],
+   "nombre": "B29",
+   "grupo": "frutas",
+   "grupo_codigo": "frutas",
+   "area_m2": 3752,
+   "dist_la_vaca_m": 248,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 365.6,
+   "tope_t": 627,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.583,
+   "crecimiento_hasta_lleno_pct": 71.5,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 33,
+   "centro_modelo": [
+    6268.85,
+    2430.7
+   ],
+   "nombre": "Gran Bodega / Bodega Popular (anexo)",
+   "grupo": "frutas y verduras (mixto, minorista)",
+   "grupo_codigo": "mixto_fv",
+   "area_m2": 1365,
+   "dist_la_vaca_m": 410,
+   "densidad_t_m2": 0.167,
+   "recibe_t_dia": 155.1,
+   "tope_t": 228,
+   "permanencia_dias": 1,
+   "ocupacion_pico_2025": 0.68,
+   "crecimiento_hasta_lleno_pct": 47.1,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "baja",
+    "grupo": "baja",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 34,
+   "centro_modelo": [
+    6565.43,
+    2057.3
+   ],
+   "nombre": "B3",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 1990,
+   "dist_la_vaca_m": 242,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 46.3,
+   "tope_t": 442,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 35,
+   "centro_modelo": [
+    6576.14,
+    2180.58
+   ],
+   "nombre": "B1",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2112,
+   "dist_la_vaca_m": 364,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 49.2,
+   "tope_t": 469,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  },
+  {
+   "idx_corabastos_json": 36,
+   "centro_modelo": [
+    6570.67,
+    2118.66
+   ],
+   "nombre": "B2",
+   "grupo": "granos, procesados y abarrotes (incl. otros grupos SIPSA)",
+   "grupo_codigo": "granos",
+   "area_m2": 2035,
+   "dist_la_vaca_m": 302,
+   "densidad_t_m2": 0.222,
+   "recibe_t_dia": 47.4,
+   "tope_t": 452,
+   "permanencia_dias": 7,
+   "ocupacion_pico_2025": 0.734,
+   "crecimiento_hasta_lleno_pct": 36.2,
+   "fuente": "DANE (2012) Boletín trimestral Abastecimiento n.º 1, pp. 1-3 y Figura 1 (plano numerado) https://www.dane.gov.co/files/investigaciones/agropecuario/sipsa/bol_abas_jul_sep12.pdf; Corabastos, Horarios https://corabastos.com.co/horarios/; DANE-SIPSA anexos 2025 (grupos) + reparto por área dentro del grupo (derivado); densidad DANE 2012 p. 1-2; área = L×W de data3d/corabastos.json",
+   "confianza": {
+    "mapeo_numero": "media",
+    "grupo": "alta",
+    "recibe_t_dia": "baja (derivado)",
+    "tope_t": "baja (derivado)"
+   }
+  }
+ ],
+ "codigos_bodega_oficiales_2024": {
+  "lista": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   35,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41,
+   42,
+   43,
+   44,
+   45,
+   46,
+   47,
+   48,
+   49,
+   50,
+   55,
+   60,
+   61,
+   62,
+   63,
+   70,
+   75,
+   76,
+   78,
+   79,
+   81,
+   82,
+   83,
+   84,
+   85,
+   86,
+   87,
+   88,
+   89,
+   98
+  ],
+  "n": 69,
+  "nota": "Códigos con elección de representante; Corabastos cita 57 bodegas; DANE 2012 contaba 32. El modelo tiene 37 naves.",
+  "fuente": "Corabastos (2024) Listado definitivo representantes de bodega 2024-2025 https://corabastos.com.co/wp-content/uploads/2024/08/Listado-de-Representantes-de-Bodega-2024-2025.pdf",
+  "confianza": "alta"
+ },
+ "comida_kennedy": {
+  "t_dia": 1100,
+  "t_dia_via_corabastos": 700,
+  "t_dia_via_corabastos_rango": [
+   662,
+   748
+  ],
+  "t_dia_otros_canales": 400,
+  "participacion_corabastos": 0.64,
+  "participacion_corabastos_rango": [
+   0.52,
+   0.68
+  ],
+  "derivacion": "Total: 1.080.742 hab × 1,02 kg/hab/día (RAPE 2020) = 1.102 t/día. Vía Corabastos: 6.460 × 0,85 = 5.491 t/día × (1.080.742/7,93 M) = 748 o × (1.080.742/8,97 M) = 662; central 700. Otros canales = 1.100 − 700.",
+  "fuente": "docs/fuentes_abastecimiento.md (SIPSA 2025; RAPE 2020; SED 2024)",
+  "confianza": "media (total) / baja (reparto por canal)",
+  "nota": "No existe medición oficial de toneladas que llegan a Kennedy: es demanda estimada; se supone que hoy llega lo que se demanda."
+ },
+ "residuos": {
+  "kennedy_t_dia": 922,
+  "kennedy_t_dia_ordinario": 774,
+  "kennedy_t_dia_puntos_criticos": 148,
+  "kg_hab_dia": 0.854,
+  "kg_hab_dia_ordinario": 0.716,
+  "derivacion": "UAESP T1-2026: 6.769 t/día (5.680 ordinario + 1.089 puntos críticos) / 7,93 M hab Bogotá × 1.080.742 hab Kennedy",
+  "bogota_t_dia": {
+   "2023": 6062.03,
+   "2024": 6364.12,
+   "2026T1": 6769
+  },
+  "bogota_t_anio": {
+   "2024": 2290000,
+   "2025": 2420000
+  },
+  "organico_pct": 51.3,
+  "organico_t_dia_kennedy": 473,
+  "corabastos_t_dia": 100,
+  "corabastos_coef_t_por_t_ingreso": 0.0155,
+  "crecimiento": {
+   "central_anual": 0.027,
+   "rango": [
+    0.027,
+    0.057
+   ],
+   "derivacion": "UAESP: +5,5 % 2024-2026 (≈2,7 %/año); 2024→2025: 2,42/2,29 = +5,7 %; Superservicios 2023→2024: +4,98 %"
+  },
+  "coef_comida_residuo": 0.19,
+  "coef_nota": "t de residuo alimentario por t de alimento disponible al consumidor (UNEP 2024: 19 %; hogares 79 kg/hab/año). Promedio Kennedy residuo total/alimento = 922/1.100 = 0,84 (incluye empaques y no alimentarios).",
+  "proyeccion": "R(t) = 922 × 1,027^t + 0,19 × (C(t) − 1.100)  [t/día; C = comida que llega a Kennedy]",
+  "fuente": "Superservicios (2025) Informe Nacional de Disposición Final 2024, pp. 23 y 28-29; UAESP en bogota.gov.co (17-abr-2026) https://bogota.gov.co/mi-ciudad/habitat/aumenta-la-produccion-de-residuos-solidos-en-bogota-segun-uaesp; La República (10-mar-2022) 51,3 % orgánico; UN News/UNEP Food Waste Index 2024 https://news.un.org/en/node/1148036; DANE 2012 (Corabastos 100 t/día)",
+  "confianza": "alta (Bogotá) / media (orgánico) / baja (Kennedy, derivado por población)"
+ },
+ "game_over_residuos": {
+  "umbral": 296,
+  "unidad": "t/día de residuos sin recolectar (puntos críticos) en Kennedy",
+  "umbral_generacion_t_dia": 1070,
+  "justificacion": "La recolección ordinaria de Kennedy se fija en su nivel actual (774 t/día); lo que la excede va a puntos críticos (hoy 148 t/día, 16 % de lo generado, igual que Bogotá: 1.089/6.769). Game over cuando lo no recolectado se duplica (296 t/día ⇒ generación 1.070 t/día, +16 %). Con +2,7 %/año llega en ≈5,6 años sin propuesta. Kennedy ya es la localidad con más puntos críticos activos (71). El factor 2× es criterio de diseño [SUP]. Doña Juana no sirve de umbral: no figura entre los sitios con vida útil vencida (Superservicios 2024) y la UAESP proyecta ampliación.",
+  "puntos_criticos_kennedy": 71,
+  "fuente": "Alcaldía de Bogotá (5-nov-2025) https://bogota.gov.co/mi-ciudad/gobierno/estrategia-en-bogota-busca-erradicar-puntos-criticos-de-residuos; UAESP 2026; Superservicios 2024 Tabla 8 p. 47",
+  "confianza": "media (datos) / baja (umbral)"
+ },
+ "la_vaca": {
+  "area_ha": 7.96,
+  "sector_norte_ha": 5.72,
+  "sector_sur_ha": 2.24,
+  "pma": "Res. SDA 7473 de 2009; actualización Res. 2925 de 2023",
+  "residuos_retirados_2020_2025_t": {
+   "solidos": 732,
+   "rcd": 125,
+   "tasa_t_dia": 0.45,
+   "derivacion": "857 t / (≈5,2 años × 365)"
+  },
+  "regla_degradacion": "D = clamp((noRecolectado(t) − 148)/(296 − 148), 0, 1); árboles en La Vaca = base × (1 − 0,5·D); interacciones bióticas en La Vaca = base × (1 − 0,5·D); aporte de residuos al humedal = 0,45 t/día × noRecolectado(t)/148 [SUP: forma y 0,5]",
+  "naves_a_menos_de_120_m": [
+   6,
+   24,
+   29,
+   30,
+   14,
+   25,
+   3,
+   2
+  ],
+  "fuente": "SDA/EAAB, Plan de Manejo Humedal La Vaca, p. 1 y p. 7 https://www.ambientebogota.gov.co/documents/10184/423705/Plan+La+Vaca.pdf/b13faa0d-55ff-4316-8a0e-6794175f6a48; Alcaldía de Bogotá (20-mar-2025) https://bogota.gov.co/en/node/247374; SDA (23-sep-2024) https://bogota.gov.co/en/node/221348; SDP Res. 1888/2024",
+  "confianza": "alta (área) / media (residuos retirados) / baja (regla)"
+ },
+ "congestion": {
+  "serie": [
+   {
+    "anio": 2020,
+    "nivel_congestion": 0.53,
+    "fuente": "La República (TomTom 2020)",
+    "confianza": "media",
+    "nota": "año de pandemia"
+   },
+   {
+    "anio": 2024,
+    "nivel_congestion": 0.619,
+    "min_10km": 29.85,
+    "vel_pico_kmh": 16.4,
+    "fuente": "derivado de TomTom 2025 (−7,7 pp, −1 min 54 s, −1 km/h)",
+    "confianza": "media"
+   },
+   {
+    "anio": 2025,
+    "nivel_congestion": 0.696,
+    "min_10km": 31.75,
+    "vel_pico_kmh": 15.4,
+    "fuente": "TomTom Traffic Index, Bogotá https://www.tomtom.com/traffic-index/city/bogota/",
+    "confianza": "media (página no leída directamente; cifras vía buscador)"
+   }
+  ],
+  "tasa": {
+   "central_pp_anio": 3.3,
+   "alta_pp_anio": 7.7,
+   "derivacion": "(69,6 − 53)/5 = 3,3 pp/año (2020→2025); 2024→2025 = 7,7 pp"
+  },
+  "regla": "nivel(t) = 0,62 + 0,033·t (t en años desde 2026, inicio en nivel 2024 para que no arranque alto); factor tiempo de viaje = 1 + nivel; camiones de abasto = recibo total / 6,21 t/veh (SIPSA 2025)",
+  "fuente": "TomTom Traffic Index 2025; La República 2021; DANE-SIPSA 2025",
+  "confianza": "media (serie) / baja (tasa central)"
+ }
+}

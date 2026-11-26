@@ -1,5 +1,5 @@
-import {adjuntarBalance} from './balance_final.js?v=2';
-import { conclusionAbasto } from './conclusion_abasto.js?v=2';
+import {adjuntarBalance} from './balance_final.js?v=3';
+import { conclusionAbasto } from './conclusion_abasto.js?v=3';
 import { TiempoRadial } from './graficas_arte.js?v=2'; // 2026-11-26: relojes de 15 años, línea de tiempo de burbujas y dona del veredicto (paleta URBIA + morados de la portada) // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
@@ -64,13 +64,15 @@ const TEMAS = [
 
 /* ---------- reglas de game over: valor y «hoy» (los mismos VALOR de simulaciones12.js) ---------- */
 const VAL = { fauna: (h) => h.fauna / Math.max(1, h.fauna0) * 100, habitat: (h) => h.pares / Math.max(1, h.pares0) * 100, abasto: (h) => h.evaluacion?.territorio?.cobertura,
-  residuos: (h) => h.residuos * 100, ruido: (h) => h.ruidoDb - h.ruidoDb0, trafico: (h) => h.trafico, humedal: (h) => h.humedalFuncional };
-const HOY = { fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100 };
-const UMB = { fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70 };
-const FMT_R = { ruido: (v) => SG(v) + nf(Math.abs(v), 1) + ' dB', trafico: (v) => nf(v, 2) };
+  residuos: (h) => h.residuos * 100, ruido: (h) => h.ruidoDb - h.ruidoDb0, trafico: (h) => h.trafico, humedal: (h) => h.humedalFuncional,
+  /* simulación 01 (simulaciones12.js REGLAS_AB01, 2026-11-26): bodega más llena (% de su tope) y residuos sin recoger de Kennedy (t/día) */
+  bodegas: (h) => (h.abasto && h.abasto.bodegas ? h.abasto.bodegas.max * 100 : null), residuosK: (h) => (h.residuosK ? h.residuosK.noRec : null) };
+const HOY = { fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100, bodegas: 92, residuosK: 148 };
+const UMB = { fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70, bodegas: 100, residuosK: 296 };
+const FMT_R = { ruido: (v) => SG(v) + nf(Math.abs(v), 1) + ' dB', trafico: (v) => nf(v, 2), residuosK: (v) => nf(v) + ' t/día' };
 const fmtR = (k, v) => (FMT_R[k] || ((x) => nf(x) + ' %'))(v);
-const ART = { fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico' };
-const CORTO_R = { fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico' };
+const ART = { fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico', bodegas: 'la bodega más llena de Corabastos', residuosK: 'lo que no se recoge de los residuos de Kennedy' };
+const CORTO_R = { fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico', bodegas: 'bodegas de Corabastos llenas', residuosK: 'residuos sin recoger' };
 const prox = (k, v, umbral) => { const h = HOY[k], u = umbral != null ? umbral : UMB[k]; if (v == null || u === h) return 0; return Math.max(0, Math.min(1.2, (v - h) / (u - h))); };
 const cruzó = (k, v, umbral) => { const u = umbral != null ? umbral : UMB[k]; return v != null && (HOY[k] < u ? v >= u : v <= u); };
 
@@ -79,6 +81,10 @@ const pct = (x) => x == null ? null : x * 100;
 const MET = {
   cora: { n: 'Corabastos', u: 'de su tope', t: 'Corabastos: carga frente a su tope', v: (h) => h.abasto && h.abasto.cora ? pct(num(h.abasto.cora.carga)) : null, f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 100, limTxt: 'tope',
     ay: 'Lo que recibe y despacha Corabastos frente a lo máximo que puede mover.' },
+  bodegas: { n: 'Bodega más llena de Corabastos', u: 'de su tope', t: 'Bodega más llena de Corabastos (% de su tope)', v: (h) => h.abasto && h.abasto.bodegas ? pct(num(h.abasto.bodegas.max)) : null, f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 100, limTxt: 'tope',
+    ay: 'Lo que recibe la nave por los días que permanece, frente a lo que cabe (área × densidad DANE 2012).' },
+  resK: { n: 'Residuos sin recoger en Kennedy', u: 't/día a puntos críticos', t: 'Residuos sin recoger en Kennedy (t/día)', v: (h) => h.residuosK ? num(h.residuosK.noRec) : null, f: (v) => nf(v) + ' t/día', sube: false, dif: 'rel', lim: 296, limTxt: 'game over 296 t/día',
+    ay: 'Lo que pasa de la recolección ordinaria (774 t/día) y termina en puntos críticos; degrada el humedal La Vaca.' },
   comida: { n: 'Comida en la zona peor servida', u: 'de lo que necesita', t: 'Comida en la zona peor servida', v: (h) => pct(num(h.comidaMin)), f: (v) => nf(v) + ' %', sube: true, dif: 'pts', lim: 80, limTxt: 'game over < 80 %',
     ay: 'Alimentos que llegan al barrio peor servido frente a lo que necesita.' },
   trafico: { n: 'Tráfico', u: 'del de hoy', t: 'Tráfico (100 % = hoy)', v: (h) => pct(num(h.trafico)), f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 130, limTxt: 'game over 130 %',
@@ -110,8 +116,8 @@ const MET = {
   residuos: { n: 'Orgánicos sin tratar', u: 'del almacenamiento', t: 'Orgánicos sin tratar (% del almacenamiento)', v: (h) => pct(num(h.residuos)), f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 100, limTxt: 'game over 100 %',
     ay: 'Orgánicos que esperan tratamiento frente a la capacidad.' }
 };
-const REGLA_MET = { fauna: 'fauna', habitat: 'habitat', humedal: 'humedal', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico' };
-const PAR_MET = { 1: ['cora', 'comida'], 2: ['comida', 'trafico'], 3: ['basura', 'circular'], 4: ['territorio', 'red'], 5: ['hogares', 'suelo'], 6: ['equidad', 'cobertura'] };
+const REGLA_MET = { fauna: 'fauna', habitat: 'habitat', humedal: 'humedal', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico', bodegas: 'bodegas', residuosK: 'resK' };
+const PAR_MET = { 1: ['bodegas', 'resK', 'comida'], 2: ['comida', 'trafico'], 3: ['basura', 'circular'], 4: ['territorio', 'red'], 5: ['hogares', 'suelo'], 6: ['equidad', 'cobertura'] };
 const RELLENO = ['red', 'humedal', 'trafico', 'comida', 'basura'];
 
 /* ---------- red biótica (para la «bola») ---------- */
@@ -672,7 +678,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const indMap = new Map((ind || []).map(x => [x.k, x]));
   const IT = (it) => { const o = indMap.get(it.k); return o ? { ...it, n: o.n || it.n, sube: o.sube != null ? o.sube : it.sube, f: it.f } : it; };
   const conProp = def.propuesta != null ? !!def.propuesta : (def.grupo === 'propuesta');
-  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => ['abasto','habitat','residuos'].includes(r.k));
+  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => ['abasto','habitat','residuos','bodegas','residuosK'].includes(r.k));
   const umb = (k) => { const r = RG.find(x => x.k === k); return r && r.umbral != null ? r.umbral : UMB[k]; };
   const goB = B?.at(-1)?.evaluacion?.territorio?.gameOver;
   const temas = TEMAS.map(T => ({ ...T, items: T.items.map(IT).filter(it => get(L, it.k) != null && (!it.soloSi || it.soloSi(H)) && !(H.every(h => !get(h, it.k)) && (!B || B.every(h => !get(h, it.k))))) })).filter(T => T.items.length);

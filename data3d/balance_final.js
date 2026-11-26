@@ -34,6 +34,7 @@ function estado(r,g){
 function causas(r){
  if(!r.go)return '';
  const ult=r.serie.slice(-4),g=grupos.find(g=>g.regla===r.go.regla);
+ if(!g)return r.go.motivo?r.go.motivo.charAt(0).toUpperCase()+r.go.motivo.slice(1)+'.':''; // reglas sin grupo propio (bodegas, residuosK, humedal, fauna…): el motivo del modelo
  const secuencia=ult.map(p=>numero(p[g.principal])+' %').join(' → ');
  const x=ult.at(-1);
  if(g.regla==='abasto')return 'Demanda de '+numero(x.demanda)+' t/día; producción de '+numero(x.produccion)+' t/día. Sectores deficitarios al cierre: '+(r.contexto.sectoresCriticos.join(', ')||'sin desglose')+'. Cobertura: '+secuencia;

@@ -9,6 +9,7 @@ import { seguimiento } from './seguimiento.js?v=2';
 import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=5';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
+import * as AB01P from './ab01_panel.js?v=1'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -40,7 +41,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=31'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=32'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -197,7 +198,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!M || !R.sim || !hasta) return; const id = ++idAlDia, s = M.crear(R.sim, SEMILLA, R.valores), H = []; R.s = null; R.hist = [];
     const lote = () => { if (id !== idAlDia) return; for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); if(M.gameOver(s))break; }
       if (!M.gameOver(s) && H.length < hasta) return void setTimeout(lote, 0);
-      R.s = s; R.hist = H; if(M.gameOver(s)){gameOver(M.gameOver(s));return;} const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); ponerCapaPar(L); } };
+      R.s = s; R.hist = H; grafAb01(true); if(M.gameOver(s)){gameOver(M.gameOver(s));return;} const L = H[H.length - 1]; if (L) { pintarTablero(); pintarIndicadores(true); ponerCapaPar(L); } };
     lote();
   }
   function preparar(id, opc) {
@@ -224,6 +225,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.hist = []; R.cora0 = null; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof tab !== 'undefined') tab.innerHTML = ''; if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); if (window.KEN_VERDE) { window.KEN_VERDE.limpiar(); window.KEN_VERDE.ver(false); } ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
+    if (typeof grafAb01 === 'function') grafAb01(true);
   }
   /* mover una variable: el modelo se vuelve a correr con el valor nuevo hasta la semana en que va la barra (por lotes, sin avisos ni
      game over de lo ya pasado) y los picos y resultados cambian ahí mismo. En el año 1 (sin nada corrido) los picos muestran una vista
@@ -239,7 +241,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (!M.gameOver(s) && H.length < hasta) return void setTimeout(lote, 0);
       R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
       if (previa) { R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
-      else { R.s = s; R.hist = H; if(M.gameOver(s)){gameOver(M.gameOver(s));return;} refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); pintarGraficas(); pintarHistoria(); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
+      else { R.s = s; R.hist = H; grafAb01(true); if(M.gameOver(s)){gameOver(M.gameOver(s));return;} refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); pintarGraficas(); pintarHistoria(); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
     };
     lote();
   }
@@ -290,7 +292,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.basura || BAS) ponerBasura(I);
       if (I.cierre || CIE) ponerCierre(I.cierre);
       if (I.sem % 4 === 0 || R.hist.length === 1) { ponerDegrada(I); ponerCaminos(I); }
-      ponerCapaPar(I);
+      ponerCapaPar(I); grafAb01();
       if (I.sem % 4 === 0 || R.hist.length === 1) ponerLugares(I);
       if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarTablero(); ponerVerde(I); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
@@ -307,8 +309,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function pintarPanel() {
     const d = R.def;
     if (!M) { der.innerHTML = '<h4>Simulación</h4><p class="pre">El modelo de las simulaciones todavía no está disponible.</p>'; return; }
-    der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">${d.prueba}</p>` : ''}
+    const p01 = !!(d && d.par === 1);
+    der.innerHTML = `<h4>${d && d.par != null ? `Par ${String(d.par).padStart(2, '0')} · ${d.propuesta ? 'con propuesta' : 'sin propuesta'}` : d && d.grupo === 'propuesta' ? 'Escenario · con la propuesta' : 'Escenario · Kennedy estado actual'}</h4>${d && d.prueba ? `<p class="pre" style="opacity:.75;margin-bottom:4px">${d.prueba}</p>` : ''}${p01 ? AB01P.htmlArriba() : ''}
       ${(d && d.sliders && d.sliders.length) ? '<h4>Variables</h4>' + d.sliders.map(s => `<div class="su-sl"><label>${s.n}<b data-v="${s.k}">${vfmt(s, R.valores[s.k])}</b></label><input type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${R.valores[s.k]}" data-k="${s.k}" title="${s.ayuda || ''}"></div>`).join('') : ''}
+      ${p01 ? AB01P.htmlAbajo(!!d.propuesta) : ''}
       <div id="su-inds" hidden></div>
       <h4>Informe</h4><div class="su-seg"><button data-inf>Ver informe ahora</button></div>`;
     der.querySelectorAll('input[type=range]').forEach(inp => {
@@ -324,8 +328,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (g === 'foco' && window.KEN_FOCO) { if (b.dataset.v === 'ruido') { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); } if (b.dataset.v) window.KEN_FOCO.on(b.dataset.v); else window.KEN_FOCO.off(); }
     });
     const bi = der.querySelector('[data-inf]'); if (bi) bi.onclick = () => abrirInforme();
+    if (p01) { AB01P.montar(der); grafAb01(true); }
     pintarIndicadores(true); pintarPicos();
   }
+  let tAb01 = 0, pAb01 = 0; /* diagrama de la 01 en el panel izquierdo: como mucho 4 veces por segundo (y una última vez al detenerse) */
+  function grafAb01(forzar) { if (!(R.def && R.def.par === 1)) return; const t = performance.now();
+    if (!forzar && t - tAb01 < 250) { if (!pAb01) pAb01 = setTimeout(() => { pAb01 = 0; grafAb01(true); }, 260); return; }
+    tAb01 = t; try { AB01P.actualizar(der, R.hist, FIN); } catch (e) { console.warn('diagrama 01:', e); } }
   const vfmt = (s, v) => (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
   /* RESULTADOS EN VIVO: una tarjeta por dato con el valor, cuánto cambió desde el año 1 (flecha y color: verde mejora, rojo empeora) y
      su curva con la línea punteada del año 1. Se compara con el año 1 (semana 52) y no con la semana 0: el modelo tarda ~40 semanas en
@@ -583,7 +592,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=5').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
     LUG.ver(false); /* vista limpia: sin pines de tiendas (los mercados se ven como volúmenes en el reparto) */ /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
-  let CONT = null, pCont = null, REP = null, pRep = null;
+  let CONT = null, pCont = null, REP = null, pRep = null, CAP01 = null, pCap01 = null;
   function ponerCapaPar(I) { const p01 = !!(I && I.abasto && I.abasto.ab01); if (SIN_CAPAS && !p01) I = null; /* par 01: los medidores de capacidad sí se ven (pedido de la autora, 2026-11-25) */
     const c = I ? capaPar() : null;
     // par 01: medidores de capacidad (data3d/abasto_contenedor.js): Corabastos y, con propuesta, uno por mercado
@@ -592,7 +601,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP); }
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=8').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); return; }
+    /* simulación 01 (2026-11-26): capas Bodegas · Residuos · Tráfico (data3d/abasto_capas.js), una vez por semana simulada */
+    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=1').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
+      else CAP01.poner(I); }
+    else if (CAP01) { CAP01.poner(null); CAP01.ver(false); }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=9').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!(CAP01 && CAP01.estado.bodegas)); return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -614,11 +627,12 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   };
   const pct = (a, b) => (b ? (a / b - 1) * 100 : 0), sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
   const CADENA = { // pasos de la historia: [texto, valor(I, I1), formato]
-    1: [['Demanda de frescos de Kennedy', (I) => I.abasto && I.abasto.ab01 ? fmt(I.abasto.ab01.demK) + ' t/día' : '—'],
+    1: [['Demanda de comida de Kennedy', (I) => I.comidaK ? fmt(I.comidaK.dem) + ' t/día' : '—'],
         ['Lo que se le pide a Corabastos', (I, I1) => I.abasto && I.abasto.cora ? fmt(I.abasto.cora.pedido_t_dia) + ' t/día (' + sg(pct(I.abasto.cora.pedido_t_dia, I1.abasto && I1.abasto.cora ? I1.abasto.cora.pedido_t_dia : 0)) + ' %)' : '—'],
-        ['Corabastos frente a su tope', (I) => I.abasto && I.abasto.cora ? Math.round(I.abasto.cora.carga * 100) + ' %' : '—'],
-        ['Mercados y autoconsumo', (I) => I.abasto && I.abasto.ab01 ? fmt(I.abasto.ab01.mercT + I.abasto.ab01.autoT) + ' t/día' : '—'],
-        ['Sector peor abastecido', (I) => Math.round((I.comidaMin || 0) * 100) + ' %']],
+        ['Bodega más llena', (I) => I.abasto && I.abasto.bodegas ? I.abasto.bodegas.nombre + ' · ' + Math.round(I.abasto.bodegas.max * 100) + ' %' : '—'],
+        ['Comida que llega', (I) => I.comidaK ? fmt(I.comidaK.llega) + ' t/día' : '—'],
+        ['Residuos sin recoger', (I) => I.residuosK ? fmt(I.residuosK.noRec) + ' t/día' : '—'],
+        ['Humedal La Vaca', (I) => I.residuosK ? 'árboles −' + Math.round((1 - I.residuosK.arboles) * 100) + ' %' : '—']],
     2: [['Vía cerrada', (I) => I.cierre && I.cierre.fase ? Math.round(I.cierre.fase * 100) + ' % cerrada' : 'abierta'],
         ['Tráfico en las calles del desvío', (I) => I.cierre && I.cierre.traficoDesvio ? '+' + Math.round((I.cierre.traficoDesvio - 1) * 100) + ' %' : '—'],
         ['Comida en la zona peor servida', (I) => Math.round((I.comidaMin || 0) * 100) + ' %'],
@@ -785,7 +799,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
   /* el tablero estadístico en tiempo real vive en la columna derecha, aside#lp-tablero (panel_datos.js + graficas_vivas.js) */
-  import('./panel_indicadores.js?v=4').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
+  import('./panel_indicadores.js?v=5').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
@@ -950,14 +964,14 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=8');
+    try { const { abrirInforme2 } = await import('./informe.js?v=9');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];
       const cadena = (CADENA[R.def && R.def.par] || []).map(([t, f]) => { let v = '—'; try { v = f(I, I1); } catch (e) { /* dato que falta en esta corrida */ } return { t, v: v == null || v === '' ? '—' : String(v) }; });
       const reiniciar = () => { cerrarInforme(); const b = document.querySelector('#lp-anos .rei'); if (b) b.click(); else { RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); dispatchEvent(new Event('lp-reinicio')); } };
       inf.className = 'i2-dlg ' + (R.go ? 'go' : '');
-      const res = abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: (M && M.REGLAS) || [], parametros:{...R.valores}, definiciones:M.SIMS, go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, cadena, onCerrar: cerrarInforme, onReiniciar: reiniciar });
+      const res = abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: ((M && M.REGLAS) || []).concat(R.def && R.def.par === 1 && M.REGLAS_AB01 ? M.REGLAS_AB01 : []), parametros:{...R.valores}, definiciones:M.SIMS, go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, cadena, onCerrar: cerrarInforme, onReiniciar: reiniciar });
       if (res && res.veredicto === 'Sí') inf.classList.add('ok');
       if (!inf.open) inf.showModal(); inf.classList.add('on'); inf.querySelector('.caja').scrollTop = 0; return;
     } catch (e) { console.warn('informe nuevo:', e); }
@@ -1001,5 +1015,5 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none">${ejes}${vb ? `<polyline points="${linea(vb)}" fill="none" stroke="rgba(255,255,255,.45)" stroke-dasharray="4 3" stroke-width="1.4" vector-effect="non-scaling-stroke"/>` : ''}<polyline points="${linea(v)}" fill="none" stroke="#ffcf7a" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
   }
 
-  return { preparar, reiniciarModelo, abrirInforme, avisar, get disponible() { return !!M; } };
+  return { preparar, reiniciarModelo, abrirInforme, avisar, get disponible() { return !!M; }, get R() { return R; } };
 }

@@ -728,7 +728,8 @@ function ab01Paso(E) {
     for (const [z, w] of S.zonas) { const q = AB_REST[z] * K.CAPTA * Math.min(1, AB_W[z]) * w / AB_W[z] * f; AB_MK[z] += q; A.uso[S.k] += q; } }
   // Corabastos: pedido de Kennedy, pedido total, oferta de la región y tope
   let RK = 0; for (let z = 0; z < NZ; z++) { AB_R[z] = Math.max(0, AB_REST[z] - AB_MK[z]); RK += AB_R[z]; }
-  const resto = A.resto0 * g * est, L = resto + RK, S_ = K.T_DIA * A.vol * g * est, tope = K.T_DIA * (1 + A.topeF), lleg = Math.min(L, S_, tope), f = L > 0 ? lleg / L : 1;
+  const resto = A.resto0 * g * est, L = resto + RK, S_ = K.T_DIA * A.vol * g * est, tope = K.T_DIA * (1 + A.topeF), a0 = Math.min(L, S_, tope);
+  const lleg = Math.min(a0, bodPaso(A, a0)), f = L > 0 ? lleg / L : 1; // 2026-11-26: lo que no cabe en su bodega no entra (BOD01 abajo)
   /* reparto dentro de Kennedy: el faltante total es (1 − f) de lo pedido; cada zona carga una parte del faltante proporcional a
      u = (GC medio / GC de la zona)^0,5 (las zonas lejos de Corabastos pierden más) [SUP: exponente 0,5 para que un faltante pequeño no
      deje sin comida a una sola zona]; λ por bisección para que la suma cuadre, con tope 100 % por zona */
@@ -748,7 +749,8 @@ function ab01Paso(E) {
     zRec[z] = r; zLoc[z] = AB_NEED[z] > 0 ? a / AB_NEED[z] : 0; zRed[z] = AB_NEED[z] > 0 ? m / AB_NEED[z] : 0; dz[z] = AB_NEED[z] * 7000;
     rec += got; coraK += AB_CO[z]; mercT += m; if (r < zMin) { zMin = r; zArg = z; } if (r < 0.8) nBajo++; }
   const vehDia = lleg / K.T_VEH;
-  A.ult = { sem: t + 1, mes, est, g, demK, autoT, mercT, mercCap: act.length * K.MERC_T, nAct: act.length, coraPedK: RK, coraK, resto, L, S: S_, lleg, tope, f, carga: L / tope, cobK: demK > 0 ? rec / demK : 1, zMin,
+  A.ult = { sem: t + 1, mes, est, g, demK, autoT, mercT, mercCap: act.length * K.MERC_T, nAct: act.length, coraPedK: RK, coraK, resto, L, S: S_, lleg, a0, tope, f, carga: L / tope, cobK: demK > 0 ? rec / demK : 1, zMin,
+    bodMax: A.bodU.max, bodArg: A.bodU.arg, bodGlobal: A.bodU.global, kMax: BOD_KMAX,
     vehDia, tipos: K.TIPOS.map(T => ({ k: T.k, n: T.n, veh_dia: vehDia * T.p, t_dia: lleg * T.p * T.c / K.T_VEH_MEZCLA })),
     franjas: K.FRANJAS.map(F => ({ n: F.n, h0: F.h0, h1: F.h1, p: F.p, t_h: lleg * F.p / (F.h1 - F.h0), veh_h: vehDia * F.p / (F.h1 - F.h0), tope_h: tope * F.p / (F.h1 - F.h0) })) };
   // el resto del modelo (avisos, basura, reglas) lee estas salidas como lee las de sim_vida.js
@@ -761,7 +763,85 @@ function ab01Ind(E) {
   const rutas = ZONAS.map((Z, z) => [z, AB_CO[z]]).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([z, v]) => ({ de: C, a: { x: Math.round(ZONAS[z][0]), z: Math.round(ZONAS[z][1]) }, t_dia: v }));
   return { cora: { ...C, tope_t_dia: U.tope, pedido_t_dia: U.L, llegadas_t_dia: U.lleg, oferta_t_dia: U.S, kennedy_t_dia: U.coraK, carga: Math.min(1.5, U.carga), aplica: true },
     mercados, deficit: Math.max(0, 1 - U.cobK), deficitZonaPeor: Math.max(0, 1 - U.zMin), corte: null, nodos, rutas,
-    ab01: { ...U, tipos: U.tipos.map(x => ({ ...x })), franjas: U.franjas.map(x => ({ ...x })), nM: A.nM, auto: A.auto, dem: A.dem, vol: A.vol, topeF: A.topeF, crece: A.crece } }; }
+    ab01: { ...U, tipos: U.tipos.map(x => ({ ...x })), franjas: U.franjas.map(x => ({ ...x })), nM: A.nM, auto: A.auto, dem: A.dem, vol: A.vol, topeF: A.topeF, crece: A.crece },
+    bodegas: bodInd(A) }; }
+/* ======================= 01 · BODEGAS, COMIDA QUE LLEGA, RESIDUOS, LA VACA Y CONGESTIÓN (pedido de la autora, 2026-11-26) =======================
+   Pedido: docs/sim01_abastecimiento_v2.md. Fuentes: docs/fuentes_bodegas_residuos.md y data3d/bodegas_residuos_fuentes.json.
+   · BODEGAS (solo el par 01): 37 naves de data3d/corabastos.json (índice = posición en .naves). Por nave: grupo de producto (DANE 2012, plano
+     numerado), recibo en 2025 (t/día SIPSA 2025 del grupo repartidas por área: confianza baja), tope en toneladas (área × densidad DANE 2012:
+     papa 0,25, bultos 0,222, canastilla 0,167 t/m²; SOBREESTIMADO porque incluye pasillos) y permanencia (frescos 1 día según «Horarios» de
+     Corabastos; granos 7 días [SUP]). Cada semana el recibo de cada nave escala con lo que llega a Corabastos antes de las bodegas,
+     A0 = mín(pedido, oferta de la región, tope agregado) del bloque AB01: recibo = recibo 2025 × A0 / 6.460. Ocupación = recibo × permanencia / tope.
+     Lo que no cabe en su nave no entra: llegadas = mín(A0, Σ mín(recibo, tope / permanencia)) y el faltante pasa a las zonas como siempre.
+     GAME OVER «bodegas»: una nave al 100 % o más de su tope 4 semanas seguidas (la misma regla de 4 semanas de las demás; «se llena y no cabe
+     más» sostenido un mes, no un pico de un día). En 2025 la más llena es Aguacate (0,92): se llena con +8,7 % de recibo.
+   · COMIDA QUE LLEGA A KENNEDY (todas las corridas): demanda total = frescos de la corrida (0,65 kg/hab/día) + otros canales y no frescos,
+     1.100 − 702 t/día (1.080.742 hab × 1,02 kg/hab/día, RAPE 2020), que crecen igual que los frescos. Llega = frescos recibidos + otros canales
+     (se supone que los otros canales entregan lo que se pide: no hay medición por localidad).
+   · RESIDUOS DE KENNEDY (todas las corridas): R = 922 × 1,027^años + 0,19 × (comida que llega − 1.100) t/día (UAESP 2026 por población; UNEP 2024).
+     La recolección ordinaria queda fija en 774 t/día; los orgánicos que tratan las Estaciones Circulares de la propuesta (o.desv) no la usan.
+     Sin recoger = máx(0, R − 774 − tratados): va a puntos críticos (hoy 148 t/día). GAME OVER «residuosK» (solo par 01): 296 t/día sin recoger
+     (el doble de hoy [SUP: criterio de diseño]) 4 semanas seguidas.
+   · LA VACA: D = clamp((sin recoger − 148) / (296 − 148), 0, 1); árboles e interacciones bióticas de La Vaca × (1 − 0,5·D) [SUP forma y 0,5].
+     En el par 01 el hábitat del parche La Vaca (E.xH) se multiplica por (1 − 0,5·D): la red trófica lo siente. Aporte de residuos al humedal =
+     0,45 t/día × sin recoger / 148 (857 t retiradas en 5,2 años, Alcaldía 2025).
+   · CONGESTIÓN (capa de tráfico): nivel = 0,62 + 0,033 × años (TomTom: 53 % en 2020 → 69,6 % en 2025; arranca en el nivel de 2024).
+     Camiones de abasto = llegadas a Corabastos / 6,21 t por vehículo (SIPSA 2025). */
+export const BOD01 = {
+  /* [nombre, grupo, recibo 2025 t/día, tope t, permanencia días, x, z (mundo), distancia a La Vaca m] — índice = nave de corabastos.json */
+  NAVES: [["B29","frutas",433.9,744,1,883,814,323],["Gran Bodega","mixto_fv",690.4,1015,1,973,736,440],["B16","granos",47.1,449,7,969,1207,114],["B6","granos",47.9,457,7,1097,1218,113],["B13","papa",194.9,498,1,985,1022,262],["Servicios","servicios",0,0,0,1329,1022,360],["B26","hortalizas",249.8,331,1,749,1064,42],["B7","granos",47.9,457,7,1103,1157,175],["B14","papa",194.9,498,1,980,1084,227],["Servicios","servicios",0,0,0,1386,932,466],["B24","hortalizas",262.5,348,1,759,941,146],["B21","hortalizas",249.1,330,1,875,951,210],["B12","hortalizas",257.1,341,1,991,961,298],["Servicios","servicios",0,0,0,1389,992,417],["B18","papa_verdura",232.8,434,1,859,1135,97],["B15","papa_verdura",223.9,417,1,974,1145,176],["B25","hortalizas",258.5,343,1,765,879,191],["B22","raices",396,452,1,880,889,261],["B11","raices",391.9,447,1,996,899,336],["Servicios","servicios",0,0,0,1336,943,433],["B30","frutas",400.7,687,1,1002,828,387],["B9","granos",47.3,451,7,1113,1033,299],["B10","granos",47.4,451,7,1119,972,360],["B19","papa",192.8,493,1,865,1074,133],["Aguacate (B31-B32)","aguacate",125.1,136,1,682,993,54],["B23","hortalizas",254.4,338,1,755,1003,101],["B20","papa",196.1,501,1,870,1013,168],["B8","granos",47.2,450,7,1108,1095,237],["B4","granos",49.6,473,7,1219,1167,181],["B5","granos",46.4,442,7,1093,1280,51],["B17","granos",48.8,465,7,964,1269,53],["Cuartos fríos","frutas",162.1,278,1,1104,745,518],["B29","frutas",365.6,627,1,778,805,248],["Bodega Popular","mixto_fv",155.1,228,1,928,731,410],["B3","granos",46.3,442,7,1224,1105,242],["B1","granos",49.2,469,7,1235,981,364],["B2","granos",47.4,452,7,1229,1043,302]],
+  GRUPO: { frutas: 'frutas', mixto_fv: 'frutas y verduras', granos: 'granos y procesados', papa: 'papa', servicios: 'servicios', hortalizas: 'hortalizas', papa_verdura: 'papa y verduras', raices: 'yuca, plátano y arracacha', aguacate: 'aguacate, banano y plátano' },
+  SEMANAS: 4
+};
+export const RES01 = { R0: 922, ORD: 774, PC0: 148, UMBRAL: 296, CRECE: 0.027, COEF: 0.19, C0: 1100, VACA_K: 0.5, VACA_T: 0.45, SEMANAS: 4, ORG: 0.513 };
+/* ESTACIONES CIRCULARES DE LA SIMULACIÓN 01 CON PROPUESTA (decisión de la autora, 2026-11-26: con propuesta debe haber suficientes para que no
+   haya game over de residuos con los valores por defecto). CAP = 20 t/día de orgánicos por estación: el tope de los Centros Integrados de
+   Recuperación de Recursos (IRRC) descentralizados de UNESCAP/Waste Concern (el primero, de 1994, trataba 3 t/día; los posteriores hasta 20 t/día;
+   https://www.unescap.org/sites/default/d8files/2.%20An%20inexpensive%20solution%20.pdf). N = 20 estaciones, una en cada sitio de mercado de la
+   propuesta (AB01_SITIOS: «Estaciones Circulares en los mercados nodo»); abren una cada 36 semanas desde la semana 52 (año 2) hasta la 736
+   (año 15), como las demás obras de la propuesta [SUP: calendario]. 20 × 20 = 400 t/día ≈ 56 % de los orgánicos de Kennedy en el año 15
+   (51,3 % de ≈1.400 t/día): se supone que la separación en la fuente alcanza lo que las estaciones reciben [SUP]. Tamaño elegido para que lo sin
+   recoger quede bajo 2/3 del camino al game over (247 t/día) en los 15 años con los valores por defecto. */
+export const EST01 = { CAP: 20, N: 20, T0: 52, CADA: 36 };
+export const COM01 = { T_DIA: 1100, KG: 1.02 };
+export const CONG01 = { N0: 0.62, PP: 0.033, PP_ALTO: 0.077, T_VEH: 6.21 };
+const EST01_SITIOS = Object.freeze(AB_SITIOS.slice(0, EST01.N).map((S, k) => Object.freeze({ n: 'Estación Circular · ' + S.n, x: S.x, z: S.z, desde: EST01.T0 + k * EST01.CADA, cap_t_dia: EST01.CAP })));
+const BOD_N = BOD01.NAVES.length, BOD_K = BOD01.NAVES.map(n => (n[3] > 0 ? n[2] * n[4] / (n[3] * AB01.T_DIA) : 0)); // ocupación por t/día que llega a Corabastos
+const BOD_KMAX = Math.max(...BOD_K);
+const VACA_P = PARCHES.findIndex(p => p.id === 'vaca');
+/* bodegas de una semana: a0 = t/día que llegan a Corabastos antes de las bodegas; devuelve lo que cabe (t/día) */
+function bodPaso(A, a0) {
+  const occ = A.bod || (A.bod = new Float32Array(BOD_N)); let cabe = 0, max = 0, arg = -1, llenas = 0, st = 0, tp = 0;
+  for (let i = 0; i < BOD_N; i++) { const N = BOD01.NAVES[i]; if (!(N[3] > 0)) { occ[i] = 0; continue; }
+    const rec = N[2] * a0 / AB01.T_DIA, o = rec * N[4] / N[3]; occ[i] = o; cabe += Math.min(rec, N[3] / N[4]); st += rec * N[4]; tp += N[3];
+    if (o > max) { max = o; arg = i; } if (o >= 1) llenas++; }
+  A.bodU = { max, arg, llenas, global: tp > 0 ? st / tp : 0, cabe };
+  return cabe;
+}
+function bodInd(A) { const U = A.bodU; if (!U) return null; const N = BOD01.NAVES[U.arg] || [];
+  return { max: U.max, global: U.global, llenas: U.llenas, cabe_t_dia: U.cabe, idx: U.arg, nombre: N[0] || '', grupo: BOD01.GRUPO[N[1]] || '', x: N[5], z: N[6], kmax: BOD_KMAX,
+    occ: Array.from(A.bod, v => Math.round(v * 1000) / 1000), nombres: BOD_NOMBRES, racha: A.rachaBod || 0 }; }
+const BOD_NOMBRES = Object.freeze(BOD01.NAVES.map(n => n[0])); // una sola lista compartida por todas las semanas
+/* comida que llega, residuos, La Vaca y congestión de una semana (todas las corridas; los game over solo en el par 01) */
+function rcPaso(E) {
+  const o = E.o, t = E.s.t + 1, años = t / V.AÑO, F = (o.need || 0) / 7000, rec = F * Math.min(1, o.recib != null ? o.recib : 1);
+  const otros = (COM01.T_DIA - AB01.KEN_T_DIA) * (F / AB01.KEN_T_DIA), dem = F + otros, llega = rec + otros;
+  const gen = RES01.R0 * Math.pow(1 + RES01.CRECE, años) + RES01.COEF * (llega - RES01.C0);
+  /* par 01 con propuesta: Estaciones Circulares de barrio (EST01) que abren por fases; tratan hasta su capacidad, sin pasar de los orgánicos generados */
+  const nEst = E.ab01 && E.prop ? Math.max(0, Math.min(EST01.N, Math.floor((t - EST01.T0) / EST01.CADA) + 1)) : 0, capEst = nEst * EST01.CAP;
+  const trat = Math.min(RES01.ORG * gen, Math.max(0, (o.desv || 0) / 7000) + capEst);
+  const noRec = Math.max(0, gen - RES01.ORD - trat), D = cl01((noRec - RES01.PC0) / (RES01.UMBRAL - RES01.PC0)), k = 1 - RES01.VACA_K * D;
+  const U = E.ab01 && E.ab01.ult, camiones = U ? U.lleg / CONG01.T_VEH : null;
+  E.rc = { dem, llega, frescos: F, frescosRec: rec, otros, gen, trat, noRec, nEst, capEst, D, arboles: k, inter: k, aporte: RES01.VACA_T * noRec / RES01.PC0, umbral: RES01.UMBRAL, hoy: RES01.PC0,
+    nivel: CONG01.N0 + CONG01.PP * años, camiones };
+  if (E.ab01 && VACA_P >= 0) E.xVaca = k; /* lo aplica pruebaDespues sobre E.xH */
+}
+/* reglas de game over propias del par 01 (las 7 de REGLAS siguen iguales para las 12): el informe las lee junto a REGLAS */
+export const REGLAS_AB01 = [
+  { k: 'bodegas', n: 'Bodegas de Corabastos', txt: 'una bodega de Corabastos queda al 100 % o más de su tope (lo que recibe × días que permanece / lo que cabe) cuatro semanas seguidas', umbral: 100, unidad: '% del tope de la bodega más llena', semanas: 4,
+    fuente: 'Recibo por bodega: DANE-SIPSA 2025 por grupo, repartido por área (derivado, confianza baja). Tope: área × densidad de almacenamiento del DANE 2012 (Boletín de Abastecimiento n.º 1: papa 0,25, bultos 0,222, canastilla 0,167 t/m²), sobreestimado porque incluye pasillos. Permanencia: Corabastos, Horarios (frescos 1 día); granos 7 días [SUP]. Ver docs/fuentes_bodegas_residuos.md.' },
+  { k: 'residuosK', n: 'Residuos de Kennedy', txt: 'los residuos sin recoger de Kennedy (puntos críticos) llegan al doble de hoy, 296 t/día, cuatro semanas seguidas', umbral: 296, unidad: 't/día sin recoger', semanas: 4,
+    fuente: 'UAESP (2026): 6.769 t/día en Bogotá, 1.089 en puntos críticos, +5,5 % en 2024–2026; repartido por población: Kennedy 922 t/día, 774 recogidas y 148 en puntos críticos (derivado). UNEP Food Waste Index 2024: 19 % de la comida se desperdicia. Kennedy tiene 71 puntos críticos activos (Alcaldía de Bogotá, 2025). El factor 2× es criterio de diseño [SUP].' }];
 function pruebaIni(E) {
   const v = E.val;
   /* 01 ABASTECIMIENTO: Corabastos tiene un TOPE fijo (sus bodegas no crecen) = demanda de hoy × (1 + coraTope); la demanda crece con la población
@@ -800,6 +880,7 @@ function pruebaAntes(E, t) { // antes de V.paso
     if (E.prop) E.PAR.P3.arboles = Math.min(1, F.arb0 + 0.2 * Math.min(1, t / 260)); } } // conexiones vegetales de la propuesta [SUP]
 function pruebaDespues(E) { // después de basuraPaso: hábitat = basura × pérdida del parche
   for (let p = 0; p < NP; p++) E.xH[p] = E.xHb[p] * E.xFrag[p];
+  if (E.xVaca != null && VACA_P >= 0) E.xH[VACA_P] *= E.xVaca; // par 01: residuos sin recoger degradan La Vaca (RES01, rcPaso)
   if (E.frag) { const s = E.s, occ = s.occ, P = E.prev, F = E.frag, d = []; if (s.t >= F.t0 - 1) for (let i = 0; i < RED.NFA && d.length < 8; i++) for (let p = 0; p < NP && d.length < 8; p++) {
       const k = i * NP + p; if (!occ[k] || P[k]) continue; let b = -1, bd = Infinity; for (let q = 0; q < NP; q++) if (P[i * NP + q]) { const e = Math.hypot(PARCHES[q].x - PARCHES[p].x, PARCHES[q].z - PARCHES[p].z); if (e < bd) { bd = e; b = q; } }
       if (b >= 0 && bd < 4000 && (Math.hypot(PARCHES[p].x - PARCHES[F.p].x, PARCHES[p].z - PARCHES[F.p].z) < 3000 || Math.hypot(PARCHES[b].x - PARCHES[F.p].x, PARCHES[b].z - PARCHES[F.p].z) < 3000))
@@ -1140,7 +1221,7 @@ export function paso(E) {
   try { E.o = V.paso(s, E.PAR); } finally { V.SUP.KG_ORG = kgOrg; if (sv) { PLAN_BAV.VIV_ETAPA = sv[0]; PLAN_BAV.AUTOS_HOG = sv[1]; } } // las viviendas y autos del deslizador solo para esta simulación
   E.ind = null;
   if (E.ab01) ab01Paso(E); // par 01: abastecimiento con datos (reemplaza la cobertura de sim_vida.js)
-  basuraPaso(E, t); sueloPaso(E); pruebaDespues(E);
+  basuraPaso(E, t); rcPaso(E); sueloPaso(E); pruebaDespues(E);
   // extinciones en toda Kennedy esta semana
   const NFA = RED.NFA, occ = s.occ, P = E.prev, ev = []; E.ev = ev;
   for (let i = 0; i < NFA; i++) { let antes = 0, ahora = 0; const b = i * NP; for (let p = 0; p < NP; p++) { antes |= P[b + p]; ahora |= occ[b + p]; }
@@ -1153,6 +1234,12 @@ export function paso(E) {
   referencia(E, x);
   E.vals = {}; for (const R of REGLAS) { const v = VALOR[R.k](x); E.vals[R.k] = v; E.racha[R.k] = MALO[R.k](v) ? E.racha[R.k] + 1 : 0;
     if (!E.go && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, enfoque:R.k==='residuos'?'Circularidad':R.k==='habitat'||R.k==='fauna'||R.k==='humedal'?'Ecocentrismo':R.k==='abasto'?'Comercio ecológico':'Movilidad', sem: s.t + 1, inicio:s.t-R.semanas+2, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', valor: Math.round(v * 1000) / 1000 }; }
+  if (E.ab01) { /* par 01: bodegas llenas y residuos sin recoger (REGLAS_AB01), 4 semanas seguidas */
+    const A = E.ab01, U = A.bodU, rc = E.rc, sem = s.t + 1;
+    A.rachaBod = U && U.max >= 1 ? (A.rachaBod || 0) + 1 : 0; A.rachaRes = rc.noRec >= RES01.UMBRAL ? (A.rachaRes || 0) + 1 : 0;
+    if (!E.go && A.rachaBod >= BOD01.SEMANAS) { const N = BOD01.NAVES[U.arg];
+      E.go = { regla: 'bodegas', enfoque: 'Comercio ecológico', sem, inicio: sem - BOD01.SEMANAS + 1, motivo: `la bodega ${N[0]} de Corabastos (${BOD01.GRUPO[N[1]]}) se llenó: le llegan más ${N[4] > 1 ? `de lo que cabe en ${N[4]} días` : 'productos de los que caben'} durante cuatro semanas seguidas (${Math.round(U.max * 100)} % de su tope)`, lugar: N[0], x: N[5], z: N[6], valor: Math.round(U.max * 1000) / 10, idx: U.arg }; }
+    if (!E.go && A.rachaRes >= RES01.SEMANAS) E.go = { regla: 'residuosK', enfoque: 'Circularidad', sem, inicio: sem - RES01.SEMANAS + 1, motivo: `los residuos sin recoger de Kennedy llegaron a ${Math.round(rc.noRec)} t/día, el doble de los ${RES01.PC0} t/día de hoy en puntos críticos, cuatro semanas seguidas`, lugar: 'Kennedy', x: PARCHES[VACA_P].x, z: PARCHES[VACA_P].z, valor: Math.round(rc.noRec * 10) / 10 }; }
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
   verdePaso(E); x.verde = indVerde(E);
@@ -1289,6 +1376,9 @@ export function ind(E) {
     basura: { total_t_dia: Bs.total, puntos: Bs.pts.map(P => ({ x: Math.round(P.x), z: Math.round(P.z), t_dia: P.t, fuente: P.fuente, acumulada: P.acum, acumulada0: P.acum0, sinRecoger_t_dia: P.u, nombre: P.nombre || null })), captura: Bs.captura, fraccionSinRecoger: (() => { let u = 0, g = 0; for (const P of Bs.pts) if (P.fuente !== 'humedal') { u += P.u; g += P.t; } return g > 0 ? u / g : 0; })(), acumulada: Bs.acum, acumulada0: Bs.acum0, sinRecoger_t_dia: Bs.pts.reduce((a, P) => a + P.u, 0) },
     ratas: Bs.ratas, ratas0: 1, humedalHa, humedalHa0: Bs.ha0Tot, humedalFuncional, humedales: HUM_P.map((h, k) => ({ id: PARCHES[h].id, nombre: PARCHES[h].n, x: PARCHES[h].x, z: PARCHES[h].z, ha: Bs.ha[k], ha0: Bs.ha0[k], calidad: Bs.cal[k] })),
     arboles: E.PAR.P3.arboles, arbolesPerdidos: arbPerdida, comidaLocal, metro: indMetro(E, s), circular: indCircular(E),
+    comidaK: E.rc ? { dem: E.rc.dem, llega: E.rc.llega, frescos: E.rc.frescos, frescosRec: E.rc.frescosRec, otros: E.rc.otros } : null, /* t/día (RES01/COM01) */
+    residuosK: E.rc ? { gen: E.rc.gen, noRec: E.rc.noRec, trat: E.rc.trat, nEst: E.rc.nEst, capEst: E.rc.capEst, estaciones: E.rc.nEst ? EST01_SITIOS.slice(0, E.rc.nEst) : null, umbral: E.rc.umbral, hoy: E.rc.hoy, D: E.rc.D, arboles: E.rc.arboles, inter: E.rc.inter, aporte: E.rc.aporte, racha: E.ab01 ? E.ab01.rachaRes || 0 : null } : null,
+    congestion01: E.rc ? { nivel: E.rc.nivel, camiones: E.rc.camiones } : null,
     abasto: E.ab01 ? ab01Ind(E) : indAbasto(E), ...(() => { const R = indEstaciones(E); return { estaciones: R ? R.estaciones : null, recorridos: R ? R.recorridos : null }; })(),
     ...(() => { const F = indFragmento(E); return { fragmento: F ? F.fragmento : null, corredores: F ? F.corredores : null, refugios: F ? F.refugios : null, desplazamientos: F ? F.desplazamientos : null }; })(),
     suelo: indSueloUsos(E), gobernanza: E.gob ? indGobernanza(E) : null, par: E.par, propuesta: !!E.prop,

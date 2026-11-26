@@ -12,7 +12,7 @@
    barras segmentadas, columnas por año. El diagrama de cuerdas de las interacciones no cambia. */
 import { esc, num, año, tip, Linea, Escala, segBarras, flecha, columnasAño, barrasH, marcas, nodo, clave } from './graficas_vivas.js?v=3';
 import { ARTE, leyenda, llave, contar, ponerTip } from './graficas_arte.js?v=1';
-import { T, IND, INDK, MACROS, CLAVE, valor, clavePct, claveArea, acceso, ACCESO_SUP, ACCESO_R, hayEstaciones, SEM_REF } from './indicadores_macro.js?v=1';
+import { T, IND, INDK, MACROS, CLAVE, valor, clavePct, claveArea, acceso, ACCESO_SUP, ACCESO_R, hayEstaciones, SEM_REF } from './indicadores_macro.js?v=2';
 
 const PASO = 2; // series de 15 años muestreadas cada 2 semanas
 const ICO_FX = '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M8.6 4.2c-1.4 0-2 .9-2.3 2.4L5 15.1c-.3 1.4-.9 2-2 2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.2 8.4h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="m11.4 9 5 6.4M16.4 9l-5 6.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
@@ -77,6 +77,14 @@ const F = {
     t: [['kg aprovechados', 'orgánicos tratados en Estaciones Circulares (compost y sustrato)'], ['kg generados', 'orgánicos que produce Kennedy en la misma semana']],
     como: 'territorio.aprovechamiento = tratados / generados (sim_vida.js: o.desv / o.gen).',
     fuente: 'Tasa de desvío o aprovechamiento, metodología de la EPA (Facts and Figures about Materials, Waste and Recycling).' },
+  llega: { f: math(`${mi('L')}${mo('=')}${frac(`${sub(mi('F'), mtxt('recibidos'))}${mo('+')}${sub(mi('O'), mtxt('otros'))}`, `${sub(mi('F'), mtxt('demandados'))}${mo('+')}${sub(mi('O'), mtxt('otros'))}`)}${mo('×')}${mn(100)}`),
+    t: [['F', 'alimentos frescos que recibe / necesita Kennedy (0,65 kg/hab/día; Corabastos, mercados y autoconsumo)'], ['O', 'el resto de la comida y los otros canales: 1.100 − 702 t/día hoy, crece igual que los frescos; se supone que llega lo que se pide'], ['1.100 t/día', '1.080.742 hab × 1,02 kg/hab/día: toda la comida que llega hoy a Kennedy']],
+    como: 'simulaciones12.js, rcPaso: comidaK.dem y comidaK.llega en todas las corridas. En la simulación 01 lo que no cabe en las bodegas de Corabastos no entra y baja lo que llega.',
+    fuente: 'RAPE 2020 (1,02 kg/hab/día) y SED 2024 (1.080.742 hab.); DANE-SIPSA 2025 (frescos). No existe una medición oficial de toneladas que entran a la localidad: es demanda estimada (docs/fuentes_bodegas_residuos.md, §2).' },
+  resK: { f: math(`${mi('R')}${mo('=')}${mn('922')}${mo('×')}${sup(mn('1,027'), mi('t'))}${mo('+')}${mn('0,19')}${mo('×')}<mrow>${mo('(')}${mi('C')}${mo('−')}${mn('1.100')}${mo(')')}</mrow>`) + math(`${mtxt('sin recoger')}${mo('=')}${mi('máx')}<mrow>${mo('(')}${mn(0)}${mo(',')}${mi('R')}${mo('−')}${mn('774')}${mo('−')}${mi('T')}${mo(')')}</mrow>`),
+    t: [['R', 'residuos que genera Kennedy (t/día)'], ['t', 'años desde el inicio; 2,7 %/año (UAESP 2024–2026)'], ['C', 'comida que llega a Kennedy (t/día): más comida, más residuos'], ['0,19', 'parte de cada tonelada extra de comida que se desperdicia (UNEP 2024)'], ['774', 'recolección ordinaria fija (t/día)'], ['T', 'orgánicos que tratan las Estaciones Circulares (con propuesta)']],
+    como: 'simulaciones12.js, rcPaso: residuosK.gen y residuosK.noRec. Lo que no se recoge va a puntos críticos (hoy 148 t/día). Game over de la simulación 01: 296 t/día sin recoger (generar 1.070 t/día sin propuesta) cuatro semanas seguidas. Con eso se degrada La Vaca: árboles e interacciones × (1 − 0,5·D). Con propuesta (simulación 01): 20 Estaciones Circulares de 20 t/día, una en cada sitio de mercado de la propuesta, que abren una cada 36 semanas desde el año 2 (400 t/día en el año 15); T no pasa del 51,3 % orgánico de R.',
+    fuente: 'UAESP 2026 (6.769 t/día en Bogotá, 1.089 en puntos críticos), repartido por población: 922 t/día en Kennedy (derivado). UNEP Food Waste Index 2024. Umbral 2× los puntos críticos de hoy: criterio de diseño [supuesto]. Capacidad por estación: hasta 20 t/día, Centros Integrados de Recuperación de Recursos descentralizados (UNESCAP y Waste Concern; el primero trataba 3 t/día). Calendario y separación en la fuente suficiente: supuestos.' },
   cobertura: { f: math(`${mi('C')}${mo('=')}${mi('mín')}<mrow>${mo('(')}${mn(100)}${mo(',')}${frac(mtxt('kg recibidos'), mtxt('kg demandados'))}${mo('×')}${mn(100)}${mo(')')}</mrow>`),
     t: [['kg recibidos', 'alimentos que llegan a cada sector (Corabastos, mercados, huertas)'], ['kg demandados', 'lo que necesita su población']],
     como: 'Por sector: territorio.sectores[].valor (134 sectores de 500 m); Kennedy: territorio.cobertura, con tope de 100 %.',
@@ -108,6 +116,8 @@ const PROPM = {
   saturacion: 'E4: capacidad de tratamiento y almacenamiento de las Estaciones Circulares.',
   aprov: 'E4: las Estaciones Circulares tratan lo que se separa en la fuente.',
   cobertura: 'E7 mercados de barrio y E8 huertas reparten la demanda; Corabastos deja de ser el único camino.',
+  llega: 'E7 mercados de barrio y E8 huertas: parte de la comida ya no pasa por las bodegas de Corabastos, que se llenan más despacio.',
+  resK: 'E4: 20 Estaciones Circulares de barrio de 20 t/día (una cada 36 semanas desde el año 2) tratan orgánicos que ya no ocupan la recolección ordinaria; así lo sin recoger se queda cerca de los 148 t/día de hoy aunque la generación siga la tendencia de la ciudad.',
   autonomia: 'E8 red distribuida de producción alimentaria.',
   acceso: 'E7: 35 mercados de barrio que abren por fases cerca de los sectores peor servidos.',
   presion: 'E1 Bavaria Común y E6: suelo protegido e instrumentos de gestión del suelo.'
@@ -125,6 +135,8 @@ const QA = {
   bienestar: { q: '¿Qué tan a salvo del ruido están las aves?', e: '100 % = todas viven bajo 50 dB(A); 0 % = todas sobre 75 dB(A). Pesa más el parche con más aves.' },
   saturacion: { q: '¿Qué tan llenas están las Estaciones Circulares?', e: 'Orgánicos acumulados sin tratar frente a lo que caben. Sobre 85 % = alerta.' },
   aprov: { q: '¿Qué parte de los orgánicos se vuelve compost?', e: 'Del total de orgánicos que genera Kennedy cada día: cuánto se aprovecha, cuánto va al relleno y cuánto queda sin recoger.' },
+  llega: { q: '¿Llega toda la comida que Kennedy necesita?', e: 'Toda la comida de Kennedy (≈1.100 t/día hoy): la que llega frente a la demanda, que sube cada año.' },
+  resK: { q: '¿Cuántos residuos genera Kennedy y cuánto falta para el game over?', e: 'Toneladas al día. Lo que pasa de 774 t/día no se recoge y va a puntos críticos; en 1.070 t/día (296 sin recoger) es game over en la simulación 01.' },
   cobertura: { q: '¿Qué parte de la comida que necesita Kennedy le llega?', e: 'Kg de alimentos recibidos frente a kg necesitados, con tope de 100 %.' },
   autonomia: { q: '¿Qué parte de la comida fresca se cultiva en Kennedy?', e: 'Comida de huertas de Kennedy consumida en Kennedy frente a toda la demanda.' },
   acceso: { q: '¿Cuántos habitantes tienen un mercado a 15 min a pie?', e: '15 min a pie ≈ 865 m en línea recta. Cuenta Corabastos, la Plaza de Kennedy y los mercados de barrio abiertos.' },
@@ -427,6 +439,8 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
       case 'bienestar': return [dos('Σ aₚ (aves × parche)', (I) => (I.avesRuido.porParche || []).reduce((p, q) => p + q.aves, 0) || null), dos('Ruido al que están expuestas', (I) => I.avesRuido.dbAves, 1, ' dB(A)'), dos('Aves en parches > 60 dB', (I) => I.avesRuido.expuestas * 100, 0, ' %'), dos('B', (I) => I.avesRuido.bienestarFauna * 100, 1, ' %')];
       case 'saturacion': return [dos('kg acumulados', (I) => hayEstaciones(I) ? t(I).pendientes * 1000 : null), dos('Capacidad máxima (kg)', (I) => hayEstaciones(I) ? t(I).capacidadAlmacen * 1000 : null), dos('Estaciones', (I) => (t(I).estaciones || []).length || null), dos('S', (I) => valor('saturacion', I, null), 1, ' %')];
       case 'aprov': return [dos('kg aprovechados/día', (I) => t(I).tratados * 1000), dos('kg generados/día', (I) => t(I).organicos * 1000), dos('Compost (kg/día)', (I) => t(I).compost * 1000), dos('R', (I) => t(I).aprovechamiento, 2, ' %')];
+      case 'llega': return [dos('Demanda de Kennedy (t/día)', (I) => I.comidaK && I.comidaK.dem), dos('Frescos recibidos (t/día)', (I) => I.comidaK && I.comidaK.frescosRec), dos('Otros canales (t/día)', (I) => I.comidaK && I.comidaK.otros), dos('Llega (t/día)', (I) => I.comidaK && I.comidaK.llega), dos('L', (I) => valor('llega', I), 1, ' %')];
+      case 'resK': return [dos('R generados (t/día)', (I) => I.residuosK && I.residuosK.gen), dos('T tratados en Estaciones (t/día)', (I) => I.residuosK && I.residuosK.trat, 1), dos('Estaciones Circulares abiertas (20 t/día c/u)', (I) => I.residuosK && I.residuosK.nEst),dos('Sin recoger (t/día)', (I) => I.residuosK && I.residuosK.noRec), dos('Degradación de La Vaca D', (I) => I.residuosK && I.residuosK.D * 100, 0, ' %'), ['Umbral de game over (sin recoger)', '296 t/día', '296 t/día']];
       case 'cobertura': return [dos('kg recibidos/día', (I) => Math.min(1, t(I).cobertura / 100) * t(I).demanda * 1000), dos('kg demandados/día', (I) => t(I).demanda * 1000), dos('Sectores bajo 80 %', (I) => (t(I).sectores || []).filter((s) => s.valor < 80).length), dos('C', (I) => valor('cobertura', I), 1, ' %')];
       case 'autonomia': return [dos('kg locales consumidos/día', (I) => t(I).autonomia / 100 * t(I).demanda * 1000), dos('kg producidos/día', (I) => t(I).produccion * 1000), dos('kg demandados/día', (I) => t(I).demanda * 1000), dos('Au', (I) => t(I).autonomia, 2, ' %')];
       case 'acceso': { const aA = acceso(A, c.M), aB = B ? acceso(B, c.M) : null, q = (o, f, d = 0, u = '') => (o ? n(f(o), d, u) : '—');
@@ -523,6 +537,25 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
         const A = f(Ic(c)), B = f(Is(c)), k = JSON.stringify([A, B].map((x) => x && x.seg.map((v) => Math.round(v * 400)))) + c.W; if (k === k0) return; k0 = k;
         const fila = (n, o, hueca) => ({ n, hueca, segs: D3.map((x, i) => ({ v: o ? o.seg[i] : 0, c: x.c, ink: x.ink, n: x.n, txt: num(o ? o.seg[i] * 1000 : 0) + ' kg/día' })), txt: o ? num(o.G, 0) + ' t/día' : '—' });
         a.innerHTML = segBarras([fila('Con', A), fila('Sin', B, true)], c.W, { rw: 54, aria: 'Destino de los orgánicos generados cada día, con y sin propuesta' }); }; },
+    /* comida que llega frente a la demanda (t/día, 15 años): demanda de esta corrida, lo que llega con y sin propuesta */
+    llega: (h) => { const box = div(h, 'pi-art'), lg = div(h), f = hecho(h); const svg = nodo('svg', { class: 'tb-svg', role: 'img', 'aria-label': 'Comida que llega a Kennedy frente a su demanda, toneladas por día en 15 años' }, box);
+      const gE = nodo('g', { class: 'tb-ejey' }, svg), pD = nodo('path', { fill: 'none', stroke: ARTE.ink, 'stroke-width': 1.6, 'stroke-opacity': 0.85 }, svg), pS = nodo('path', { fill: 'none', stroke: ARTE.sin, 'stroke-width': 2, 'stroke-dasharray': '5 3' }, svg), pC = nodo('path', { fill: 'none', stroke: ARTE.con, 'stroke-width': 2 }, svg);
+      lg.innerHTML = leyenda([['lin', ARTE.ink, 'demanda de Kennedy'], ['lin', ARTE.con, 'llega · con propuesta'], ['pun', ARTE.sin, 'llega · sin propuesta']]);
+      const camino2 = (xs, ys, X, Y) => { let d = '', n = 0; for (let i = 0; i < xs.length; i++) { const y = ys[i]; if (y == null) { n = 0; continue; } d += (n++ ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(y).toFixed(1); } return d; };
+      return (c) => { const D = serie(c, 'llegaDem', (I) => (I && I.comidaK ? I.comidaK.dem : null)), S = serie(c, 'llegaT', (I) => (I && I.comidaK ? I.comidaK.llega : null));
+        const run = c.prop ? D.con : D.sin, vals = [...run, ...S.con, ...S.sin].filter((v) => v != null); if (!vals.length) return;
+        const m = marcas(Math.min(...vals) * 0.97, Math.max(...vals) * 1.02, 3), W = c.W, H = 96, pl = 36, pr = 8, pt = 8, pb = 15, iw = W - pl - pr, ih = H - pt - pb;
+        const X = (s) => pl + (s - 1) / Math.max(1, c.FIN - 1) * iw, Y = (v) => pt + ih - (v - m.a) / (m.b - m.a || 1) * ih;
+        fija(svg, { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+        const k = m.t.join(',') + W; if (gE._k !== k) { gE._k = k; gE.innerHTML = m.t.map((t) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--tb-grid)"/><text x="${pl - 4}" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${num(t)}</text>`).join('') + [1, 5, 10, 15].map((a) => `<text x="${X((a - 1) * 52 + 1).toFixed(1)}" y="${H - 3}" text-anchor="middle">${a}</text>`).join(''); }
+        fija(pD, { d: camino2(D.xs, run, X, Y) }); fija(pC, { d: camino2(S.xs, S.con, X, Y) }); fija(pS, { d: camino2(S.xs, S.sin, X, Y) });
+        const I = c.I.comidaK; if (I) pon(f, `Esta semana: demanda <b>${num(I.dem)} t/día</b> · llegan <b>${num(I.llega)}</b> (${num(I.frescosRec)} de frescos + ${num(I.otros)} de otros canales)${I.llega < I.dem - 0.5 ? ` · <b>faltan ${num(I.dem - I.llega)} t/día</b>` : ''}.`); }; },
+    /* residuos que genera Kennedy frente a la generación con la que lo sin recoger llega al game over */
+    resK: (h) => { const t = div(h, 'pi-tira'); t.insertAdjacentHTML('beforeend', '<span class="pi-tl">Generación en 15 años · t/día · raya = game over de la simulación 01</span>');
+      const L = new Linea(t, { n: 'Residuos de Kennedy', u: 't/día', d: 0, alto: 80, pl: 36, etq: true }), f = hecho(h);
+      return (c) => { const S = serie(c, 'resK', vK('resK')), r = c.I.residuosK, trat = r ? r.trat || 0 : 0;
+        L.update({ W: c.W, FIN: c.FIN, xs: S.xs, con: S.con, sin: S.sin, run: c.prop ? 'con' : 'sin', lim: 774 + 296 + trat, cerca: 774 + 148 + 2 / 3 * 148 + trat, limTxt: `game over ${num(774 + 296 + trat)}` });
+        if (r) pon(f, `Sin recoger: <b>${num(r.noRec)} t/día</b> de 296 (hoy 148, puntos críticos)${trat > 0.5 ? ` · las Estaciones Circulares tratan ${num(trat, 1)} t/día${r.nEst ? ` (${num(r.nEst)} de 20 abiertas)` : ''}` : ''}<br>Humedal La Vaca: degradación <b>${num(r.D * 100)} %</b> · árboles e interacciones −${num((1 - r.arboles) * 100)} %`); }; },
     cobertura: (h) => { const E = escala(h, 'cobertura', { ticks: [0, 80, 100], bandas: [[0, 80, 'bajo 80 %'], [80, 100, '80 % o más']] }), f = hecho(h), L = tira(h, 'cobertura', { cero: true });
       return (c) => { E(c); const b = (I) => (I ? (T(I).sectores || []).filter((s) => s.valor < 80).length : null), n = (T(c.I).sectores || []).length;
         pon(f, `Sectores de 500 m que reciben menos del 80 % de lo que necesitan: <b>con ${num(b(Ic(c)))}</b> · sin ${num(b(Is(c)))} de ${num(n)}`); L(c); }; },

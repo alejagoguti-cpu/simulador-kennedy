@@ -1,4 +1,4 @@
-import * as S from './simulaciones12.js?v=ab01';
+import * as S from './simulaciones12.js?v=ab01b';
 
 const listo = S.cargarDatos(url => fetch(url).then(r => {
   if (!r.ok) throw new Error(`Datos de abastecimiento: HTTP ${r.status}`);
