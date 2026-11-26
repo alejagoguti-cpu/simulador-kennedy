@@ -8,15 +8,19 @@
    punteada o hueca; límites #ffd27a rotulados.
    2026-11-26 (comentario de la autora: «los diagramas no se entienden»): cada tarjeta responde UNA pregunta (QA), dice en grande si el indicador
    sube o baja desde el año 1 y si eso mejora o empeora (flecha + palabra + color, nunca color solo), y cuánto más/menos tiene la propuesta.
-   Formas simples (graficas_vivas.js): escala con bandas rotuladas, línea de 15 años con etiquetas al final, filas año 1 → hoy por especie,
-   barras segmentadas, columnas por año. El diagrama de cuerdas de las interacciones no cambia. */
-import { esc, num, año, tip, Linea, Escala, segBarras, flecha, columnasAño, barrasH, marcas, nodo, clave } from './graficas_vivas.js?v=3';
-import { ARTE, leyenda, llave, contar, ponerTip } from './graficas_arte.js?v=1';
+   2026-11-26 v5 («siguen asquerosos», «el panel tapa casi todo»): panel más angosto y plegable (pestaña a la derecha, se recuerda). Todas las
+   tarjetas con la misma estructura: título · pregunta · cifra grande + chip (▲/▼ mejora/empeora vs año 1) · con | sin | diferencia ·
+   UNA gráfica (Tendencia de 15 años, graficas_vivas.js). El diagrama de cuerdas de las interacciones no cambia. */
+import { esc, num, año, tip, Tendencia } from './graficas_vivas.js?v=4';
+import { ARTE, llave, contar, ponerTip } from './graficas_arte.js?v=3';
 import { T, IND, INDK, MACROS, CLAVE, valor, clavePct, claveArea, acceso, ACCESO_SUP, ACCESO_R, hayEstaciones, SEM_REF } from './indicadores_macro.js?v=2';
 
 const PASO = 2; // series de 15 años muestreadas cada 2 semanas
 const ICO_FX = '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M8.6 4.2c-1.4 0-2 .9-2.3 2.4L5 15.1c-.3 1.4-.9 2-2 2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.2 8.4h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="m11.4 9 5 6.4M16.4 9l-5 6.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
-const ICO_MAPA_NO = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M1.5 3.5 5.5 2l5 1.5 4-1.5v10.5l-4 1.5-5-1.5-4 1.5z M5.5 2v10.5M10.5 3.5V14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+const ICO_PLEG = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICO_ABRIR = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11M4.5 11V7.5M8 11V3.5M11.5 11V6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+const PLEG_K = 'ken.tablero.plegado';
+const ICO_MAPA_NO ='<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M1.5 3.5 5.5 2l5 1.5 4-1.5v10.5l-4 1.5-5-1.5-4 1.5z M5.5 2v10.5M10.5 3.5V14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 
 /* ---------- ESTRATEGIAS (nombres y colores de estrategias.json / estrategias.js; qué hacen en el modelo: simulaciones12.js) ---------- */
 const ESTR = [
@@ -146,118 +150,96 @@ const UD = { 'anim.': 'animales' };
 
 const CSS = `
 #lp-tablero.pi-montado{padding:0!important}
-.pi{--pi-pad:12px;--pi-sur:#1e2422;--tb-sur:#1b1f24;--tb-grid:rgba(255,255,255,.06);--tb-axis:rgba(255,255,255,.2);--pi-v:#7d6bff;--pi-v2:#a99cff;--pi-v3:#d4ceff;--pi-ink:#f4f3ef;--pi-num:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font:400 12px/1.45 var(--ui-sans,'Inter',system-ui,sans-serif);color:var(--ui-tx,#f1f3ee);font-variant-numeric:tabular-nums;text-shadow:none;min-width:0}
+.pi{--pi-pad:12px;--tb-sur:#1b1f24;--tb-grid:rgba(255,255,255,.06);--tb-axis:rgba(255,255,255,.16);--pi-v:#7d6bff;--pi-v2:#a99cff;--pi-v3:#d4ceff;--pi-ink:#f4f3ef;--pi-ok:var(--ui-acc,#c9f27a);--pi-mal:#ff8f9c;--pi-num:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font:400 12px/1.45 var(--ui-sans,'Inter',system-ui,sans-serif);color:var(--ui-tx,#f1f3ee);font-variant-numeric:tabular-nums;text-shadow:none;min-width:0}
 .pi *{box-sizing:border-box}
-.pi-hd{position:sticky;top:0;z-index:4;padding:12px var(--pi-pad) 0;background:linear-gradient(180deg,rgba(26,30,34,.74),rgba(22,26,30,.62));border-bottom:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8)}
-.pi-l1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.pi-tit{font:500 15px/1.1 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.14em;text-transform:uppercase}
-.pi-sem{font:400 10.5px/1.2 var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx2,#c9cfc4);white-space:nowrap}
+.pi-hd{position:sticky;top:0;z-index:4;padding:10px var(--pi-pad) 0;background:linear-gradient(180deg,rgba(28,32,36,.9),rgba(24,28,32,.84));border-bottom:1px solid rgba(255,255,255,.12);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8)}
+.pi-l1{display:flex;align-items:center;gap:8px}
+.pi-tit{font:500 14px/1 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.16em;text-transform:uppercase}
+.pi-sem{margin-left:auto;font:400 10px/1.2 var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx2,#c9cfc4);white-space:nowrap}
 .pi-sem b{font-weight:500;color:var(--pi-ink)}
-.pi-esc{margin:4px 0 0;font-size:11px;color:var(--ui-tx2,#c9cfc4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-pleg{all:unset;box-sizing:border-box;flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.14);color:var(--ui-tx2,#c9cfc4);cursor:pointer}
+.pi-pleg:hover{color:var(--pi-ink);border-color:var(--ui-bd2,rgba(201,242,122,.4))}
+.pi-pleg:focus-visible{outline:2px solid var(--ui-acc,#c9f27a);outline-offset:2px}
+@media(max-width:1099px){.pi-pleg{display:none}}
+.pi-esc{margin:3px 0 0;font-size:10.5px;color:var(--ui-tx2,#c9cfc4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pi-esc b{font-weight:600;color:var(--pi-ink)}
-.pi-go{margin:6px 0 0;padding:5px 8px;border-radius:8px;border:1px solid rgba(255,79,123,.5);background:rgba(255,79,123,.1);font-size:11px;line-height:1.35}
-.pi-tabs{display:flex;margin:10px calc(-1 * var(--pi-pad)) 0;padding:0 var(--pi-pad);border-top:1px solid rgba(255,255,255,.07)}
-.pi-tab{all:unset;box-sizing:border-box;position:relative;flex:1;text-align:center;padding:10px 4px 9px;cursor:pointer;font:500 13px/1 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-tx3,#a5ae9f)}
+.pi-go{margin:6px 0 0;padding:5px 8px;border-radius:8px;border:1px solid rgba(255,143,156,.5);background:rgba(255,143,156,.1);font-size:10.5px;line-height:1.35}
+.pi-tabs{display:flex;margin:8px calc(-1 * var(--pi-pad)) 0;padding:0 var(--pi-pad);border-top:1px solid rgba(255,255,255,.07)}
+.pi-tab{all:unset;box-sizing:border-box;position:relative;flex:1;text-align:center;padding:9px 4px 8px;cursor:pointer;font:500 12px/1 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-tx3,#a5ae9f)}
 .pi-tab:hover,.pi-tab[aria-selected=true]{color:var(--pi-ink)}
-.pi-tab[aria-selected=true]::after{content:'';position:absolute;left:12%;right:12%;bottom:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--pi-v),var(--pi-v3))}
+.pi-tab[aria-selected=true]::after{content:'';position:absolute;left:18%;right:18%;bottom:0;height:2px;border-radius:2px;background:var(--ui-acc,#c9f27a)}
 .pi-tab:focus-visible{outline:1px solid var(--pi-v2);outline-offset:-3px;border-radius:6px}
-.pi-nav{display:flex;gap:4px;margin:0 calc(-1 * var(--pi-pad));padding:8px var(--pi-pad);overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.06)}
+.pi-nav{display:flex;gap:4px;margin:0 calc(-1 * var(--pi-pad));padding:7px var(--pi-pad);overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.06)}
 .pi-nav[hidden]{display:none}
-.pi-nav button{all:unset;box-sizing:border-box;flex:none;display:inline-flex;align-items:baseline;gap:6px;padding:5px 11px 5px 6px;border-radius:99px;border:1px solid rgba(255,255,255,.12);font:500 11px/1 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);cursor:pointer}
-.pi-nav button i{font:400 9.5px/1 var(--ui-mono,'JetBrains Mono',monospace);font-style:normal;color:var(--pi-v2);padding:2px 5px;border-radius:99px;background:rgba(125,107,255,.14)}
-.pi-nav button:hover,.pi-nav button.on{border-color:rgba(169,156,255,.6);color:var(--pi-ink);background:rgba(125,107,255,.1)}
+.pi-nav button{all:unset;box-sizing:border-box;flex:1 0 auto;display:inline-flex;justify-content:center;align-items:baseline;gap:5px;padding:5px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.12);font:500 10.5px/1 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);cursor:pointer}
+.pi-nav button i{font:400 9px/1 var(--ui-mono,'JetBrains Mono',monospace);font-style:normal;color:var(--ui-tx3,#a5ae9f)}
+.pi-nav button:hover,.pi-nav button.on{border-color:var(--ui-bd2,rgba(201,242,122,.4));color:var(--pi-ink);background:rgba(255,255,255,.05)}
 .pi-nav button:focus-visible{outline:1px solid var(--pi-v2);outline-offset:2px}
-.pi-ley{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:10px;color:var(--ui-tx2,#c9cfc4);padding:8px var(--pi-pad) 0}
+.pi-ley{display:flex;flex-wrap:wrap;align-items:center;gap:3px 12px;font-size:10px;color:var(--ui-tx2,#c9cfc4);padding:9px 0 0}
 .pi-ley span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .pi-ley b{font-weight:600;color:var(--pi-ink)}
-.pi-v{padding:4px var(--pi-pad) 18px}
+.pi-v{padding:2px 10px 16px}
 .pi-v[hidden]{display:none}
-.pi-vacio{font-size:11.5px;color:var(--ui-tx2,#c9cfc4);padding:16px var(--pi-pad)}
+.pi-vacio{font-size:11.5px;color:var(--ui-tx2,#c9cfc4);padding:16px 2px}
 .pi-mac{scroll-margin-top:var(--pi-hd,120px)}
-.pi-mac>h2{margin:18px 0 8px;display:grid;grid-template-columns:auto 1fr;align-items:end;column-gap:9px;font:500 13px/1.1 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.12em;text-transform:uppercase;color:var(--pi-ink)}
-.pi-mac>h2 i{grid-row:span 2;font:300 30px/.85 var(--pi-num);font-style:normal;color:var(--pi-v3)}
-.pi-mac>h2 small{font:400 10px/1.3 var(--ui-sans,'Inter',sans-serif);letter-spacing:.02em;text-transform:none;color:var(--ui-tx3,#a5ae9f)}
-.pi-card{position:relative;border:1px solid rgba(255,255,255,.13);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.12);padding:10px 11px 9px;margin:0 0 8px;scroll-margin-top:var(--pi-hd,120px);container-type:inline-size}
-.pi-card.pi-flash{animation:pi-flash 1.2s ease}@keyframes pi-flash{0%{border-color:var(--pi-v2)}100%{border-color:rgba(255,255,255,.13)}}
-.pi-q{margin:6px 0 0;font:600 12.5px/1.3 var(--ui-sans,'Inter',sans-serif);color:var(--pi-ink)}
-.pi-pol{display:inline-flex;align-items:center;gap:3px;margin-left:4px;padding:1px 6px 1px 4px;border-radius:99px;border:1px solid rgba(255,255,255,.16);font:500 9.5px/1.4 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);white-space:nowrap;vertical-align:1px}
-.pi-pol .tb-fl{width:10px;height:10px}
-.pi-e{margin:2px 0 0;font-size:10.5px;line-height:1.4;color:var(--ui-tx3,#a5ae9f)}
-.pi-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:8px 0 4px}
-.pi-top>.pi-val{flex:0 1 auto}.pi-top>.pi-dir{flex:1 1 190px}
-.pi-dir,.pi-vs{display:flex;align-items:flex-start;gap:7px;min-width:0}
-.pi-dir>i,.pi-vs>i{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid rgba(255,255,255,.16);color:var(--ui-tx2,#c9cfc4);background:rgba(255,255,255,.04)}
-.pi-dir>i.ok,.pi-vs>i.ok{color:#5be08f;border-color:rgba(91,224,143,.5);background:rgba(91,224,143,.12)}
-.pi-dir>i.mal,.pi-vs>i.mal{color:#ff6b6b;border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.12)}
-.pi-dir>span,.pi-vs>span{min-width:0;font-size:11px;line-height:1.3;color:var(--ui-tx2,#c9cfc4)}
-.pi-dir b{font:600 15px/1.15 var(--ui-sans,'Inter',sans-serif);color:var(--pi-ink)}
-.pi-vs b{font-weight:600;color:var(--pi-ink)}
-.pi-dir em,.pi-vs em{font-style:normal;font-weight:600;color:var(--pi-ink);white-space:nowrap}
-.pi-dir small,.pi-vs small{display:block;font:400 10px/1.35 var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#a5ae9f)}
-.pi-vs{margin:2px 0 6px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.08)}
-.pi-vs>i{width:20px;height:20px;border-radius:6px}
-.pi-hecho{margin:4px 0 0;font-size:10.5px;line-height:1.45;color:var(--ui-tx2,#c9cfc4)}
-.pi-hecho b{font-weight:600;color:var(--pi-ink)}
-.pi-sp{margin:0 0 7px}
-.pi-sph{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;font-size:10.5px;color:var(--ui-tx2,#c9cfc4)}
-.pi-sph>b{flex-basis:100%;font:600 12px var(--ui-sans,'Inter',sans-serif);color:var(--pi-ink)}.pi-c2{display:inline-flex;align-items:center;gap:4px;padding:1px 7px 1px 3px;border-radius:99px;border:1px solid rgba(255,255,255,.14);white-space:nowrap}
-.pi-c2 .tb-fl{width:12px;height:12px}
-.pi-c2.ok .tb-fl{color:#5be08f}.pi-c2.mal .tb-fl{color:#ff6b6b}
-.pi-c2 svg:first-child:not(.tb-fl){flex:none}
-.pi-c2 b{font:500 10.5px var(--ui-mono,'JetBrains Mono',monospace);color:var(--pi-ink)}
-.pi svg.tb-svg text.tb-bnd{font-size:8.5px;fill:rgba(244,243,239,.78);letter-spacing:.02em}
-.pi svg.tb-svg text.tb-seg{font:500 9px var(--ui-mono,'JetBrains Mono',monospace)}
+.pi-mac>h2{display:flex;align-items:baseline;gap:8px;margin:16px 2px 8px;font:500 12px/1.1 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx2,#c9cfc4)}
+.pi-mac>h2 i{font:300 20px/.8 var(--pi-num);font-style:normal;letter-spacing:0;color:var(--ui-acc,#c9f27a)}
+.pi-mac>h2 small{margin-left:auto;font:400 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.04em;text-transform:none;color:var(--ui-tx3,#a5ae9f)}
+/* tarjeta: título · pregunta · cifra grande + dirección · con / sin · una gráfica */
+.pi-card{position:relative;border:1px solid rgba(255,255,255,.11);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.09);padding:11px 12px 10px;margin:0 0 8px;scroll-margin-top:var(--pi-hd,120px);container-type:inline-size}
+.pi-card.pi-flash{animation:pi-flash 1.2s ease}@keyframes pi-flash{0%{border-color:var(--ui-acc,#c9f27a)}100%{border-color:rgba(255,255,255,.11)}}
 .pi-ch{display:flex;align-items:center;gap:8px}
-.pi-n{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid rgba(169,156,255,.45);font:500 9.5px/1 var(--ui-mono,'JetBrains Mono',monospace);color:var(--pi-v3)}
-.pi-ch h3{flex:1;min-width:0;margin:0;font:500 12.5px/1.15 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.1em;text-transform:uppercase;color:var(--ui-tx2,#c9cfc4)}
-.pi-fx{all:unset;box-sizing:border-box;flex:none;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px 0 6px;border-radius:99px;border:1px solid rgba(255,255,255,.13);font:500 10px/1 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);cursor:pointer;white-space:nowrap}
+.pi-ch h3{flex:1;min-width:0;margin:0;font:500 12.5px/1.15 var(--ui-tit,'Barlow Condensed',sans-serif);letter-spacing:.12em;text-transform:uppercase;color:var(--pi-ink)}
+.pi-fx{all:unset;box-sizing:border-box;flex:none;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px 0 6px;border-radius:99px;border:1px solid rgba(255,255,255,.12);font:500 10px/1 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx3,#a5ae9f);cursor:pointer;white-space:nowrap}
 .pi-fx:hover,.pi-fx[aria-expanded=true]{color:var(--pi-ink);border-color:rgba(169,156,255,.7);background:rgba(125,107,255,.14)}
 .pi-fx:focus-visible{outline:1px solid var(--pi-v2);outline-offset:2px}
-@container (max-width:300px){.pi-fx span{display:none}}
-.pi-val{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;margin:0;min-width:0}
-.pi-val .v{font:400 36px/.9 var(--pi-num);letter-spacing:.005em;color:var(--pi-ink);font-variant-numeric:proportional-nums}
-.pi-val .rn{flex-basis:100%;font:400 9.5px/1.3 var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#a5ae9f);margin-top:3px}
-.pi-val small{font:400 13px var(--pi-num);letter-spacing:.06em;color:var(--ui-tx3,#a5ae9f);margin-left:-3px;text-transform:uppercase}
-.pi-viz{min-width:0;overflow:hidden}
-.pi-art{margin:2px 0 0}
-.pi-art[hidden]{display:none}
+@container (max-width:260px){.pi-fx span{display:none}}
+.pi-q{margin:3px 0 0;font:400 11px/1.35 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4)}
+.pi-e{margin:6px 0 0;font-size:10.5px;line-height:1.45;color:var(--ui-tx3,#a5ae9f)}
+.pi-kpi{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:4px 10px;margin:8px 0 0}
+.pi-val{display:flex;align-items:baseline;gap:4px;margin:0;min-width:0}
+.pi-val .v{font:300 34px/.9 var(--pi-num);letter-spacing:.01em;color:var(--pi-ink);font-variant-numeric:proportional-nums}
+.pi-val small{font:400 13px var(--pi-num);letter-spacing:.06em;color:var(--ui-tx3,#a5ae9f);text-transform:uppercase}
+.pi-dir{display:flex;flex-direction:column;align-items:flex-end;gap:3px;margin:0 0 1px auto;min-width:0;text-align:right}
+.pi-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 6px;border-radius:99px;font:600 10.5px/1.3 var(--ui-sans,'Inter',sans-serif);letter-spacing:.01em;border:1px solid rgba(255,255,255,.16);color:var(--ui-tx2,#c9cfc4);background:rgba(255,255,255,.05);white-space:nowrap}
+.pi-chip svg{flex:none}
+.pi-chip.ok{color:var(--pi-ok);border-color:rgba(201,242,122,.42);background:rgba(201,242,122,.1)}
+.pi-chip.mal{color:var(--pi-mal);border-color:rgba(255,143,156,.45);background:rgba(255,143,156,.1)}
+.pi-dd{font:400 10px/1.2 var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#a5ae9f);white-space:nowrap}
+.pi-dd b{font-weight:500;color:var(--pi-ink)}
+.pi-cs{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:9px 0 2px;padding:7px 0 0;border-top:1px solid rgba(255,255,255,.07)}
+.pi-cs>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pi-cs small{display:flex;align-items:center;gap:5px;font:400 9px/1 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--ui-tx3,#a5ae9f);white-space:nowrap}
+.pi-cs b{font:400 17px/1.05 var(--pi-num);letter-spacing:.02em;color:var(--pi-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-cs b u{text-decoration:none;font-size:11px;color:var(--ui-tx3,#a5ae9f);margin-left:2px}
+.pi-cs .d{align-items:flex-end;text-align:right}
+.pi-cs .d b.ok{color:var(--pi-ok)}.pi-cs .d b.mal{color:var(--pi-mal)}
+.pi-cs .na{font:400 10.5px/1.35 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx3,#a5ae9f);grid-column:1/-1}
+.pi-viz{min-width:0;overflow:hidden;margin-top:6px}
+.pi-nota{margin:5px 0 0;font-size:10.5px;line-height:1.4;color:var(--ui-tx2,#c9cfc4)}
+.pi-nota b{font-weight:600;color:var(--pi-ink)}
+.pi-esp{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0}
+.pi-esp span{display:inline-flex;align-items:center;gap:4px;padding:2px 7px 2px 5px;border-radius:99px;border:1px solid rgba(255,255,255,.12);font:400 10px/1.3 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);white-space:nowrap}
+.pi-esp span.ok svg{color:var(--pi-ok)}.pi-esp span.mal svg{color:var(--pi-mal)}
+.pi-esp b{font:500 10px var(--ui-mono,'JetBrains Mono',monospace);color:var(--pi-ink)}
 .pi svg.tb-svg{display:block;overflow:visible;touch-action:pan-y;max-width:100%;height:auto}
 .pi svg.tb-svg text{font:9px var(--ui-sans,'Inter',system-ui,sans-serif);fill:var(--ui-tx3,#a5ae9f)}
-.pi svg.tb-svg text.tb-tn{fill:var(--ui-tx2,#c9cfc4);font-size:9.5px}
-.pi svg.tb-svg text.tb-tv,.pi svg.tb-svg text.ar-tv{fill:var(--pi-ink);font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace)}
-.pi svg.tb-svg text.ar-tk{font-size:8.5px;fill:rgba(244,243,239,.5)}
-.pi svg.tb-svg text.ar-tk.b{fill:rgba(244,243,239,.8);font-weight:500}
-.pi svg.tb-svg text.ar-ln{font-size:10.5px;fill:var(--ui-tx2,#c9cfc4)}
-.pi svg.tb-svg text.ar-halo{paint-order:stroke;stroke:#1b1f24;stroke-width:3px;stroke-linejoin:round}
-.pi svg.tb-svg text.ar-c1{font:300 21px var(--pi-num);fill:var(--pi-ink);letter-spacing:.02em}
-.pi svg.tb-svg text.ar-c2{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;fill:rgba(244,243,239,.55)}
+.pi svg.tb-svg text.tb-tv{fill:var(--pi-ink);font:500 10px var(--ui-mono,'JetBrains Mono',monospace)}
+.pi svg.tb-svg text.tb-ax{font:400 8.5px var(--ui-mono,'JetBrains Mono',monospace);fill:rgba(244,243,239,.5);letter-spacing:.04em}
+.pi svg.tb-svg text.tb-ref{font:500 8.5px var(--ui-sans,'Inter',sans-serif);fill:#ffd27a;letter-spacing:.02em;paint-order:stroke;stroke:rgba(27,31,36,.85);stroke-width:3px;stroke-linejoin:round}
 .pi svg.tb-svg:focus-visible{outline:1px solid var(--pi-v2);outline-offset:2px;border-radius:3px}
-.pi .tb-fin{transition:cx .3s ease,cy .3s ease}
-.pi .ar-an{transition:r .6s cubic-bezier(.2,.7,.2,1),cx .6s cubic-bezier(.2,.7,.2,1),cy .6s cubic-bezier(.2,.7,.2,1),d .5s ease}
-.pi .ar-rot{transition:transform .7s cubic-bezier(.3,1.25,.4,1)}
-.pi .ar-liq{transition:transform .8s cubic-bezier(.2,.7,.2,1)}
-@media (prefers-reduced-motion:reduce){.pi .ar-an,.pi .ar-rot,.pi .ar-liq,.pi .tb-fin{transition:none}}
+.pi .tb-ten{cursor:crosshair}
 .pi [data-tt]{cursor:crosshair}
-.ar-ley{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:10px;color:var(--ui-tx2,#c9cfc4);margin:5px 0 0}
-.ar-ley span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.ar-ley b{font-weight:500;color:var(--pi-ink)}
-.pi-sub{font-size:10px;line-height:1.4;color:var(--ui-tx3,#a5ae9f);margin:4px 0 0}
-.pi-sub b{font-weight:600;color:var(--pi-ink)}
-.pi-tira{margin:10px 0 0;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08)}
-.pi-tl{display:block;font:400 8.5px/1 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.14em;text-transform:uppercase;color:rgba(244,243,239,.42);margin:0 0 2px}
-.pi-cuerda{position:relative;margin:4px 0 0}
-.pi-cuerda canvas{display:block;width:100%!important;max-width:430px;margin:2px auto 0}
-.pi-hero{background:radial-gradient(90% 50% at 50% 55%,rgba(125,107,255,.12),transparent 70%),linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border-color:rgba(169,156,255,.3)}
-.pi-hero .pi-ch h3{font-size:14px;color:var(--pi-ink)}
-.pi-cuerda .pie{font-size:10.5px;line-height:1.4;color:var(--ui-tx2,#c9cfc4);margin:4px 0 0;min-height:2.8em}
-.pi-tipos{display:flex;flex-wrap:wrap;gap:3px 10px;margin:6px 0 4px;font-size:10px;color:var(--ui-tx2,#c9cfc4)}
+.pi-cuerda{position:relative;margin:8px 0 0}
+.pi-cuerda canvas{display:block;width:100%!important;max-width:320px;margin:0 auto}
+.pi-hero{background:radial-gradient(90% 45% at 50% 62%,rgba(125,107,255,.13),transparent 70%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border-color:rgba(169,156,255,.28)}
+.pi-cuerda .pie{font-size:10px;line-height:1.4;color:var(--ui-tx3,#a5ae9f);margin:4px 0 0;min-height:2.8em;text-align:center}
+.pi-tipos{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 10px;margin:4px 0 0;font-size:10px;color:var(--ui-tx2,#c9cfc4)}
 .pi-tipos span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.pi-tipos i{width:9px;height:9px;border-radius:50%;flex:none}
+.pi-tipos i{width:8px;height:8px;border-radius:50%;flex:none}
 .pi-tipos b{font:500 10px var(--ui-mono,'JetBrains Mono',monospace);color:var(--pi-ink)}
-.pi-enc{display:flex;align-items:baseline;gap:8px;font:400 10.5px var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4)}
-.pi-enc b{font:300 30px/1 var(--pi-num);color:var(--pi-v3)}
-.pi-dos{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px;align-items:center}
-@container (max-width:330px){.pi-dos{grid-template-columns:1fr}.pi-dos>div:first-child svg{margin:0 auto}}
+.pi-enc{display:flex;align-items:baseline;justify-content:center;gap:6px;font:400 10px var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx3,#a5ae9f)}
+.pi-enc b{font:300 22px/1 var(--pi-num);color:var(--pi-v3)}
 .pi-form{margin:8px 0 2px;padding:11px 11px 9px;border-radius:12px;background:linear-gradient(180deg,rgba(125,107,255,.1),rgba(255,255,255,.03));border:1px solid rgba(169,156,255,.22)}
 .pi-form[hidden]{display:none}
 .pi-form math{font-size:13.5px;font-family:var(--ui-sans,'Inter',sans-serif);color:var(--pi-ink);margin:2px 0 8px;max-width:100%}
@@ -306,6 +288,8 @@ html.limpio body #lp-tablero #su-der .lp-ds{flex:1;min-width:0;text-align:right;
 
 /* ---------- utilidades ---------- */
 const fija = (e, at) => { for (const k in at) { const v = String(at[k]); if (e.getAttribute(k) !== v) e.setAttribute(k, v); } };
+/* flecha de dirección del chip (SVG en línea, color = currentColor): triángulo arriba / abajo o dos rayas si no cambia */
+const tri = (s) => `<svg viewBox="0 0 10 10" width="9" height="9" aria-hidden="true">${s > 0 ? '<path d="M5 1.5 9 8.2H1z" fill="currentColor"/>' : s < 0 ? '<path d="M5 8.5 9 1.8H1z" fill="currentColor"/>' : '<path d="M1.5 3.6h7M1.5 6.4h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'}</svg>`;
 const sig = (x, d) => { const r = +Math.abs(x).toFixed(d); return (r === 0 ? '±' : x > 0 ? '+' : '−') + num(Math.abs(x), d); };
 
 export function iniciarPanelIndicadores({ R, getM, getFIN }) {
@@ -313,6 +297,19 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   ponerTip((html, x, y) => (html == null ? tip().ocultar() : tip().mostrar(html, x, y)));
   let root = null, wrap = null, hd = null, vista = 'ind', simHecho, H0 = null, nHecho = -1, nBase = -1, ultimo = 0, sucio = true, pendiente = false, espera0 = performance.now(), goHecho = null;
   const CACHE = new Map(), cards = new Map(); let io = null;
+  /* PLEGAR (escritorio): el tablero queda como una pestaña angosta a la derecha y el mapa libre; se recuerda entre visitas (urbia.css, html.pi-plegado) */
+  const html = document.documentElement;
+  let abrirB = document.getElementById('pi-abrir');
+  if (!abrirB) { abrirB = document.createElement('button'); abrirB.id = 'pi-abrir'; abrirB.type = 'button'; abrirB.setAttribute('aria-controls', 'lp-tablero'); abrirB.setAttribute('aria-expanded', 'false');
+    abrirB.setAttribute('aria-label', 'Abrir el tablero'); abrirB.title = 'Abrir el tablero'; abrirB.innerHTML = ICO_ABRIR + '<span>Tablero</span>'; document.body.appendChild(abrirB); }
+  function plegar(on, foco) {
+    html.classList.toggle('pi-plegado', on); try { localStorage.setItem(PLEG_K, on ? '1' : '0'); } catch (e) { /* sin almacenamiento: solo esta visita */ }
+    abrirB.setAttribute('aria-expanded', String(!on)); const b = wrap && wrap.querySelector('.pi-pleg'); if (b) b.setAttribute('aria-expanded', String(!on));
+    if (on) { window.KEN_CUERDA_VIVA = false; tip().ocultar(); } else { sucio = true; ultimo = 0; }
+    if (foco) (on ? abrirB : b) && (on ? abrirB : b).focus();
+  }
+  abrirB.onclick = () => plegar(false, true);
+  { let g = false; try { g = localStorage.getItem(PLEG_K) === '1'; } catch (e) { /* sin almacenamiento */ } if (g) html.classList.add('pi-plegado'); }
 
   function montar() {
     let s = document.getElementById('lp-tablero');
@@ -328,13 +325,14 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   /* ---------- esqueleto ---------- */
   const VISTAS = [['ind', 'Indicadores'], ['est', 'Estrategias']]; /* las variables van en el acordeón de cada simulación (panel izquierdo, limpio.js) */
   function esqueleto() {
-    wrap.innerHTML = `<header class="pi-hd"><div class="pi-l1"><span class="pi-tit">Tablero en vivo</span><span class="pi-sem"></span></div><p class="pi-esc"></p><p class="pi-go" hidden></p>`
+    wrap.innerHTML = `<header class="pi-hd"><div class="pi-l1"><span class="pi-tit">Tablero</span><span class="pi-sem"></span><button type="button" class="pi-pleg" aria-controls="lp-tablero" aria-expanded="true" aria-label="Plegar el tablero" title="Plegar el tablero (deja libre el mapa)">${ICO_PLEG}</button></div><p class="pi-esc"></p><p class="pi-go" hidden></p>`
       + `<div class="pi-tabs" role="tablist" aria-label="Contenido del tablero">${VISTAS.map(([id, n]) => `<button type="button" role="tab" class="pi-tab" id="pi-t-${id}" data-v="${id}" aria-selected="${id === vista}" tabindex="${id === vista ? 0 : -1}">${n}</button>`).join('')}</div>`
       + `<nav class="pi-nav" aria-label="Macromodelos">${MACROS.map((m, i) => `<button type="button" data-m="${m.id}"><i>0${i + 1}</i>${m.c}</button>`).join('')}</nav></header>`
-      + `<div class="pi-v" role="tabpanel" id="pi-v-ind" aria-labelledby="pi-t-ind"${vista === 'ind' ? '' : ' hidden'}><div class="pi-ley" style="padding:8px 0 0"><span>${llave('lin', ARTE.con)}Con propuesta</span><span>${llave('pun', ARTE.sin)}Sin propuesta</span><span class="pi-run"></span></div><p class="pi-vacio" hidden></p><div class="pi-macs"></div></div>`
+      + `<div class="pi-v" role="tabpanel" id="pi-v-ind" aria-labelledby="pi-t-ind"${vista === 'ind' ? '' : ' hidden'}><div class="pi-ley"><span>${llave('lin', ARTE.con)}Con propuesta</span><span>${llave('pun', ARTE.sin)}Sin propuesta</span></div><p class="pi-vacio" hidden></p><div class="pi-macs"></div></div>`
       + `<div class="pi-v" role="tabpanel" id="pi-v-est" aria-labelledby="pi-t-est"${vista === 'est' ? '' : ' hidden'}></div>`
       ;
     hd = wrap.querySelector('.pi-hd');
+    const pb = wrap.querySelector('.pi-pleg'); pb.setAttribute('aria-expanded', String(!html.classList.contains('pi-plegado'))); pb.addEventListener('click', () => plegar(true, true));
     const tl = wrap.querySelector('.pi-tabs');
     tl.addEventListener('click', (e) => { const b = e.target.closest('[role=tab]'); if (b) elegir(b.dataset.v); });
     tl.addEventListener('keydown', (e) => { const ids = VISTAS.map((v) => v[0]), i = ids.indexOf(vista), k = { ArrowRight: 1, ArrowLeft: -1, Home: -99, End: 99 }[e.key]; if (k == null) return; e.preventDefault();
@@ -354,7 +352,7 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   /* ---------- contexto de un dibujo ---------- */
   const ctxDe = () => {
     const H = R.hist, n = H.length, I = H[n - 1], B = R.ecoBase || R.base || null, prop = !!(R.def && R.def.propuesta), M = getM();
-    const W = Math.max(220, Math.floor((wrap.querySelector('.pi-macs').clientWidth || 360) - 24));
+    const W = Math.max(220, Math.floor((wrap.querySelector('.pi-macs').clientWidth || 330) - 26));
     const Bk = B && B.length ? B[Math.min(n, B.length) - 1] : null;
     return { H, n, I, B, Bk: Bk && Bk.sem === I.sem ? Bk : null, prop, M, FIN: getFIN(), W, CA: { H, M }, CB: { H: B || [], M }, I1: H[Math.min(SEM_REF, n) - 1] };
   };
@@ -372,11 +370,10 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   /* ---------- tarjetas ---------- */
   function tarjeta(sec, k, viz) {
     const d = INDK[k], a = document.createElement('article'); a.className = 'pi-card'; a.id = 'pi-c-' + k; a.dataset.k = k;
-    const nro = String(IND.findIndex((x) => x.k === k) + 1).padStart(2, '0');
     const qa = QA[k] || {};
-    a.innerHTML = `<div class="pi-ch"><span class="pi-n" aria-hidden="true">${nro}</span><h3>${k === 'inter' ? 'Interacciones bióticas' : esc(d.n)}</h3><button type="button" class="pi-fx" aria-expanded="false" aria-controls="pi-f-${k}" aria-label="Ver fórmula de ${esc(d.n)}" title="Ver fórmula">${ICO_FX}<span>Ver fórmula</span></button></div>`
-      + `<p class="pi-q">${esc(qa.q || '')} <span class="pi-pol">${flecha(d.sube ? 1 : -1)}más ${d.sube ? 'alto' : 'bajo'} = mejor</span></p><p class="pi-e" hidden>${esc(qa.e || '')}</p>`
-      + `<div class="pi-top"><div class="pi-val"><b class="v">—</b><small>${esc(UD[d.u] || d.u)}</small><span class="rn"></span></div><div class="pi-dir" aria-live="off"></div></div><div class="pi-vs"></div><div class="pi-viz"></div><div class="pi-form" id="pi-f-${k}" hidden></div>`;
+    a.innerHTML = `<header class="pi-ch"><h3>${k === 'inter' ? 'Interacciones bióticas' : esc(d.n)}</h3><button type="button" class="pi-fx" aria-expanded="false" aria-controls="pi-f-${k}" aria-label="Ver fórmula de ${esc(d.n)}" title="Ver fórmula">${ICO_FX}<span>Ver fórmula</span></button></header>`
+      + `<p class="pi-q">${esc(qa.q || '')}</p>`
+      + `<div class="pi-kpi"><p class="pi-val"><b class="v">—</b><small>${esc(d.u)}</small></p><p class="pi-dir"></p></div><div class="pi-cs"></div><div class="pi-viz"></div><p class="pi-e" hidden>${esc(qa.e || '')}</p><div class="pi-form" id="pi-f-${k}" hidden></div>`;
     sec.appendChild(a);
     if (k === 'inter') a.classList.add('pi-hero');
     const C = { k, el: a, vis: false, abierta: false, up: viz ? viz(a.querySelector('.pi-viz'), a) : null };
@@ -388,32 +385,32 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   const uTxt = (d) => (d.u === '%' ? ' pts' : d.u ? ' ' + (UD[d.u] || d.u) : '');
   const uVal = (d) => (d.u === '%' ? ' %' : d.u ? ' ' + (UD[d.u] || d.u) : '');
   const cero = (dx, dd) => Math.abs(dx) < Math.pow(10, -dd) / 2;
+  /* chip: flecha = hacia dónde se mueve el valor; palabra y color = si eso es bueno para ESTE indicador */
   function dirTxt(d, a, b, desde, det) {
     const dx = b - a, z = cero(dx, d.d), s = z ? 0 : Math.sign(dx), bien = z ? null : d.sube ? dx > 0 : dx < 0;
-    return `<i class="${bien == null ? '' : bien ? 'ok' : 'mal'}">${flecha(s, 15)}</i><span><b>${z ? 'Igual' : s > 0 ? 'Sube' : 'Baja'}${z ? '' : ' ' + num(Math.abs(dx), d.d) + esc(uTxt(d))}</b> ${desde}${bien == null ? '' : ` · <em>${bien ? 'mejora' : 'empeora'}</em>`}<small>${det}</small></span>`;
+    return `<span class="pi-chip ${bien == null ? '' : bien ? 'ok' : 'mal'}" title="${esc(det)}">${tri(s)}${bien == null ? 'estable' : bien ? 'mejora' : 'empeora'}</span><span class="pi-dd"><b>${z ? '±0' : sig(dx, d.d)}${esc(uTxt(d))}</b> ${desde}</span>`;
   }
+  const neutro = (t, dd) => `<span class="pi-chip">${tri(0)}${t}</span><span class="pi-dd">${dd}</span>`;
   function cabecera(C, c) {
     const d = INDK[C.k], v = valor(C.k, c.I, c.CA), v1 = c.n > SEM_REF ? valor(C.k, c.I1, c.CA) : null, vo = c.Bk ? valor(C.k, c.Bk, c.CB) : null, el = C.el;
     const f = (x) => (x == null ? '—' : (d.k === 'presion' && x > 0 ? '+' : '') + num(x, d.d) + uVal(d));
     contar(el.querySelector('.v'), v, (x) => (d.k === 'presion' && x > 0 ? '+' : '') + num(x, d.d));
-    pon(el.querySelector('.rn'), `${c.prop ? 'con' : 'sin'} propuesta, hoy`);
     /* 1 · dirección desde el año 1 (esta corrida) */
     let dt;
     if (d.acum) { /* atropellos: el total solo crece; la tendencia es por año (último año completo frente al año 1) */
       const P = c.I.atropellos && c.I.atropellos.porAño || [], y = Math.floor((c.I.sem - 1) / 52);
-      dt = y >= 2 ? dirTxt({ ...d, u: 'animales/año' }, P[0] || 0, P[y - 1] || 0, `frente al año 1`, `año 1: ${num(P[0] || 0)} → año ${y}: ${num(P[y - 1] || 0)} animales`) : '';
-      if (!dt) dt = `<i>${flecha(0, 15)}</i><span><b>Año ${y + 1} en curso</b><small>la tendencia por año aparece desde el año 3</small></span>`; }
-    else if (v != null && v1 != null) dt = dirTxt(d, v1, v, 'desde el año 1', `año 1: ${f(v1)} → hoy: ${f(v)}`);
-    else if (v == null && d.k === 'saturacion') dt = `<i>${flecha(0, 15)}</i><span><b>No aplica</b> en esta corrida<small>sin propuesta no hay Estaciones Circulares; abajo, la corrida con propuesta</small></span>`;
-    else dt = `<i>${flecha(0, 15)}</i><span><b>${c.n <= SEM_REF ? 'Año 1 en curso' : 'Sin dato'}</b><small>${c.n <= SEM_REF ? `la tendencia se mide desde la semana ${SEM_REF}` : 'esta corrida no lo calcula'}</small></span>`;
+      dt = y >= 2 ? dirTxt({ ...d, u: 'anim./año' }, P[0] || 0, P[y - 1] || 0, 'vs año 1', `año 1: ${num(P[0] || 0)} → año ${y}: ${num(P[y - 1] || 0)} animales`) : neutro(`año ${y + 1}`, 'tendencia desde el año 3'); }
+    else if (v != null && v1 != null) dt = dirTxt(d, v1, v, 'vs año 1', `año 1: ${f(v1)} → hoy: ${f(v)}`);
+    else if (v == null && d.k === 'saturacion') dt = neutro('no aplica', 'sin Estaciones Circulares');
+    else dt = c.n <= SEM_REF ? neutro('año 1', `base: semana ${SEM_REF}`) : neutro('sin dato', '');
     pon(el.querySelector('.pi-dir'), dt);
-    /* 2 · con frente a sin propuesta, misma semana y misma semilla */
-    const vc = c.prop ? v : vo, vs = c.prop ? vo : v; let tx;
-    if (vc == null || vs == null) tx = `<i>${flecha(0, 13)}</i><span>${d.k === 'saturacion' ? 'Sin propuesta no hay Estaciones Circulares: no aplica.' : c.B && c.B.length && c.B.length < c.n ? `La corrida ${c.prop ? 'sin' : 'con'} propuesta va hasta la semana ${c.B[c.B.length - 1].sem}: no hay con qué comparar esta semana.` : 'Falta la otra corrida para comparar.'}</span>`;
+    /* 2 · con frente a sin propuesta, misma semana y misma semilla: dos cifras y la diferencia */
+    const vc = c.prop ? v : vo, vs = c.prop ? vo : v, u = esc(d.u), cif = (x) => (x == null ? '—' : `${(d.k === 'presion' && x > 0 ? '+' : '') + num(x, d.d)}<u>${u}</u>`);
+    let tx = `<span><small>${llave('lin', ARTE.con)}Con</small><b>${cif(vc)}</b></span><span><small>${llave('pun', ARTE.sin)}Sin</small><b>${vs == null && d.k === 'saturacion' ? 'no aplica' : cif(vs)}</b></span>`;
+    if (vc == null || vs == null) tx += `<span class="d"><small>diferencia</small><b>—</b></span>`;
     else { const dx = vc - vs, z = cero(dx, d.d), bien = z ? null : d.sube ? dx > 0 : dx < 0;
-      tx = z ? `<i>${flecha(0, 13)}</i><span>Con y sin propuesta: <b>iguales</b><small>con ${f(vc)} · sin ${f(vs)}</small></span>`
-        : `<i class="${bien ? 'ok' : 'mal'}">${flecha(Math.sign(dx), 13)}</i><span>Con propuesta: <b>${num(Math.abs(dx), d.d)}${esc(uTxt(d))} ${dx > 0 ? 'más' : 'menos'}</b> que sin ella · <em>${bien ? 'mejor' : 'peor'}</em><small>con ${f(vc)} · sin ${f(vs)}</small></span>`; }
-    pon(el.querySelector('.pi-vs'), tx);
+      tx += `<span class="d" title="con propuesta menos sin propuesta"><small>${z ? 'diferencia' : bien ? 'propuesta mejor' : 'propuesta peor'}</small><b class="${bien == null ? '' : bien ? 'ok' : 'mal'}">${z ? 'iguales' : sig(dx, d.d) + `<u>${esc(d.u === '%' ? 'pts' : d.u)}</u>`}</b></span>`; }
+    pon(el.querySelector('.pi-cs'), tx);
     return { v, vo, v1 };
   }
   /* ---------- «Ver fórmula»: fórmula, términos, valores de esta semana, cómo se calcula, fuente ---------- */
@@ -450,48 +447,19 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
     return [];
   }
 
-  /* ---------- visualizaciones por indicador: UNA pregunta, la forma más simple que la responde (dataviz: choosing-a-form) ----------
-     · escala (bala) con bandas rotuladas: «¿dónde está el valor en su escala y cuánto le falta?» (con = punto lleno, sin = aro hueco)
-     · línea de 15 años con etiquetas al final: «¿sube o baja con el tiempo?»
-     · filas antes→después por especie, barras segmentadas por corrida, columnas por año, lista de medidores por estación */
-  const linea = (host, k, op = {}) => { const d = INDK[k], L = new Linea(host, { n: d.n, u: d.u, d: d.d, alto: op.alto || 74, cero: op.cero, pl: op.pl || 30, etq: true }); return (c) => { const S = serie(c, k, vK(k)); L.update({ W: c.W, FIN: c.FIN, xs: S.xs, con: S.con, sin: S.sin, run: c.prop ? 'con' : 'sin' }); }; };
+  /* ---------- UNA gráfica por tarjeta (dataviz, choosing-a-form: la pregunta de casi todas es «¿sube o baja con los años y cuánto separa la propuesta?»)
+     Tendencia de 15 años (graficas_vivas.js): con propuesta = línea violeta con lavado, sin propuesta = coral punteada, valores finales a la derecha.
+     Umbral rotulado solo donde decide algo (game over de residuos, alerta de las estaciones, demanda completa). La cuerda de interacciones no cambia. */
   const div = (h, cls) => { const e = document.createElement('div'); if (cls) e.className = cls; h.appendChild(e); return e; };
-  const tira = (h, k, op = {}) => { const t = div(h, 'pi-tira'); t.insertAdjacentHTML('beforeend', `<span class="pi-tl">${op.t || 'Evolución en 15 años · eje: años'}</span>`); return linea(t, k, { alto: op.alto || 64, cero: op.cero, pl: op.pl }); };
+  const nota = (h) => { const e = document.createElement('p'); e.className = 'pi-nota'; h.appendChild(e); return e; };
   const Ic = (c) => (c.prop ? c.I : c.Bk), Is = (c) => (c.prop ? c.Bk : c.I), Cc = (c) => (c.prop ? c.CA : c.CB), Cs = (c) => (c.prop ? c.CB : c.CA);
-  const vC = (c, k) => valor(k, Ic(c), Cc(c)), vS = (c, k) => valor(k, Is(c), Cs(c));
-  /* escala + línea: la base de casi todas las tarjetas */
-  const escala = (h, k, op) => { const d = INDK[k], E = new Escala(div(h, 'pi-art'), { n: d.n, u: d.u, d: d.d, min: 0, max: 100, ...op }); return (c, max) => E.update({ W: c.W, con: vC(c, k), sin: vS(c, k), max }); };
-  const hecho = (h) => div(h, 'pi-hecho');
-  const COL_V = { existente: ARTE.cat[2], reforzado: ARTE.pur[4], nuevo: ARTE.cat[0], liberado: ARTE.cat[1], hogares: ARTE.durazno };
-  const INK_V = { existente: '#fff', reforzado: '#14161b', nuevo: '#fff', liberado: '#14161b', hogares: '#14161b' };
-  const TXT_V = { existente: 'existente', reforzado: 'reforzada', nuevo: 'módulo nuevo', liberado: 'borde liberado', hogares: 'huertas de hogares' };
-  const palabra = (p) => (Math.abs(p) < 0.5 ? 'estable' : p > 0 ? 'aumenta' : 'disminuye');
+  const tend = (h, k, op = {}) => { const d = INDK[k], L = new Tendencia(h, { n: d.n, u: UD[d.u] || d.u, d: d.d, cero: op.cero, alto: op.alto, fmt: op.fmt });
+    return (c) => { const S = serie(c, k, vK(k)); L.update({ W: c.W, FIN: c.FIN, xs: S.xs, con: S.con, sin: S.sin, run: c.prop ? 'con' : 'sin', ref: op.ref ? op.ref(c) : null }); }; };
+  const solo = (k, op) => (h) => tend(h, k, op);
   const VIZ = {
-    shannon: (h) => { const a = div(h, 'pi-art'), f = hecho(h), L = tira(h, 'shannon'); let E = null, m0 = 0;
-      return (c) => { const B = (I) => I && I.biodiversidad, nfa = Object.keys((B(c.I) || {}).areaEsp || {}).length || 23, m = Math.log(nfa);
-        if (!E || m0 !== m) { m0 = m; a.innerHTML = ''; E = new Escala(a, { n: 'Biodiversidad de Shannon', d: 2, dt: 2, min: 0, max: m, ticks: [0, m], bandas: [[0, m / 3, 'baja'], [m / 3, 2 * m / 3, 'media'], [2 * m / 3, m, 'alta']], aria: `Shannon de 0 a ${num(m, 2)} con bandas baja, media y alta` }); }
-        E.update({ W: c.W, con: vC(c, 'shannon'), sin: vS(c, 'shannon') });
-        const r = (I) => (B(I) ? B(I).riqueza : null), j = (I) => { const s = r(I); return s > 1 ? B(I).shannonArea / Math.log(s) * 100 : null; };
-        pon(f, `Especies presentes: <b>con ${num(r(Ic(c)))}</b> · sin ${num(r(Is(c)))} de ${nfa}<br>Reparto parejo del hábitat: <b>con ${num(j(Ic(c)))} %</b> · sin ${num(j(Is(c)))} %<br>Tope ${num(m, 2)} = las ${nfa} especies con la misma área; bandas = tercios del tope.`);
-        L(c); }; },
-    /* por especie: año 1 (= 100 %) → hoy, con y sin, en una escala común */
-    clave: (h) => { const a = div(h, 'pi-art'); let k0 = '';
-      return (c) => { const R = CLAVE.map((e) => ({ e, a: clavePct(Ic(c), e.id, Cc(c)), b: clavePct(Is(c), e.id, Cs(c)) })), vs = R.flatMap((r) => [r.a, r.b]).filter((x) => x != null);
-        const k = R.map((r) => [r.a, r.b].map((x) => (x == null ? '' : x.toFixed(0))).join(',')).join('|') + c.W; if (k === k0) return; k0 = k;
-        if (c.n <= SEM_REF) { a.innerHTML = `<p class="pi-hecho">Año 1 en curso: el punto de partida de cada especie es la semana ${SEM_REF}.</p>`; return; }
-        const lo = Math.min(50, Math.floor(Math.min(...vs, 100) / 25) * 25), hi = Math.max(150, Math.ceil(Math.max(...vs, 100) / 25) * 25), W = c.W, x0 = 6, x1 = W - 6, X = (v) => x0 + (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * (x1 - x0);
-        const chip = (n, v) => { if (v == null) return `<span class="pi-c2">${n}: —</span>`; const p = v - 100, s = Math.abs(p) < 0.5 ? 0 : Math.sign(p);
-          return `<span class="pi-c2 ${s > 0 ? 'ok' : s < 0 ? 'mal' : ''}">${flecha(s, 12)}${n}: <b>${s ? (p > 0 ? '+' : '−') + num(Math.abs(p)) + ' %' : '±0 %'}</b> ${palabra(p)}</span>`; };
-        a.innerHTML = R.map((r, i) => { const ult = i === R.length - 1, H = ult ? 32 : 20, y = 10, xr = X(100);
-          let s = `<svg class="tb-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(`${r.e.n}: con propuesta ${num(r.a)} %, sin propuesta ${num(r.b)} % del año 1`)}">`;
-          s += `<line x1="${x0}" x2="${x1}" y1="${y}" y2="${y}" stroke="var(--tb-axis)"/><line x1="${xr.toFixed(1)}" x2="${xr.toFixed(1)}" y1="2" y2="18" stroke="rgba(244,243,239,.7)" stroke-width="1.5"/>`;
-          if (r.b != null) s += `<circle cx="${X(r.b).toFixed(1)}" cy="${y}" r="4.6" fill="var(--tb-sur)" fill-opacity=".6" stroke="${ARTE.sin}" stroke-width="2" data-tt="${esc(`${r.e.larga} · sin propuesta|${num(r.b)} % del año 1`)}"/>`;
-          if (r.a != null) s += `<line x1="${xr.toFixed(1)}" x2="${X(r.a).toFixed(1)}" y1="${y}" y2="${y}" stroke="${ARTE.con}" stroke-width="3" stroke-linecap="round"/><circle cx="${X(r.a).toFixed(1)}" cy="${y}" r="5.5" fill="${ARTE.con}" stroke="var(--tb-sur)" stroke-width="2" data-tt="${esc(`${r.e.larga} · con propuesta|${num(r.a)} % del año 1|${num(claveArea(Ic(c), r.e.id), 1)} ha ocupadas`)}"/>`;
-          if (ult) s += [lo, 100, hi].map((v) => `<text class="ar-tk${v === 100 ? ' b' : ''}" x="${X(v).toFixed(1)}" y="${H - 1}" text-anchor="${v === lo ? 'start' : v === hi ? 'end' : 'middle'}">${v === 100 ? 'año 1 = 100 %' : num(v) + ' %'}</text>`).join('');
-          return `<div class="pi-sp"><div class="pi-sph"><b>${esc(r.e.n)}</b>${chip('Con', r.a)}${chip('Sin', r.b)}</div>${s}</svg></div>`; }).join(''); }; },
-    inter: (h, el) => { const box = document.createElement('div'); box.className = 'pi-cuerda'; h.appendChild(box);
-      box.innerHTML = '<div class="pi-enc"><b>0</b><span>encuentros ocurriendo ahora en el 3D</span></div><div class="pi-cv"></div><p class="pie">Pasa sobre una especie para ver con quién se relaciona.</p><div class="pi-tipos"></div>';
-      const L = tira(h, 'inter', { alto: 60 }); let tiposN = 0;
+    inter: (h) => { const box = div(h, 'pi-cuerda');
+      box.innerHTML = '<div class="pi-enc"><b>0</b><span>encuentros ahora en el 3D</span></div><div class="pi-cv"></div><p class="pie">Pasa sobre una especie para ver con quién se relaciona.</p><div class="pi-tipos"></div>';
+      let tiposN = 0;
       const vivo = () => { const cv = document.getElementById('tb-cuerda'), slot = box.querySelector('.pi-cv'); if (cv && cv.parentNode !== slot) slot.appendChild(cv);
         const on = !!cv && vista === 'ind' && cards.get('inter').vis && !!root && root.getClientRects().length > 0 && !document.hidden; window.KEN_CUERDA_VIVA = on;
         if (!on) return; box.querySelector('.pi-enc b').textContent = num(window.KEN_ENC || 0);
@@ -500,82 +468,32 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
           if (tiposN !== bio.TIPOS.length) { tiposN = bio.TIPOS.length; box.querySelector('.pi-tipos').innerHTML = bio.TIPOS.map((t, i) => `<span><i style="background:${t.c}"></i>${esc(t.n)} <b data-i="${i}">0</b></span>`).join(''); }
           box.querySelectorAll('.pi-tipos b').forEach((b) => { const v = E[+b.dataset.i] || 0, tx = num(v); if (b.textContent !== tx) b.textContent = tx; }); } };
       const iv = setInterval(() => { if (!box.isConnected) { clearInterval(iv); return; } vivo(); }, 400);
-      return (c) => { vivo(); L(c); }; },
-    /* de qué está hecha el área verde: una barra por corrida, misma escala en hectáreas */
-    verde: (h) => { const a = div(h, 'pi-art'), lg = div(h), L = tira(h, 'verde'); let k0 = '';
-      lg.innerHTML = leyenda(Object.keys(COL_V).map((t) => ['bar', COL_V[t], TXT_V[t]]));
-      return (c) => { L(c); const comp = (I) => { if (!I || !I.verde) return null; const o = {}; for (const p of I.verde.parches) if (p.r > 0) { const t = COL_V[p.tipo] ? p.tipo : 'existente'; o[t] = (o[t] || 0) + Math.PI * p.r * p.r / 1e4; }
-          const suma = Object.values(o).reduce((x, y) => x + y, 0), resto = (T(I).verde || 0) - suma; if (resto > 0.05) o.hogares = resto; return o; };
-        const A = comp(Ic(c)), B = comp(Is(c)), k = JSON.stringify([A, B].map((o) => o && Object.values(o).map((v) => Math.round(v)))) + c.W; if (k === k0) return; k0 = k;
-        const fila = (n, o, hueca) => ({ n, hueca, segs: Object.keys(COL_V).map((t) => ({ v: (o && o[t]) || 0, c: COL_V[t], ink: INK_V[t], n: TXT_V[t], txt: num((o && o[t]) || 0, 1) + ' ha' })), txt: o ? num(Object.values(o).reduce((x, y) => x + y, 0), 0) + ' ha' : '—' });
-        a.innerHTML = segBarras([fila('Con', A), fila('Sin', B, true)], c.W, { aria: 'Área verde por tipo, con y sin propuesta, en hectáreas' }); }; },
-    conect: (h) => { const E = escala(h, 'conect', { ticks: [0, 50, 100] }), f = hecho(h), L = tira(h, 'conect', { cero: true });
-      return (c) => { E(c); const r = (I) => I && I.verde && I.verde.resumen; const a = r(Ic(c)), b = r(Is(c));
-        pon(f, `Parches unidos a la red: <b>con ${a ? `${num(a.nConectados)} de ${num(a.nParches)}` : '—'}</b> · sin ${b ? `${num(b.nConectados)} de ${num(b.nParches)}` : '—'}`); L(c); }; },
-    /* animales atropellados cada año: columnas pareadas con (llena) y sin (hueca) */
-    atrop: (h) => { const a = div(h, 'pi-art'), lg = div(h); let k0 = '';
-      lg.innerHTML = `<div class="ar-ley"><span>${clave(ARTE.con, 'barra')}con propuesta</span><span>${clave(ARTE.sin, 'hueca')}sin propuesta</span><span>animales por año · eje: años</span></div>`;
-      return (c) => { const A = c.I.atropellos.porAño || [], Ab = c.Bk ? c.Bk.atropellos.porAño || [] : [], nA = Math.min(15, Math.ceil(c.n / 52)), conA = c.prop ? A : Ab, sinA = c.prop ? Ab : A, años = [];
-        for (let y = 0; y < 15; y++) años.push(y < nA ? [[conA[y] || 0], [sinA[y] || 0]] : null);
-        const k = JSON.stringify(años) + c.W; if (k === k0) return; k0 = k;
-        a.innerHTML = columnasAño(años, [[{ c: ARTE.con }], [{ c: ARTE.sin, op: 0.3 }]], c.W, { alto: 96, aria: 'Animales atropellados por año, con y sin propuesta', tt: (y, r) => `Año ${y + 1}${y === nA - 1 ? ' (en curso)' : ''}|Con propuesta: ${num(r[0][0])} animales|Sin propuesta: ${num(r[1][0])} animales` }); }; },
-    ruido: (h) => { const E = escala(h, 'ruido', { min: 40, max: 80, dt: 0, ticks: [40, 50, 65, 75], bandas: [[40, 50, 'sin efecto'], [50, 65, 'molestia'], [65, 75, 'efecto fuerte'], [75, 80, 'pérdida']] }), L = tira(h, 'ruido');
-      return (c) => { E(c); L(c); }; },
-    bienestar: (h) => { const E = escala(h, 'bienestar', { ticks: [0, 50, 100] }), L = tira(h, 'bienestar');
-      return (c) => { E(c); L(c); }; },
-    /* qué tan llenas: escala con la banda de alerta + una barra por estación (las más llenas primero) */
-    saturacion: (h) => { const box = div(h), msg = div(h), a = div(h, 'pi-art'), L = tira(h, 'saturacion', { cero: true }); const E = escala(box, 'saturacion', { ticks: [0, 85, 100], bandas: [[0, 85, 'normal'], [85, 100, 'alerta']] }); let k0 = '';
-      return (c) => { L(c); const I = Ic(c);
-        if (!I || !hayEstaciones(I)) { box.hidden = true; a.hidden = true; pon(msg, '<p class="pi-hecho">Sin Estaciones Circulares en ninguna corrida: lo recogido va al relleno Doña Juana y el indicador no aplica.</p>'); return; }
-        box.hidden = false; a.hidden = false; pon(msg, ''); E(c);
-        const est = (T(I).estaciones || []).filter((e) => isFinite(e.valor)).sort((x, y) => y.valor - x.valor), top = est.slice(0, 6), k = top.map((e) => Math.round(e.valor)).join(',') + c.W + est.length; if (k === k0) return; k0 = k;
-        a.innerHTML = top.length ? `<span class="pi-tl" style="margin-top:6px">Las ${top.length} estaciones más llenas de ${est.length} (con propuesta)</span>` + barrasH(top.map((e) => ({ n: e.n, v: Math.min(100, e.valor), col: e.valor >= 100 ? ARTE.crit : e.valor >= 85 ? ARTE.lim : ARTE.con, txt: num(e.valor) + ' %', tt: `${e.n}|Llena: ${num(e.valor)} %|Acumulado: ${num(e.acumulado_t * 1000)} kg|Trata ${num(e.tratado_t_dia * 1000)} de ${num(e.cap_t_dia * 1000)} kg/día` })), c.W, { max: 100, lim: 85, limU: ' %', lw: 110, vw: 38, aria: 'Llenado de cada Estación Circular' }) : ''; }; },
-    /* a dónde van los orgánicos: una barra por corrida, partes del mismo todo */
-    aprov: (h) => { const a = div(h, 'pi-art'), lg = div(h), L = tira(h, 'aprov', { cero: true }); let k0 = ''; const D3 = [{ n: 'aprovechado (compost)', c: ARTE.cat[2], ink: '#fff' }, { n: 'relleno Doña Juana', c: ARTE.neutro, ink: '#14161b' }, { n: 'sin recoger', c: ARTE.cat[1], ink: '#14161b' }];
-      lg.innerHTML = leyenda(D3.map((x) => ['bar', x.c, x.n]));
-      return (c) => { L(c); const f = (I) => { if (!I) return null; const t = T(I), G = t.organicos || 0, Tt = Math.min(G, t.tratados || 0), sr = (I.basura && I.basura.fraccionSinRecoger || 0) * Math.max(0, G - Tt); return { G, seg: [Tt, Math.max(0, G - Tt - sr), sr] }; };
-        const A = f(Ic(c)), B = f(Is(c)), k = JSON.stringify([A, B].map((x) => x && x.seg.map((v) => Math.round(v * 400)))) + c.W; if (k === k0) return; k0 = k;
-        const fila = (n, o, hueca) => ({ n, hueca, segs: D3.map((x, i) => ({ v: o ? o.seg[i] : 0, c: x.c, ink: x.ink, n: x.n, txt: num(o ? o.seg[i] * 1000 : 0) + ' kg/día' })), txt: o ? num(o.G, 0) + ' t/día' : '—' });
-        a.innerHTML = segBarras([fila('Con', A), fila('Sin', B, true)], c.W, { rw: 54, aria: 'Destino de los orgánicos generados cada día, con y sin propuesta' }); }; },
-    /* comida que llega frente a la demanda (t/día, 15 años): demanda de esta corrida, lo que llega con y sin propuesta */
-    llega: (h) => { const box = div(h, 'pi-art'), lg = div(h), f = hecho(h); const svg = nodo('svg', { class: 'tb-svg', role: 'img', 'aria-label': 'Comida que llega a Kennedy frente a su demanda, toneladas por día en 15 años' }, box);
-      const gE = nodo('g', { class: 'tb-ejey' }, svg), pD = nodo('path', { fill: 'none', stroke: ARTE.ink, 'stroke-width': 1.6, 'stroke-opacity': 0.85 }, svg), pS = nodo('path', { fill: 'none', stroke: ARTE.sin, 'stroke-width': 2, 'stroke-dasharray': '5 3' }, svg), pC = nodo('path', { fill: 'none', stroke: ARTE.con, 'stroke-width': 2 }, svg);
-      lg.innerHTML = leyenda([['lin', ARTE.ink, 'demanda de Kennedy'], ['lin', ARTE.con, 'llega · con propuesta'], ['pun', ARTE.sin, 'llega · sin propuesta']]);
-      const camino2 = (xs, ys, X, Y) => { let d = '', n = 0; for (let i = 0; i < xs.length; i++) { const y = ys[i]; if (y == null) { n = 0; continue; } d += (n++ ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(y).toFixed(1); } return d; };
-      return (c) => { const D = serie(c, 'llegaDem', (I) => (I && I.comidaK ? I.comidaK.dem : null)), S = serie(c, 'llegaT', (I) => (I && I.comidaK ? I.comidaK.llega : null));
-        const run = c.prop ? D.con : D.sin, vals = [...run, ...S.con, ...S.sin].filter((v) => v != null); if (!vals.length) return;
-        const m = marcas(Math.min(...vals) * 0.97, Math.max(...vals) * 1.02, 3), W = c.W, H = 96, pl = 36, pr = 8, pt = 8, pb = 15, iw = W - pl - pr, ih = H - pt - pb;
-        const X = (s) => pl + (s - 1) / Math.max(1, c.FIN - 1) * iw, Y = (v) => pt + ih - (v - m.a) / (m.b - m.a || 1) * ih;
-        fija(svg, { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
-        const k = m.t.join(',') + W; if (gE._k !== k) { gE._k = k; gE.innerHTML = m.t.map((t) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--tb-grid)"/><text x="${pl - 4}" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${num(t)}</text>`).join('') + [1, 5, 10, 15].map((a) => `<text x="${X((a - 1) * 52 + 1).toFixed(1)}" y="${H - 3}" text-anchor="middle">${a}</text>`).join(''); }
-        fija(pD, { d: camino2(D.xs, run, X, Y) }); fija(pC, { d: camino2(S.xs, S.con, X, Y) }); fija(pS, { d: camino2(S.xs, S.sin, X, Y) });
-        const I = c.I.comidaK; if (I) pon(f, `Esta semana: demanda <b>${num(I.dem)} t/día</b> · llegan <b>${num(I.llega)}</b> (${num(I.frescosRec)} de frescos + ${num(I.otros)} de otros canales)${I.llega < I.dem - 0.5 ? ` · <b>faltan ${num(I.dem - I.llega)} t/día</b>` : ''}.`); }; },
-    /* residuos que genera Kennedy frente a la generación con la que lo sin recoger llega al game over */
-    resK: (h) => { const t = div(h, 'pi-tira'); t.insertAdjacentHTML('beforeend', '<span class="pi-tl">Generación en 15 años · t/día · raya = game over de la simulación 01</span>');
-      const L = new Linea(t, { n: 'Residuos de Kennedy', u: 't/día', d: 0, alto: 80, pl: 36, etq: true }), f = hecho(h);
-      return (c) => { const S = serie(c, 'resK', vK('resK')), r = c.I.residuosK, trat = r ? r.trat || 0 : 0;
-        L.update({ W: c.W, FIN: c.FIN, xs: S.xs, con: S.con, sin: S.sin, run: c.prop ? 'con' : 'sin', lim: 774 + 296 + trat, cerca: 774 + 148 + 2 / 3 * 148 + trat, limTxt: `game over ${num(774 + 296 + trat)}` });
-        if (r) pon(f, `Sin recoger: <b>${num(r.noRec)} t/día</b> de 296 (hoy 148, puntos críticos)${trat > 0.5 ? ` · las Estaciones Circulares tratan ${num(trat, 1)} t/día${r.nEst ? ` (${num(r.nEst)} de 20 abiertas)` : ''}` : ''}<br>Humedal La Vaca: degradación <b>${num(r.D * 100)} %</b> · árboles e interacciones −${num((1 - r.arboles) * 100)} %`); }; },
-    cobertura: (h) => { const E = escala(h, 'cobertura', { ticks: [0, 80, 100], bandas: [[0, 80, 'bajo 80 %'], [80, 100, '80 % o más']] }), f = hecho(h), L = tira(h, 'cobertura', { cero: true });
-      return (c) => { E(c); const b = (I) => (I ? (T(I).sectores || []).filter((s) => s.valor < 80).length : null), n = (T(c.I).sectores || []).length;
-        pon(f, `Sectores de 500 m que reciben menos del 80 % de lo que necesitan: <b>con ${num(b(Ic(c)))}</b> · sin ${num(b(Is(c)))} de ${num(n)}`); L(c); }; },
-    autonomia: (h) => { const E = escala(h, 'autonomia', {}), f = hecho(h), L = tira(h, 'autonomia', { cero: true });
-      return (c) => { const a = vC(c, 'autonomia'), b = vS(c, 'autonomia'), mx = marcas(0, Math.max(1, a || 0, b || 0) * 1.15, 3).b; E(c, mx);
-        const n1 = a > 0 ? Math.round(100 / a) : null; pon(f, n1 ? `Con propuesta, cerca de <b>1 de cada ${num(n1)} kg</b> de alimentos frescos se cultiva en Kennedy. Escala de 0 a ${num(mx)} % para que se vea la diferencia.` : 'Con propuesta aún no se consume comida cultivada en Kennedy.'); L(c); }; },
-    /* escala + mapa de sectores con el radio de 15 minutos de cada mercado */
-    acceso: (h) => { const E = escala(h, 'acceso', { ticks: [0, 50, 100] }), svg = nodo('svg', { class: 'tb-svg', style: 'overflow:hidden;margin-top:6px', role: 'img', 'aria-label': 'Sectores a 15 minutos a pie de un mercado' }, div(h, 'pi-art')), gm = nodo('g', {}, svg), gs = nodo('g', {}, svg);
-      const lg = div(h), L = tira(h, 'acceso', { cero: true }); let k0 = '';
-      return (c) => { E(c); L(c); const a = acceso(c.I, c.M); if (!a) return; const colR = c.prop ? ARTE.con : ARTE.sin;
-        pon(lg, leyenda([['pto', colR, `a ≤ 15 min (${c.prop ? 'con' : 'sin'} propuesta)`], ['hue', 'rgba(244,243,239,.45)', 'más lejos'], ['bar', ARTE.lim, 'mercado y su radio']]));
-        const k = a.mercados.length + '|' + c.W + '|' + a.sectores.filter((s) => s.ok).length + c.prop; if (k === k0) return; k0 = k;
-        const W = c.W, ht = Math.round(W * 0.44), P2 = a.sectores.concat(a.mercados), xs = P2.map((s) => s.x), zs = P2.map((s) => s.z), x0 = Math.min(...xs) - 300, x1 = Math.max(...xs) + 300, z0 = Math.min(...zs) - 300, z1 = Math.max(...zs) + 300, sc = Math.min(W / (x1 - x0), ht / (z1 - z0));
-        const X = (x) => (x - x0) * sc + (W - (x1 - x0) * sc) / 2, Y = (z) => (z - z0) * sc; fija(svg, { width: W, height: Math.round((z1 - z0) * sc), viewBox: `0 0 ${W} ${Math.round((z1 - z0) * sc)}` });
-        gm.innerHTML = a.mercados.map((m) => `<circle cx="${X(m.x).toFixed(1)}" cy="${Y(m.z).toFixed(1)}" r="${(ACCESO_R * sc).toFixed(1)}" fill="${ARTE.lim}" fill-opacity=".045" stroke="${ARTE.lim}" stroke-opacity=".22" stroke-dasharray="2 3"/>`).join('');
-        gs.innerHTML = a.sectores.map((s) => `<circle cx="${X(s.x).toFixed(1)}" cy="${Y(s.z).toFixed(1)}" r="${Math.max(2, Math.min(5, Math.sqrt(s.w) * 6)).toFixed(1)}" ${s.ok ? `fill="${colR}" fill-opacity=".9"` : 'fill="none" stroke="rgba(244,243,239,.38)"'} data-tt="${esc(`Sector|${num(s.d)} m al mercado más cercano|${s.ok ? 'a 15 min o menos a pie' : 'a más de 15 min a pie'}`)}"/>`).join('')
-          + a.mercados.map((m) => `<rect x="${(X(m.x) - 3.5).toFixed(1)}" y="${(Y(m.z) - 3.5).toFixed(1)}" width="7" height="7" transform="rotate(45 ${X(m.x).toFixed(1)} ${Y(m.z).toFixed(1)})" fill="${ARTE.lim}" stroke="var(--tb-sur)" data-tt="${esc(`${m.n}|${m.tipo === 'propuesta' ? 'mercado de la propuesta' : m.tipo === 'plaza' ? 'plaza existente' : 'central mayorista'}`)}"/>`).join(''); }; },
-    /* línea de 15 años desde 0 %: la cifra grande ya es el cambio */
-    presion: (h) => tira(h, 'presion', { alto: 104, cero: true })
+      return () => vivo(); },
+    shannon: solo('shannon'),
+    /* promedio de las tres especies en la línea; debajo, cada especie frente al año 1 (con propuesta) */
+    clave: (h) => { const L = tend(h, 'clave'), e = div(h, 'pi-esp');
+      return (c) => { L(c); if (c.n <= SEM_REF) { pon(e, ''); return; }
+        pon(e, CLAVE.map((s) => { const v = clavePct(Ic(c), s.id, Cc(c)); if (v == null) return `<span>${esc(s.n)} —</span>`; const p = v - 100, z = Math.abs(p) < 0.5, sg = z ? 0 : Math.sign(p);
+          return `<span class="${z ? '' : p > 0 ? 'ok' : 'mal'}" title="${esc(s.larga)}: ${num(v)} % del área del año 1, con propuesta">${tri(sg)}${esc(s.n)} <b>${z ? '±0' : (p > 0 ? '+' : '−') + num(Math.abs(p))} %</b></span>`; }).join('')); }; },
+    verde: solo('verde'),
+    conect: solo('conect'),
+    atrop: solo('atrop', { cero: true }),
+    ruido: solo('ruido'),
+    bienestar: solo('bienestar'),
+    saturacion: (h) => { const L = tend(h, 'saturacion', { cero: true, ref: () => ({ v: 85, txt: 'alerta 85 %' }) }), f = nota(h);
+      return (c) => { L(c); pon(f, vC(c, 'saturacion') == null ? 'Sin propuesta no hay Estaciones Circulares: lo recogido va a Doña Juana.' : ''); }; },
+    aprov: solo('aprov', { cero: true }),
+    /* residuos frente a la generación con la que lo sin recoger llega al game over */
+    resK: (h) => { const L = tend(h, 'resK', { ref: (c) => { const r = c.I.residuosK, t = r ? r.trat || 0 : 0; return { v: 774 + 296 + t, txt: 'game over' }; } }), f = nota(h);
+      return (c) => { L(c); const r = c.I.residuosK; pon(f, r ? `Sin recoger: <b>${num(r.noRec)} de 296 t/día</b> · La Vaca degradada <b>${num(r.D * 100)} %</b>` : ''); }; },
+    llega: (h) => { const L = tend(h, 'llega', { ref: () => ({ v: 100, txt: 'demanda completa' }) }), f = nota(h);
+      return (c) => { L(c); const I = c.I.comidaK; pon(f, I && I.llega < I.dem - 0.5 ? `Esta semana faltan <b>${num(I.dem - I.llega)} t/día</b> de ${num(I.dem)}.` : ''); }; },
+    cobertura: solo('cobertura'),
+    autonomia: solo('autonomia', { cero: true }),
+    acceso: solo('acceso'),
+    presion: solo('presion', { cero: true, fmt: (v) => (v > 0 ? '+' : '') + num(v, 1) })
   };
+  const vC = (c, k) => valor(k, Ic(c), Cc(c));
 
   function construirIndicadores() {
     const box = wrap.querySelector('.pi-macs'); cards.clear();
@@ -583,7 +501,7 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
     io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => { for (const e of es) { const C = cards.get(e.target.dataset.k); if (!C) continue; const ant = C.vis; C.vis = e.isIntersecting; if (C.vis && !ant) { sucio = true; programar(); } } }, { root: root, rootMargin: '200px 0px' }) : null;
     MACROS.forEach((m, i) => { const s = document.createElement('section'); s.className = 'pi-mac'; s.id = 'pi-m-' + m.id; s.setAttribute('aria-labelledby', 'pi-h-' + m.id);
       const nI = IND.filter((x) => x.macro === m.id).length;
-      s.innerHTML = `<h2 id="pi-h-${m.id}"><i>${String(i + 1).padStart(2, '0')}</i><span>${esc(m.n.replace(/^Macromodelo (de )?/, ''))}</span><small>Macromodelo · ${nI} indicadores</small></h2>`; box.appendChild(s);
+      s.innerHTML = `<h2 id="pi-h-${m.id}"><i>${String(i + 1).padStart(2, '0')}</i><span>${esc(m.c)}</span><small>${nI} indicadores</small></h2>`; box.appendChild(s);
       for (const d of IND.filter((x) => x.macro === m.id)) { const C = tarjeta(s, d.k, VIZ[d.k]); if (!io) C.vis = true; } });
   }
 
@@ -602,7 +520,6 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
     wrap.querySelector('.pi-sem').innerHTML = `Semana <b>${I.sem}</b> · año <b>${año(I.sem)}</b> de 15`;
     wrap.querySelector('.pi-esc').innerHTML = d.par ? `<b>${esc((d.parN || '').replace(/^\d+\s*/, ''))}</b> · ${c.prop ? 'con propuesta' : 'sin propuesta'}` : `<b>${esc(d.n || 'Kennedy')}</b> · sin prueba de estrés`;
     const g = T(I).gameOver || R.go, pg = wrap.querySelector('.pi-go'); pg.hidden = !g; if (g) pg.textContent = `Game over en la semana ${g.sem}: ${g.motivo || g.regla}.`;
-    wrap.querySelector('.pi-run').innerHTML = `· esta corrida: <b>${c.prop ? 'con' : 'sin'}</b>`;
   }
 
   /* ---------- ciclo ---------- */

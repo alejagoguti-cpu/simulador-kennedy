@@ -1,13 +1,13 @@
 /* Tema URBIA: grafito translúcido (vidrio), acento verde pálido. Interfaz compacta sobre el territorio.
    TOKENS COMPARTIDOS (los usan todos los paneles: limpio.js, slides_sim.js, panel de datos, avisos, informe):
-   --ui-acc        acento (verde pálido, suave)          --ui-acc-bg  fondo tenue del acento     --ui-acc-tx  texto en acento sobre vidrio
+   --ui-acc        acento (lima suave, entre el pálido y el de URBIA)  --ui-acc-bg  fondo tenue del acento     --ui-acc-tx  texto en acento sobre vidrio
    --ui-acc-ink    texto oscuro sobre un relleno de acento --ui-bd2    borde resaltado             --ui-bd      borde fino
    --ui-glass      relleno del vidrio  --ui-glass-bd  borde de luz  --ui-glass-sh  sombra + brillo interior  --ui-glass-fx  backdrop-filter
    --ui-tx / --ui-tx2 / --ui-tx3  textos   --ui-sans  Inter   --ui-mono  JetBrains Mono   --ui-tit  Barlow Condensed (títulos finos)
    --lp-izq-w  ancho del panel izquierdo   --lp-gap  margen de los paneles */
 html:root{
- --ui-acc:#d4ecb0!important;--ui-acc-bg:rgba(212,236,176,.14)!important;--ui-acc-tx:#e3f1cd!important;--ui-acc-ink:#1e2918;
- --ui-bd:rgba(255,255,255,.10)!important;--ui-bd2:rgba(212,236,176,.38)!important;
+ --ui-acc:#c9f27a!important;--ui-acc-bg:rgba(201,242,122,.14)!important;--ui-acc-tx:#dcf6ab!important;--ui-acc-ink:#1e2918;
+ --ui-bd:rgba(255,255,255,.10)!important;--ui-bd2:rgba(201,242,122,.40)!important;
  --ui-tx:#f1f3ee!important;--ui-tx2:#c9cfc4!important;--ui-tx3:#bcc4b5!important;
  --ui-bg:rgba(20,24,23,.62)!important;--ui-bg2:rgba(255,255,255,.05)!important;
  --ui-sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;--ui-mono:'JetBrains Mono',ui-monospace,monospace;
@@ -19,7 +19,7 @@ html:root{
  --ui-glass-fx:none!important;
  /* layout: panel izquierdo angosto, tablero a la derecha (alto completo); --lp-tab-sp = espacio que reserva el tablero a la derecha */
  --lp-izq-w:288px;--lp-gap:14px;--lp-top:66px;
- --lp-tab-w:clamp(340px,25vw,410px);--lp-tab-sp:calc(var(--lp-tab-w) + 12px);
+ --lp-tab-w:clamp(300px,22vw,356px);--lp-tab-sp:calc(var(--lp-tab-w) + 12px);
  --lp-r:16px;--lp-r2:10px;--lp-r3:8px;
  color-scheme:dark;
 }
@@ -80,7 +80,7 @@ html.limpio body #gs-izq{
  position:fixed!important;left:var(--lp-gap)!important;top:var(--lp-top)!important;bottom:auto!important;right:auto!important;
  width:var(--lp-izq-w)!important;height:auto!important;max-height:calc(100dvh - var(--lp-top) - var(--lp-gap))!important;box-sizing:border-box;padding:12px 12px 12px!important;
  overflow-y:auto!important;overflow-x:hidden;overscroll-behavior-y:contain;
- --sb-thumb:rgba(212,236,176,.42);--sb-track:transparent;scrollbar-width:thin;scrollbar-color:var(--sb-thumb) var(--sb-track);
+ --sb-thumb:rgba(201,242,122,.42);--sb-track:transparent;scrollbar-width:thin;scrollbar-color:var(--sb-thumb) var(--sb-track);
  opacity:1!important;transform:none!important;pointer-events:auto!important;
 }
 @supports not (scrollbar-color:auto){
@@ -148,8 +148,19 @@ html.limpio body #gs-izq #lp-datos{display:none!important}
 /* ---------- TABLERO EN TIEMPO REAL (columna derecha, alto completo). Solo la caja: el contenido lo monta data3d/panel_datos.js ---------- */
 html.limpio body #lp-tablero{position:fixed;z-index:41;right:var(--lp-gap);top:var(--lp-top);bottom:var(--lp-gap);width:var(--lp-tab-w);box-sizing:border-box;
  padding:14px 16px 16px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;container-type:inline-size;container-name:tablero;
- --sb-thumb:rgba(212,236,176,.42);--sb-track:transparent;scrollbar-width:thin;scrollbar-color:var(--sb-thumb) var(--sb-track);scrollbar-gutter:stable}
+ --sb-thumb:rgba(201,242,122,.42);--sb-track:transparent;scrollbar-width:thin;scrollbar-color:var(--sb-thumb) var(--sb-track);scrollbar-gutter:stable}
 html.limpio body #lp-tablero:empty::before{content:"Cargando el tablero…";display:block;padding:8px 2px;font:400 11px var(--ui-mono);letter-spacing:.06em;color:var(--ui-tx3)}
+/* tablero plegado (escritorio, >= 1100 px; panel_indicadores.js pone html.pi-plegado y lo recuerda): queda una pestaña angosta y el mapa libre */
+#pi-abrir{display:none}
+@media(min-width:1100px){
+ html.limpio.pi-plegado{--lp-tab-sp:56px}
+ html.limpio.pi-plegado body #lp-tablero{display:none}
+ html.limpio.pi-plegado body #pi-abrir{display:flex;flex-direction:column;align-items:center;gap:10px;position:fixed;z-index:41;right:var(--lp-gap);top:var(--lp-top);width:44px;padding:12px 0 14px;box-sizing:border-box;border-radius:12px;cursor:pointer;
+  background:var(--ui-glass);border:1px solid var(--ui-glass-bd);box-shadow:var(--ui-glass-sh);-webkit-backdrop-filter:var(--ui-glass-fx);backdrop-filter:var(--ui-glass-fx);color:var(--ui-tx);font:500 12px/1 var(--ui-tit);letter-spacing:.16em;text-transform:uppercase}
+ html.limpio.pi-plegado body #pi-abrir span{writing-mode:vertical-rl}
+ html.limpio.pi-plegado body #pi-abrir svg{width:16px;height:16px;flex:none;color:var(--ui-acc)}
+ html.limpio.pi-plegado body #pi-abrir:hover{border-color:var(--ui-bd2)}
+}
 /* botones de los cajones (tableta y celular) */
 #lp-izq-tog,#lp-tab-tog{display:none}
 html.limpio body :is(#lp-izq-tog,#lp-tab-tog){align-items:center;gap:8px;height:36px;padding:0 12px;font:500 12px var(--ui-sans)!important;cursor:pointer}
@@ -201,7 +212,7 @@ html.limpio body #lp-slides:focus-visible{outline:none!important}
 #lp-slides :is(.sl-prev,.sl-next):disabled{opacity:.35;cursor:default}
 #lp-slides .sl-track{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y}
 #lp-slides .sl-track::-webkit-scrollbar{display:none}
-#lp-slides .sl{flex:0 0 100%;min-width:0;scroll-snap-align:center;scroll-snap-stop:always;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:rgba(212,236,176,.42) transparent}
+#lp-slides .sl{flex:0 0 100%;min-width:0;scroll-snap-align:center;scroll-snap-stop:always;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:rgba(201,242,122,.42) transparent}
 #lp-slides .sl-in{padding:18px 20px 22px;max-width:100%;box-sizing:border-box}
 #lp-slides .sl-kick{margin:0 0 10px;font:500 13px/1.1 var(--ui-tit);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-tx3)}
 #lp-slides .sl-kick:not(:first-child){margin-top:22px}
@@ -317,19 +328,19 @@ body .cv-bar i{background:var(--ui-acc)}
 /* ---------- portada URBIA ---------- */
 #urbia-intro{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 46%,#424a40 0,#202723 36%,#101512 78%);color:#f4f3ef;font-family:var(--ui-sans);transition:opacity .75s ease,visibility .75s;perspective:1000px}
 #urbia-intro::before,#urbia-intro::after{content:"";position:absolute;width:min(76vw,780px);aspect-ratio:1;border:1px solid #e6eddb18;border-radius:50%;pointer-events:none}
-#urbia-intro::after{width:min(58vw,600px);border-color:rgba(212,236,176,.12);transform:rotateX(68deg) rotate(-20deg)}
+#urbia-intro::after{width:min(58vw,600px);border-color:rgba(201,242,122,.12);transform:rotateX(68deg) rotate(-20deg)}
 #urbia-intro.ui-leaving{display:none!important}
 .ui-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(90vw,560px)}
-.ui-logo{width:min(245px,58vw);height:auto;filter:drop-shadow(0 0 25px rgba(212,236,176,.14));animation:ui-logo-giro 8s cubic-bezier(.45,.05,.55,.95) infinite;transform-style:preserve-3d;backface-visibility:visible}
+.ui-logo{width:min(245px,58vw);height:auto;filter:drop-shadow(0 0 25px rgba(201,242,122,.14));animation:ui-logo-giro 8s cubic-bezier(.45,.05,.55,.95) infinite;transform-style:preserve-3d;backface-visibility:visible}
 .ui-kicker{margin-top:26px;color:#c6d0b9;font:10px var(--ui-mono);letter-spacing:.23em}
 .ui-center h1{font-size:clamp(34px,6vw,62px);line-height:1.02;font-weight:300;letter-spacing:-.055em;margin:19px 0 10px}
 .ui-center h1 em{font-weight:500;font-style:normal;color:var(--ui-acc)}
 .ui-center p{max-width:370px;color:#c5cabe;font-size:13px;line-height:1.7;margin:4px 0 23px}
-#urbia-start{display:flex;align-items:center;gap:33px;background:var(--ui-acc);color:var(--ui-acc-ink);border:0;border-radius:999px;padding:13px 17px 13px 25px;font-weight:600;font-size:13px;box-shadow:0 0 32px rgba(212,236,176,.18);transition:transform .2s,box-shadow .2s}
+#urbia-start{display:flex;align-items:center;gap:33px;background:var(--ui-acc);color:var(--ui-acc-ink);border:0;border-radius:999px;padding:13px 17px 13px 25px;font-weight:600;font-size:13px;box-shadow:0 0 32px rgba(201,242,122,.2);transition:transform .2s,box-shadow .2s}
 #urbia-start span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ui-acc-ink);color:var(--ui-acc);font-size:17px}
-#urbia-start:hover{transform:translateY(-2px);box-shadow:0 0 42px rgba(212,236,176,.32)}
+#urbia-start:hover{transform:translateY(-2px);box-shadow:0 0 42px rgba(201,242,122,.32)}
 .ui-foot{position:absolute;bottom:25px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;white-space:nowrap;color:#aeb6a8;font:9px var(--ui-mono);letter-spacing:.14em}
-.ui-foot i{height:13px;border-left:1px solid rgba(212,236,176,.4)}
+.ui-foot i{height:13px;border-left:1px solid rgba(201,242,122,.4)}
 @keyframes ui-logo-giro{
  0%{transform:translateY(0) rotateY(0deg) rotateX(-5deg)}
  25%{transform:translateY(-7px) rotateY(90deg) rotateX(0)}

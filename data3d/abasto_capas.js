@@ -1,4 +1,4 @@
-/* ============ SIMULACIÓN 01 · CAPAS «BODEGAS», «RESIDUOS» Y «TRÁFICO» (pedido de la autora, docs/sim01_abastecimiento_v2.md) ============
+﻿/* ============ SIMULACIÓN 01 · CAPAS «BODEGAS», «RESIDUOS» Y «TRÁFICO» (pedido de la autora, docs/sim01_abastecimiento_v2.md) ============
    v4 (docs/sim01_abastecimiento_v4.md): barra de carga horizontal con pin sobre Corabastos, residuos en cuadraditos que se mueven,
    vías tipo Waze (cintas con sombreador) en lugar de las partículas, y vehículos morados de Bavaria Común (con propuesta).
    window.KEN_AB01C = { poner(I), ver(on), capa(k, on), estado: { bodegas, residuos, trafico }, info() }
@@ -148,7 +148,7 @@ export function crearCapas01({ T3 }) {
     for (let i = 0; i < R_.n; i++) { const [x, z, h] = R_.arbP[i], muerto = i < perdidos;
       const rc = Math.max(4.5, h * 0.45);
       M4.compose(V3.set(x, y + h * 0.35, z), Q.identity(), muerto ? S3.set(0.01, 0.01, 0.01) : S3.set(rc, rc * 0.85, rc)); R_.arb.setMatrixAt(i, M4); R_.arb.setColorAt(i, CC.copy(COL_SANO).lerp(COL_SECO, Math.min(1, D * 0.6)));
-      M4.compose(V3.set(x, y, z), Q.identity(), muerto ? S3.set(2.6, 4, 2.6) : S3.set(1.4, h * 0.55, 1.4)); R_.tro.setMatrixAt(i, M4); R_.tro.setColorAt(i, CC.set(muerto ? '#b9a48a' : '#6b5a48')); }
+      M4.compose(V3.set(x, y, z), Q.identity(), muerto ? S3.set(2.4, h * 0.75, 2.4) : S3.set(1.4, h * 0.55, 1.4)); R_.tro.setMatrixAt(i, M4); R_.tro.setColorAt(i, CC.set(muerto ? '#3b2a1e' : '#6b5a48')); } /* v5: el árbol perdido queda como tronco seco oscuro (se ve que falta la copa) */
     R_.arb.instanceMatrix.needsUpdate = true; if (R_.arb.instanceColor) R_.arb.instanceColor.needsUpdate = true; R_.tro.instanceMatrix.needsUpdate = true; if (R_.tro.instanceColor) R_.tro.instanceColor.needsUpdate = true;
     R_.velo.material.color.copy(COL_AGUA).lerp(COL_CAFE, D); R_.velo.material.opacity = 0.22 + 0.33 * D; R_.velo.position.y = y + 0.6;
     // montones: uno por cada 0,1 t/día de aporte por encima de hoy (0,45), radio con el aporte
@@ -159,13 +159,13 @@ export function crearCapas01({ T3 }) {
   /* ---------- v4: MEDIDOR DE CORABASTOS = BARRA DE CARGA horizontal sobre un pin clavado en Corabastos (inventario ÷ 14.000 t) ----------
      La barra mira siempre a la cámara; se llena de izquierda a derecha (verde → ámbar desde 90 % → rojo); el tope (100 % = 14.000 t) es
      un remate rojo; sobre 100 % el exceso sigue en rojo hasta 120 %. */
-  const GA = { H: 230, L: 460, A: 54, ESC: 1.2 };
+  const GA = { H: 140, L: 260, A: 30, ESC: 1.2 }; /* v5: más pequeños (pedido de la autora) */
   const gG = new THREE.Group(); gG.name = 'ab01_medidor'; raiz.add(gG);
   { const [gx, gz] = lw(CORA_C[0], CORA_C[1]); gG.position.set(gx, 0, gz); }
   const mB = (c, o, dt = true) => new THREE.MeshBasicMaterial({ color: c, transparent: o < 1, opacity: o, depthWrite: false, depthTest: dt, toneMapped: false, fog: false });
   const geoU = new THREE.BoxGeometry(1, 1, 1), geoIzq = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0, 0);
-  const gPin = new THREE.Mesh(geoU, mB(0xffffff, 0.7)); gPin.scale.set(3, GA.H, 3); gPin.position.y = GA.H / 2; gPin.renderOrder = 14;
-  const gPie = new THREE.Mesh(new THREE.ConeGeometry(16, 34, 4).rotateX(Math.PI), mB(0xffffff, 0.9)); gPie.position.y = 17; gPie.renderOrder = 14;
+  const gPin = new THREE.Mesh(geoU, mB(0xffffff, 0.7)); gPin.scale.set(2, GA.H, 2); gPin.position.y = GA.H / 2; gPin.renderOrder = 14;
+  const gPie = new THREE.Mesh(new THREE.ConeGeometry(10, 22, 4).rotateX(Math.PI), mB(0xffffff, 0.9)); gPie.position.y = 11; gPie.renderOrder = 14;
   const gBar = new THREE.Group(); gBar.position.y = GA.H; gG.add(gPin, gPie, gBar);
   const gMarco = new THREE.Mesh(geoU, mB(0x0d1116, 0.7, false)); gMarco.scale.set(GA.L + 14, GA.A + 14, 4); gMarco.renderOrder = 17;
   const gRiel = new THREE.Mesh(geoU, mB(0xffffff, 0.12, false)); gRiel.scale.set(GA.L, GA.A, 4.5); gRiel.renderOrder = 18;
@@ -211,18 +211,18 @@ export function crearCapas01({ T3 }) {
      [SUP: 0,8 lejos de Corabastos → 1,25 junto a ella, e^(−d/900 m), por los camiones de abasto] × hora [SUP: +35 % × cercanía en la franja
      con más camiones de Corabastos (franjas de ingreso × SIPSA), −17 % fuera de franja]. Rapidez de las rayas = 1 / (1 + congestión). */
   const TR = { listo: false, mesh: null, nivel: -1, nAr: 0 };
-  const VS_W = `attribute float aS; attribute float aK; attribute float aN; uniform float uT; uniform float uNiv; uniform float uH;
+  const VS_W = `attribute float aS; attribute float aK; attribute float aN; uniform float uT; uniform float uNiv; uniform float uNivC; uniform float uH;
     varying float vS; varying float vC; varying float vY;
-    void main(){ float c = uNiv * aK * (1.0 + uH * aN); vC = c; vS = aS - uT * 26.0 / (1.0 + c) ; vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+    void main(){ float c = mix(uNiv, uNivC, aN) * aK * (1.0 + uH * aN); vC = c; vS = aS - uT * 26.0 / (1.0 + c) ; vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
   const FS_W = `uniform float uOp; varying float vS; varying float vC; varying float vY;
-    void main(){ vec3 g = vec3(0.0,0.62,0.22), a = vec3(0.95,0.6,0.0), r = vec3(0.85,0.04,0.04);
-      vec3 col = vC < 0.85 ? mix(g, a, clamp((vC - 0.6) / 0.25, 0.0, 1.0)) : mix(a, r, clamp((vC - 0.85) / 0.25, 0.0, 1.0));
-      float per = 30.0 + 30.0 / (1.0 + vC); float f = fract(vS / per); float raya = smoothstep(0.0, 0.08, f) * (1.0 - smoothstep(0.42, 0.5, f));
-      gl_FragColor = vec4(mix(col * 0.5, min(vec3(1.0), col * 1.2 + 0.08), raya), uOp); }`;
+    void main(){ vec3 g = vec3(0.13,0.77,0.37), a = vec3(0.98,0.66,0.05), r = vec3(0.60,0.0,0.13); /* v5: verde fluido · ámbar · carmesí de trancón (distinto del rosado de los camiones) */
+      vec3 col = vC < 0.7 ? mix(g, a, clamp((vC - 0.4) / 0.3, 0.0, 1.0)) : mix(a, r, clamp((vC - 0.7) / 0.3, 0.0, 1.0)); /* v5: 0,4 fluido · 0,7 ámbar · ≥ 1,0 trancón (TomTom 0,7 = viajes 70 % más largos) */
+      float per = 40.0 + 30.0 / (1.0 + vC); float f = fract(vS / per); float raya = smoothstep(0.0, 0.1, f) * (1.0 - smoothstep(0.5, 0.6, f));
+      gl_FragColor = vec4(col * (0.82 + 0.18 * raya), uOp); }`; /* v5: la superficie de la vía pintada, sin puntos ni rayas blancas; un pulso apenas más oscuro se mueve con el tráfico */
   const iniTrafico = () => { const N = T3.net; if (!N || !N.edges) return false;
     const [cx, cz] = lw(CORA_C[0], CORA_C[1]), P = [], S = [], K = [], NN = [], ix = []; let nv = 0, nAr = 0;
     for (const [tipo, p] of N.edges) { if ((tipo !== 'major' && tipo !== 'mid') || p.length < 2) continue;
-      const w = p.map(([x, z]) => lw(x, z)), m = w[Math.floor(w.length / 2)], d = Math.hypot(m[0] - cx, m[1] - cz), en = Math.exp(-d / 900), k = 0.8 + 0.45 * en, ancho = tipo === 'major' ? 7 : 4.5;
+      const w = p.map(([x, z]) => lw(x, z)), m = w[Math.floor(w.length / 2)], d = Math.hypot(m[0] - cx, m[1] - cz), en = Math.exp(-d / 900), k = (0.8 + 0.45 * en) * (tipo === 'major' ? 1.12 : 0.92), ancho = tipo === 'major' ? 9 : 6; /* v5 [SUP visual]: las arterias más cargadas que las intermedias */
       let L = 0; for (let i = 1; i < w.length; i++) L += Math.hypot(w[i][0] - w[i - 1][0], w[i][1] - w[i - 1][1]); if (L < 30) continue; nAr++;
       for (const lado of [1, -1]) { let s = 0;
         for (let i = 1; i < w.length; i++) { const [x0, z0] = w[i - 1], [x1, z1] = w[i], l = Math.hypot(x1 - x0, z1 - z0); if (l < 0.5) continue; const ux = (x1 - x0) / l, uz = (z1 - z0) / l, nx = -uz * lado, nz = ux * lado;
@@ -232,43 +232,68 @@ export function crearCapas01({ T3 }) {
           S.push(sa, sa, sb, sb); K.push(k, k, k, k); NN.push(en, en, en, en); ix.push(nv, nv + 1, nv + 2, nv + 1, nv + 3, nv + 2); nv += 4; s += l; } } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aS', new THREE.Float32BufferAttribute(S, 1));
     g.setAttribute('aK', new THREE.Float32BufferAttribute(K, 1)); g.setAttribute('aN', new THREE.Float32BufferAttribute(NN, 1)); g.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(ix, 1) : new THREE.Uint16BufferAttribute(ix, 1));
-    const mat = new THREE.ShaderMaterial({ vertexShader: VS_W, fragmentShader: FS_W, uniforms: { uT: { value: 0 }, uNiv: { value: 0.62 }, uH: { value: 0 }, uOp: { value: 0.92 } }, transparent: true, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -400, side: THREE.DoubleSide, toneMapped: false }); /* sobre la malla de Google (desplazamiento de profundidad) y debajo de los carros */
+    const mat = new THREE.ShaderMaterial({ vertexShader: VS_W, fragmentShader: FS_W, uniforms: { uT: { value: 0 }, uNiv: { value: 0.62 }, uNivC: { value: 0.62 }, uH: { value: 0 }, uOp: { value: 0.88 } }, transparent: true, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -400, side: THREE.DoubleSide, toneMapped: false }); /* sobre la malla de Google (desplazamiento de profundidad) y debajo de los carros */
     const mesh = new THREE.Mesh(g, mat); mesh.renderOrder = 16; mesh.frustumCulled = false; gT.add(mesh);
     Object.assign(TR, { listo: true, mesh, nAr }); return true; };
   function ponerTrafico() { const c = I && I.congestion01; if (!TR.listo && !iniTrafico()) return; if (!c) { gT.visible = false; return; } gT.visible = estado.trafico;
-    TR.nivel = Math.round(c.nivel * 1000) / 1000; TR.mesh.material.uniforms.uNiv.value = TR.nivel; }
+    const U = I.abasto && I.abasto.ab01; /* v5: con propuesta el tráfico de la ciudad baja hasta −25 % a medida que abren los mercados (supuesto declarado en factorTraf, simulaciones12.js) */
+    /* con propuesta [SUP, el mismo de la permanencia en ab01Paso y de factorTraf]: a medida que abren los mercados la subida de la ciudad
+       desde 2025 deja de sumarse (× (1 − fracción abierta)) y el tráfico baja hasta −25 % */
+    const fM = I.propuesta && U ? (U.fMerc || 0) : 0, nv = I.propuesta ? (0.62 + (c.nivel - 0.62) * (1 - fM)) * (1 - 0.25 * fM) : c.nivel;
+    TR.nivel = Math.round(nv * 1000) / 1000; TR.mesh.material.uniforms.uNiv.value = TR.nivel;
+    TR.nivelC = U && U.cC != null ? Math.round(U.cC * 1000) / 1000 : TR.nivel; TR.mesh.material.uniforms.uNivC.value = TR.nivelC; } /* v5: junto a Corabastos manda su propio nivel (U.cC de ab01Paso: con propuesta baja con los camiones que se van a los mercados) */
   function moverTrafico() {
     if (!TR.listo || !gT.visible) return; const u = TR.mesh.material.uniforms, U = I && I.abasto && I.abasto.ab01;
     TR.mesh.position.y = (T3.viaY != null ? T3.viaY : y0() + 0.3) + 1.2; u.uT.value = RELOJ.tAnim || 0;
     // hora del reloj: franja de ingreso de carga a Corabastos (más camiones/h → más congestión cerca)
     const h = ((RELOJ.minutoDia != null ? RELOJ.minutoDia : 0) / 60) % 24, F = U && U.franjas ? U.franjas.find(f => h >= f.h0 && h < f.h1) : null, mx = U && U.franjas ? Math.max(...U.franjas.map(f => f.veh_h)) : 1;
-    const meta = F ? 0.35 * F.veh_h / mx : -0.17; u.uH.value += (meta - u.uH.value) * 0.03; }
+    const meta = F ? 0.35 * F.veh_h / mx * (U && U.ing ? Math.min(1.3, U.ing / 6460) : 1) : -0.17; /* v5: la franja pesa según los camiones que llegan */ u.uH.value += (meta - u.uH.value) * 0.03; }
 
-  /* ---------- v4: VEHÍCULOS MORADOS (solo con propuesta) ----------
-     Pocos carros morados que van y vuelven entre Bavaria Común y los mercados abiertos (camino más corto por data3d/net.json, como
-     trafico_plan.js). Cuántos: uno por cada 3 mercados abiertos, máx. 14 [escala visual declarada, no un aforo]. Capa «Tráfico». */
-  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], n: 0, col: 0xa21cff, MAX: 14 };
+  /* ---------- v5: VEHÍCULOS (capa «Tráfico») ----------
+     · MORADOS (solo con propuesta, pedido de la autora 2026-11-26): los carros NUEVOS que crean los cambios de la propuesta: viajes a los
+       mercados abiertos (cada uno sale de un barrio a ~800 m del mercado) y a Bavaria Común. Pocos: uno por cada 2,5 mercados abiertos,
+       máx. 12, más 2 a Bavaria Común [escala visual declarada, no un aforo].
+     · CAMIONES A CORABASTOS (los dos escenarios): llegan por la red vial desde ~2,6 km. Cuántos = 20 × ingreso ÷ 6.460 × cola (U.cola de
+       ab01Paso, máx. 3) [escala visual]; con cola > 1 una parte (1 − 1 ÷ cola) espera en fila a la entrada: sin propuesta, cuando
+       Corabastos se llena, se ven muchos camiones represados. Un árbol de caminos más cortos por destino, uno por cuadro como mucho. */
+  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], cam: [], n: 0, nCam: 0, col: 0xa21cff, MAX: 14, MAXC: 60 };
   function iniMorados() { if (MO.cargando) return; MO.cargando = true;
     Promise.all([import('./viajes_mercados.js?v=10'), import('./vehiculos.js?v=10')]).then(([vm, mv]) => {
-      MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i);
-      MO.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 4000, cuantos: { carro: MO.MAX } }); MO.VEH.grupo.visible = false;
-      MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 })); MO.listo = true;
-    }).catch(e => console.warn('vehículos morados:', e)); }
-  function rutaMo(x, z) { const key = x + ',' + z; if (MO.rutas.has(key)) return MO.rutas.get(key); const R = MO.R, T = MO.T, n = R.cercano(x, z); let r = null;
-    if (n.i >= 0 && isFinite(T.dist[n.i])) { const out = [[R.X[n.i], R.Z[n.i]]]; let u = n.i, ok = true; while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) { ok = false; break; } const v = R.ea[e] === u ? R.eb[e] : R.ea[e]; out.push([R.X[v], R.Z[v]]); u = v; }
-      if (ok && out.length > 1) { const S = new Float64Array(out.length); for (let k = 1; k < out.length; k++) S[k] = S[k - 1] + Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]); r = S[S.length - 1] > 200 ? { P: out, S, L: S[S.length - 1] } : null; } }
-    MO.rutas.set(key, r); return r; }
+      MO.arbol = vm.arbol; MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i); MO.bav = [MO.R.X[nb.i], MO.R.Z[nb.i]];
+      MO.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: MO.MAX, camion: MO.MAXC } }); MO.VEH.grupo.visible = false;
+      MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 }));
+      MO.cam = Array.from({ length: MO.MAXC }, () => ({})); MO.listo = true;
+    }).catch(e => console.warn('vehículos de la 01:', e)); }
+  MO.ARB = new Map(); MO.pend = 0;
+  function arbolMo(x, z) { const n = MO.R.cercano(x, z); if (n.i < 0) return null; let T = MO.ARB.get(n.i);
+    if (!T) { if (MO.pend === MO.cuadro) return null; MO.pend = MO.cuadro; T = MO.arbol(MO.R, n.i); MO.ARB.set(n.i, T); } return T; }
+  function rutaDe(T, x, z) { const R = MO.R, n = R.cercano(x, z); if (!T || n.i < 0 || !isFinite(T.dist[n.i])) return null; const out = [[R.X[n.i], R.Z[n.i]]]; let u = n.i;
+    while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) return null; const v = R.ea[e] === u ? R.eb[e] : R.ea[e]; out.push([R.X[v], R.Z[v]]); u = v; }
+    if (out.length < 2) return null; const S = new Float64Array(out.length); for (let k = 1; k < out.length; k++) S[k] = S[k - 1] + Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]);
+    return S[S.length - 1] > 200 ? { P: out, S, L: S[S.length - 1] } : null; }
+  function rutaV(key, dx, dz, ox, oz) { if (MO.rutas.has(key)) return MO.rutas.get(key); const T = arbolMo(dx, dz); if (!T) return null;
+    const r = rutaDe(T, ox, oz); MO.rutas.set(key, r); return r; }
   const enRutaMo = (r, s) => { let a = 0, b = r.S.length - 1; while (b - a > 1) { const m = (a + b) >> 1; if (r.S[m] < s) a = m; else b = m; } const f = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]);
     const ex = r.P[b][0] - r.P[a][0], ez = r.P[b][1] - r.P[a][1], l = Math.hypot(ex, ez) || 1; return [r.P[a][0] + ex * f, r.P[a][1] + ez * f, ex / l, ez / l]; };
+  const ponerV = (o, tipo, r, s, ida) => { let [x, z, fx, fz] = enRutaMo(r, s); if (!ida) { fx = -fx; fz = -fz; } x -= fz * 1.8; z += fx * 1.8;
+    MO.VEH.poner(o, tipo, x, y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); return [x, z]; };
   function moverMorados() {
-    const ms = I && I.propuesta && I.abasto && I.abasto.mercados ? I.abasto.mercados.filter(m => m.activo) : [];
-    const on = !!(ms.length && estado.trafico && raiz.visible); if (on && !MO.listo) iniMorados(); if (!MO.listo) return; MO.VEH.grupo.visible = on; if (!on) { MO.n = 0; return; }
-    const n = Math.min(MO.MAX, Math.max(2, Math.ceil(ms.length / 3))), tA = RELOJ.tAnim || 0; MO.VEH.inicio(); let k = 0;
-    for (let i = 0; i < n; i++) { const m = ms[Math.floor(i * ms.length / n)], r = rutaMo(m.x, m.z); if (!r) continue; const ida = i % 2 === 0, s0 = ((tA * 14 / r.L) + i * 0.137) % 1, s = (ida ? s0 : 1 - s0) * r.L;
-      let [x, z, fx, fz] = enRutaMo(r, s); if (!ida) { fx = -fx; fz = -fz; } x -= fz * 1.8; z += fx * 1.8;
-      MO.VEH.poner(MO.objs[i], 'carro', x, y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); if (!k) MO.p0 = [Math.round(x), Math.round(z)]; k++; }
-    MO.VEH.fin(); MO.n = k; }
-
+    const U = I && I.abasto && I.abasto.ab01, C = I && I.abasto && I.abasto.cora, prop = !!(I && I.propuesta);
+    const on = !!(U && estado.trafico && raiz.visible); if (on && !MO.listo) iniMorados(); if (!MO.listo) return; MO.VEH.grupo.visible = on; if (!on) { MO.n = 0; MO.nCam = 0; return; }
+    MO.cuadro = (MO.cuadro || 0) + 1; const tA = RELOJ.tAnim || 0; MO.VEH.inicio(); let k = 0, kc = 0;
+    // morados: carros nuevos de la propuesta (mercados y Bavaria Común)
+    const ms = prop && I.abasto.mercados ? I.abasto.mercados.filter(m => m.activo) : [];
+    if (prop && ms.length) { const nM = Math.min(MO.MAX - 2, Math.max(2, Math.ceil(ms.length / 2.5))), n = nM + 2;
+      for (let i = 0; i < n; i++) { let r;
+        if (i < nM) { const m = ms[Math.floor(i * ms.length / nM)], a = i * 2.39996, d = 700 + (i % 3) * 150; r = rutaV('m' + i + ':' + m.x + ',' + m.z, m.x, m.z, m.x + Math.cos(a) * d, m.z + Math.sin(a) * d); }
+        else if (MO.bav) { const a = (i - nM) * 2.6 + 0.9; r = rutaV('b' + i, MO.bav[0], MO.bav[1], MO.bav[0] + Math.cos(a) * 1800, MO.bav[1] + Math.sin(a) * 1800); }
+        if (!r) continue; const s0 = ((tA * 14 / r.L) + i * 0.137) % 2, ida = s0 < 1, p = ponerV(MO.objs[i], 'carro', r, (ida ? s0 : 2 - s0) * r.L, ida); if (!k) MO.p0 = [Math.round(p[0]), Math.round(p[1])]; k++; } }
+    // camiones que llegan a Corabastos
+    if (C) { const cola = Math.max(1, Math.min(3, U.cola || 1)), nC = Math.min(MO.MAXC, Math.round(20 * (U.ing || 6460) / 6460 * cola)), nEsp = Math.round(nC * (1 - 1 / cola)), vel = 12 / (1 + (U.cC || 0.62));
+      for (let i = 0; i < nC; i++) { const a = (i % 12) * 0.5236 + 0.2, d = 2400 + (i % 4) * 250, r = rutaV('c' + (i % 24), C.x, C.z, C.x + Math.cos(a) * d, C.z + Math.sin(a) * d); if (!r) continue;
+        const s = i < nEsp ? Math.max(0, r.L - 30 - 13 * Math.floor(i / 12)) : (((tA * vel / r.L) + i * 0.173) % 1) * r.L; // en fila a la entrada o llegando
+        ponerV(MO.cam[i], 'camion', r, s, true); kc++; } }
+    MO.VEH.fin(); MO.n = k; MO.nCam = kc; }
   /* ---------- por cuadro (etiquetas mínimas: solo el porcentaje, pedido de la autora) ---------- */
   let tPrev = 0, tTxt = 0;
   const ETS = [etB, etR, etT, etG];
@@ -281,24 +306,33 @@ export function crearCapas01({ T3 }) {
     const leer = ahora - tTxt > 200; if (leer) tTxt = ahora;
     etB.style.display = 'none'; // la nave más llena ya no lleva tarjeta: el medidor de Corabastos dice el porcentaje
     const U = I.abasto && I.abasto.ab01;
-    if (U && enPantalla(gG.position.x, y0() + GA.H + (GA.A / 2 + 16) * gBar.scale.x, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)));
+    if (U && enPantalla(gG.position.x, y0() + GA.H + (GA.A / 2 + 16) * gBar.scale.x, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)) + ' <span style="opacity:.6;font-size:10.5px">de su límite de 14.000 t</span>');
     const r = I.residuosK;
     if (r && gR.visible && R_.listo) { if (enPantalla(R_.cx, y0() + 30, R_.cz, etR) && leer) txt(etR, chip('Residuos', nf(r.noRec / r.umbral * 100) + ' %', colPc(r.noRec / r.umbral))); }
     else etR.style.display = 'none';
     const c = I.congestion01;
-    if (c && gT.visible && TR.listo) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); if (enPantalla(x, y0() + 40, z, etT) && leer) txt(etT, chip('Congestión', nf(c.nivel * 100) + ' %', c.nivel >= 0.85 ? '#ff8a80' : c.nivel >= 0.7 ? '#ffd27a' : '#9be8b0')); }
+    if (c && gT.visible && TR.listo) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); if (enPantalla(x, y0() + 40, z, etT) && leer) { const v = TR.nivelC != null ? TR.nivelC : c.nivel; txt(etT, chip('Congestión junto a Corabastos', nf(v * 100) + ' %', v >= 1 ? '#ff6b8a' : v >= 0.7 ? '#ffd27a' : '#9be8b0')); } }
     else etT.style.display = 'none';
   });
 
+  /* v5: «Huertas hidropónicas activas» (con propuesta) se ve en el mapa: se instalan tantas cubiertas como diga el deslizador (U.nH, en el
+     orden de huertas_hidro.js: primero las de 15 pisos o más), de una vez al moverlo. KEN_HIDRO_FIJA le dice a escenarios_sim.js que no
+     las cambie mientras corre la 01. */
+  let hidroUlt = -1, hidroPedida = false, hidroPrendida = false;
+  function ponerHidro() { const H = window.KEN_HIDRO, U = I && I.propuesta && I.abasto && I.abasto.ab01;
+    if (!U || U.nH == null) { if (window.KEN_HIDRO_FIJA != null) { window.KEN_HIDRO_FIJA = null; hidroUlt = -1; if (H && hidroPrendida && H.ver) H.ver(false); hidroPrendida = false; } return; }
+    if (!H && !hidroPedida && T3.EST && T3.EST.hidroponia) { hidroPedida = true; try { T3.EST.hidroponia(true); } catch (e) { console.warn('huertas 01:', e); } } /* la 01 las arma si no estaban */
+    if (!H || !H.fraccion || !(H.techos > 0)) return; if (!hidroPrendida) { hidroPrendida = true; if (H.ver) H.ver(true); } const f = Math.max(0, Math.min(1, U.nH / H.techos)); window.KEN_HIDRO_FIJA = f;
+    if (Math.abs(f - hidroUlt) > 1e-6) { hidroUlt = f; if (H.ver && !(H.grupo && H.grupo.visible)) H.ver(true); H.fraccion(f); } }
   const api = window.KEN_AB01C = {
     estado, grupo: raiz,
-    poner(x) { I = x || null; raiz.visible = !!I; if (!I) return; raiz.traverse(o => { o.castShadow = false; o.receiveShadow = false; }); /* v4: nada de esta capa proyecta sombras (cuadros oscuros sobre el agua) */
+    poner(x) { I = x || null; raiz.visible = !!I; ponerHidro(); if (!I) return; raiz.traverse(o => { o.castShadow = false; o.receiveShadow = false; }); /* v4: nada de esta capa proyecta sombras (cuadros oscuros sobre el agua) */
       for (const n of ['degradacion_basura', 'degradacion_monticulos']) { const o = T3.scene.getObjectByName(n); if (o) o.castShadow = false; } /* las bolsas de degradacion.js tampoco, mientras corre la 01 */ const U = I.abasto && I.abasto.ab01; gMeta = U ? U.sat : 0; ponerBodegas(); ponerResiduos(); ponerPuntosRes(); ponerTrafico(); },
     ver(on) { raiz.visible = !!on && !!I; if (!raiz.visible) ETS.forEach(e => { e.style.display = 'none'; }); },
     capa(k, on) { if (!(k in estado)) return; estado[k] = !!on; const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; g.visible = !!on; if (on && I) { R_.D = -1; TR.nivel = -1; api.poner(I); } },
     morados() { return MO.n; },
     visible(k) { const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; return !!(raiz.visible && g && g.visible); },
-    info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { vias: TR.nAr, hora: +TR.mesh.material.uniforms.uH.value.toFixed(3) } : null, nivel: TR.nivel, morados: MO.n, morado0: MO.p0 || null, moradosG: MO.listo ? { vis: MO.VEH.grupo.visible, padre: !!MO.VEH.grupo.parent, mallas: MO.VEH.grupo.children.filter(o => o.visible && o.count > 0).map(o => o.count) } : null, residuos: RP.n, barra: +gNiv.toFixed(3) }; }
+    info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { vias: TR.nAr, hora: +TR.mesh.material.uniforms.uH.value.toFixed(3) } : null, nivel: TR.nivel, morados: MO.n, camiones: MO.nCam, morado0: MO.p0 || null, moradosG: MO.listo ? { vis: MO.VEH.grupo.visible, padre: !!MO.VEH.grupo.parent, mallas: MO.VEH.grupo.children.filter(o => o.visible && o.count > 0).map(o => o.count) } : null, residuos: RP.n, barra: +gNiv.toFixed(3) }; }
   };
   return api;
 }

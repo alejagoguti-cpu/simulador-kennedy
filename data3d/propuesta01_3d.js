@@ -1,4 +1,4 @@
-/* ============ SIMULACIÓN 01 CON PROPUESTA EN 3D (docs/sim01_abastecimiento_v3.md y v4, correcciones de la autora 2026-11-26) ============
+﻿/* ============ SIMULACIÓN 01 CON PROPUESTA EN 3D (docs/sim01_abastecimiento_v3.md y v4, correcciones de la autora 2026-11-26) ============
    window.KEN_PROP01 = { poner(I), apagar(), info() } — lo llama sim_ui.js una vez por semana simulada (ponerCapaPar) solo en la 01 con propuesta.
    · CORABASTOS AL 50 %: se esconde el modelo 'corabastos' y quedan las 19 naves más lejanas a La Vaca (las 18 más cercanas, quitadas01 de
      abasto_capas.js, se quitan). Con la capa Bodegas prendida las que quedan se ven de vidrio (abasto_capas.js); apagada, volúmenes grises de 9 m.
@@ -15,7 +15,7 @@
    · HUERTAS DE PARQUE (las «efímeras» de data3d/huertas_barrio.js, window.KEN_HBAR) se abren de a poco entre los años 0,5 y 6, cada una con su
      pulso de luz verde (data3d/resaltes.js); y los PARCHES DE ÁRBOLES NATIVOS de los parques (window.KEN_PARCHES) se siembran entre los años 1 y 4.
    · BLANCO Y NEGRO: data3d/gris01.js (lo llama sim_ui.js en los dos escenarios de la 01). */
-import { quitadas01 } from './abasto_capas.js?v=2';
+import { quitadas01 } from './abasto_capas.js?v=4';
 import { crearParches3D, ESPECIES } from './parches_arboles.js?v=10';
 import { hoyo01 } from './gris01.js?v=1';
 
@@ -152,7 +152,12 @@ export function crearPropuesta01({ T3 }) {
       if (!L) continue; const sp = L[Math.floor(R() * L.length)]; A.push({ x: px, z: pz, sp, h: ESPECIES[sp].alto * (0.8 + R() * 0.35) * (D < 17 ? 1.25 : 1), rot: R() * 6.283 }); } // la primera fila (junto a Corabastos), más alta
     // en parches de ~60 m (nombre y centro para la red; marcas de lejos apagadas)
     const P = {}; for (const t of A) { const k = Math.floor(t.x / 60) + ',' + Math.floor(t.z / 60); (P[k] = P[k] || { n: 'Barrera del humedal La Vaca', c: [t.x, t.z], arboles: [] }).arboles.push(t); }
-    return Object.values(P); }
+    /* v5 (pedido de la autora): más árboles nativos en el parque al sur de Corabastos (Parque Cayetano Cañizares, donde abre un mercado de la
+       propuesta): un anillo de ~70 árboles a 45–95 m del mercado, por fuera de las canchas [SUP: forma y cantidad; sin levantamiento del parque] */
+    const PS = { n: 'Parque Cayetano Cañizares', c: [783, 1637], arboles: [] };
+    for (let i = 0; i < 70; i++) { const a = i * 2.39996 + R() * 0.3, d = 45 + R() * 50, sp = med.concat(arb2)[Math.floor(R() * 9)];
+      PS.arboles.push({ x: 783 + Math.cos(a) * d, z: 1637 + Math.sin(a) * d, sp, h: ESPECIES[sp].alto * (0.8 + R() * 0.35), rot: R() * 6.283 }); }
+    return Object.values(P).concat([PS]); }
 
   Promise.all([cargar('data3d/corabastos.json'), cargar('data3d/water_bodies.json').catch(() => [])]).then(([D, WB]) => {
     const vaca = (WB || []).filter(w => /vaca/i.test(w.nombre || '')).sort((a, b) => b.pts.length - a.pts.length)[0];

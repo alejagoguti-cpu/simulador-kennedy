@@ -362,3 +362,107 @@ export function sankey(cols, enlaces, W, op = {}) {
       + `<text class="tb-tv" x="${tx}" y="${(ty + 9).toFixed(1)}" text-anchor="${an}">${esc(n.txt != null ? n.txt : num(n.v, 1))}</text></g>`; }
   return s + '</svg>';
 }
+
+/* =========================================================================================================
+   TENDENCIA (2026-11-26, «los diagramas son horribles»: una sola forma limpia por tarjeta del tablero)
+   Línea suave de 15 años: con propuesta = línea violeta con lavado degradado; sin propuesta = línea coral punteada, sin relleno.
+   Eje mínimo: «año 1» y «año 15» abajo, valor final de cada línea a la derecha (texto en tinta, la clave de color al lado), sin retícula.
+   Referencia opcional (umbral rotulado, punteada). Suavizado: promedio de 6 muestras (12 semanas) y curva monótona (no inventa picos);
+   el último punto y el tooltip usan los valores reales. Nodos creados una vez; solo cambian atributos.
+   ========================================================================================================= */
+const f1 = (x) => (+x).toFixed(1);
+function curvaMonotona(P) {
+  const n = P.length; if (!n) return ''; if (n === 1) return `M${f1(P[0][0])} ${f1(P[0][1])}`;
+  const dx = [], m = [], t = new Array(n);
+  for (let i = 0; i < n - 1; i++) { dx[i] = P[i + 1][0] - P[i][0] || 1e-6; m[i] = (P[i + 1][1] - P[i][1]) / dx[i]; }
+  t[0] = m[0]; t[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : 3 * (dx[i - 1] + dx[i]) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]);
+  let d = `M${f1(P[0][0])} ${f1(P[0][1])}`;
+  for (let i = 0; i < n - 1; i++) { const h = dx[i] / 3; d += `C${f1(P[i][0] + h)} ${f1(P[i][1] + t[i] * h)} ${f1(P[i + 1][0] - h)} ${f1(P[i + 1][1] - t[i + 1] * h)} ${f1(P[i + 1][0])} ${f1(P[i + 1][1])}`; }
+  return d;
+}
+/* tramos sin huecos, promediados de k en k (el primero y el último punto reales) */
+function tramos(xs, ys, k) {
+  const out = []; let cur = [];
+  for (let i = 0; i < xs.length; i++) { const v = ys[i]; if (v == null || !isFinite(v)) { if (cur.length) out.push(cur); cur = []; continue; } cur.push([xs[i], v]); }
+  if (cur.length) out.push(cur);
+  return out.map((T) => { if (T.length <= k * 2) return T; const r = [T[0]];
+    for (let i = 1; i < T.length - 1; i += k) { const g = T.slice(i, Math.min(T.length - 1, i + k)); r.push([g.reduce((a, q) => a + q[0], 0) / g.length, g.reduce((a, q) => a + q[1], 0) / g.length]); }
+    r.push(T[T.length - 1]); return r; });
+}
+export class Tendencia {
+  constructor(host, op) {
+    this.op = op; this.alto = op.alto || 68; this.D = null; this.i = -1;
+    const s = this.svg = nodo('svg', { class: 'tb-svg tb-ten', height: this.alto, tabindex: 0, role: 'img' }, host), gid = 'tbT' + (++Tendencia.n);
+    const lg = nodo('linearGradient', { id: gid, x1: 0, x2: 0, y1: 0, y2: 1 }, nodo('defs', {}, s));
+    this.stops = [nodo('stop', { offset: 0, 'stop-opacity': 0.34 }, lg), nodo('stop', { offset: 1, 'stop-opacity': 0 }, lg)];
+    this.base = nodo('line', { stroke: 'var(--tb-axis)', 'stroke-width': 1 }, s);
+    this.lRef = nodo('line', { 'stroke-width': 1.2, 'stroke-dasharray': '3 3', visibility: 'hidden' }, s);
+    this.tRef = nodo('text', { class: 'tb-ref', visibility: 'hidden' }, s);
+    this.pArea = nodo('path', { fill: `url(#${gid})` }, s);
+    this.pSin = nodo('path', { fill: 'none', stroke: COL.sin, 'stroke-width': 1.8, 'stroke-dasharray': '4 3', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, s);
+    this.pCon = nodo('path', { fill: 'none', stroke: COL.con, 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, s);
+    this.cFin = nodo('circle', { r: 3.6, stroke: 'var(--tb-sur)', 'stroke-width': 2, visibility: 'hidden' }, s);
+    this.tA = nodo('text', { class: 'tb-ax', 'text-anchor': 'start' }, s); this.tB = nodo('text', { class: 'tb-ax', 'text-anchor': 'end' }, s);
+    this.tA.textContent = 'año 1'; this.tB.textContent = 'año 15';
+    this.kCon = nodo('line', { stroke: COL.con, 'stroke-width': 2.2, 'stroke-linecap': 'round', visibility: 'hidden' }, s);
+    this.kSin = nodo('line', { stroke: COL.sin, 'stroke-width': 2, 'stroke-dasharray': '2 2', visibility: 'hidden' }, s);
+    this.tCon = nodo('text', { class: 'tb-tv', visibility: 'hidden' }, s); this.tSin = nodo('text', { class: 'tb-tv', visibility: 'hidden' }, s);
+    this.xL = nodo('line', { stroke: 'rgba(244,243,239,.45)', 'stroke-width': 1, visibility: 'hidden' }, s);
+    this.xA = nodo('circle', { r: 3.4, fill: COL.con, stroke: 'var(--tb-sur)', 'stroke-width': 1.6, visibility: 'hidden' }, s);
+    this.xB = nodo('circle', { r: 3.2, fill: 'var(--tb-sur)', stroke: COL.sin, 'stroke-width': 1.6, visibility: 'hidden' }, s);
+    this.hit = nodo('rect', { fill: 'transparent', y: 0, height: this.alto }, s);
+    s.addEventListener('pointermove', (e) => { if (!this.D) return; const r = s.getBoundingClientRect(); this.cruz(Linea.prototype.cercano.call(this, (e.clientX - r.left) * (this.D.W / r.width)), e.clientX, e.clientY); });
+    s.addEventListener('pointerleave', () => this.quitar()); s.addEventListener('blur', () => this.quitar());
+    s.addEventListener('focus', () => { if (this.D) this.cruz(this.D.xs.length - 1); });
+    s.addEventListener('keydown', (e) => { if (!this.D) return; const k = { ArrowLeft: -1, ArrowRight: 1, PageDown: -26, PageUp: 26, Home: -1e5, End: 1e5 }[e.key];
+      if (!k) { if (e.key === 'Escape') this.quitar(); return; } e.preventDefault(); this.cruz(Math.max(0, Math.min(this.D.xs.length - 1, (this.i < 0 ? this.D.xs.length - 1 : this.i) + k))); });
+  }
+  /* D: {W, FIN, xs, con[], sin[], run: 'con'|'sin', ref: {v, txt, c}} */
+  update(D) {
+    this.D = D; const { W, FIN, xs, con, sin } = D, op = this.op, alto = this.alto, ref = D.ref && D.ref.v != null ? D.ref : null;
+    const vals = con.concat(sin).filter((v) => v != null && isFinite(v));
+    if (!vals.length) { this.svg.style.display = 'none'; return; } this.svg.style.display = '';
+    let mn = Math.min(...vals), mx = Math.max(...vals); if (ref) { mn = Math.min(mn, ref.v); mx = Math.max(mx, ref.v); }
+    if (op.cero) mn = Math.min(0, mn);
+    const rg = mx - mn || Math.abs(mx) * 0.1 || 1; mx += rg * 0.12; if (!(op.cero && mn === 0)) mn -= rg * 0.12;
+    const pl = 1, pr = 46, pt = 6, pb = 14, iw = W - pl - pr, ih = alto - pt - pb;
+    const X = (s) => pl + (s - 1) / Math.max(1, FIN - 1) * iw, Y = (v) => pt + ih - (v - mn) / (mx - mn || 1) * ih;
+    Object.assign(this, { X, Y, pl, iw });
+    fija(this.svg, { width: W, viewBox: `0 0 ${W} ${alto}` });
+    fija(this.base, { x1: pl, x2: pl + iw, y1: pt + ih + 0.5, y2: pt + ih + 0.5 });
+    fija(this.tA, { x: pl, y: alto - 2 }); fija(this.tB, { x: pl + iw, y: alto - 2 });
+    if (ref) { const y = f1(Y(ref.v)), c = ref.c || COL.lim; fija(this.lRef, { x1: pl, x2: pl + iw, y1: y, y2: y, stroke: c, visibility: 'visible' });
+      fija(this.tRef, { x: pl + 2, y: f1(+y - 3 < pt + 7 ? +y + 9 : +y - 3), visibility: 'visible' }); if (this.tRef.textContent !== ref.txt) this.tRef.textContent = ref.txt || ''; }
+    else { fija(this.lRef, { visibility: 'hidden' }); fija(this.tRef, { visibility: 'hidden' }); }
+    const sc = (T) => T.map(([s, v]) => [X(s), Y(v)]);
+    const Tc = tramos(xs, con, 6), Ts = tramos(xs, sin, 6);
+    fija(this.pCon, { d: Tc.map((T) => curvaMonotona(sc(T))).join('') }); fija(this.pSin, { d: Ts.map((T) => curvaMonotona(sc(T))).join('') });
+    const colRun = D.run === 'sin' ? COL.sin : COL.con, Tr = D.run === 'sin' ? Ts : Tc;
+    const L = Tr.length ? Tr[Tr.length - 1] : null;
+    if (L && L.length > 1) { const P = sc(L), yb = f1(pt + ih); fija(this.pArea, { d: curvaMonotona(P) + `L${f1(P[P.length - 1][0])} ${yb}L${f1(P[0][0])} ${yb}Z` }); for (const st of this.stops) fija(st, { 'stop-color': colRun }); }
+    else fija(this.pArea, { d: '' });
+    if (L && L.length) { const q = L[L.length - 1]; fija(this.cFin, { cx: f1(X(q[0])), cy: f1(Y(q[1])), fill: colRun, visibility: 'visible' }); } else fija(this.cFin, { visibility: 'hidden' });
+    const ult = (S) => { let k = S.length - 1; while (k >= 0 && (S[k] == null || !isFinite(S[k]))) k--; return k < 0 ? null : S[k]; }, vc = ult(con), vs = ult(sin);
+    const cl = (y) => Math.max(8, Math.min(pt + ih, y)); let yc = vc == null ? null : cl(Y(vc) + 3), ys = vs == null ? null : cl(Y(vs) + 3);
+    if (yc != null && ys != null && Math.abs(yc - ys) < 11) { const mid = Math.max(13.5, Math.min(pt + ih - 5, (yc + ys) / 2)), a = (vc >= vs ? -1 : 1) * 5.5; yc = mid + a; ys = mid - a; }
+    const xk = pl + iw + 6, xt = f1(xk + 10), fmt = op.fmt || ((v) => num(v, op.d || 0));
+    for (const [e, kk, v, y] of [[this.tCon, this.kCon, vc, yc], [this.tSin, this.kSin, vs, ys]]) {
+      if (v == null) { fija(e, { visibility: 'hidden' }); fija(kk, { visibility: 'hidden' }); continue; }
+      fija(e, { x: xt, y: f1(y), visibility: 'visible' }); fija(kk, { x1: xk, x2: xk + 6, y1: f1(y - 3.5), y2: f1(y - 3.5), visibility: 'visible' });
+      const tx = fmt(v); if (e.textContent !== tx) e.textContent = tx; }
+    fija(this.hit, { x: pl, width: iw });
+    const run = D.run === 'sin' ? sin : con; this.svg.setAttribute('aria-label', `${op.n}: ${fmt(ult(run))}${op.u ? ' ' + op.u : ''} hoy, ${D.run === 'sin' ? 'sin' : 'con'} propuesta; línea de 15 años. Flechas para recorrer las semanas.`);
+    if (this.i >= 0 && this.svg.matches(':hover,:focus')) this.cruz(Math.min(this.i, xs.length - 1));
+  }
+  cruz(i, cx, cy) {
+    const D = this.D; if (!D || i < 0) return; this.i = i; const s = D.xs[i], x = f1(this.X(s)), op = this.op, u = op.u ? ' ' + op.u : '', fmt = op.fmt || ((v) => num(v, op.d || 0));
+    fija(this.xL, { x1: x, x2: x, y1: 4, y2: this.alto - 14, visibility: 'visible' });
+    for (const [e, v] of [[this.xA, D.con[i]], [this.xB, D.sin[i]]]) { if (v == null) fija(e, { visibility: 'hidden' }); else fija(e, { cx: x, cy: f1(this.Y(v)), visibility: 'visible' }); }
+    const f = (v) => (v == null ? '—' : fmt(v) + u), r = this.svg.getBoundingClientRect();
+    tip().mostrar(`<div class="t">${esc(op.n)} · año ${año(s)} · semana ${s}</div>` + filaTip(clave(COL.con), f(D.con[i]), 'con propuesta') + filaTip(clave(COL.sin, 'pun'), f(D.sin[i]), 'sin propuesta')
+      + (D.ref && D.ref.v != null ? filaTip(clave(D.ref.c || COL.lim, 'pun'), f(D.ref.v), D.ref.txt || 'referencia') : ''), cx != null ? cx : r.left + +x, cy != null ? cy : r.top + 12);
+  }
+  quitar() { this.i = -1; for (const e of [this.xL, this.xA, this.xB]) fija(e, { visibility: 'hidden' }); tip().ocultar(); }
+}
+Tendencia.n = 0;

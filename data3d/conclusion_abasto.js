@@ -1,4 +1,4 @@
-/* ============ CONCLUSIÓN GENERAL DEL PAR 01 · ABASTECIMIENTO (informe.js) ============
+﻿/* ============ CONCLUSIÓN GENERAL DEL PAR 01 · ABASTECIMIENTO (informe.js) ============
    conclusionAbasto({ H, B, go, def, parametros, completo }) → { estado, big, eye, frase, veredicto, html, pintar(root) }
    Todo sale de la corrida (I.abasto.ab01 de data3d/simulaciones12.js, una semana por elemento de H; B = la otra mitad del par).
    v3 (docs/sim01_abastecimiento_v3.md, 2026-11-26). VEREDICTO (reglas fijas, las mismas con y sin propuesta):
@@ -6,7 +6,7 @@
        Corabastos sobre 14.000 t) o residuos de Kennedy (296 t/día sin recoger). También cualquiera de las reglas generales del simulador.
      · SOSTENIBLE: sin game over, ningún sector bajó de 87 %, el inventario no pasó de 90 % de 14.000 t y lo sin recoger quedó bajo 2/3 del
        camino al game over (247 t/día).
-     · SOSTENIBLE CON CONDICIONES: el resto (sin game over, pero algo se acercó a su límite). Antes se llamaba «plausible con condiciones».
+     · v5: veredicto BINARIO (pedido de la autora): Sostenible = sin game over en los 15 años; No sostenible = game over. Ya no hay «con condiciones».
    PLANTILLA FIJA de las dos tarjetas: (1) qué se cambió, (2) demanda frente a lo que llega, (3) Corabastos e inventario, (4) cuándo y dónde
    falló o por qué aguantó, (5) conclusión y una recomendación: la palanca que más mueve el resultado en la semana crítica, con las mismas
    ecuaciones de una semana del modelo (ab01Paso) moviendo cada palanca un cuarto de su rango. */
@@ -14,11 +14,11 @@ const nf = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (+v).toLocaleStrin
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const añoDe = (sem) => Math.min(15, Math.floor((Math.max(1, sem) - 1) / 52) + 1);
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const ING = 6460, MERC_T = 17, CAP = 14000, PERD = 0.0155, KG = 0.951, HUERTA_T = 50 * 6 / 365 / 1000;
-const FUENTE = { pobK: '1.034.838 hab (autora)', demT: '984 t/día = población × 0,951 kg (autora)', demanda: '0,951 kg/hab/día (autora)', volumen: '6.460 t/día, DANE-SIPSA 2025', coraTope: 'ocupación 90 %, SDDE-FAO 2018 (inferencia)', autoconsumo: 'supuesto, sin dato para Kennedy', pobCrece: 'DANE 2017–2022', mercados: '17 t/día cada uno, Contraloría 2025 (derivado)', huertasH: '50 m² × 6 kg/m²·año por huerta (supuesto)' };
+const ING = 6460, MERC_T = 28, CAP = 14000, PERD = 0.0155, KG = 0.951, HUERTA_T = 50 * 6 / 365 / 1000;
+const FUENTE = { pobK: '1.034.838 hab (autora)', demT: '984 t/día = población × 0,951 kg (autora)', demanda: '0,951 kg/hab/día (autora)', volumen: '6.460 t/día, DANE-SIPSA 2025', coraTope: 'ocupación 90 %, SDDE-FAO 2018 (inferencia)', autoconsumo: 'comida que producen los hogares: supuesto, sin dato para Kennedy', pobCrece: 'DANE 2017–2022', mercados: 'hasta 28 t/día cada uno (215 puestos), Contraloría 2025 (derivado)', huertasH: '50 m² × 6 kg/m²·año por huerta (supuesto)' };
 /* palancas de política (población, consumo y crecimiento son la prueba de estrés, no palancas) */
 const PAL = [
-  { k: 'autoconsumo', n: 'Autoconsumo', paso: 7.5, max: 30, u: ' %' },
+  { k: 'autoconsumo', n: 'Comida que producen los hogares', paso: 7.5, max: 30, u: ' %' },
   { k: 'mercados', n: 'Mercados', paso: 5, max: 50, u: '' },
   { k: 'huertasH', n: 'Huertas hidropónicas', paso: 500, max: 2000, u: '', soloProp: true },
   { k: 'coraTope', n: 'Tope de ingreso diario', paso: 5, max: 25, u: ' %' },
@@ -58,7 +58,7 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
   let maxB = 0, wMaxB = null, maxR = 0, wMaxR = null, maxD = 0;
   W.forEach(h => { const b = Bo(h), r = Rk(h); if (b) { if (b.max > maxB) { maxB = b.max; wMaxB = h; } } if (r) { if (r.noRec > maxR) { maxR = r.noRec; wMaxR = h; } if (r.D > maxD) maxD = r.D; } });
   const sobre = W.filter(h => X(h).sat > 1).length;
-  const estado = go ? 'go' : minSec >= 87 && maxSat <= 0.9 && maxR < CERCA_RES ? 'sostenible' : 'cond';
+  const estado = go ? 'go' : 'sostenible'; /* v5: veredicto binario (pedido de la autora): No sostenible = game over; Sostenible = 15 años sin game over */
   // --- semana crítica y sensibilidad ---
   const crit = go ? (W.find(h => h.sem === go.sem) || L) : minSec < 87 ? wMinSec : maxSat > 0.9 && wMaxSat ? wMaxSat : maxR >= CERCA_RES && wMaxR ? wMaxR : wMinSec || L, UC = X(crit);
   const base = { dem: UC.dem, vol: UC.vol, topeF: UC.topeF, auto: UC.auto, nM: prop ? UC.nM : 0, nH: prop ? UC.nH || 0 : 0 }, r0 = evaluar(UC, base);
@@ -74,9 +74,9 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
   const mejor = problema === 'res' ? null : sens.filter(s => !s.agotada && s.score > 0.05).sort((a, b) => b.score - a.score)[0] || null; // los residuos no los mueve ninguna de estas palancas (ver t5)
   // --- textos (plantilla fija) ---
   const cambios = sl.filter(s => s.k !== 'demT' && parametros[s.k] != null && Math.abs(+parametros[s.k] - s.val) > 1e-9).map(s => `${s.n} ${nf(parametros[s.k], s.paso < 1 ? 1 : 0)} ${s.unidad}${parametros.pobDesde != null && s.k === 'pobK' ? ` desde la semana ${nf(parametros.pobDesde)}` : ''} (por defecto ${nf(s.val, s.paso < 1 ? 1 : 0)}: ${FUENTE[s.k] || 'ver fuentes'})`);
-  const t1 = cambios.length ? `Se cambió: ${cambios.join('; ')}. Lo demás quedó en los valores por defecto.` : `Valores por defecto: 1.034.838 habitantes × 0,951 kg = 984 t/día, 6.460 t/día que entran a Corabastos (DANE-SIPSA 2025), capacidad de referencia 14.000 t, crecimiento 0,5 %/año (DANE)${prop ? ', 12 mercados de 17 t/día (Contraloría 2025) y 50 huertas hidropónicas (supuesto)' : ''} y autoconsumo 0 % (supuesto).`;
+  const t1 = cambios.length ? `Se cambió: ${cambios.join('; ')}. Lo demás quedó en los valores por defecto.` : `Valores por defecto: 1.034.838 habitantes × 0,951 kg = 984 t/día, 6.460 t/día que entran a Corabastos (DANE-SIPSA 2025), capacidad de referencia 14.000 t, crecimiento 0,5 %/año (DANE)${prop ? ', ${nf(X(L).nM)} mercados de hasta 28 t/día (Contraloría 2025) que abren hasta el año 13,5 y ${nf(X(L).nH)} huertas hidropónicas (supuesto)' : ''} y comida producida en casa 0 % (supuesto).`;
   const pc = (v) => nf(v / sDem * 100, 1);
-  const t2 = `La demanda de Kennedy pasó de ${nf(dem1)} t/día en el año 1 a ${nf(demN)} t/día en el año ${añoDe(L.sem)} (población ${nf(X(W[0]).pob)} → ${nf(X(L).pob)}). La cubrieron Corabastos ${pc(sCor)} %, los mercados ${pc(sMer)} %, las huertas ${pc(sHu)} % y el autoconsumo ${pc(sAut)} %; en su peor semana Kennedy recibió ${nf(minCob * 100, 1)} % de lo que necesitaba (año ${añoDe(wMinCob.sem)}).`;
+  const t2 = `La demanda de Kennedy pasó de ${nf(dem1)} t/día en el año 1 a ${nf(demN)} t/día en el año ${añoDe(L.sem)} (población ${nf(X(W[0]).pob)} → ${nf(X(L).pob)}). La cubrieron Corabastos ${pc(sCor)} %, los mercados ${pc(sMer)} %, las huertas ${pc(sHu)} % y lo que producen los hogares ${pc(sAut)} %; en su peor semana Kennedy recibió ${nf(minCob * 100, 1)} % de lo que necesitaba (año ${añoDe(wMinCob.sem)}).`;
   const t2b = '';
   const U0 = X(W[0]), mS = X(wMaxSat || L);
   const t3b = '';
@@ -93,19 +93,19 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
     t4 = `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: se pedían ${nf(U.L)} t/día a Corabastos y solo podía despachar ${nf(U.desp)}: todos reciben la misma fracción (${nf(U.f * 100, 1)} %) y el faltante pesa más en los sectores lejos de Corabastos.${t4r}`; }
   else if (go) t4 = `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}) por una regla general del simulador: ${esc(go.motivo)}.${t4r}`;
   else t4 = `No llegó a game over${completo ? ' en los 15 años' : ' hasta ahora'}: el sector peor servido fue ${esc(secMin)} con ${nf(minSec, 1)} % (año ${añoDe(wMinSec.sem)}) y el inventario llegó como máximo a ${nf(maxSat * 100)} % de 14.000 t.${t4r}`;
-  const accion = (s) => s.k === 'autoconsumo' ? `subir el autoconsumo (huertas y producción propia) de ${nf(s.de)} % a ${nf(s.a)} %`
-    : s.k === 'mercados' ? (prop ? `abrir más mercados de 17 t/día: de ${nf(s.de)} a ${nf(s.a)}` : `pasar a la red de la propuesta con ${nf(s.a)} mercados de 17 t/día`)
+  const accion = (s) => s.k === 'autoconsumo' ? `subir la comida que producen los hogares de ${nf(s.de)} % a ${nf(s.a)} %`
+    : s.k === 'mercados' ? (prop ? `abrir más mercados de 28 t/día: de ${nf(s.de)} a ${nf(s.a)}` : `pasar a la red de la propuesta con ${nf(s.a)} mercados de 28 t/día`)
     : s.k === 'huertasH' ? `activar más huertas hidropónicas: de ${nf(s.de)} a ${nf(s.a)}`
     : s.k === 'coraTope' ? `cambiar el tope de ingreso diario de +${nf(s.de)} % a +${nf(s.a)} %`
     : `asegurar más oferta de la región (acuerdos con productores y circuitos cortos): ingreso de ${nf(s.de)} % a ${nf(s.a)} %`;
-  const efecto = (s) => `${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts de cobertura y ${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts de saturación de Corabastos`;
-  const VERD = { go: 'No sostenible', sostenible: 'Sostenible', cond: 'Sostenible con condiciones' };
+  const efecto = (s) => `${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts de cobertura y ${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts del límite de Corabastos`;
+  const VERD = { go: 'No sostenible', sostenible: 'Sostenible' };
   const rC = Rk(crit) || rN, falta = rC ? Math.max(0, rC.noRec - CERCA_RES) : 0;
   const recRes = `Recomendación: separar y tratar cerca de la fuente al menos ${nf(Math.ceil(falta))} t/día más de orgánicos (Estaciones Circulares, E4) para que lo sin recoger quede bajo ${nf(CERCA_RES)} t/día en la semana crítica (año ${añoDe(crit.sem)})${rC && rC.trat > 0.5 ? `; hoy tratan ${nf(rC.trat, 1)} t/día${rC.nEst ? ` en ${nf(rC.nEst)} estaciones de 20 t/día` : ''}` : '; sin propuesta no hay Estaciones: la propuesta tiene 20 de 20 t/día que abren por fases'}. Ninguna palanca del abasto los baja: más comida que llega es más residuo.`;
   const t5 = `${VERD[estado]}${completo || go ? '' : ' (hasta ahora)'}. ${problema === 'res' ? recRes : mejor && (Math.abs(mejor.dCob) > 0.05 || Math.abs(mejor.dCar) > 0.05) ? `Recomendación: ${accion(mejor)}. En la semana crítica (año ${añoDe(crit.sem)}) es la palanca que más mueve el resultado: ${efecto(mejor)}.` : (problema === 'margen' ? 'Recomendación: mantener estas condiciones.' : 'Ninguna palanca de la lista mejora el resultado en la semana crítica: hay que cambiar lo que se probó (' + (problema === 'sat' ? 'lo que entra a Corabastos' : 'la demanda') + ').')}`;
   // --- tarjetas ---
   const pasos = (arr) => `<ol class="c01-ol">${arr.map(([k, t]) => `<li><b>${k}</b><span>${t}</span></li>`).join('')}</ol>`;
-  const tabla = `<table class="c01-sens"><thead><tr><th>Palanca · un cuarto de su rango</th><th>Cobertura</th><th>Saturación</th></tr></thead><tbody>${sens.map(s => `<tr class="${mejor && s.k === mejor.k ? 'mx' : ''}"><td>${esc(s.n)} ${s.agotada ? '(al máximo)' : `${nf(s.de, s.k === 'autoconsumo' ? 1 : 0)} → ${nf(s.a, s.k === 'autoconsumo' ? 1 : 0)}${s.u}`}</td><td>${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts</td><td>${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts</td></tr>`).join('')}</tbody></table>`;
+  const tabla = `<table class="c01-sens"><thead><tr><th>Palanca · un cuarto de su rango</th><th>Cobertura</th><th>Límite Corabastos</th></tr></thead><tbody>${sens.map(s => `<tr class="${mejor && s.k === mejor.k ? 'mx' : ''}"><td>${esc(s.n)} ${s.agotada ? '(al máximo)' : `${nf(s.de, s.k === 'autoconsumo' ? 1 : 0)} → ${nf(s.a, s.k === 'autoconsumo' ? 1 : 0)}${s.u}`}</td><td>${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts</td><td>${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts</td></tr>`).join('')}</tbody></table>`;
   const html = `<section class="c01" data-a style="--d:1300" aria-labelledby="c01-t"><div class="c01-h"><span class="i2-lab">Conclusión general</span><h3 id="c01-t" class="c01-v ${estado}">${VERD[estado]}${completo || go ? '' : ' · hasta el año ' + añoDe(L.sem)}</h3></div>
     <div class="c01-g">
       <article class="c01-c i2-panel"><h4>¿Alcanza la comida y aguanta Corabastos?</h4><p class="c01-s">Lo que recibe Kennedy (t/día) frente a la demanda y al 80 %; abajo, el inventario de Corabastos frente a 14.000 t.</p><div class="c01-fig" data-c01="1"></div>
@@ -130,7 +130,7 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
     s += `<polygon points="${capa(() => 0, U => U.coraK)}" fill="url(#c01-g1)"/><polygon points="${capa(U => U.coraK, U => U.coraK + U.mercT)}" fill="#c08f1c" fill-opacity=".8"/><polygon points="${capa(U => U.coraK + U.mercT, U => U.coraK + U.mercT + U.autoT + (U.huertaT || 0))}" fill="#22a89d" fill-opacity=".85"/>`;
     s += `<path d="${lin(U => U.demK)}" fill="none" stroke="var(--ink)" stroke-width="1.8"/><path d="${lin(U => 0.8 * U.demK)}" fill="none" stroke="var(--s-lim)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
     if (go) s += `<line x1="${x(go.sem).toFixed(1)}" x2="${x(go.sem).toFixed(1)}" y1="${pt}" y2="${pt + ih}" stroke="var(--s-crit)" stroke-dasharray="2 3"/><text x="${(x(go.sem) + (x(go.sem) < pl + 90 ? 4 : -4)).toFixed(1)}" y="${pt + 10}" text-anchor="${x(go.sem) < pl + 90 ? 'start' : 'end'}" fill="var(--mal)">game over</text>`;
-    const tot = sCor + sMer + sAut + sHu || 1, seg = [[sCor, '#7d6bff', 'Corabastos'], [sMer, '#c08f1c', 'Mercados'], [sAut + sHu, '#22a89d', 'Autoconsumo y huertas']];
+    const tot = sCor + sMer + sAut + sHu || 1, seg = [[sCor, '#7d6bff', 'Corabastos'], [sMer, '#c08f1c', 'Mercados'], [sAut + sHu, '#22a89d', 'Hogares y huertas']];
     let a0 = -Math.PI / 2, dona = '<svg viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Quién cubrió la demanda en toda la corrida">';
     const Pp = (r, a) => `${(48 + r * Math.cos(a)).toFixed(2)} ${(48 + r * Math.sin(a)).toFixed(2)}`;
     for (const [v, c, n] of seg) { if (!(v > 0)) continue; const a1 = a0 + v / tot * Math.PI * 2 - (v >= tot ? 1e-3 : 0), L = a1 - a0 > Math.PI ? 1 : 0; dona += `<path d="M${Pp(44, a0)}A44 44 0 ${L} 1 ${Pp(44, a1)}L${Pp(29, a1)}A29 29 0 ${L} 0 ${Pp(29, a0)}Z" fill="${c}" stroke="var(--bg)" stroke-width="1.5"><title>${n}: ${nf(v / tot * 100, 1)} %</title></path>`; a0 = a1; }
@@ -138,8 +138,8 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
     const parte = `<div class="c01-part">${dona}<ul>${seg.map(([v, c, n]) => `<li><i style="background:${c}"></i>${n}<b>${nf(v / tot * 100, 1)} %</b></li>`).join('')}</ul></div>`;
     // inventario de Corabastos (t) frente a la capacidad de referencia de 14.000 t (saturación = inventario ÷ 14.000)
     const sat = (q) => X(q).sat * 100, mS = Math.max(110, ...muestra.map(sat)), bar = (n, v) => `<div class="c01-b"><span>${n}</span><i><b style="width:${Math.max(2, Math.min(100, v / mS * 100)).toFixed(1)}%;background:${v > 100 ? 'var(--s-crit)' : v > 90 ? 'var(--amb)' : 'var(--s-con)'}"></b><em style="left:${(100 / mS * 100).toFixed(1)}%"></em></i><span>${nf(v)} %</span></div>`;
-    const bods = `<div class="c01-bs"><small>Saturación de Corabastos (inventario ÷ 14.000 t; raya = 100 %)</small>${bar('Inicio', sat(W[0]))}${bar('Máximo · año ' + añoDe((wMaxSat || L).sem), maxSat * 100)}${bar('Final', sat(L))}</div>`;
-    return s + '</svg>' + parte + `<div class="c01-ley"><span><i style="background:#7d6bff"></i>Corabastos</span><span><i style="background:#c08f1c"></i>Mercados</span><span><i style="background:#22a89d"></i>Autoconsumo y huertas</span><span><i class="l"></i>Demanda</span><span><i class="l r"></i>80 % de la demanda</span></div>` + bods;
+    const bods = `<div class="c01-bs"><small>Límite de abastecimiento de Corabastos (inventario ÷ 14.000 t; raya = 100 %)</small>${bar('Inicio', sat(W[0]))}${bar('Máximo · año ' + añoDe((wMaxSat || L).sem), maxSat * 100)}${bar('Final', sat(L))}</div>`;
+    return s + '</svg>' + parte + `<div class="c01-ley"><span><i style="background:#7d6bff"></i>Corabastos</span><span><i style="background:#c08f1c"></i>Mercados</span><span><i style="background:#22a89d"></i>Hogares y huertas</span><span><i class="l"></i>Demanda</span><span><i class="l r"></i>80 % de la demanda</span></div>` + bods;
   }
   /* residuos sin recoger (t/día) de esta corrida y de la otra mitad, con hoy (148) y el game over (296); La Vaca y los sectores peor servidos */
   function fig2(w) {
@@ -163,8 +163,7 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
   }
   function pintar(root) { if (!document.getElementById('c01-css')) { const st = document.createElement('style'); st.id = 'c01-css'; st.textContent = CSS; document.head.appendChild(st); }
     root.querySelectorAll('[data-c01]').forEach(el => { const w = Math.max(260, Math.floor(el.clientWidth || 320)); el.innerHTML = el.dataset.c01 === '1' ? fig1(w) : fig2(w); }); }
-  const frase = estado === 'go' ? null : estado === 'sostenible' ? `Sin game over${completo ? ' en los 15 años' : ''}: ningún sector bajó de 87 %, Corabastos llegó como máximo a ${nf(maxSat * 100)} % de 14.000 t y lo sin recoger quedó en ${nf(maxR)} t/día o menos.`
-    : `Sin game over${completo ? ' en los 15 años' : ''}, con condiciones: ${[maxSat > 0.9 ? `el inventario de Corabastos llegó a ${nf(maxSat * 100)} % de 14.000 t` : '', maxR >= CERCA_RES ? `lo sin recoger llegó a ${nf(maxR)} t/día (game over en 296)` : '', minSec < 87 ? `el sector peor servido bajó a ${nf(minSec, 1)} %` : ''].filter(Boolean).join('; ') || 'algún indicador se acercó a su límite'}.`;
+  const frase = estado === 'go' ? null : `Sin game over${completo ? ' en los 15 años' : ''}: el sector que menos recibió tuvo ${nf(minSec, 1)} % de su demanda (límite 80 %), Corabastos llegó como máximo a ${nf(maxSat * 100)} % de su límite de 14.000 t y lo sin recoger quedó en ${nf(maxR)} t/día o menos (límite 296).`;
   return { estado, big: VERD[estado], eye: estado === 'go' ? 'Game over · condición crítica sostenida' : `Resultado · ${VERD[estado]}`, frase, veredicto: VERD[estado], html, pintar, textos: [t1, t2, t3, t4, t5], sens, mejor };
 }
 const CSS = `

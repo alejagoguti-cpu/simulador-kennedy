@@ -339,7 +339,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     /* la red crece año a año: las huertas en cubiertas se abren y la fauna de las huertas llega en la misma proporción (al año 10, todas):
        las relaciones bióticas suben de a poco hasta llegar a muchas */
     { const g = e === 'A' ? 0 : Math.max(0.03, Math.min(1, f / (REF[e] || 1) * (P1.alcance / ALC0))); // «Alcance sobre lotes y techos»: cuántas cubiertas tienen huerta
-      const HI = window.KEN_HIDRO; if (HI && HI.fraccion) HI.fraccion(g);
+      const HI = window.KEN_HIDRO; if (HI && HI.fraccion && window.KEN_HIDRO_FIJA == null) HI.fraccion(g); /* v5: en la 01 con propuesta manda el deslizador de huertas (abasto_capas.js) */
       const BIo = T3.bio && T3.bio.ESTADO; if (BIo) BIo.proFrac = g; }
     { const vis = e === 'A' ? 0 : f; if (Math.abs(vis - fMarcas) > 0.002 || e === 'A') { fMarcas = vis; MK.forEach((m, i) => { mO[i] = e === 'A' ? 0 : (m[3] === 'par' ? (m[4] < vis ? 1 : 0) : m[3] === 'lote' ? (vis > 0.06 ? 1 : 0) : 1); }); gm.attributes.on.needsUpdate = true; } }
     const dep = o.dep, al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }

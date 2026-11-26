@@ -1,4 +1,4 @@
-import { seguimiento } from './seguimiento.js?v=2';
+﻿import { seguimiento } from './seguimiento.js?v=2';
 /* ============ INTERFAZ DE LAS 12 SIMULACIONES (vista limpia) ============
    Corre el modelo semanal de data3d/simulaciones12.js al mismo paso que la barra de años (RELOJ.sem) y muestra:
    · panel de la derecha (vidrio): variables (sliders) de la simulación, indicadores en vivo con su gráfica, picos en el piso y foco;
@@ -9,7 +9,7 @@ import { seguimiento } from './seguimiento.js?v=2';
 import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=5';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
-import * as AB01P from './ab01_panel.js?v=6'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
+import * as AB01P from './ab01_panel.js?v=7'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -41,7 +41,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=35'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=36'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -601,15 +601,15 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const prop01 = !!(p01 && I && I.propuesta); /* v3: la 01 con propuesta (data3d/propuesta01_3d.js): Corabastos al 50 %, La Vaca más grande, árboles y blanco y negro */
     { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP) && !prop01; }
     import('./gris01.js?v=1').then(m => m.gris01(T3, p01)).catch(() => {}); /* v4: blanco y negro en los dos escenarios de la 01 (árboles, agua, fauna y elementos de la simulación en color) */
-    if (prop01) { if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=4').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(I); }
+    if (prop01) { if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=5').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(I); }
     else if (P01) P01.apagar();
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
     /* simulación 01 (2026-11-26): capas Bodegas · Residuos · Tráfico (data3d/abasto_capas.js), una vez por semana simulada */
-    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=3').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
+    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=4').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
       else CAP01.poner(I); }
     else if (CAP01) { CAP01.poner(null); CAP01.ver(false); }
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=11').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=12').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -803,7 +803,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
   /* el tablero estadístico en tiempo real vive en la columna derecha, aside#lp-tablero (panel_datos.js + graficas_vivas.js) */
-  import('./panel_indicadores.js?v=7').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
+  import('./panel_indicadores.js?v=8').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
@@ -970,7 +970,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=11');
+    try { const { abrirInforme2 } = await import('./informe.js?v=12');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];

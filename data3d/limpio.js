@@ -1,4 +1,4 @@
-/* ============ VISTA LIMPIA (por defecto) ============
+﻿/* ============ VISTA LIMPIA (por defecto) ============
    Al entrar solo se ve el territorio, el panel de la izquierda (reloj, SIMULACIONES 1–12, sintaxis espacial con su barra de
    colores, flujo de carros con su barra, capas: ruido, foto, etc.) y abajo la barra de años con play.
    Se esconden: paneles de escenarios A·B·C, agentes, red biótica (panel), barra de render/noche/…, años/día y los textos largos.
@@ -9,8 +9,8 @@
    Empresa Metro de Bogotá). Desde que opera bajan los carros que se dibujan durante un año hasta METRO_MENOS_CARROS.
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
-import { crearSlides } from './slides_sim.js?v=7';
-import { iniciarSimUI } from './sim_ui.js?v=124';
+import { crearSlides } from './slides_sim.js?v=8';
+import { iniciarSimUI } from './sim_ui.js?v=125';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -210,11 +210,12 @@ export function iniciarLimpio({ T3 }) {
     /* simulación 01 (data3d/abasto_capas.js): solo lo que está prendido y a la vista */
     ['Simulación 01 · capas', [
       /* v4 (2026-11-26): barra de carga de Corabastos, barritas de mercados, cuadritos de residuos, vías tipo Waze y vehículos morados */
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V5" stroke="#fff" stroke-width="1.2"/><rect x="1" y="1" width="16" height="4" rx="1" fill="#0d1116" stroke="rgba(255,255,255,.4)" stroke-width=".6"/><rect x="1.6" y="1.6" width="7" height="2.8" fill="#4ade80"/><rect x="14" y=".3" width="1.6" height="5.4" fill="#ff3b30"/></svg>', 'Corabastos: inventario ÷ 14.000 t (raya roja = tope)', () => !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)],
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V6" stroke="#fff" stroke-width="1"/><rect x="3" y="3" width="12" height="3" rx=".8" fill="#0d1116"/><rect x="3.5" y="3.5" width="6" height="2" fill="#fbbf24"/><rect x="12.4" y="2.2" width="1.2" height="4.6" fill="#ff3b30"/></svg>', 'Mercado de barrio: llenado frente a 17 t/día', () => esc3('abasto_cont') && !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible) && document.querySelectorAll('.cont-etm').length > 0],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V5" stroke="#fff" stroke-width="1.2"/><rect x="1" y="1" width="16" height="4" rx="1" fill="#0d1116" stroke="rgba(255,255,255,.4)" stroke-width=".6"/><rect x="1.6" y="1.6" width="7" height="2.8" fill="#4ade80"/><rect x="14" y=".3" width="1.6" height="5.4" fill="#ff3b30"/></svg>', 'Corabastos: inventario frente a su límite de 14.000 t (raya roja)', () => !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V6" stroke="#fff" stroke-width="1"/><rect x="6.5" y="1" width="5" height="10" rx=".8" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="7.2" y="5" width="3.6" height="5.4" fill="#c9f27a"/><rect x="6" y="2.4" width="6" height=".9" fill="#ff3b30"/></svg>', 'Mercado de barrio: barra que se llena desde abajo con su % de uso (de 28 t/día; raya roja = 100 %)', () => esc3('abasto_cont') && !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible) && document.querySelectorAll('.cont-etm').length > 0],
       ['<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="2" y="2" width="2.6" height="2.6" fill="#d08a3c"/><rect x="7" y="5" width="2.6" height="2.6" fill="#e0703a"/><rect x="12" y="2.5" width="2.6" height="2.6" fill="#ff4d3d"/></svg>', 'Residuos sin recoger: 1 cuadrito = 1 t/día', () => ab01Vis('residuos')],
-      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h5" stroke="#22dc6b" stroke-width="3"/><path d="M6.5 5h5" stroke="#fcc226" stroke-width="3"/><path d="M12 5h5" stroke="#f5383a" stroke-width="3"/><path d="M2 5h2M8 5h2M13.5 5h2" stroke="#fff" stroke-width="1.2" opacity=".8"/></svg>', () => `Vías por congestión: verde, ámbar, rojo (ciudad ${Math.round(((window.KEN_AB01C && window.KEN_AB01C.info().nivel) || 0.62) * 100)} %)`, () => ab01Vis('trafico')],
-      [sw.pil('#a21cff'), 'Vehículos de Bavaria Común a los mercados', () => !!(window.KEN_AB01C && window.KEN_AB01C.morados && window.KEN_AB01C.morados() > 0)],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h5" stroke="#21c45e" stroke-width="4"/><path d="M6.5 5h5" stroke="#faa80d" stroke-width="4"/><path d="M12 5h5" stroke="#990021" stroke-width="4"/></svg>', () => `Vías por congestión: verde fluido, ámbar, carmesí = trancón (ciudad ${Math.round(((window.KEN_AB01C && window.KEN_AB01C.info().nivel) || 0.62) * 100)} %)`, () => ab01Vis('trafico')],
+      [sw.pil('#a21cff'), 'Morados: carros nuevos que crea la propuesta (viajes a los mercados y a Bavaria Común); pocos, escala visual', () => !!(window.KEN_AB01C && window.KEN_AB01C.morados && window.KEN_AB01C.morados() > 0)],
+      [sw.pil('#ff3d6e'), 'Camiones que llegan a Corabastos: más cuanto más carga entra; en fila cuando se llena', () => !!(window.KEN_AB01C && window.KEN_AB01C.info && window.KEN_AB01C.info().camiones > 0)],
       ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="7" width="12" height="3.2" rx="1" fill="#4ade80"/></svg>', 'Bodegas: ocupación de cada nave', () => ab01Vis('bodegas')],
       ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="4" width="12" height="6.2" rx="1" fill="#fbbf24"/></svg>', 'Nave al 90 %', () => ab01Vis('bodegas')],
       ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="3" width="14" height="8" rx="1.5" fill="#ef4444"/><rect x="1" y="0.5" width="16" height="2.4" rx="1" fill="#ef4444" opacity=".55"/></svg>', 'Nave llena (titila)', () => ab01Vis('bodegas')],
@@ -263,11 +264,11 @@ export function iniciarLimpio({ T3 }) {
   function abrirRecorridoDePar(par, con = false, id = null) {
     /* par 01 con propuesta: recorrido de las cubiertas de 15 pisos (data3d/cubiertas_foco.js, vía data3d/estrategias.js) */
     { const E = T3.EST; if (E && E.focoCubiertas) { if (par === 1 && con) setTimeout(() => { if (ESC.activo === id) E.focoCubiertas(true); }, 150); else E.focoCubiertas(false); } }
-    import('./recorrido_movilidad.js?v=5').then(m => {
+    import('./recorrido_movilidad.js?v=6').then(m => {
       if (par !== 2) return m.cerrarRecorrido();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorrido({ con }).catch(e => console.warn('recorrido movilidad:', e)); }, 150);
     }).catch(e => console.warn('recorrido movilidad:', e));
-    import('./recorrido_residuos.js?v=4').then(m => {
+    import('./recorrido_residuos.js?v=5').then(m => {
       if (par !== 3) return m.cerrarRecorridoResiduos();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorridoResiduos({ con }).catch(e => console.warn('recorrido residuos:', e)); }, 150);
     }).catch(e => console.warn('recorrido residuos:', e));
@@ -451,7 +452,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=11', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=11']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=12', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=12']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

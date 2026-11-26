@@ -9,7 +9,7 @@
    · categórica #7d6bff #c08f1c #22a89d #f2694a (en ese orden fijo): PASA (peor par adyacente CVD 12,6 · normal 19,2)
    · secuencial morada #4c46cf #5b4bff #7d6bff #a99cff #d4ceff: PASA (monótona, un tono, extremo 2,32:1)
    · referencias (siempre rotuladas, línea fina punteada): límite #ffd27a · crítico #ff4f7b · neutro #8c929c */
-import { esc, num, nodo, marcas, fmtEje } from './graficas_vivas.js?v=3';
+import { esc, num, nodo, marcas, fmtEje } from './graficas_vivas.js?v=4';
 
 export const ARTE = {
   con: '#7d6bff', sin: '#f2694a', lim: '#ffd27a', crit: '#ff4f7b', neutro: '#8c929c',
