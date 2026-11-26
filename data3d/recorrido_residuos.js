@@ -1,9 +1,9 @@
-﻿/* Recorrido de las simulaciones 5 y 6: territorio, corte esquemático y
+/* Recorrido de las simulaciones 5 y 6: territorio, corte esquemático y
    reproducción de las 780 semanas del modelo. Las ubicaciones y las fechas
    de apertura proceden de MERCADOS; las cantidades salen de simulaciones12. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearGris } from './gris.js?v=1';
-import { SIMS } from './simulaciones12.js?v=36';
+import { SIMS } from './simulaciones12.js?v=39';
 import { MERCADOS } from './sim_red_datos.js?v=2';
 
 let actual = null;

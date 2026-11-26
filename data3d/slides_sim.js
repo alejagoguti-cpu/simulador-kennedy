@@ -1,4 +1,4 @@
-﻿/* ============ DIAPOSITIVAS DE CADA SIMULACIÓN (vista limpia, data3d/limpio.js) ============
+/* ============ DIAPOSITIVAS DE CADA SIMULACIÓN (vista limpia, data3d/limpio.js) ============
    Al tocar una de las 6 simulaciones del panel izquierdo se abre un mazo de diapositivas de vidrio con lo que el código dice de ese par:
    la pregunta y la prueba de estrés (simulaciones12.js PARES/SIMS), el modelo (comentarios de cabecera de simulaciones12.js), la cadena
    causa → efecto (sim_ui.js CADENA) y las capas que se prenden (sim_ui.js HISTORIA), los deslizadores con sus rangos y unidades (SIMS[].sliders),
@@ -44,7 +44,7 @@ const ICO = {
 };
 
 let M = null;
-const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=36').then(m => (M = m));
+const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=39').then(m => (M = m));
 /* par 01: diapositivas «Datos» y «Fuentes» con las cifras del dossier (docs/fuentes_abastecimiento.md; simulaciones12.js AB01 y AB01_FUENTES) */
 function slides01() {
   const A = M.AB01, F = M.AB01_FUENTES || []; if (!A) return [];

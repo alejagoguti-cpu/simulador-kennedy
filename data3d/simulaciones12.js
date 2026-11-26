@@ -333,7 +333,7 @@ const PAR_SL = {
     { k: 'coraTope', n: 'Tope de ingreso diario', min: 5, max: 25, paso: 1, val: 11, unidad: '% sobre 6.460 t/día', ayuda: 'Lo máximo que pueden descargar sus puertas en un día (inferencia, no cifra oficial: ocupación del 90 % → 11 %, SDDE-FAO 2018). La capacidad de almacenamiento es aparte: 14.000 t.' },
     { k: 'autoconsumo', n: 'Comida que producen los hogares', min: 0, max: 30, paso: 1, val: 0, unidad: '% de la demanda', ayuda: 'Parte de la comida que las familias cultivan en casa (patios, materas, solares) y no compran. Es aparte de las huertas hidropónicas de la propuesta. 0 % por defecto: no hay dato para Kennedy (Bogotá entera produce 4,5 % de lo que come, DTS logística 2022).' },
     { ...sPob(0.5), min: -0.5, max: 3, n: 'Crecimiento de la población', ayuda: 'Kennedy y la región que compra en Corabastos. 0,5 %/año = tendencia DANE 2017–2022; la proyección SDP 2024–2028 da ≈0 %. Más de 1 %/año es estrés declarado.' }],
-  2: [sT0, sDur, { k: 'desvioMayo', n: 'Tráfico desviado a la Av. Primero de Mayo', min: 0, max: 100, paso: 5, val: 50, unidad: '% del de la vía cerrada', ayuda: 'Supuesto: no hay aforo del desvío. Es la única vía principal paralela a 2,5 km o menos en OpenStreetMap; el resto del tráfico se reparte por calles locales.' }, sTraf, sRuido, sCapRed],
+  2: [sT0, sDur, { k: 'desvioMayo', n: 'Desvío a la Av. Primero de Mayo', min: 0, max: 100, paso: 5, val: 50, unidad: '%' /* 2026-11-26: menos texto; % del tráfico de la vía cerrada */, ayuda: 'Supuesto: no hay aforo del desvío. Es la única vía principal paralela a 2,5 km o menos en OpenStreetMap; el resto del tráfico se reparte por calles locales.' }, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
   4: [{ k: 'parche', n: 'Parche que se pierde', min: 1, max: 4, paso: 1, val: 1, unidad: '1 El Burro · 2 Techo · 3 La Vaca · 4 Bosque de Bavaria', ayuda: 'Parche ecológico que pierde parte de su área.' },
@@ -610,7 +610,10 @@ function indCircular(E) {
 function faseCierre(C, t) { if (t < C.t0 || t >= C.t0 + C.dur) return 0; const S = DESVIO_SUP, u = (t - C.t0) / C.dur;
   if (u < S.SUBE) return Math.min(3, Math.floor(u / S.SUBE * 3) + 1) / 3; if (u > 1 - S.BAJA) return Math.max(1, Math.ceil((1 - u) / S.BAJA * 3)) / 3; return 1; }
 function desvios(E, t) {
-  const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.traf = 1 + (E.val.desvioMayo != null ? E.val.desvioMayo / 100 : DESVIO_SUP.DESV) * (E.prop ? 2 / 3 : 1) * C.fase; // con propuesta: tercera ruta por los pasajes y conexiones de Bavaria Común [SUP] E.xDes.fill(1); if (!D || !C.fase) return;
+  const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.traf = 1 + (E.val.desvioMayo != null ? E.val.desvioMayo / 100 : DESVIO_SUP.DESV) * (E.prop ? 2 / 3 : 1) * C.fase; /* con propuesta: tercera ruta por los pasajes y conexiones de Bavaria Común [SUP] */
+  /* 2026-11-26: corrección. El comentario de la línea de arriba se tragaba este reinicio: E.xDes se multiplicaba semana a semana durante el cierre
+     (efecto compuesto) y quedaba así para siempre después de reabrir. Ahora cada semana parte de 1, como dice DESVIO_SUP. */
+  E.xDes.fill(1); if (!D || !C.fase) return;
   const Vg = V.crecimiento(t).V * factorTraf(E, t), Dh = V.TRAFICO.ZONA_HOY * Math.pow(Vg, V.TRAFICO.B_DIST), Dn = V.TRAFICO.ZONA_HOY * Math.pow(Vg * C.traf, V.TRAFICO.B_DIST), RZ = V.TRAFICO.RED_ZONA;
   for (const id of D.desvio) { const dd = DESVIOS.vias[id].dist; for (let p = 0; p < NP; p++) { if (dd[p] > DESVIO_SUP.RADIO) continue; const r = RP_M[p], fh = fZonaP(dd[p], r, Dh), fn = fZonaP(dd[p], r, Dn);
     E.xDes[p] *= (1 - RZ * fn) / (1 - RZ * fh); } } }
@@ -813,11 +816,13 @@ function ab01Paso(E) {
          que factorTraf: «los mercados de barrio a pie y el acopio cercano quitan viajes en carro y camión hacia Corabastos»). */
   const años01 = sem / V.AÑO, cCiudad = CONG01.N0 + CONG01.PP * años01, fMerc = A.nM > 0 ? act.length / A.nM : 0;
   const cC = Math.max(0, (E.prop ? CONG01.N0 : cCiudad) * (ing / KV.ING));
-  /* v5 · COLA EN CORABASTOS [SUP, pedido de la autora: «sin propuesta Corabastos se llena»]: los camiones y la mercancía esperan más cuanto
-     más llena está la central, como en una cola M/M/1 (espera ∝ 1 ÷ (1 − ocupación)); ocupación ρ = inventario ÷ 14.000, normalizada a la de
-     2025 (ρ0 ≈ 0,35): cola = (1 − ρ0) ÷ (1 − ρ). Con ρ0 la permanencia es la de v4. Si lo que entra × permanencia pasa de ≈38,5 % de 14.000 t
-     no hay equilibrio: el inventario se dispara (se llena). ρ se acota en 0,97 para que el paso semanal no se vuelva infinito. */
-  const rho0 = KV.INV0 / KV.CAP, rho = Math.min(0.97, A.inv / KV.CAP), cola = (1 - rho0) / (1 - rho);
+  /* v5.1 · REGLA DEL MODELO (decisión de la autora, ya no es [SUP]): «cuando no hay dónde poner la comida, la mercancía sale más lento y
+     Corabastos se llena». La comida sigue llegando y, cuanto más llena está la central, más tarda en salir: cola = 1 + β·[(1 − ρ0) ÷ (1 − ρ) − 1],
+     ρ = inventario ÷ 14.000, ρ0 = ρ de 2025 (≈ 0,35; con ρ = ρ0 la cola vale 1 y la permanencia es la de v4), β = KV.COLA_B = 0,5 (forma de
+     cola M/M/1 amortiguada a la mitad: calibrada para que sin propuesta la central llegue a su límite hacia el año 10–11, no en el 4; el valor
+     de β lo fija la calibración, no un dato medido). Si lo que entra × permanencia pasa del umbral no hay equilibrio y el inventario se dispara.
+     ρ se acota en 0,97 para que el paso semanal no se vuelva infinito. */
+  const rho0 = KV.INV0 / KV.CAP, rho = Math.min(0.97, A.inv / KV.CAP), cola = 1 + KV.COLA_B * ((1 - rho0) / (1 - rho) - 1);
   const Tp = KV.T0 * (1 + cC) / (1 + CONG01.N0) * cola, inv0 = A.inv, eq = ing * Tp, invL = eq + (inv0 - eq) * Math.exp(-7 / Tp);
   let sale = Math.max(0, inv0 + 7 * ing - invL), desp = sale * (1 - KV.PERD), perd = sale * KV.PERD, inv = invL;
   /* lo que nadie pide no sale. v5: si con la permanencia nueva sobra mercancía (el inventario está sobre su equilibrio ing × Tp), los
@@ -918,7 +923,8 @@ const BOD_ST = BOD01.NAVES.map(n => (n[3] > 0 ? n[2] * n[4] : 0)), BOD_STT = BOD
 /* v4: inventario PROMEDIO de 2025 = la mitad de Σ recibo × permanencia (cada lote se vende de a poco durante su permanencia: en promedio
    queda la mitad) ≈ 4.930 t = 35 % de 14.000 [SUP]. Permanencia media de 2025 T0 = inventario ÷ ingresos ≈ 0,76 días (ley de Little). */
 AB01V3.INV0 = BOD_STT / 2;                                          // t en 2025
-AB01V3.T0 = AB01V3.INV0 / AB01V3.ING;                               // días que permanece en promedio una tonelada en 2025
+AB01V3.COLA_B = 0.5;                                                  // β de la regla de la cola (v5.1, decisión de la autora; ver ab01Paso)
+AB01V3.T0 = AB01V3.INV0 / AB01V3.ING;                             // días que permanece en promedio una tonelada en 2025
 AB01V3.K_PERD = AB01V3.PERD * AB01V3.ING / AB01V3.INV0;             // (v3; ya no se usa en ab01Paso)
 AB01V3.RESTO0 = AB01V3.ING * (1 - AB01V3.PERD) - AB01V3.DEM0;      // t/día que despacha al resto de la región en 2025 (equilibrio)
 /* bodegas de una semana (v3): el inventario total se reparte entre las 37 naves por su recibo × permanencia; ocupación = su parte / su tope.
@@ -1284,7 +1290,10 @@ function muertesPaso(E) {
 function dbParche(E, p, trafico, mitDb) { const e = EXPO.parches[p]; if (!e) return 45; const L = 74 + 10 * Math.log10(Math.max(1, e[1] * trafico) / EXPO.medianaVia) - 10 * Math.log10(Math.max(15, e[0]) / 15) - mitDb; return Math.max(35, L); }
 function indAvesRuido(E, x) {
   const s = E.s, occ = s.occ, mit = MITIGA_DB * E.traf.mit; let w = 0, b = 0, ex = 0, bf = 0, en = 0; const pp = [];
-  for (let p = 0; p < NP; p++) { let a = 0; for (let i = 0; i < RED.NFA; i++) if (RED.AVE[i]) a += occ[i * NP + p]; const db = dbParche(E, p, x.trafico, mit); if (a) { const bi = Math.max(0, Math.min(1, (70 - db) / 20)); w += a; b += a * bi; bf += a * bienestarDe(db); en += a * Math.pow(10, db / 10); if (db > 60) ex += a; pp.push({ x: Math.round(PARCHES[p].x), z: Math.round(PARCHES[p].z), db: Math.round(db * 10) / 10, aves: a, n: PARCHES[p].n }); } }
+  /* par 02 (2026-11-26, docs/sim02_movilidad.md): durante el cierre, los parches a DESVIO_SUP.RADIO o menos de la vía de desvío reciben su tráfico × traficoDesvio
+     (la misma zona de los desvíos que usa la red trófica, E.xDes): más ruido ahí y menos bienestar de las aves */
+  const C = E.cie, Dv = C && C.fase && DESVIOS[C.via] ? DESVIOS[C.via].desvio.map(id => DESVIOS.vias[id].dist) : null;
+  for (let p = 0; p < NP; p++) { let a = 0; for (let i = 0; i < RED.NFA; i++) if (RED.AVE[i]) a += occ[i * NP + p]; const db = dbParche(E, p, x.trafico * (Dv && Dv.some(d => d[p] <= DESVIO_SUP.RADIO) ? C.traf || 1 : 1), mit); if (a) { const bi = Math.max(0, Math.min(1, (70 - db) / 20)); w += a; b += a * bi; bf += a * bienestarDe(db); en += a * Math.pow(10, db / 10); if (db > 60) ex += a; pp.push({ x: Math.round(PARCHES[p].x), z: Math.round(PARCHES[p].z), db: Math.round(db * 10) / 10, aves: a, n: PARCHES[p].n }); } }
   pp.sort((u, v) => v.aves - u.aves || v.db - u.db);
   /* bienestarFauna (indicador «Bienestar de la fauna», 2026-11-25): Σ aᵖ·B(Lᵖ) / Σ aᵖ, aᵖ = aves (especie × parche) en el parche p, B = BIENESTAR_SUP.
      dbAves = nivel energético al que está expuesta la ocupación de aves. bienestar (curva vieja 50–70 dB) se conserva. */
@@ -1359,6 +1368,8 @@ export function paso(E) {
       if (bi >= 0) { const S = U.sectores[bi];
         E.go = { regla: 'deficit', enfoque: 'Comercio ecológico', sem, inicio: sem - KV.SEMANAS + 1, motivo: `el ${S.n} recibió ${n1(S.cob * 100)} % de su demanda (${nf(S.rec)} de ${nf(S.dem)} t/día; déficit de ${nf(S.def)} t/día), menos del 80 %, cuatro semanas seguidas`, lugar: S.n, x: S.x, z: S.z, valor: Math.round(S.cob * 1000) / 10 }; } }
     if (!E.go && A.rachaRes >= RES01.SEMANAS) E.go = { regla: 'residuosK', enfoque: 'Circularidad', sem, inicio: sem - RES01.SEMANAS + 1, motivo: `los residuos sin recoger de Kennedy llegaron a ${Math.round(rc.noRec)} t/día, el doble de los ${RES01.PC0} t/día de hoy en puntos críticos, cuatro semanas seguidas`, lugar: 'Kennedy', x: PARCHES[VACA_P].x, z: PARCHES[VACA_P].z, valor: Math.round(rc.noRec * 10) / 10 }; }
+  /* 2026-11-26 (paneles de las 6 simulaciones, data3d/sim_panel.js): valor de cada regla de game over y semanas seguidas fuera del límite (solo lectura) */
+  x.reglasV = { ...E.vals }; x.rachas = { ...E.racha }; x.fOrg = E.fOrg;
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
   verdePaso(E); x.verde = indVerde(E);
@@ -1380,6 +1391,7 @@ export function paso(E) {
     revisar('s'+i,p,'Cobertura <80 %',mal);
     if(!E.ab01&&!E.go&&E.rachaSectores[i]>=4)E.go={regla:'abasto',enfoque:'Comercio ecológico',sem:x.sem,inicio:x.sem-3,motivo:'el sector '+p.n+' recibió menos del 80 % de su demanda durante cuatro semanas consecutivas',lugar:p.n,x:p.x,z:p.z,valor:p.valor};
   });
+  x.rachaSector = E.rachaSectores.reduce((a, v) => Math.max(a, v), 0); // sim_panel.js: semanas seguidas del sector peor servido bajo 80 %
   x.evaluacion.diversidad.porParche.forEach((p,j)=>{
     let inicial=0;
     const afectadas=[];

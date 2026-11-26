@@ -1,4 +1,4 @@
-﻿/* ============ SIMULACIÓN 01 · CAPAS «BODEGAS», «RESIDUOS» Y «TRÁFICO» (pedido de la autora, docs/sim01_abastecimiento_v2.md) ============
+/* ============ SIMULACIÓN 01 · CAPAS «BODEGAS», «RESIDUOS» Y «TRÁFICO» (pedido de la autora, docs/sim01_abastecimiento_v2.md) ============
    v4 (docs/sim01_abastecimiento_v4.md): barra de carga horizontal con pin sobre Corabastos, residuos en cuadraditos que se mueven,
    vías tipo Waze (cintas con sombreador) en lugar de las partículas, y vehículos morados de Bavaria Común (con propuesta).
    window.KEN_AB01C = { poner(I), ver(on), capa(k, on), estado: { bodegas, residuos, trafico }, info() }
@@ -215,8 +215,9 @@ export function crearCapas01({ T3 }) {
     varying float vS; varying float vC; varying float vY;
     void main(){ float c = mix(uNiv, uNivC, aN) * aK * (1.0 + uH * aN); vC = c; vS = aS - uT * 26.0 / (1.0 + c) ; vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
   const FS_W = `uniform float uOp; varying float vS; varying float vC; varying float vY;
-    void main(){ vec3 g = vec3(0.13,0.77,0.37), a = vec3(0.98,0.66,0.05), r = vec3(0.60,0.0,0.13); /* v5: verde fluido · ámbar · carmesí de trancón (distinto del rosado de los camiones) */
-      vec3 col = vC < 0.7 ? mix(g, a, clamp((vC - 0.4) / 0.3, 0.0, 1.0)) : mix(a, r, clamp((vC - 0.7) / 0.3, 0.0, 1.0)); /* v5: 0,4 fluido · 0,7 ámbar · ≥ 1,0 trancón (TomTom 0,7 = viajes 70 % más largos) */
+    void main(){ vec3 g = vec3(0.10,0.85,0.30), a = vec3(1.0,0.86,0.08), r = vec3(0.62,0.0,0.14); /* verde fluido · amarillo · carmesí de trancón (distinto del rosado de los camiones) */
+      /* bandas definidas (pedido de la autora: que se distinga bien el amarillo del verde): verde puro hasta 0,52, paso corto a amarillo puro (0,52-0,6), amarillo hasta 0,8, paso a carmesí en 1,0 */
+      vec3 col = vC < 0.6 ? mix(g, a, smoothstep(0.52, 0.6, vC)) : mix(a, r, smoothstep(0.8, 1.0, vC)); /* TomTom 0,7 = viajes 70 % más largos */
       float per = 40.0 + 30.0 / (1.0 + vC); float f = fract(vS / per); float raya = smoothstep(0.0, 0.1, f) * (1.0 - smoothstep(0.5, 0.6, f));
       gl_FragColor = vec4(col * (0.82 + 0.18 * raya), uOp); }`; /* v5: la superficie de la vía pintada, sin puntos ni rayas blancas; un pulso apenas más oscuro se mueve con el tráfico */
   const iniTrafico = () => { const N = T3.net; if (!N || !N.edges) return false;
@@ -232,8 +233,8 @@ export function crearCapas01({ T3 }) {
           S.push(sa, sa, sb, sb); K.push(k, k, k, k); NN.push(en, en, en, en); ix.push(nv, nv + 1, nv + 2, nv + 1, nv + 3, nv + 2); nv += 4; s += l; } } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aS', new THREE.Float32BufferAttribute(S, 1));
     g.setAttribute('aK', new THREE.Float32BufferAttribute(K, 1)); g.setAttribute('aN', new THREE.Float32BufferAttribute(NN, 1)); g.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(ix, 1) : new THREE.Uint16BufferAttribute(ix, 1));
-    const mat = new THREE.ShaderMaterial({ vertexShader: VS_W, fragmentShader: FS_W, uniforms: { uT: { value: 0 }, uNiv: { value: 0.62 }, uNivC: { value: 0.62 }, uH: { value: 0 }, uOp: { value: 0.88 } }, transparent: true, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -400, side: THREE.DoubleSide, toneMapped: false }); /* sobre la malla de Google (desplazamiento de profundidad) y debajo de los carros */
-    const mesh = new THREE.Mesh(g, mat); mesh.renderOrder = 16; mesh.frustumCulled = false; gT.add(mesh);
+    const mat = new THREE.ShaderMaterial({ vertexShader: VS_W, fragmentShader: FS_W, uniforms: { uT: { value: 0 }, uNiv: { value: 0.62 }, uNivC: { value: 0.62 }, uH: { value: 0 }, uOp: { value: 0.65 } }, transparent: true, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4, side: THREE.DoubleSide, toneMapped: false }); /* color de la vía más suave (opacidad 0,65) y desplazamiento de profundidad mínimo: queda sobre el asfalto pero DEBAJO de los carros (antes −400 unidades lo ponía encima de todo) */
+    const mesh = new THREE.Mesh(g, mat); mesh.position.y = 0.12; mesh.renderOrder = 2; mesh.frustumCulled = false; gT.add(mesh);
     Object.assign(TR, { listo: true, mesh, nAr }); return true; };
   function ponerTrafico() { const c = I && I.congestion01; if (!TR.listo && !iniTrafico()) return; if (!c) { gT.visible = false; return; } gT.visible = estado.trafico;
     const U = I.abasto && I.abasto.ab01; /* v5: con propuesta el tráfico de la ciudad baja hasta −25 % a medida que abren los mercados (supuesto declarado en factorTraf, simulaciones12.js) */

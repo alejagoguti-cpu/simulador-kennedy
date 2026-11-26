@@ -99,7 +99,7 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
       partes.push({ geo: pt.geo, mat });
       const im = new THREE.InstancedMesh(pt.geo, mat, lista.length); im.castShadow = !MOV; im.receiveShadow = false; im.count = 0; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(im); cerca.push(im); }
     // flores: racimos de color sobre la copa (amarillo del chicalá, crema del sauco y del chilco, rojo del tíbar, rosa del raque); solo en los árboles cercanos
-    if (E.flor) lista.forEach(t => { const r = t.h * N.ancho * 0.3; t.fl = []; for (let k = 0; k < (MOV ? 10 : 22); k++) { const a = k * 2.399 + t.rot, rr = r * (0.4 + 0.6 * ((k * 37) % 10) / 10); t.fl.push([t.x + Math.cos(a) * rr, Y + t.h * (0.55 + 0.4 * ((k * 53) % 10) / 10), t.z + Math.sin(a) * rr]); } });
+    if (E.flor) lista.forEach(t => { const r = t.h * N.ancho * 0.3; t.fl = []; for (let k = 0; k < (MOV ? 10 : 22); k++) { const a = k * 2.399 + t.rot, rr = r * (0.4 + 0.6 * ((k * 37) % 10) / 10); t.fl.push([t.x + Math.cos(a) * rr, Y + (t.y || 0) + t.h * (0.55 + 0.4 * ((k * 53) % 10) / 10), t.z + Math.sin(a) * rr]); } });
     // lejos: la foto del mismo árbol (cruz de 2 planos de lado + lámina horizontal con la foto desde arriba), sin sombra
     const F = foto(partes, N.ancho), L = F.lado;
     const gCruz = mergeGeometries([0, Math.PI / 2].map(a => new THREE.PlaneGeometry(L, L).translate(0, L / 2, 0).rotateY(a)).concat([new THREE.PlaneGeometry(L, L).rotateX(-Math.PI / 2).translate(0, 0.62, 0)]).map(g => { g.deleteAttribute('normal'); return g; }));
@@ -124,10 +124,10 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
     if (!forzar && Math.abs(cp.x - ult.x) + Math.abs(cp.y - ult.y) + Math.abs(cp.z - ult.z) < (T3.orbit ? Math.max(8, cp.distanceTo(T3.orbit.target) * 0.02) : 8) && ult.d === dens) return;
     ult.x = cp.x; ult.y = cp.y; ult.z = cp.z; ult.d = dens; let nf = 0; const R2 = CERCA * CERCA;
     for (const S of ESP) { let nc = 0, nl = 0;
-      for (const t of S.lista) { if (t.k >= dens) continue; const fe = EDAD ? EDAD(t.k) : 1; if (fe <= 0) continue; /* edad(fn): data3d/cambio_50.js escala cada árbol por su edad (0 = aún no sembrado) */ O.position.set(t.x, Y, t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h * fe); O.updateMatrix();
-        const dx = t.x - cp.x, dy = Y + gy + t.h * 0.5 - cp.y, dz = t.z - cp.z;
+      for (const t of S.lista) { if (t.k >= dens) continue; const fe = EDAD ? EDAD(t.k, t) : 1; if (fe <= 0) continue; /* edad(fn): data3d/cambio_50.js escala cada árbol por su edad (0 = aún no sembrado) */ O.position.set(t.x, Y + (t.y || 0), t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h * fe); O.updateMatrix(); /* t.y: árboles sobre un relieve propio (ecoducto de data3d/ecoducto.js) */
+        const dx = t.x - cp.x, dy = Y + (t.y || 0) + gy + t.h * 0.5 - cp.y, dz = t.z - cp.z;
         if (dx * dx + dy * dy + dz * dz < R2) { for (const im of S.cerca) im.setMatrixAt(nc, O.matrix); nc++;
-          if (flores && t.fl) { C.set(S.E.flor); for (const f of t.fl) { O.position.set(f[0], f[1], f[2]); O.rotation.set(0, 0, 0); O.scale.setScalar(1); O.updateMatrix(); flores.setMatrixAt(nf, O.matrix); flores.setColorAt(nf, C); nf++; } } }
+          if (flores && t.fl && fe > 0.45) { C.set(S.E.flor); const yb = Y + (t.y || 0); for (const f of t.fl) { O.position.set(t.x + (f[0] - t.x) * fe, yb + (f[1] - yb) * fe, t.z + (f[2] - t.z) * fe); /* flores a la altura del árbol según su edad */ O.rotation.set(0, 0, 0); O.scale.setScalar(1); O.updateMatrix(); flores.setMatrixAt(nf, O.matrix); flores.setColorAt(nf, C); nf++; } } }
         else S.lejos.setMatrixAt(nl++, O.matrix); }
       for (const im of S.cerca) { im.count = nc; im.instanceMatrix.needsUpdate = true; if (nc) im.computeBoundingSphere(); }
       S.lejos.count = nl; S.lejos.instanceMatrix.needsUpdate = true; }
@@ -135,7 +135,7 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
   };
   // pradera del parche: una mancha verde clara bajo cada árbol; juntas dibujan la forma del parche sobre el suelo (se lee desde arriba)
   { const im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#7cc35a', transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 }), todos.length);
-    todos.forEach((t, i) => { const r = ESPECIES[t.sp].estrato === 0 ? 6.5 : ESPECIES[t.sp].estrato === 1 ? 5 : 3.6; O.position.set(t.x, Y + 0.18, t.z); O.rotation.set(0, 0, 0); O.scale.set(r, 1, r); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
+    todos.forEach((t, i) => { const r = ESPECIES[t.sp].estrato === 0 ? 6.5 : ESPECIES[t.sp].estrato === 1 ? 5 : 3.6; O.position.set(t.x, Y + (t.y || 0) + 0.18, t.z); O.rotation.set(0, 0, 0); O.scale.set(r, 1, r); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
     im.renderOrder = 2; grupo.add(im); DENS.push([im, todos.map(t => t.k)]); }
   // marca que se ve de lejos: un punto verde oscuro con borde claro en cada parche (los árboles miden metros y desde 2 km no se distinguen)
   const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(P.flatMap(p => [p.c[0], Y + 14, p.c[1]]), 3));

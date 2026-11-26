@@ -1,5 +1,7 @@
-﻿import {adjuntarBalance} from './balance_final.js?v=3';
+import {adjuntarBalance} from './balance_final.js?v=3';
 import { conclusionAbasto } from './conclusion_abasto.js?v=6';
+import { conclusionPar } from './conclusion_par.js?v=2'; /* 02–06: veredicto binario y tarjetas con la misma lógica que la 01 (2026-11-26) */
+import { PAR_LIM } from './sim_panel.js?v=1';
 import { TiempoRadial } from './graficas_arte.js?v=2'; // 2026-11-26: relojes de 15 años, línea de tiempo de burbujas y dona del veredicto (paleta URBIA + morados de la portada) // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
@@ -684,7 +686,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const indMap = new Map((ind || []).map(x => [x.k, x]));
   const IT = (it) => { const o = indMap.get(it.k); return o ? { ...it, n: o.n || it.n, sube: o.sube != null ? o.sube : it.sube, f: it.f } : it; };
   const conProp = def.propuesta != null ? !!def.propuesta : (def.grupo === 'propuesta');
-  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => (def.par === 1 ? ['deficit','saturacion','residuosK','habitat','residuos'] : ['abasto','habitat','residuos','bodegas','residuosK']).includes(r.k));
+  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => (def.par === 1 ? ['deficit','saturacion','residuosK','habitat','residuos'] : PAR_LIM[def.par] ? [...PAR_LIM[def.par], ...(go ? [go.regla] : [])] : ['abasto','habitat','residuos','bodegas','residuosK']).includes(r.k));
   const umb = (k) => { const r = RG.find(x => x.k === k); return r && r.umbral != null ? r.umbral : UMB[k]; };
   const goB = B?.at(-1)?.evaluacion?.territorio?.gameOver;
   const temas = TEMAS.map(T => ({ ...T, items: T.items.map(IT).filter(it => get(L, it.k) != null && (!it.soloSi || it.soloSi(H)) && !(H.every(h => !get(h, it.k)) && (!B || B.every(h => !get(h, it.k))))) })).filter(T => T.items.length);
@@ -717,6 +719,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   /* par 01: el veredicto sale de data3d/conclusion_abasto.js (v5, binario: Sostenible / No sostenible = game over, reglas fijas) */
   let C01 = null;
   if (def.par === 1) { try { C01 = conclusionAbasto({ H, B: base && base.length ? base : null, go, def, parametros, completo }); } catch (e) { console.warn('conclusión del par 01:', e); } }
+  else if (PAR_LIM[def.par]) { try { C01 = conclusionPar({ H, B: base && base.length ? base : null, go, def, parametros, completo }); } catch (e) { console.warn('conclusión del par:', e); } }
   if (C01 && go) V = { ...V, big: 'No sostenible', eye: 'Game over · ' + (RGo && RGo.n ? RGo.n : go.regla) };
   if (C01 && !go) { V = { t: C01.veredicto, cls: 'ok', big: C01.big, eye: completo ? C01.eye : `Informe parcial · año ${añoDe(wFin)} de 15 · hasta ahora: ${C01.big}` };
     frase = completo ? C01.frase : 'Hasta ahora: ' + min1(C01.frase); razon = frase; }

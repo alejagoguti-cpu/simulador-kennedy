@@ -1,4 +1,4 @@
-﻿/* ============ VISTA LIMPIA (por defecto) ============
+/* ============ VISTA LIMPIA (por defecto) ============
    Al entrar solo se ve el territorio, el panel de la izquierda (reloj, SIMULACIONES 1–12, sintaxis espacial con su barra de
    colores, flujo de carros con su barra, capas: ruido, foto, etc.) y abajo la barra de años con play.
    Se esconden: paneles de escenarios A·B·C, agentes, red biótica (panel), barra de render/noche/…, años/día y los textos largos.
@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=8';
-import { iniciarSimUI } from './sim_ui.js?v=125';
+import { iniciarSimUI } from './sim_ui.js?v=129';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -264,10 +264,7 @@ export function iniciarLimpio({ T3 }) {
   function abrirRecorridoDePar(par, con = false, id = null) {
     /* par 01 con propuesta: recorrido de las cubiertas de 15 pisos (data3d/cubiertas_foco.js, vía data3d/estrategias.js) */
     { const E = T3.EST; if (E && E.focoCubiertas) { if (par === 1 && con) setTimeout(() => { if (ESC.activo === id) E.focoCubiertas(true); }, 150); else E.focoCubiertas(false); } }
-    import('./recorrido_movilidad.js?v=6').then(m => {
-      if (par !== 2) return m.cerrarRecorrido();
-      setTimeout(() => { if (ESC.activo === id) m.abrirRecorrido({ con }).catch(e => console.warn('recorrido movilidad:', e)); }, 150);
-    }).catch(e => console.warn('recorrido movilidad:', e));
+    /* 2026-11-26 (pedido de la autora): se quitó el recorrido de la 02 con el «paro» (data3d/recorrido_movilidad.js ya no se carga; el archivo queda) */
     import('./recorrido_residuos.js?v=5').then(m => {
       if (par !== 3) return m.cerrarRecorridoResiduos();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorridoResiduos({ con }).catch(e => console.warn('recorrido residuos:', e)); }, 150);
@@ -452,7 +449,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=12', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=12']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=14', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=12']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

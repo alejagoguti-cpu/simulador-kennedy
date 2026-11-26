@@ -1,4 +1,4 @@
-﻿/* ============ SIMULACIÓN 01 CON PROPUESTA EN 3D (docs/sim01_abastecimiento_v3.md y v4, correcciones de la autora 2026-11-26) ============
+/* ============ SIMULACIÓN 01 CON PROPUESTA EN 3D (docs/sim01_abastecimiento_v3.md y v4, correcciones de la autora 2026-11-26) ============
    window.KEN_PROP01 = { poner(I), apagar(), info() } — lo llama sim_ui.js una vez por semana simulada (ponerCapaPar) solo en la 01 con propuesta.
    · CORABASTOS AL 50 %: se esconde el modelo 'corabastos' y quedan las 19 naves más lejanas a La Vaca (las 18 más cercanas, quitadas01 de
      abasto_capas.js, se quitan). Con la capa Bodegas prendida las que quedan se ven de vidrio (abasto_capas.js); apagada, volúmenes grises de 9 m.
@@ -14,10 +14,19 @@
      La malla de Google se recorta en todo el terreno liberado (uHoyo* en index.html), así no asoman sus bodegas.
    · HUERTAS DE PARQUE (las «efímeras» de data3d/huertas_barrio.js, window.KEN_HBAR) se abren de a poco entre los años 0,5 y 6, cada una con su
      pulso de luz verde (data3d/resaltes.js); y los PARCHES DE ÁRBOLES NATIVOS de los parques (window.KEN_PARCHES) se siembran entre los años 1 y 4.
-   · BLANCO Y NEGRO: data3d/gris01.js (lo llama sim_ui.js en los dos escenarios de la 01). */
+   · BLANCO Y NEGRO: data3d/gris01.js (lo llama sim_ui.js en los dos escenarios de la 01).
+   · PROPUESTA COMÚN A LAS 6 SIMULACIONES (docs/todas_las_simulaciones.md, 2026-11-26): lo de arriba + el PUENTE DE FAUNA sobre la Av. Ciudad de
+     Cali en el Humedal El Burro y los árboles de borde de El Burro, La Vaca y Techo (data3d/ecoducto.js) + búhos y enjambres de polinizadores
+     sobre las cubiertas con huerta (data3d/propuesta_fauna.js). «Kennedy con propuesta» se ve igual en las 6.
+   API para cualquier simulación (no depende del escenario):
+     activar(T3, on, semana)  → prende/apaga toda la propuesta en 3D en la semana simulada dada (llamar una vez por semana; la animación es aparte)
+     info()                   → estado y ubicaciones: { activo, puente: { x, z, radio, … }, obras: [{ id, n, x, z, radio }], … } (mundo, para el zoom)
+     window.KEN_PROP01.puente = { x, z, radio } (y window.KEN_PUENTE_FAUNA): ubicación del ecoducto para la pestaña Estrategias. */
 import { quitadas01 } from './abasto_capas.js?v=4';
-import { crearParches3D, ESPECIES } from './parches_arboles.js?v=10';
+import { crearParches3D, ESPECIES } from './parches_arboles.js?v=11';
 import { hoyo01 } from './gris01.js?v=1';
+import { crearEcoducto } from './ecoducto.js?v=1';
+import { crearFauna } from './propuesta_fauna.js?v=1';
 
 const AN = { sendero: 5, barrera: 42, pradera: 78, agua: 100, agua1: 170 }; // franjas en metros de D (año 5) y agua del año 1
 const YP = 1.0; // altura del humedal: por encima del recorte de la malla de Google (0,9 m)
@@ -195,21 +204,32 @@ export function crearPropuesta01({ T3 }) {
     // parches de árboles nativos de los parques (los de la propuesta base)
     const KP = window.KEN_PARCHES; if (KP && KP.edad) { if (!parAntes) parAntes = { vis: KP.grupo.visible }; KP.ver(true); if (forzar || Math.abs(años - (KP._p01 || -9)) > 0.07) { KP._p01 = años; KP.edad((kk) => { const t = años - (1 + kk * 3); return t <= 0 ? 0 : Math.min(1, 0.2 + 0.8 * t / 5); }); } }
   }
+  const ECO = crearEcoducto({ T3 }), FAU = crearFauna({ T3, eco: ECO });
+  window.KEN_PUENTE_FAUNA = ECO.puente;
   const api = window.KEN_PROP01 = {
-    grupo: G,
-    poner(I) { if (!I) return api.apagar(); sem = I.sem || 0; const nuevo = !activo; activo = true; G.visible = true; if (!raf) animar();
+    grupo: G, puente: ECO.puente, eco: ECO, fauna: FAU,
+    poner(I) { if (!I) return api.apagar(); sem = I.sem || 0; const nuevo = !activo; activo = true; G.visible = true; if (!raf) animar(); ECO.poner(sem); FAU.poner(sem);
       const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = false; if (window.KEN_PCORA && window.KEN_PCORA.ver) window.KEN_PCORA.ver(false);
       mNave.visible = !(window.KEN_AB01C && window.KEN_AB01C.estado && window.KEN_AB01C.estado.bodegas);
       if (arb && arb !== 'cargando') arb.ver(true);
       if (listo) { if (nuevo) armar(); else crecer(false); } },
-    apagar() { if (!activo) return; activo = false; G.visible = false; hoyo(false); if (arb && arb !== 'cargando') arb.ver(false);
+    apagar() { if (!activo) return; activo = false; G.visible = false; hoyo(false); ECO.apagar(); FAU.apagar(); if (arb && arb !== 'cargando') arb.ver(false);
       const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = true;
       const HB = window.KEN_HBAR; if (HB && hbAntes) { HB.fraccion(1); HB.ver(hbAntes.vis); hbAntes = null; ultHB = -1; }
       const KP = window.KEN_PARCHES; if (KP && parAntes) { KP.edad(null); KP._p01 = null; KP.ver(parAntes.vis); parAntes = null; } },
     /* áreas del humedal ampliado (ha, franjas del año 5) y árboles: para los indicadores del modelo (verde, conectividad) */
     areas() { const años = sem / 52, ga = sat((años - 1) / 4); return { ...AREA, aguaHoy: años < 1 ? 0 : null, crecimiento: ga }; },
-    info() { return { activo, listo, quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, uWt: U.uWt.value, uG: U.uG.value,
+    /* obras de la propuesta con su ubicación en el mundo (zoom de la pestaña Estrategias) */
+    obras() { const L = [{ id: 'puente', n: 'Puente de fauna sobre la Av. Ciudad de Cali (Humedal El Burro)', x: ECO.puente.x, z: ECO.puente.z, radio: ECO.puente.radio }];
+      if (campo) L.push({ id: 'vaca', n: 'Humedal La Vaca ampliado en el predio de Corabastos', x: campo.box[0] + campo.box[2] / 2, z: campo.box[1] + campo.box[3] / 2, radio: Math.round(Math.max(campo.box[2], campo.box[3]) / 2) });
+      if (S.quedan.length) { let x = 0, z = 0; for (const N of S.quedan) { x += N.cx; z += N.cz; } L.push({ id: 'corabastos', n: 'Corabastos al 50 %', x: x / S.quedan.length, z: z / S.quedan.length, radio: 260 }); }
+      for (const [id, n, lx, ly, r] of [['borde_burro', 'Árboles de borde · Humedal El Burro', 7300, 3450, 420], ['borde_vaca', 'Árboles de borde · Humedal La Vaca', 6000, 1900, 300], ['borde_techo', 'Árboles de borde · Humedal de Techo', 8240, 3920, 300]]) { const [x, z] = T3.lw(lx, ly); L.push({ id, n, x, z, radio: r }); }
+      return L; },
+    info() { return { activo, listo, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, uWt: U.uWt.value, uG: U.uG.value,
       huertas: window.KEN_HBAR ? !!window.KEN_HBAR.grupo.visible : null, parches: window.KEN_PARCHES ? { vis: window.KEN_PARCHES.grupo.visible, n: window.KEN_PARCHES.n } : null, hoyo: T3.maskU && T3.maskU.uHoyoOn ? T3.maskU.uHoyoOn.value : null }; }
   };
   return api;
 }
+/* API común (cualquier simulación con propuesta): activar(T3, on, semana) e info() */
+export function activar(T3, on, semana) { if (!on) { if (window.KEN_PROP01) window.KEN_PROP01.apagar(); return window.KEN_PROP01 || null; } const P = crearPropuesta01({ T3 }); P.poner({ sem: semana || 0 }); return P; }
+export function info() { return window.KEN_PROP01 ? window.KEN_PROP01.info() : { activo: false, puente: null, obras: [] }; }

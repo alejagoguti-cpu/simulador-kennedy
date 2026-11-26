@@ -1,4 +1,4 @@
-/* ============ TABLERO DE INDICADORES (columna derecha, aside#lp-tablero) ============
+﻿/* ============ TABLERO DE INDICADORES (columna derecha, aside#lp-tablero) ============
    Caja con tres vistas: «Indicadores» (los tres macromodelos de la tabla de la autora, docs/indicadores_macromodelos.md) · «Estrategias» (las 9 de la
    propuesta) · «Variables» (los deslizadores de sim_ui.js, #su-der, que limpio.js mueve aquí).
    Datos: R.hist (corrida actual, un I por semana) y R.ecoBase (la otra mitad del par, misma semilla). Los valores salen de indicadores_macro.js
@@ -258,12 +258,27 @@ const CSS = `
 .pi-est{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
 .pi-est li{border:1px solid rgba(255,255,255,.13);border-radius:14px;padding:10px 11px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}
 .pi-est li.on{border-color:var(--c)}
-.pi-est .h{display:flex;align-items:center;gap:8px}
-.pi-est .h i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c)}
-.pi-est .h b{flex:1;min-width:0;font:500 12.5px/1.25 var(--ui-sans,'Inter',sans-serif)}
-.pi-est .h small{font:400 10px var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#a5ae9f)}
-.pi-est p{margin:5px 0 6px;font-size:11px;line-height:1.5;color:var(--ui-tx2,#c9cfc4)}
-.pi-est .ch{display:flex;flex-wrap:wrap;gap:4px}
+.pi-est{gap:6px}
+.pi-est li{padding:8px 10px;transition:border-color .2s}
+.pi-est .h{display:flex;align-items:center;gap:6px}
+.pi-est .h .ir{all:unset;box-sizing:border-box;flex:1;min-width:0;display:flex;align-items:center;gap:9px;cursor:pointer;border-radius:8px}
+.pi-est .h i{flex:none;width:10px;height:10px;border-radius:3px;background:var(--c)}
+.pi-est .h .t{min-width:0;display:grid;gap:1px}
+.pi-est .h b{font:500 12.5px/1.25 var(--ui-sans,'Inter',sans-serif);color:var(--pi-ink)}
+.pi-est .h small{font:400 10px var(--ui-mono,'JetBrains Mono',monospace);color:var(--c);margin-right:4px}
+.pi-est .h em{font:400 11px/1.3 var(--ui-sans,'Inter',sans-serif);font-style:normal;color:var(--ui-tx2,#c9cfc4)}
+.pi-est .info{all:unset;box-sizing:border-box;flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;color:var(--ui-tx3,#a5ae9f);cursor:pointer}
+.pi-est .info:hover,.pi-est .info[aria-expanded=true]{color:var(--pi-ink)}
+.pi-est .h .mapa{padding:0;width:28px;height:28px;justify-content:center;border-radius:50%}
+.pi-est .det{margin:6px 0 2px;font-size:11px;line-height:1.5;color:var(--ui-tx2,#c9cfc4)}
+.pi-est .ch{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.pi-est .ch>button{padding:1px 7px;font-size:10px}
+.pi-estbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 0;font-size:11px;color:var(--ui-tx3,#a5ae9f);min-height:26px}
+.pi-volver{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.2);font:500 11px var(--ui-sans,'Inter',sans-serif);color:var(--pi-ink);cursor:pointer}
+.pi-volver[hidden]{display:none}
+.pi-sec{margin:14px 0 0;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-tx3,#a5ae9f)}
+.pi-nota{margin:8px 0 0;font-size:11px;color:var(--ui-tx2,#c9cfc4)}.pi-nota[hidden]{display:none}
+.pi-volver:focus-visible{outline:1px solid var(--pi-v2);outline-offset:2px}
 .pi-est .ch button,.pi-est .mapa{all:unset;box-sizing:border-box;padding:3px 8px;border-radius:99px;border:1px solid rgba(255,255,255,.12);font:400 10.5px var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);cursor:pointer}
 .pi-est .ch button:hover,.pi-est .mapa:hover{color:var(--pi-ink);border-color:var(--pi-v2)}
 .pi-est .mapa{display:inline-flex;align-items:center;gap:5px;flex:none}
@@ -508,10 +523,87 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   /* ---------- ESTRATEGIAS ---------- */
   function construirEstrategias() {
     const v = wrap.querySelector('#pi-v-est');
-    v.innerHTML = '<p class="pi-int">Qué hace cada estrategia en el modelo «con propuesta» y qué indicadores mueve (toca uno para verlo).</p><ul class="pi-est">'
-      + ESTR.map((e) => `<li data-e="${e.id}" style="--c:${e.c}"><div class="h"><i></i><b>${esc(e.n)}</b><small>${e.id}</small></div><p>${esc(e.hace)}</p><div class="ch">${e.ind.map((k) => `<button type="button" data-k="${k}">${esc(INDK[k].c)}</button>`).join('')}</div></li>`).join('') + '</ul>';
-    v.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const li = b.closest('li');
-      if (b.dataset.k) { elegir('ind'); const C = cards.get(b.dataset.k); if (C) { C.el.scrollIntoView({ block: 'start' }); C.el.classList.remove('pi-flash'); void C.el.offsetWidth; C.el.classList.add('pi-flash'); } } });
+    const CORTO = { E1: 'Acopio y promotores en vez de torres', E2: 'Tiendas existentes reparten a la red local', E3: 'Bodegas se desmontan y el borde se restaura', E4: 'Compost y sustrato vuelven a las huertas', E5: 'Árboles, pasos de fauna y calles verdes', E6: 'Negocios en vivienda frenan el alza de arriendos', E7: 'Mercados de barrio abren por fases', E8: 'Huertas en baldíos, cubiertas y viviendas', E9: 'Cuidado y calles pacificadas por manzana' };
+    const SVG_MAPA = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="currentColor"/><path d="M8 1.5V4M8 12v2.5M1.5 8H4M12 8h2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    const SVG_INFO = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 7.2v4M8 4.7v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    const SVG_VOLVER = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M6.5 3 2.5 7l4 4M3 7h6.5a4 4 0 0 1 0 8H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    /* obras de la propuesta (lo construido en «con propuesta»): cada una se ubica al hacer clic (ver ubicarObra) */
+    const OBRAS = [
+      { id: 'O1', n: 'Corabastos al 50 % y La Vaca', c: '#fb923c', t: 'Bodegas fuera; humedal con ecotono y árboles' },
+      { id: 'O2', n: 'Puente de fauna', c: '#f97316', t: 'Ecoducto sobre la vía entre los humedales' },
+      { id: 'O3', n: 'Mercados barriales', c: '#facc15', t: 'Mercados de barrio que abren por fases' },
+      { id: 'O4', n: 'Estaciones Circulares', c: '#a78bfa', t: 'Orgánicos a compost en cada mercado' },
+      { id: 'O5', n: 'Huertas hidropónicas', c: '#22d3ee', t: 'Cultivos sobre cubiertas de edificios' },
+      { id: 'O6', n: 'Huertas en parques', c: '#84cc16', t: 'Huertas de barrio que abren por años' },
+      { id: 'O7', n: 'Árboles nuevos', c: '#34d399', t: 'Parches nativos en los parques' }
+    ];
+    const fila = (id, n, c, t, cod, ch, det) => `<li data-e="${id}" style="--c:${c}"><div class="h"><button type="button" class="ir" aria-label="Ver ${esc(n)} en el mapa"><i></i><span class="t"><b>${cod ? `<small>${cod}</small> ` : ''}${esc(n)}</b><em>${esc(t)}</em></span></button>${det ? `<button type="button" class="info" aria-label="Qué hace en el modelo" aria-expanded="false">${SVG_INFO}</button>` : ''}<button type="button" class="mapa" aria-label="Ver en el mapa" title="Ver en el mapa">${SVG_MAPA}</button></div>${det ? `<p class="det" hidden>${esc(det)}</p>` : ''}${ch ? `<div class="ch">${ch.map((k) => `<button type="button" data-k="${k}">${esc(INDK[k].c)}</button>`).join('')}</div>` : ''}</li>`;
+    v.innerHTML = '<div class="pi-estbar"><span>Toca una para verla en el mapa</span><button type="button" class="pi-volver" hidden>' + SVG_VOLVER + 'Volver</button></div>'
+      + '<h4 class="pi-sec">Estrategias</h4><ul class="pi-est">' + ESTR.map((e) => fila(e.id, e.n, e.c, CORTO[e.id], e.id, e.ind, e.hace)).join('') + '</ul>'
+      + '<h4 class="pi-sec">Obras de la propuesta</h4><ul class="pi-est">' + OBRAS.map((o) => fila(o.id, o.n, o.c, o.t, '', null, '')).join('') + '</ul>'
+      + '<p class="pi-nota" hidden></p>';
+    /* dónde está cada estrategia en la propuesta: centro y extensión (percentiles 10–90, para que un lote lejano no arrastre el encuadre) */
+    let GEO = null;
+    const cargarGeo = () => GEO || (GEO = (window.cargarJSON ? window.cargarJSON('data3d/estrategias.json?v=5') : fetch('data3d/estrategias.json?v=5').then((r) => r.json())).then((D) => {
+      const esc5 = D.escala || 0.5, G = {};
+      const foco = (P) => { if (!P.length) return null;
+        const rango = (i) => { const a = P.map((p) => p[i]).sort((x, y) => x - y), q = (f) => a[Math.min(a.length - 1, Math.floor(f * (a.length - 1)))]; return [q(0.1), q(0.9)]; };
+        const [x0, x1] = rango(0), [y0, y1] = rango(1); const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; let m = P[0], dm = Infinity; /* se ancla al elemento real más cercano al centro: si hay varios focos, no cae entre ellos */
+        for (const p of P) { const d = (p[0] - cx) ** 2 + (p[1] - cy) ** 2; if (d < dm) { dm = d; m = p; } }
+        return { x: m[0], y: m[1], ext: Math.max(x1 - x0, y1 - y0) }; };
+      for (const s of D.estrategias) { const P = [];
+        s.capas.forEach((c, i) => { const Q = []; for (const l of c.lotes || []) for (let k = 0; k + 1 < l.length; k += 2) Q.push([l[k] * esc5, l[k + 1] * esc5]); for (const q of c.puntos || []) Q.push([q[0] * esc5, q[1] * esc5]); G[s.id + '.' + i] = foco(Q); P.push(...Q); });
+        const f = foco(P); if (f) G[s.id] = f; }
+      G.E1 = { x: 9227, y: 2986, ext: 600 }; /* predio de Bavaria (data3d/bavaria.json) */
+      return G; }).catch(() => ({})));
+    const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+    let activa = null, tok = 0, voló = false;
+    const volverBtn = v.querySelector('.pi-volver');
+    const marcarActiva = (id) => { activa = id; v.querySelectorAll('.pi-est li').forEach((li) => li.classList.toggle('on', li.dataset.e === id)); volverBtn.hidden = !id; };
+    /* centro (en el mundo) del objeto 3D de un módulo: el hijo más cercano al centro del conjunto, para no caer entre focos */
+    const deGrupo = (gr) => { try { if (!gr) return null; const P = [];
+      gr.traverse((o) => { if (o.isInstancedMesh && o.instanceMatrix) { const e = o.instanceMatrix.array, n = Math.min(o.count, 4000); for (let i = 0; i < n; i++) P.push([e[i * 16 + 12], e[i * 16 + 14]]); } else if (o.isMesh) { o.updateMatrixWorld(); P.push([o.matrixWorld.elements[12], o.matrixWorld.elements[14]]); } });
+      if (!P.length) return null; const med = (i) => { const a = P.map((p) => p[i]).sort((x, y) => x - y); return a[a.length >> 1]; }, cx = med(0), cz = med(1);
+      const lo = (i) => { const a = P.map((p) => p[i]).sort((x, y) => x - y); return [a[Math.floor(a.length * 0.1)], a[Math.floor(a.length * 0.9)]]; }, [x0, x1] = lo(0), [z0, z1] = lo(1);
+      let m = P[0], dm = Infinity; for (const p of P) { const d = (p[0] - cx) ** 2 + (p[1] - cz) ** 2; if (d < dm) { dm = d; m = p; } }
+      return isFinite(m[0]) ? { w: [m[0], m[1]], ext: Math.max(x1 - x0, z1 - z0) } : null; } catch (err) { return null; } };
+    async function ubicarObra(id, G, lw) {
+      const m = (g) => g && { w: lw(g.x, g.y), ext: g.ext };
+      if (id === 'O1') return m(G.E3);
+      if (id === 'O5') return m(G['E8.1']);
+      if (id === 'O3' || id === 'O4') { const M = window.KEN_MERCADOS && window.KEN_MERCADOS.todos; if (!M || !M.length) return null;
+        const xs = M.map((q) => q.x), zs = M.map((q) => q.z), cx = xs.reduce((a, b) => a + b, 0) / M.length, cz = zs.reduce((a, b) => a + b, 0) / M.length;
+        const q = id === 'O4' ? [...M].sort((a, b) => a.d - b.d)[0] : M.reduce((a, b) => (Math.hypot(a.x - cx, a.z - cz) < Math.hypot(b.x - cx, b.z - cz) ? a : b));
+        return { w: [q.x, q.z], ext: id === 'O3' ? 1200 : 300 }; }
+      if (id === 'O6') return deGrupo(window.KEN_HBAR && window.KEN_HBAR.grupo);
+      if (id === 'O7') return deGrupo(window.KEN_PARCHES && window.KEN_PARCHES.grupo);
+      if (id === 'O2') { const P = window.KEN_PROP01, i = P && P.info ? P.info() : null, s = (P && P.puente) || (i && i.puente) || window.KEN_PUENTE_FAUNA || null;
+        if (!s) return null; const x = s.x != null ? s.x : s.pos && s.pos[0], z = s.z != null ? s.z : s.pos && s.pos[2] != null ? s.pos[2] : s.pos && s.pos[1];
+        return isFinite(x) && isFinite(z) ? { w: [x, z], ext: 200 } : null; }
+      return null;
+    }
+    const nota = v.querySelector('.pi-nota');
+    async function verEnMapa(id) {
+      const e = ESTR.find((x) => x.id === id) || OBRAS.find((x) => x.id === id), t = ++tok; if (!e) return;
+      marcarActiva(id); nota.hidden = true;
+      const con = document.querySelector('#lp-esc [data-e=con]');
+      if (con && !con.classList.contains('on')) { con.click(); await esperar(2500); if (t !== tok) return; } /* primero «Kennedy con propuesta» */
+      const G = await cargarGeo(), lw = window.KEN_T3 && window.KEN_T3.lw;
+      if (!lw || !window.KEN_OJO) return;
+      const g = id[0] === 'E' ? (G[id] ? { w: lw(G[id].x, G[id].y), ext: G[id].ext } : null) : await ubicarObra(id, G, lw);
+      if (!g) { if (t === tok) { marcarActiva(null); volverBtn.hidden = !voló; nota.textContent = e.n + ': todavía no está disponible en el mapa.'; nota.hidden = false; } return; }
+      const op = { x: g.w[0], z: g.w[1], titulo: id + ' ' + e.n, color: e.c, sinTarjeta: true, cenital: g.ext > 900, rapido: false };
+      /* la cámara solo vuela tras una acción de la persona (data3d/camara_quieta.js, ventana de 2,5 s): tras el cambio de escenario la ventana pudo vencer, y la acción fue este toque */
+      const tocar = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }));
+      voló = true;
+      try { tocar(); if (!(await window.KEN_OJO.ir(op)) && t === tok) { await esperar(800); if (t === tok) { tocar(); await window.KEN_OJO.ir(op); } } } catch (err) { console.warn('estrategia en el mapa:', err); }
+    }
+    async function volver() { tok++; voló = false; marcarActiva(null); nota.hidden = true; try { if (window.KEN_OJO) await window.KEN_OJO.cerrar(); } catch (err) { console.warn(err); } }
+    volverBtn.addEventListener('click', volver);
+    v.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || b === volverBtn) return; const li = b.closest('li'); if (!li) return;
+      if (b.dataset.k) { elegir('ind'); const C = cards.get(b.dataset.k); if (C) { C.el.scrollIntoView({ block: 'start' }); C.el.classList.remove('pi-flash'); void C.el.offsetWidth; C.el.classList.add('pi-flash'); } return; }
+      if (b.classList.contains('info')) { const d = li.querySelector('.det'); d.hidden = !d.hidden; b.setAttribute('aria-expanded', String(!d.hidden)); return; }
+      verEnMapa(li.dataset.e); });
   }
 
   /* ---------- encabezado ---------- */
@@ -553,3 +645,4 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   window.KEN_PI = api;
   return api;
 }
+
