@@ -1,5 +1,5 @@
 import {adjuntarBalance} from './balance_final.js?v=3';
-import { conclusionAbasto } from './conclusion_abasto.js?v=3';
+import { conclusionAbasto } from './conclusion_abasto.js?v=4';
 import { TiempoRadial } from './graficas_arte.js?v=2'; // 2026-11-26: relojes de 15 años, línea de tiempo de burbujas y dona del veredicto (paleta URBIA + morados de la portada) // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
@@ -66,13 +66,15 @@ const TEMAS = [
 const VAL = { fauna: (h) => h.fauna / Math.max(1, h.fauna0) * 100, habitat: (h) => h.pares / Math.max(1, h.pares0) * 100, abasto: (h) => h.evaluacion?.territorio?.cobertura,
   residuos: (h) => h.residuos * 100, ruido: (h) => h.ruidoDb - h.ruidoDb0, trafico: (h) => h.trafico, humedal: (h) => h.humedalFuncional,
   /* simulación 01 (simulaciones12.js REGLAS_AB01, 2026-11-26): bodega más llena (% de su tope) y residuos sin recoger de Kennedy (t/día) */
-  bodegas: (h) => (h.abasto && h.abasto.bodegas ? h.abasto.bodegas.max * 100 : null), residuosK: (h) => (h.residuosK ? h.residuosK.noRec : null) };
-const HOY = { fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100, bodegas: 92, residuosK: 148 };
-const UMB = { fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70, bodegas: 100, residuosK: 296 };
+  bodegas: (h) => (h.abasto && h.abasto.bodegas ? h.abasto.bodegas.max * 100 : null), residuosK: (h) => (h.residuosK ? h.residuosK.noRec : null),
+  /* v3 (docs/sim01_abastecimiento_v3.md): sector peor servido (% de su demanda) y saturación de Corabastos (inventario ÷ 14.000 t) */
+  deficit: (h) => (h.abasto && h.abasto.ab01 ? h.abasto.ab01.secMin * 100 : null), saturacion: (h) => (h.abasto && h.abasto.ab01 ? h.abasto.ab01.sat * 100 : null) };
+const HOY = { fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100, bodegas: 92, residuosK: 148, deficit: 100, saturacion: 70 };
+const UMB = { fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70, bodegas: 100, residuosK: 296, deficit: 80, saturacion: 100 };
 const FMT_R = { ruido: (v) => SG(v) + nf(Math.abs(v), 1) + ' dB', trafico: (v) => nf(v, 2), residuosK: (v) => nf(v) + ' t/día' };
 const fmtR = (k, v) => (FMT_R[k] || ((x) => nf(x) + ' %'))(v);
-const ART = { fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico', bodegas: 'la bodega más llena de Corabastos', residuosK: 'lo que no se recoge de los residuos de Kennedy' };
-const CORTO_R = { fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico', bodegas: 'bodegas de Corabastos llenas', residuosK: 'residuos sin recoger' };
+const ART = { fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico', bodegas: 'la bodega más llena de Corabastos', residuosK: 'lo que no se recoge de los residuos de Kennedy', deficit: 'la cobertura del sector peor servido', saturacion: 'el inventario de Corabastos' };
+const CORTO_R = { fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico', bodegas: 'bodegas de Corabastos llenas', residuosK: 'residuos sin recoger', deficit: 'déficit alimentario', saturacion: 'saturación de Corabastos' };
 const prox = (k, v, umbral) => { const h = HOY[k], u = umbral != null ? umbral : UMB[k]; if (v == null || u === h) return 0; return Math.max(0, Math.min(1.2, (v - h) / (u - h))); };
 const cruzó = (k, v, umbral) => { const u = umbral != null ? umbral : UMB[k]; return v != null && (HOY[k] < u ? v >= u : v <= u); };
 
@@ -85,6 +87,10 @@ const MET = {
     ay: 'Lo que recibe la nave por los días que permanece, frente a lo que cabe (área × densidad DANE 2012).' },
   resK: { n: 'Residuos sin recoger en Kennedy', u: 't/día a puntos críticos', t: 'Residuos sin recoger en Kennedy (t/día)', v: (h) => h.residuosK ? num(h.residuosK.noRec) : null, f: (v) => nf(v) + ' t/día', sube: false, dif: 'rel', lim: 296, limTxt: 'game over 296 t/día',
     ay: 'Lo que pasa de la recolección ordinaria (774 t/día) y termina en puntos críticos; degrada el humedal La Vaca.' },
+  secPeor: { n: 'Sector peor servido', u: 'de su demanda', t: 'Cobertura del sector peor servido (% de su demanda)', v: (h) => h.abasto && h.abasto.ab01 ? pct(num(h.abasto.ab01.secMin)) : null, f: (v) => nf(v, 1) + ' %', sube: true, dif: 'pts', lim: 80, limTxt: 'game over < 80 %',
+    ay: 'Recibido ÷ demanda del peor de los 8 sectores de Kennedy (demanda = población × 0,951 kg).' },
+  satCora: { n: 'Saturación de Corabastos', u: 'de 14.000 t', t: 'Saturación de Corabastos (inventario ÷ 14.000 t)', v: (h) => h.abasto && h.abasto.ab01 ? pct(num(h.abasto.ab01.sat)) : null, f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 100, limTxt: 'game over > 100 %',
+    ay: 'Inventario final = inicial + ingresos − despachos − pérdidas, frente a la capacidad de referencia de 14.000 t.' },
   comida: { n: 'Comida en la zona peor servida', u: 'de lo que necesita', t: 'Comida en la zona peor servida', v: (h) => pct(num(h.comidaMin)), f: (v) => nf(v) + ' %', sube: true, dif: 'pts', lim: 80, limTxt: 'game over < 80 %',
     ay: 'Alimentos que llegan al barrio peor servido frente a lo que necesita.' },
   trafico: { n: 'Tráfico', u: 'del de hoy', t: 'Tráfico (100 % = hoy)', v: (h) => pct(num(h.trafico)), f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 130, limTxt: 'game over 130 %',
@@ -116,8 +122,8 @@ const MET = {
   residuos: { n: 'Orgánicos sin tratar', u: 'del almacenamiento', t: 'Orgánicos sin tratar (% del almacenamiento)', v: (h) => pct(num(h.residuos)), f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 100, limTxt: 'game over 100 %',
     ay: 'Orgánicos que esperan tratamiento frente a la capacidad.' }
 };
-const REGLA_MET = { fauna: 'fauna', habitat: 'habitat', humedal: 'humedal', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico', bodegas: 'bodegas', residuosK: 'resK' };
-const PAR_MET = { 1: ['bodegas', 'resK', 'comida'], 2: ['comida', 'trafico'], 3: ['basura', 'circular'], 4: ['territorio', 'red'], 5: ['hogares', 'suelo'], 6: ['equidad', 'cobertura'] };
+const REGLA_MET = { fauna: 'fauna', habitat: 'habitat', humedal: 'humedal', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico', bodegas: 'bodegas', residuosK: 'resK', deficit: 'secPeor', saturacion: 'satCora' };
+const PAR_MET = { 1: ['secPeor', 'satCora', 'resK'], 2: ['comida', 'trafico'], 3: ['basura', 'circular'], 4: ['territorio', 'red'], 5: ['hogares', 'suelo'], 6: ['equidad', 'cobertura'] };
 const RELLENO = ['red', 'humedal', 'trafico', 'comida', 'basura'];
 
 /* ---------- red biótica (para la «bola») ---------- */
@@ -678,7 +684,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const indMap = new Map((ind || []).map(x => [x.k, x]));
   const IT = (it) => { const o = indMap.get(it.k); return o ? { ...it, n: o.n || it.n, sube: o.sube != null ? o.sube : it.sube, f: it.f } : it; };
   const conProp = def.propuesta != null ? !!def.propuesta : (def.grupo === 'propuesta');
-  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => ['abasto','habitat','residuos','bodegas','residuosK'].includes(r.k));
+  const RG = (reglas && reglas.length ? reglas : Object.keys(VAL).map(k => ({ k, n: k, umbral: UMB[k] }))).filter(r => (def.par === 1 ? ['deficit','saturacion','residuosK','habitat','residuos'] : ['abasto','habitat','residuos','bodegas','residuosK']).includes(r.k));
   const umb = (k) => { const r = RG.find(x => x.k === k); return r && r.umbral != null ? r.umbral : UMB[k]; };
   const goB = B?.at(-1)?.evaluacion?.territorio?.gameOver;
   const temas = TEMAS.map(T => ({ ...T, items: T.items.map(IT).filter(it => get(L, it.k) != null && (!it.soloSi || it.soloSi(H)) && !(H.every(h => !get(h, it.k)) && (!B || B.every(h => !get(h, it.k))))) })).filter(T => T.items.length);
@@ -708,9 +714,10 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
       : `Sin game over, pero mejoran ${mejor.length} y empeoran ${peor.length} indicadores clave ${frente}.`;
     if (!completo) { V.eye = `Informe parcial · año ${añoDe(wFin)} de 15 · hasta ahora: ${V.t}`; V.big = 'En curso'; V.cls = 'curso'; frase = 'Hasta ahora: ' + min1(frase); }
     razon = frase; }
-  /* par 01: el veredicto sale de data3d/conclusion_abasto.js (Sostenible / Plausible con condiciones / Game over, reglas fijas) */
+  /* par 01: el veredicto sale de data3d/conclusion_abasto.js (Sostenible / Sostenible con condiciones / No sostenible = game over, reglas fijas) */
   let C01 = null;
   if (def.par === 1) { try { C01 = conclusionAbasto({ H, B: base && base.length ? base : null, go, def, parametros, completo }); } catch (e) { console.warn('conclusión del par 01:', e); } }
+  if (C01 && go) V = { ...V, big: 'No sostenible', eye: 'Game over · ' + (RGo && RGo.n ? RGo.n : go.regla) };
   if (C01 && !go) { V = { t: C01.veredicto, cls: C01.estado === 'sostenible' ? 'ok' : 'parte', big: C01.big, eye: completo ? C01.eye : `Informe parcial · año ${añoDe(wFin)} de 15 · hasta ahora: ${C01.big}` };
     frase = completo ? C01.frase : 'Hasta ahora: ' + min1(C01.frase); razon = frase; }
 
@@ -749,7 +756,8 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   let htmlRegla = '';
   if (go && RGo) { const k = go.regla, u = RGo.umbral != null ? RGo.umbral : UMB[k], hoy = HOY[k], max = hoy < u, v = num(go.valor);
     const fr = (x) => x == null ? '—' : fmtR(k, x), nS = RGo.semanas || 4;
-    const valSem = (h) => k === 'abasto' ? (h.evaluacion?.territorio?.sectores || []).find(s => s.n === go.lugar)?.valor ?? null : VAL[k](h);
+    const secV = (h) => { const s = (h.abasto?.ab01?.sectores || []).find(s => s.n === go.lugar); return s ? s.cob * 100 : null; };
+    const valSem = (h) => k === 'abasto' ? (h.evaluacion?.territorio?.sectores || []).find(s => s.n === go.lugar)?.valor ?? null : k === 'deficit' ? secV(h) : VAL[k](h);
     const sec = H.filter(h => h.sem > go.sem - nS && h.sem <= go.sem).map(valSem).filter(x => x != null && isFinite(x));
     const top = Math.max(hoy, u, v || 0) * 1.18 || 1, p = (x) => Math.max(0, Math.min(100, x / top * 100));
     htmlRegla = `<div class="i2-vlab">Regla incumplida · ${esc(RGo.n)}</div><p class="i2-rgt">${esc(may1((go.motivo || RGo.txt || '').replace(/\bsector (sector)\b/i, '$1')))}${go.lugar && go.lugar !== 'Kennedy' && !(go.motivo || '').includes(go.lugar) ? ` <em>· ${esc(go.lugar)}</em>` : ''}.</p>
@@ -757,7 +765,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
         <div><small>Umbral · ${max ? 'máximo' : 'mínimo'}</small><b>${esc(fr(u))}</b><span>${esc(RGo.unidad || '')}</span></div><div><small>Valor alcanzado</small><b class="t">${esc(fr(v))}</b><span>${nS} semanas seguidas</span></div></div>
       <div class="i2-met" aria-hidden="true"><div class="i2-metr"><div class="i2-metz" style="left:${max ? p(u) : 0}%;right:${max ? 0 : 100 - p(u)}%"></div><div class="i2-meth" style="left:${p(hoy)}%"></div><div class="i2-metu" style="left:${p(u)}%"></div><div class="i2-metv" style="left:${p(v || 0)}%;--x0:${p(hoy)}%"></div></div>
         <div class="i2-metl"><span style="left:${p(hoy)}%">hoy ${esc(fr(hoy))}</span><span class="u" style="left:${p(u)}%">umbral</span><span class="v" style="left:${p(v || 0)}%">${esc(fr(v))}</span></div></div>
-      ${sec.length > 1 ? `<div class="i2-seq">Últimas ${sec.length} semanas${k === 'abasto' ? ' en ' + esc(go.lugar) : ''}: ${sec.map(x => `<i>${esc(fr(x))}</i>`).join(FLECHA)}</div>` : ''}`; }
+      ${sec.length > 1 ? `<div class="i2-seq">Últimas ${sec.length} semanas${k === 'abasto' || k === 'deficit' ? ' en ' + esc(go.lugar) : ''}: ${sec.map(x => `<i>${esc(fr(x))}</i>`).join(FLECHA)}</div>` : ''}`; }
 
   const años = wFin / AÑO, parN = def.parN || '', escenario = def.par != null ? (conProp ? 'Con propuesta' : 'Sin propuesta') : '';
   const titulo = def.parN ? def.parN.replace(/^\d+\s*/, '') : (def.n || `Simulación ${sim}`);
@@ -777,6 +785,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const GRv = grK.slice(0, 4).map(k => mkG(k, MET[k])).filter(g => g.s.length > 1);
   let G0 = null;
   if (go && go.regla === 'abasto' && go.lugar && go.lugar !== 'Kennedy') G0 = mkG('sector', { t: `Cobertura de alimentos · ${go.lugar}`, ay: 'Alimentos que recibe el sector frente a su demanda (%). El game over se mide por sector.', v: (h) => num((h.evaluacion?.territorio?.sectores || []).find(s => s.n === go.lugar)?.valor), f: (v) => nf(v) + ' %', lim0: umb('abasto'), limTxt: 'game over < 80 %' });
+  else if (go && go.regla === 'deficit' && go.lugar) G0 = mkG('sector', { t: `Cobertura de alimentos · ${go.lugar}`, ay: 'Recibido ÷ demanda del sector (%). Game over: 4 semanas seguidas bajo 80 %.', v: (h) => { const s = (h.abasto?.ab01?.sectores || []).find(s => s.n === go.lugar); return s ? num(s.cob * 100) : null; }, f: (v) => nf(v, 1) + ' %', lim0: 80, limTxt: 'game over < 80 %' });
   else if (go && REGLA_MET[go.regla] && tiene(REGLA_MET[go.regla])) G0 = mkG(REGLA_MET[go.regla], MET[REGLA_MET[go.regla]]);
   if (G0 && G0.s.length < 2) G0 = null;
   if (!G0) G0 = GRv[0] || null;
@@ -818,7 +827,7 @@ export function abrirInforme2({ parametros={}, definiciones=[], cont, sim, def =
   const link = (t) => esc(t).replace(/https?:\/\/[^\s)<]+/g, (u) => { const m = u.match(/[.,;]+$/), uu = m ? u.slice(0, -m[0].length) : u; return `<a href="${uu}" target="_blank" rel="noopener">${uu}</a>${m ? m[0] : ''}`; });
   const htmlNotas = `<details class="i2-fold i2-panel"><summary>Notas y fuentes<span>Reglas de game over, cómo se decide el veredicto y supuestos</span></summary><div class="i2-fb i2-notas">
     <h4>Evaluación</h4><p>Umbrales experimentales de Bavaria Común. Cuatro semanas consecutivas en un sector, estación o parche confirman un colapso local. La ejecución completa termina cuando el indicador agregado de Kennedy incumple durante cuatro semanas.</p>
-    <h4>Cómo se decide el veredicto</h4><ul><li><b>Game over (No)</b>: se cumplió una regla de game over durante 4 semanas seguidas.</li><li><b>Sostenible (Sí)</b>: sin game over, ningún indicador de las reglas a 2/3 o más del camino a su límite, y mejoran más indicadores clave de los que empeoran.</li><li><b>En parte</b>: el resto. Con pareja se compara en la misma semana; sin pareja, año 1 → final.</li>${def.par === 1 ? '<li><b>Par 01 · Abastecimiento</b>: <b>Sostenible</b> si no hay game over, ningún sector baja de 87 % de su demanda y lo que se le pide a Corabastos nunca pasa su tope; <b>Plausible con condiciones</b> si no hay game over pero falla alguna de las otras dos; <b>Game over</b> si un sector recibe menos de 80 % cuatro semanas seguidas. La recomendación es la palanca (autoconsumo, mercados, tope o volumen) que más mueve la cobertura o la carga en la semana crítica al moverla un cuarto de su rango, con las mismas ecuaciones del modelo. Fuentes en docs/fuentes_abastecimiento.md.</li>' : ''}</ul>
+    <h4>Cómo se decide el veredicto</h4><ul><li><b>Game over (No)</b>: se cumplió una regla de game over durante 4 semanas seguidas.</li><li><b>Sostenible (Sí)</b>: sin game over, ningún indicador de las reglas a 2/3 o más del camino a su límite, y mejoran más indicadores clave de los que empeoran.</li><li><b>En parte</b>: el resto. Con pareja se compara en la misma semana; sin pareja, año 1 → final.</li>${def.par === 1 ? '<li><b>Par 01 · Abastecimiento</b>: <b>No sostenible (game over)</b> si se cumple cuatro semanas seguidas una de sus tres reglas, iguales con y sin propuesta: un sector recibe menos de 80 % de su demanda, el inventario de Corabastos pasa las 14.000 t o los residuos sin recoger de Kennedy llegan a 296 t/día. <b>Sostenible</b> si no hay game over, ningún sector baja de 87 %, el inventario no pasa de 90 % de 14.000 t y lo sin recoger queda bajo 247 t/día; <b>Sostenible con condiciones</b> si no hay game over pero alguna de las tres se acercó a su límite. La recomendación es la palanca (autoconsumo, mercados, huertas, tope de ingreso o ingreso) que más mueve el resultado en la semana crítica al moverla un cuarto de su rango, con las mismas ecuaciones del modelo. Fuentes en docs/fuentes_abastecimiento.md, docs/fuentes_bodegas_residuos.md y docs/sim01_abastecimiento_v3.md.</li>' : ''}</ul>
     <h4>Reglas de game over · iguales para las 12 simulaciones</h4>
     <div class="i2-reg">${RG.map(r => { const e = estR.find(x => x.r.k === r.k), es = go && go.regla === r.k; return `<div class="${es ? 'go' : ''}"><b>${esc(r.n)}</b>: game over si ${esc(r.txt || '')}.${e ? ` <span class="fin ${es || e.pF >= 2 / 3 ? 'mal' : ''}">Al final: ${esc(fmtR(r.k, e.vF))}${es ? ' · se cumplió' : ''}.</span>` : ''}${r.fuente ? `<p>Fuente: ${link(r.fuente)}</p>` : ''}</div>`; }).join('')}</div>
     <h4>Supuestos de este informe</h4><ul>

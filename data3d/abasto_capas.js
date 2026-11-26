@@ -21,6 +21,8 @@ const R_TRAF = 2200;                   // m alrededor de Corabastos para la capa
 export const RAMPA = [[0, '#4ade80'], [0.75, '#4ade80'], [0.9, '#fbbf24'], [1, '#ef4444']];
 /* color del flujo según el nivel de congestión (TomTom): 0,62 (2024, inicio) verde · 0,85 ámbar · 1,10 rojo (año ~15 de la trayectoria) */
 export const CONG_RAMPA = [[0.6, '#4ade80'], [0.85, '#fbbf24'], [1.1, '#ef4444']];
+/* v3 con propuesta: Corabastos se reduce 50 % → se quitan las 18 naves más cercanas a La Vaca (campo dh de corabastos.json), de 37 */
+export const quitadas01 = (naves) => naves.map((n, i) => [i, n.dh]).sort((a, b) => a[1] - b[1]).slice(0, Math.floor(naves.length / 2)).map(a => a[0]);
 export function crearCapas01({ T3 }) {
   if (window.KEN_AB01C) return window.KEN_AB01C;
   const THREE = T3.THREE, lw = T3.lw, cargar = window.cargarJSON || ((u) => fetch(u).then(r => r.json()));
@@ -59,7 +61,9 @@ export function crearCapas01({ T3 }) {
     const reb = new THREE.InstancedMesh(caja, new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false }), B.n);
     int.renderOrder = 11; liq.renderOrder = 12; vid.renderOrder = 13; reb.renderOrder = 14; [int, vid, liq, reb].forEach(m => { m.frustumCulled = false; });
     const lin = []; const y = y0();
+    B.linN = []; B.quitadas = quitadas01(naves);
     naves.forEach((n, i) => {
+      const l0 = lin.length;
       const [cx, cz] = lw(n.c[0], n.c[1]), e = lw(n.c[0] + Math.cos(n.a), n.c[1] + Math.sin(n.a)), ux = e[0] - cx, uz = e[1] - cz, th = Math.atan2(-uz, ux);
       B.nav.push({ cx, cz, th, L: n.L, W: n.W, ux, uz });
       Q.setFromAxisAngle(EJE, th); M4.compose(V3.set(cx, y, cz), Q, S3.set(n.L, ALTO, n.W)); vid.setMatrixAt(i, M4); int.setMatrixAt(i, M4);
@@ -69,21 +73,31 @@ export function crearCapas01({ T3 }) {
       const vx = -uz, vz = ux, p = (u, v) => [cx + u * ux + v * vx, cz + u * uz + v * vz], L2 = n.L / 2, W2 = n.W / 2;
       const c4 = [p(-L2, -W2), p(L2, -W2), p(L2, W2), p(-L2, W2)];
       for (let k = 0; k < 4; k++) { const a = c4[k], b = c4[(k + 1) % 4]; for (const yy of [y, y + ALTO]) lin.push(a[0], yy, a[1], b[0], yy, b[1]); lin.push(a[0], y, a[1], a[0], y + ALTO, a[1]); }
+      B.linN.push([l0, lin.length]);
     });
-    reb.count = 0; liq.instanceColor.needsUpdate = true;
+    reb.count = 0; liq.instanceColor.needsUpdate = true; B.lin = lin;
     const gl = new THREE.BufferGeometry(); gl.setAttribute('position', new THREE.Float32BufferAttribute(lin, 3));
     const bordes = new THREE.LineSegments(gl, new THREE.LineBasicMaterial({ color: 0xeaf6ff, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false })); bordes.renderOrder = 15; bordes.frustumCulled = false;
-    gB.add(int, liq, vid, reb, bordes); Object.assign(B, { vid, int, liq, reb, bordes, listo: true });
+    gB.add(int, liq, vid, reb, bordes); Object.assign(B, { vid, int, liq, reb, bordes, listo: true, mVid: [], prop: false });
+    for (let i = 0; i < B.n; i++) { const m = new THREE.Matrix4(); vid.getMatrixAt(i, m); B.mVid.push(m); }
     if (I) ponerBodegas();
   }).catch(e => console.warn('capa bodegas:', e));
+  /* con propuesta: Corabastos se reduce a la mitad; las naves quitadas (las más cercanas a La Vaca, quitadas01) no se dibujan */
+  const CERO = new THREE.Matrix4().makeScale(0, 0, 0);
+  function quitarNaves(prop) { if (!B.listo || B.prop === prop) return; B.prop = prop; const q = new Set(prop ? B.quitadas : []); B.qSet = q; B._y = null;
+    for (let i = 0; i < B.n; i++) { const m = q.has(i) ? CERO : B.mVid[i]; B.vid.setMatrixAt(i, m); B.int.setMatrixAt(i, m); }
+    B.vid.instanceMatrix.needsUpdate = true; B.int.instanceMatrix.needsUpdate = true;
+    const L = []; B.linN.forEach(([a, b], i) => { if (!q.has(i)) for (let k = a; k < b; k++) L.push(B.lin[k]); });
+    B.bordes.geometry.setAttribute('position', new THREE.Float32BufferAttribute(L, 3)); B.bordes.geometry.computeBoundingSphere(); }
   function ponerBodegas() { const b = I && I.abasto && I.abasto.bodegas; if (!B.listo) return; if (!b) { gB.visible = false; return; } gB.visible = estado.bodegas;
-    for (let i = 0; i < B.n; i++) B.meta[i] = b.occ[i] || 0; }
+    quitarNaves(!!I.propuesta); const q = B.prop ? new Set(B.quitadas) : null;
+    for (let i = 0; i < B.n; i++) B.meta[i] = q && q.has(i) ? 0 : b.occ[i] || 0; }
   function moverBodegas(dt, ahora) {
     if (!B.listo || !gB.visible) return; const y = y0(), k = 1 - Math.exp(-dt * 3); let nReb = 0, cambio = false;
     for (let i = 0; i < B.n; i++) { const m = B.meta[i]; if (Math.abs(m - B.niv[i]) > 1e-4) { B.niv[i] += (m - B.niv[i]) * k; cambio = true; } }
     if (cambio || B._y !== y) { B._y = y;
       for (let i = 0; i < B.n; i++) { const N = B.nav[i], o = B.niv[i], h = Math.max(0.01, Math.min(1, o)) * ALTO * 0.97;
-        Q.setFromAxisAngle(EJE, N.th); M4.compose(V3.set(N.cx, y + 0.3, N.cz), Q, S3.set(N.L * 0.92, B.meta[i] > 0 ? h : 0.01, N.W * 0.86)); B.liq.setMatrixAt(i, M4); B.liq.setColorAt(i, rampa(o, CC));
+        Q.setFromAxisAngle(EJE, N.th); M4.compose(V3.set(N.cx, y + 0.3, N.cz), Q, S3.set(N.L * 0.92, B.meta[i] > 0 ? h : 0.01, N.W * 0.86)); B.liq.setMatrixAt(i, B.qSet && B.qSet.has(i) ? CERO : M4); B.liq.setColorAt(i, rampa(o, CC));
         if (o >= 1) { M4.compose(V3.set(N.cx, y + ALTO, N.cz), Q, S3.set(N.L * 1.02, Math.max(0.6, Math.min(1.2, o - 1) * ALTO), N.W * 1.02)); B.reb.setMatrixAt(nReb++, M4); } }
       B.liq.instanceMatrix.needsUpdate = true; B.liq.instanceColor.needsUpdate = true; B.reb.count = nReb; B.reb.instanceMatrix.needsUpdate = true; }
     if (B.reb.count) B.reb.material.opacity = 0.35 + 0.35 * Math.abs(Math.sin(ahora / 260));
@@ -139,6 +153,40 @@ export function crearCapas01({ T3 }) {
     for (let k = 0; k < n; k++) { const [x, z] = R_.borde[k]; M4.compose(V3.set(x, y, z), Q.identity(), S3.set(rad, rad * 0.45, rad)); R_.mont.setMatrixAt(k, M4); }
     R_.mont.count = n; R_.mont.instanceMatrix.needsUpdate = true; }
 
+  /* ---------- v3: MEDIDOR DE CORABASTOS (barra vertical: inventario ÷ 14.000 t) ---------- */
+  const GA = { H: 260, W: 34, ESC: 1.3 }; // la barra muestra hasta 130 %; la raya roja es 100 % (14.000 t)
+  const gG = new THREE.Group(); gG.name = 'ab01_medidor'; raiz.add(gG);
+  { const [gx, gz] = lw(CORA_C[0] + 520, CORA_C[1] - 120); gG.position.set(gx, 0, gz); }
+  const gMarco = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false, toneMapped: false }));
+  gMarco.scale.set(GA.W, GA.H, GA.W); gMarco.renderOrder = 14;
+  const gLleno = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.9, toneMapped: false }));
+  gLleno.scale.set(GA.W * 0.8, 1, GA.W * 0.8); gLleno.renderOrder = 15;
+  const gTope = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xef4444, toneMapped: false })); gTope.scale.set(GA.W * 1.5, 2.2, GA.W * 1.5); gTope.position.y = GA.H / GA.ESC; gTope.renderOrder = 16;
+  gG.add(gMarco, gLleno, gTope); let gNiv = 0, gMeta = 0;
+  const etG = etq('ab01-et-cora');
+  function moverMedidor(dt) { const y = y0(); gG.position.y = y; gNiv += (gMeta - gNiv) * (1 - Math.exp(-dt * 3)); gLleno.scale.y = Math.max(0.5, Math.min(GA.ESC, gNiv) / GA.ESC * GA.H);
+    gLleno.material.color.copy(rampa(Math.min(1, gNiv), CC)); }
+
+  /* ---------- v3: RESIDUOS SIN RECOGER COMO PUNTOS (pedido de la autora: «que se vean») ----------
+     Un punto por cada 2 t/día sin recoger (hoy 148 t/día → 74 puntos; game over 296 → 148), en los puntos críticos de basura del modelo (I.basura.puntos)
+     y en el borde de La Vaca. Tamaño fijo en pantalla: se leen desde la cámara de inicio. Color café → rojo con la degradación D. */
+  const RP = { max: 400, pts: null, n: 0 };
+  const geoRP = new THREE.BufferGeometry(); geoRP.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(RP.max * 3), 3)); geoRP.setDrawRange(0, 0);
+  const matRP = new THREE.PointsMaterial({ color: 0xc8823a, size: 7, sizeAttenuation: false, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, toneMapped: false });
+  const puntosRP = new THREE.Points(geoRP, matRP); puntosRP.renderOrder = 18; puntosRP.frustumCulled = false; gR.add(puntosRP);
+  const azar = (s) => () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  function candidatosRP() { if (RP.pts || !R_.listo) return; const r = azar(20261126), out = [], y = y0() + 1.5;
+    const B0 = (I && I.basura && I.basura.puntos || []).filter(p => p.fuente !== 'humedal');
+    for (let k = 0; k < RP.max; k++) { let x, z;
+      if (k % 5 < 3 && R_.borde.length) { const b = R_.borde[k % R_.borde.length], a = r() * 6.283, d = 8 + r() * 70; x = b[0] + Math.cos(a) * d; z = b[1] + Math.sin(a) * d; }
+      else if (B0.length) { const b = B0[k % B0.length], a = r() * 6.283, d = 10 + r() * 140; x = b.x + Math.cos(a) * d; z = b.z + Math.sin(a) * d; }
+      else { const a = r() * 6.283, d = 60 + r() * 260; x = R_.cx + Math.cos(a) * d; z = R_.cz + Math.sin(a) * d; }
+      out.push(x, y, z); }
+    RP.pts = out; geoRP.attributes.position.array.set(out); geoRP.attributes.position.needsUpdate = true; }
+  function ponerPuntosRes() { const r = I && I.residuosK; candidatosRP(); if (!r || !RP.pts) return; const n = Math.max(0, Math.min(RP.max, Math.round(r.noRec / 2)));
+    if (n !== RP.n) { RP.n = n; geoRP.setDrawRange(0, n); } matRP.color.copy(COL_CAFE2).lerp(COL_ROJO, Math.min(1, r.D || 0)); }
+  const COL_CAFE2 = new THREE.Color('#d08a3c'), COL_ROJO = new THREE.Color('#ff4d3d');
+
   /* ---------- TRÁFICO ---------- */
   const TR = { listo: false, ed: [], pts: null, n: 0, max: 0, mesh: null, s: null, e: null, seg: null, nivel: -1, vel: 0, nVis: 0 };
   const iniTrafico = () => { const N = T3.net; if (!N || !N.edges) return false;
@@ -167,31 +215,31 @@ export function crearCapas01({ T3 }) {
       a[o + 12] = x - dz * off; a[o + 13] = y; a[o + 14] = z + dx * off; a[o + 15] = 1; }
     TR.mesh.count = TR.nVis; TR.mesh.instanceMatrix.needsUpdate = true; }
 
-  /* ---------- por cuadro ---------- */
+  /* ---------- por cuadro (etiquetas mínimas: solo el porcentaje, pedido de la autora) ---------- */
   let tPrev = 0, tTxt = 0;
+  const ETS = [etB, etR, etT, etG];
+  const chip = (n, pc, col) => `<span style="opacity:.75">${n}</span> <b style="font-size:13px;color:${col}">${pc}</b>`;
+  const colPc = (v) => (v >= 1 ? '#ff8a80' : v >= 0.9 ? '#ffd27a' : '#9be8b0');
   RELOJ.alDibujar(() => {
-    if (!raiz.visible || !I) { if (etB.style.display !== 'none') { etB.style.display = 'none'; etR.style.display = 'none'; etT.style.display = 'none'; } return; }
+    if (!raiz.visible || !I) { if (etG.style.display !== 'none' || etB.style.display !== 'none') ETS.forEach(e => { e.style.display = 'none'; }); return; }
     const ahora = performance.now(), dt = tPrev ? Math.min(0.1, (ahora - tPrev) / 1000) : 0; tPrev = ahora;
-    moverBodegas(dt, ahora); moverTrafico(dt);
+    moverBodegas(dt, ahora); moverTrafico(dt); moverMedidor(dt);
     const leer = ahora - tTxt > 200; if (leer) tTxt = ahora;
-    const b = I.abasto && I.abasto.bodegas;
-    if (b && gB.visible && B.listo && b.idx >= 0) { const N = B.nav[b.idx]; if (N && enPantalla(N.cx, y0() + ALTO + 8, N.cz, etB) && leer) { const pc = b.max < 1 ? Math.floor(b.max * 100) : Math.round(b.max * 100), col = pc >= 100 ? '#ff8a80' : pc >= 90 ? '#ffd27a' : '#9be8b0';
-      txt(etB, `<b style="font-size:12.5px">${b.nombre} · <span style="color:${col}">${pc} % de su tope</span></b><br><span style="opacity:.8">${b.grupo} · la más llena de ${B.n} naves · ${b.llenas ? `${b.llenas} llena${b.llenas > 1 ? 's' : ''}` : 'ninguna llena'}</span>${pc >= 100 ? '<br><span style="color:#ff8a80">No cabe más: lo que sobra no entra</span>' : ''}`); } }
-    else etB.style.display = 'none';
+    etB.style.display = 'none'; // la nave más llena ya no lleva tarjeta: el medidor de Corabastos dice el porcentaje
+    const U = I.abasto && I.abasto.ab01;
+    if (U && enPantalla(gG.position.x, y0() + GA.H + 14, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)));
     const r = I.residuosK;
-    if (r && gR.visible && R_.listo) { if (enPantalla(R_.cx, y0() + 30, R_.cz, etR) && leer) { const col = r.noRec >= r.umbral ? '#ff8a80' : r.D > 0.5 ? '#ffd27a' : '#9be8b0';
-      txt(etR, `<b style="font-size:12.5px">Humedal La Vaca · degradación <span style="color:${col}">${nf(r.D * 100)} %</span></b><br><span style="opacity:.8">Árboles e interacciones −${nf((1 - r.arboles) * 100)} % · ${nf(r.aporte, 2)} t/día de residuos al humedal</span><br><span style="opacity:.8">Kennedy: ${nf(r.noRec)} t/día sin recoger · game over ${nf(r.umbral)}</span>`); } }
+    if (r && gR.visible && R_.listo) { if (enPantalla(R_.cx, y0() + 30, R_.cz, etR) && leer) txt(etR, chip('Residuos', nf(r.noRec / r.umbral * 100) + ' %', colPc(r.noRec / r.umbral))); }
     else etR.style.display = 'none';
     const c = I.congestion01;
-    if (c && gT.visible && TR.listo) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); if (enPantalla(x, y0() + 40, z, etT) && leer) { const col = c.nivel >= 0.85 ? '#ff8a80' : c.nivel >= 0.7 ? '#ffd27a' : '#9be8b0';
-      txt(etT, `<b style="font-size:12.5px">Congestión · <span style="color:${col}">${nf(c.nivel * 100)} %</span></b><br><span style="opacity:.8">Viajes ${nf(1 + c.nivel, 2)} veces más lentos que con vía libre</span>${c.camiones ? `<br><span style="opacity:.8">${nf(c.camiones)} camiones de abasto al día a Corabastos</span>` : ''}`); } }
+    if (c && gT.visible && TR.listo) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); if (enPantalla(x, y0() + 40, z, etT) && leer) txt(etT, chip('Congestión', nf(c.nivel * 100) + ' %', c.nivel >= 0.85 ? '#ff8a80' : c.nivel >= 0.7 ? '#ffd27a' : '#9be8b0')); }
     else etT.style.display = 'none';
   });
 
   const api = window.KEN_AB01C = {
     estado, grupo: raiz,
-    poner(x) { I = x || null; raiz.visible = !!I; if (!I) return; ponerBodegas(); ponerResiduos(); ponerTrafico(); },
-    ver(on) { raiz.visible = !!on && !!I; if (!raiz.visible) { etB.style.display = 'none'; etR.style.display = 'none'; etT.style.display = 'none'; } },
+    poner(x) { I = x || null; raiz.visible = !!I; if (!I) return; const U = I.abasto && I.abasto.ab01; gMeta = U ? U.sat : 0; ponerBodegas(); ponerResiduos(); ponerPuntosRes(); ponerTrafico(); },
+    ver(on) { raiz.visible = !!on && !!I; if (!raiz.visible) ETS.forEach(e => { e.style.display = 'none'; }); },
     capa(k, on) { if (!(k in estado)) return; estado[k] = !!on; const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; g.visible = !!on; if (on && I) { R_.D = -1; TR.nivel = -1; api.poner(I); } },
     visible(k) { const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; return !!(raiz.visible && g && g.visible); },
     info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { aristas: TR.ed.length, particulas: TR.n, visibles: TR.nVis, vel: TR.vel } : null, nivel: TR.nivel }; }

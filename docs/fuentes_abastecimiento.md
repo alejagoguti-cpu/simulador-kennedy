@@ -178,7 +178,7 @@ Confianza: **alta**. Fuente: DANE, SIPSA_A, boletín técnico y anexo de cada me
 | 20:00–24:00 | Papa negra (28,0 % × 0,54) | **15,1 %** |
 | 04:00–06:00 | Frutas (27,1 %), plátano (28,0 % × 0,15) y granos o procesados (8,9 %) | **40,2 %** |
 
-La salida de compradores y tenderos se concentra entre 1:00 y 6:00, y la venta sigue hasta las 18:00. El `PAR.MADR.com = 0,75` (2:00–6:00) del modelo es plausible, pero sigue siendo [SUP]: no hay conteo publicado.
+La salida de compradores y tenderos se concentra entre 1:00 y 6:00, y la venta sigue hasta las 18:00. El `PAR.MADR.com = 0,75` (2:00–6:00) del modelo es razonable, pero sigue siendo [SUP]: no hay conteo publicado.
 
 ---
 
@@ -247,7 +247,7 @@ Se propone mostrar el deslizador como «crecimiento de la demanda» con valor po
 
 **Escala de la red de la propuesta.**
 
-- `CAP_RED_TDIA` ≈ 132 t/día para 35 mercados equivale a ≈0,4 veces todas las PDM de Bogotá. Es plausible.
+- `CAP_RED_TDIA` ≈ 132 t/día para 35 mercados equivale a ≈0,4 veces todas las PDM de Bogotá. Es razonable.
 - El valor del par 01, **600 t/día (máximo 900)**, es **1,8 veces todo el sistema distrital de plazas** y más del 80 % de la demanda estimada de frescos de Kennedy. Es difícil de defender como valor por defecto.
 
 **Mercados campesinos y plataformas del PMASAB.** El Decreto 315 de 2006 (PMASAB) definió nodos logísticos urbanos; la fuente confirmada nombra **Usme** y **Corabastos**. No se encontraron cifras de volumen de los mercados campesinos ni de nodos operando en Kennedy (vacío).

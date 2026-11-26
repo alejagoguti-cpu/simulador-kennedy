@@ -72,7 +72,7 @@ export function crearContenedores({ T3 }) {
       if (et._t !== txt) { et.innerHTML = txt; et._t = txt; } }
     let j = 0; for (const M of MK) { if (!M.g.visible || !M.m) continue; const el = etq(j++);
       if (dist > 9000 || !enPantalla(M.m.x, y0() + M.H + 10, M.m.z, el)) { el.style.display = 'none'; continue; }
-      const txt = `${M.m.real ? 'Plaza Kennedy' : M.m.n.length > 18 ? M.m.n.slice(0, 17) + '…' : M.m.n} · ${fmt(M.m.t_dia, 1)} t/día · ${Math.round((M.m.carga || 0) * 100)} %`; if (el._t !== txt) { el.textContent = txt; el._t = txt; } }
+      const txt = `${Math.round((M.m.carga || 0) * 100)} %`; /* 01 v3: menos texto en el mapa, solo el porcentaje (el nombre y las t/día en el title) */ el.title = `${M.m.n} · ${fmt(M.m.t_dia, 1)} t/día`; if (el._t !== txt) { el.textContent = txt; el._t = txt; } }
     for (; j < etM.length; j++) etM[j].style.display = 'none';
   });
   /* verCora(false): sin el tubo de Corabastos cuando la capa «Bodegas» de la simulación 01 (abasto_capas.js) muestra la ocupación nave por nave */

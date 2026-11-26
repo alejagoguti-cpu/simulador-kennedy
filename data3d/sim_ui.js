@@ -9,7 +9,7 @@ import { seguimiento } from './seguimiento.js?v=2';
 import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=5';
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
-import * as AB01P from './ab01_panel.js?v=1'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
+import * as AB01P from './ab01_panel.js?v=5'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -41,7 +41,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=32'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=34'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -254,7 +254,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function parejaSin() { const d = R.def || {}; if (d.par != null) return d.propuesta ? R.sim - 1 : null; return R.sim !== 1 ? 1 : null; }
   function calcularBase() {
     const otra = R.def && R.def.par != null ? (R.def.propuesta ? R.sim - 1 : R.sim + 1) : parejaSin(); R.ecoBase = null; if (!M || otra == null || !M.SIMS.some(s => s.id === otra)) { R.base = null; return; }
-    try { const id = ++idBase, d = defDe(otra), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = R.valores[s.k] != null ? R.valores[s.k] : s.val; }); const s = M.crear(otra, SEMILLA, v); const H = []; R.ecoBase = H;
+    try { const id = ++idBase, d = defDe(otra), v = {}; (d && d.sliders || []).forEach(s => { v[s.k] = R.valores[s.k] != null ? R.valores[s.k] : s.val; }); if (R.valores.pobDesde != null) v.pobDesde = R.valores.pobDesde; /* 01 v3: semana en que se movió la población */ const s = M.crear(otra, SEMILLA, v); const H = []; R.ecoBase = H;
       const lote = () => { if (id !== idBase) return; try { for (let k = 0, inicio = performance.now(); k < 4 && H.length < FIN && (k === 0 || performance.now() - inicio < 5); k++) { M.paso(s); H.push(derivar(M.ind(s))); if (M.gameOver(s)) { if (R.def && R.def.propuesta) R.base = H; return; } } if (H.length < FIN) setTimeout(lote, 30); else if (R.def && R.def.propuesta) R.base = H; } catch (e) { console.warn('base:', e); } };
       lote(); } // por lotes: 20 años de una vez trabarían la página
     catch (e) { console.warn('base del par:', e); }
@@ -328,13 +328,13 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (g === 'foco' && window.KEN_FOCO) { if (b.dataset.v === 'ruido') { const rc = document.getElementById('rc-btn'); if (rc && !rc.classList.contains('on')) rc.click(); } if (b.dataset.v) window.KEN_FOCO.on(b.dataset.v); else window.KEN_FOCO.off(); }
     });
     const bi = der.querySelector('[data-inf]'); if (bi) bi.onclick = () => abrirInforme();
-    if (p01) { AB01P.montar(der); grafAb01(true); }
+    if (p01) { AB01P.montar(der, { R, recalcular: recalcularAqui }); grafAb01(true); } else AB01P.quitar();
     pintarIndicadores(true); pintarPicos();
   }
   let tAb01 = 0, pAb01 = 0; /* diagrama de la 01 en el panel izquierdo: como mucho 4 veces por segundo (y una última vez al detenerse) */
   function grafAb01(forzar) { if (!(R.def && R.def.par === 1)) return; const t = performance.now();
     if (!forzar && t - tAb01 < 250) { if (!pAb01) pAb01 = setTimeout(() => { pAb01 = 0; grafAb01(true); }, 260); return; }
-    tAb01 = t; try { AB01P.actualizar(der, R.hist, FIN); } catch (e) { console.warn('diagrama 01:', e); } }
+    tAb01 = t; try { AB01P.actualizar(der, R.hist, FIN, R.ecoBase || R.base, !!(R.def && R.def.propuesta)); } catch (e) { console.warn('diagrama 01:', e); } }
   const vfmt = (s, v) => (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
   /* RESULTADOS EN VIVO: una tarjeta por dato con el valor, cuánto cambió desde el año 1 (flecha y color: verde mejora, rojo empeora) y
      su curva con la línea punteada del año 1. Se compara con el año 1 (semana 52) y no con la semana 0: el modelo tarda ~40 semanas en
@@ -592,20 +592,23 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!LUG) { if (!pLug) pLug = import('./lugares.js?v=5').then(m => m.crearLugares({ T3 })).then(L => { LUG = L; const U = ultimo(); if (U) ponerLugares(U); }).catch(e => console.warn('lugares:', e)); return; }
     LUG.ver(false); /* vista limpia: sin pines de tiendas (los mercados se ven como volúmenes en el reparto) */ /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
-  let CONT = null, pCont = null, REP = null, pRep = null, CAP01 = null, pCap01 = null;
+  let CONT = null, pCont = null, REP = null, pRep = null, CAP01 = null, pCap01 = null, P01 = null, pP01 = null;
   function ponerCapaPar(I) { const p01 = !!(I && I.abasto && I.abasto.ab01); if (SIN_CAPAS && !p01) I = null; /* par 01: los medidores de capacidad sí se ven (pedido de la autora, 2026-11-25) */
     const c = I ? capaPar() : null;
     // par 01: medidores de capacidad (data3d/abasto_contenedor.js): Corabastos y, con propuesta, uno por mercado
     /* antes, con propuesta: data3d/reparto.js (volúmenes proporcionales); ahora los mismos medidores muestran el reparto */
     const repartir = false;
-    { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP); }
+    const prop01 = !!(p01 && I && I.propuesta); /* v3: la 01 con propuesta (data3d/propuesta01_3d.js): Corabastos al 50 %, La Vaca más grande, árboles y blanco y negro */
+    { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP) && !prop01; }
+    if (prop01) { if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=3').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(I); }
+    else if (P01) P01.apagar();
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
     /* simulación 01 (2026-11-26): capas Bodegas · Residuos · Tráfico (data3d/abasto_capas.js), una vez por semana simulada */
-    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=1').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
+    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=2').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
       else CAP01.poner(I); }
     else if (CAP01) { CAP01.poner(null); CAP01.ver(false); }
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=9').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!(CAP01 && CAP01.estado.bodegas)); return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=10').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
     if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
@@ -799,7 +802,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
   /* el tablero estadístico en tiempo real vive en la columna derecha, aside#lp-tablero (panel_datos.js + graficas_vivas.js) */
-  import('./panel_indicadores.js?v=5').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
+  import('./panel_indicadores.js?v=7').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
@@ -964,7 +967,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=9');
+    try { const { abrirInforme2 } = await import('./informe.js?v=10');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];
@@ -972,7 +975,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       const reiniciar = () => { cerrarInforme(); const b = document.querySelector('#lp-anos .rei'); if (b) b.click(); else { RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); dispatchEvent(new Event('lp-reinicio')); } };
       inf.className = 'i2-dlg ' + (R.go ? 'go' : '');
       const res = abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: ((M && M.REGLAS) || []).concat(R.def && R.def.par === 1 && M.REGLAS_AB01 ? M.REGLAS_AB01 : []), parametros:{...R.valores}, definiciones:M.SIMS, go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, cadena, onCerrar: cerrarInforme, onReiniciar: reiniciar });
-      if (res && res.veredicto === 'Sí') inf.classList.add('ok');
+      if (res && (res.veredicto === 'Sí' || res.veredicto === 'Sostenible')) inf.classList.add('ok');
       if (!inf.open) inf.showModal(); inf.classList.add('on'); inf.querySelector('.caja').scrollTop = 0; return;
     } catch (e) { console.warn('informe nuevo:', e); }
     abrirInformeViejo();
