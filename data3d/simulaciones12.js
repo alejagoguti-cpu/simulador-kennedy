@@ -202,14 +202,16 @@ export const BASURA_SUP = { CORA_T: 100, FLORES_T: 5, KG_HAB: 0.72, CRECE: 0.027
    El cierre de sim_vida.js corta la vía de una vez para el abastecimiento. Aquí se agrega la OBRA por fases: [SUP] los carriles se cierran en 3 fases
    iguales durante el primer 30 % del cierre (fase 1/3, 2/3, 1) y se reabren en 3 fases durante el último 20 %. El tráfico de la vía cerrada se
    reparte entre las vías principales paralelas a 2,5 km o menos (tools/cierre_desvios_datos.mjs, OpenStreetMap): para la Av. de las Américas,
-   Av. Primero de Mayo y Av. Calle 6. traficoDesvio = 1 + DESV·fase [SUP DESV = 0,5: dos paralelas de capacidad parecida reciben la mitad del flujo
-   cada una]; ruidoExtraDb = 10·log10(traficoDesvio). Fauna: cada parche a 600 m o menos de una vía de desvío recibe la zona de efecto de su tráfico
+   SOLO la Av. Primero de Mayo. CORRECCIÓN 2026-11-26: antes figuraba también la «Av. Calle 6», pero en OpenStreetMap los 5,3 km de vía principal
+   llamados «Avenida Calle 6» en Kennedy tienen alt_name «Avenida de las Américas»: son la MISMA vía que se cierra (comprobado con
+   instalacion/maqueta/fuentes/osm_calles_kennedy.json), así que el desvío iba por la vía cerrada. traficoDesvio = 1 + DESV·fase, con DESV = parte
+   del tráfico de la vía cerrada que absorbe la Primero de Mayo [SUP, deslizador «desvioMayo», 50 % por defecto: el resto se reparte por la red
+   local, que el 3D dibuja con los desvíos de data3d/cierre_gradual.js]; ruidoExtraDb = 10·log10(traficoDesvio). Fauna: cada parche a 600 m o menos de una vía de desvío recibe la zona de efecto de su tráfico
    (la regla de sim_vida.js, distancia ∝ Q^0,4, 25 % menos aves dentro). */
 export const DESVIO_SUP = { DESV: 0.5, SUBE: 0.3, BAJA: 0.2, RADIO: 600 };
 // generado por tools/cierre_desvios_datos.mjs: distancia (m) de cada parche (orden de sim_red_datos.js) a cada vía
-const DESVIOS = { americas: { n: 'Av. de las Américas', desvio: ['mayo', 'calle6'] },
-  vias: { mayo: { n: 'Av. Primero de Mayo', dist: [2458, 1484, 2857, 2413, 3075, 4699, 618, 1008, 1003, 1976, 3261, 1556, 2914, 4812, 2829, 1666, 2771, 894, 413, 3335, 2860, 3907, 1913, 2397, 271, 342, 204, 947, 2201, 2900, 2422, 1660, 2869, 2016, 3614, 2472, 3499, 940, 2174, 299, 924, 3119, 3712, 1189, 2968, 113, 395, 558, 593, 3182, 2835, 4283, 1052, 3707, 4073, 372, 1492, 283, 3789, 643, 2408, 3323, 4086, 3012, 1471, 1046, 126, 370, 675, 2467, 1474] },
-    calle6: { n: 'Av. Calle 6', dist: [1026, 1572, 1543, 988, 3839, 3293, 823, 1686, 3113, 223, 4647, 293, 1558, 3417, 1515, 338, 4344, 1379, 1901, 3347, 1536, 2412, 526, 1077, 2931, 3484, 1073, 2478, 665, 1464, 693, 135, 1556, 685, 2289, 1138, 2186, 889, 764, 955, 433, 1687, 2294, 642, 1606, 1876, 1848, 1149, 1961, 2123, 1945, 2884, 1535, 2582, 2817, 2244, 2082, 2483, 3228, 2530, 2919, 3340, 3615, 3295, 3232, 3199, 3234, 3597, 3876, 1025, 1435] } } };
+const DESVIOS = { americas: { n: 'Av. de las Américas', desvio: ['mayo'] },
+  vias: { mayo: { n: 'Av. Primero de Mayo', dist: [2458, 1484, 2857, 2413, 3075, 4699, 618, 1008, 1003, 1976, 3261, 1556, 2914, 4812, 2829, 1666, 2771, 894, 413, 3335, 2860, 3907, 1913, 2397, 271, 342, 204, 947, 2201, 2900, 2422, 1660, 2869, 2016, 3614, 2472, 3499, 940, 2174, 299, 924, 3119, 3712, 1189, 2968, 113, 395, 558, 593, 3182, 2835, 4283, 1052, 3707, 4073, 372, 1492, 283, 3789, 643, 2408, 3323, 4086, 3012, 1471, 1046, 126, 370, 675, 2467, 1474] } } };
 if (DESVIOS.vias.mayo.dist.length !== NP) throw new Error('DESVIOS no corresponde a los parches de sim_red_datos.js (correr tools/cierre_desvios_datos.mjs)');
 
 /* ---------- METRO LÍNEA 1 EN TODAS LAS SIMULACIONES (proyecto real en obra) ----------
@@ -327,7 +329,7 @@ const PAR_SL = {
     { k: 'coraTope', n: 'Tope de Corabastos', min: 5, max: 25, paso: 1, val: 11, unidad: '% sobre 6.460 t/día', ayuda: 'Inferencia, no cifra oficial: ocupación del 90 % → 11 % (SDDE-FAO 2018); 80 % → 25 %; la punta mensual de 2025 ya fue +5,9 % (SIPSA). Sus bodegas no crecen.' },
     { k: 'autoconsumo', n: 'Autoconsumo', min: 0, max: 30, paso: 1, val: 0, unidad: '% de la demanda', ayuda: 'Comida de huertas y producción propia que no se compra. Supuesto: no hay dato para Kennedy (Bogotá entera se autoabastece en 4,5 %, DTS logística 2022).' },
     { ...sPob(0.5), min: -0.5, max: 3, n: 'Crecimiento de la demanda', ayuda: 'Kennedy y la región que compra en Corabastos. 0,5 %/año = tendencia DANE 2017–2022; la proyección SDP 2024–2028 da ≈0 %. Más de 1 %/año es estrés declarado.' }],
-  2: [sT0, sDur, sTraf, sRuido, sCapRed],
+  2: [sT0, sDur, { k: 'desvioMayo', n: 'Tráfico desviado a la Av. Primero de Mayo', min: 0, max: 100, paso: 5, val: 50, unidad: '% del de la vía cerrada', ayuda: 'Supuesto: no hay aforo del desvío. Es la única vía principal paralela a 2,5 km o menos en OpenStreetMap; el resto del tráfico se reparte por calles locales.' }, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
   4: [{ k: 'parche', n: 'Parche que se pierde', min: 1, max: 4, paso: 1, val: 1, unidad: '1 El Burro · 2 Techo · 3 La Vaca · 4 Bosque de Bavaria', ayuda: 'Parche ecológico que pierde parte de su área.' },
@@ -600,7 +602,7 @@ function indCircular(E) {
 function faseCierre(C, t) { if (t < C.t0 || t >= C.t0 + C.dur) return 0; const S = DESVIO_SUP, u = (t - C.t0) / C.dur;
   if (u < S.SUBE) return Math.min(3, Math.floor(u / S.SUBE * 3) + 1) / 3; if (u > 1 - S.BAJA) return Math.max(1, Math.ceil((1 - u) / S.BAJA * 3)) / 3; return 1; }
 function desvios(E, t) {
-  const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.traf = 1 + DESVIO_SUP.DESV * (E.prop ? 2 / 3 : 1) * C.fase; // con propuesta: tercera ruta por los pasajes y conexiones de Bavaria Común [SUP] E.xDes.fill(1); if (!D || !C.fase) return;
+  const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.traf = 1 + (E.val.desvioMayo != null ? E.val.desvioMayo / 100 : DESVIO_SUP.DESV) * (E.prop ? 2 / 3 : 1) * C.fase; // con propuesta: tercera ruta por los pasajes y conexiones de Bavaria Común [SUP] E.xDes.fill(1); if (!D || !C.fase) return;
   const Vg = V.crecimiento(t).V * factorTraf(E, t), Dh = V.TRAFICO.ZONA_HOY * Math.pow(Vg, V.TRAFICO.B_DIST), Dn = V.TRAFICO.ZONA_HOY * Math.pow(Vg * C.traf, V.TRAFICO.B_DIST), RZ = V.TRAFICO.RED_ZONA;
   for (const id of D.desvio) { const dd = DESVIOS.vias[id].dist; for (let p = 0; p < NP; p++) { if (dd[p] > DESVIO_SUP.RADIO) continue; const r = RP_M[p], fh = fZonaP(dd[p], r, Dh), fn = fZonaP(dd[p], r, Dn);
     E.xDes[p] *= (1 - RZ * fn) / (1 - RZ * fh); } } }
