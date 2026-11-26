@@ -10,14 +10,16 @@ export function crearFocoCubiertas({ THREE, T3, techos, hidro }) {
   const style = document.createElement('style');
   style.textContent = `
 #cubiertas-destellos{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:24}
-#cubiertas-foco{position:fixed;z-index:9999;left:18px;bottom:82px;width:min(410px,calc(100vw - 36px));padding:23px 25px;background:rgba(9,18,17,.94);border:1px solid rgba(112,240,112,.4);box-shadow:0 25px 70px rgba(0,0,0,.4);color:#f1f7f0;font-family:Inter,system-ui,sans-serif;backdrop-filter:blur(16px)}
-#cubiertas-foco .cf-kicker{font:500 11px/1.4 monospace;letter-spacing:.18em;text-transform:uppercase;color:#8fef91}
-#cubiertas-foco h2{font:400 clamp(24px,3vw,35px)/1.06 Georgia,serif;margin:13px 0 11px;letter-spacing:-.025em}
-#cubiertas-foco p{font-size:13px;line-height:1.55;color:#c2d0c6;margin:0 0 16px}
-#cubiertas-foco .cf-data{font:12px/1.45 monospace;color:#a9b7ad;border-top:1px solid #344439;padding-top:11px;margin-bottom:16px}
-#cubiertas-foco button{appearance:none;border:0;background:#c8f78c;color:#142414;font:600 13px/1.2 Inter,system-ui,sans-serif;padding:13px 16px;cursor:pointer;min-height:44px}
-#cubiertas-foco button:hover,#cubiertas-foco button:focus-visible{background:#e4ffba;outline:2px solid #fff;outline-offset:2px}
-#cubiertas-foco .cf-return{background:transparent;color:#c8f78c;border:1px solid #63936c;margin-left:9px}
+#cubiertas-foco{position:fixed;z-index:9999;left:18px;bottom:82px;width:min(410px,calc(100vw - 36px));box-sizing:border-box;padding:20px 22px;border-radius:16px;
+  background:var(--ui-glass,rgba(22,27,25,.6));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.2));box-shadow:var(--ui-glass-sh,0 18px 44px rgba(0,0,0,.22));
+  -webkit-backdrop-filter:var(--ui-glass-fx,blur(24px));backdrop-filter:var(--ui-glass-fx,blur(24px));color:var(--ui-tx,#f1f3ee);font-family:var(--ui-sans,Inter,system-ui,sans-serif);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+#cubiertas-foco .cf-kicker{font:500 10.5px/1.4 var(--ui-mono,monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-acc-tx,#e3f1cd)}
+#cubiertas-foco h2{font:400 clamp(24px,2.6vw,32px)/1.05 var(--ui-tit,'Barlow Condensed',sans-serif);margin:10px 0 10px;letter-spacing:.01em}
+#cubiertas-foco p{font-size:13px;line-height:1.55;color:var(--ui-tx2,#c9cfc4);margin:0 0 14px}
+#cubiertas-foco .cf-data{font:11.5px/1.45 var(--ui-mono,monospace);color:var(--ui-tx2,#c9cfc4);border-top:1px solid var(--ui-bd,rgba(255,255,255,.12));padding-top:10px;margin-bottom:14px}
+#cubiertas-foco button{appearance:none;border:0;border-radius:10px;background:var(--ui-acc,#d4ecb0);color:var(--ui-acc-ink,#1e2918);font:600 13px/1.2 var(--ui-sans,Inter,system-ui,sans-serif);padding:12px 16px;cursor:pointer;min-height:44px;text-shadow:none}
+#cubiertas-foco button:hover,#cubiertas-foco button:focus-visible{filter:brightness(1.06);outline:2px solid #fff;outline-offset:2px}
+#cubiertas-foco .cf-return{background:rgba(255,255,255,.06);color:var(--ui-acc-tx,#e3f1cd);border:1px solid var(--ui-bd2,rgba(212,236,176,.38));margin-left:9px}
 #cubiertas-foco .cf-section{display:none}
 #cubiertas-foco .cf-variables{display:none}
 #cubiertas-foco[data-phase="detail"]{top:0;bottom:0;left:0;width:min(36vw,460px);box-sizing:border-box;overflow:auto;border-top:0;border-bottom:0;border-left:0;padding:clamp(24px,4vw,52px) clamp(22px,3vw,38px)}
@@ -30,20 +32,20 @@ export function crearFocoCubiertas({ THREE, T3, techos, hidro }) {
 #cubiertas-foco .cf-slider span{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
 #cubiertas-foco .cf-slider output{color:#a8ed87;font:600 12px monospace;white-space:nowrap}
 #cubiertas-foco input[type=range]{width:100%;accent-color:#b5f584;cursor:pointer}
-#cubiertas-foco .cf-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#344439;border:1px solid #344439;margin:15px 0}
-#cubiertas-foco .cf-metrics div{background:#14211b;padding:12px}
-#cubiertas-foco .cf-metrics strong{display:block;font:400 24px/1.1 Georgia,serif;color:#c8f78c}
+#cubiertas-foco .cf-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:15px 0}
+#cubiertas-foco .cf-metrics div{background:rgba(255,255,255,.05);border:1px solid var(--ui-bd,rgba(255,255,255,.12));border-radius:10px;padding:11px 12px}
+#cubiertas-foco .cf-metrics strong{display:block;font:400 26px/1.05 var(--ui-tit,'Barlow Condensed',sans-serif);color:var(--ui-acc,#d4ecb0)}
 #cubiertas-foco .cf-metrics small{font:10px/1.3 monospace;text-transform:uppercase;color:#aebdad}
 #cubiertas-foco .cf-trace{height:58px;display:flex;align-items:end;gap:4px;margin:12px 0 17px;border-bottom:1px solid #536b58}
 #cubiertas-foco .cf-trace i{display:block;flex:1;min-width:5px;background:#8dcb6c;opacity:.55}
 #cubiertas-foco .cf-trace i[data-active="1"]{opacity:1;background:#d4ff9c}
 #cubiertas-foco .cf-trace i[data-go="1"]{background:#ef7268}
 #cubiertas-foco .cf-go{color:#ffaaa1!important;font-weight:600}
-#cubiertas-foco svg{display:block;width:100%;height:auto;margin:18px 0 12px;background:#111b19;border:1px solid #324038}
+#cubiertas-foco svg{display:block;width:100%;height:auto;margin:18px 0 12px;background:rgba(10,14,13,.35);border:1px solid var(--ui-bd,rgba(255,255,255,.12));border-radius:10px}
 #cubiertas-foco .cf-note{font-size:11px;color:#9dad9e}
 body:has(#cubiertas-foco[data-phase="detail"]) #hid-red{display:none!important}
 body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!important}
-@media(max-width:760px){#cubiertas-foco{left:10px;bottom:90px;width:calc(100vw - 20px);padding:15px 17px}#cubiertas-foco h2{font-size:23px}#cubiertas-foco[data-phase="detail"],#cubiertas-foco[data-phase="variables"]{top:auto;bottom:0;width:100vw;max-height:44vh;min-height:0;padding:15px 18px;border-right:0;border-top:1px solid #63936c}#cubiertas-foco[data-phase="detail"] svg{max-height:110px}#cubiertas-foco[data-phase="detail"] h2{margin:6px 0}#cubiertas-foco[data-phase="detail"] p{margin-bottom:7px}#cubiertas-foco[data-phase="detail"] .cf-data{margin-bottom:8px}}
+@media(max-width:760px){#cubiertas-foco{left:10px;bottom:90px;width:calc(100vw - 20px);padding:15px 17px}#cubiertas-foco h2{font-size:23px}#cubiertas-foco[data-phase="detail"],#cubiertas-foco[data-phase="variables"]{top:auto;bottom:0;width:100vw;max-height:44vh;min-height:0;padding:15px 18px;border-radius:16px 16px 0 0}#cubiertas-foco[data-phase="detail"] svg{max-height:110px}#cubiertas-foco[data-phase="detail"] h2{margin:6px 0}#cubiertas-foco[data-phase="detail"] p{margin-bottom:7px}#cubiertas-foco[data-phase="detail"] .cf-data{margin-bottom:8px}}
 `;
   document.head.appendChild(style);
   document.body.appendChild(overlay);
@@ -53,6 +55,9 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
   const exactos = techos.filter(t => t.pisos === 15);
   const ordenes = hidro.ordenes();
   const planos = techos.map((techo, i) => ({ techo, orden: ordenes.get(i) })).filter(x => x.orden != null);
+  /* las cubiertas catastrales son las primeras de la lista de instalación (data3d/estrategias.js): su fase llega hasta kCat < 1. El recorrido
+     reparte esas cubiertas en sus 10 años: fracción del recorrido × kCat = fracción que se pide a huertas_hidro.js */
+  const kCat = Math.max(1e-6, ...planos.map(x => x.orden));
   const elegido = exactos.sort((a, b) => {
     const ca = centro(a), cb = centro(b);
     return Math.hypot(ca[0] - mercado[0], ca[1] - mercado[1]) - Math.hypot(cb[0] - mercado[0], cb[1] - mercado[1]);
@@ -88,6 +93,7 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     <div class="cf-data" id="cf-estado">Esperando cálculo…</div>
     <button type="button" class="cf-return" id="cf-corte">← Volver al corte</button></div>`;
   document.body.appendChild(panel);
+  panel.style.display = 'none'; overlay.style.display = 'none'; // escondido hasta ver(true) (simulación 02 con propuesta)
   panel.querySelector('#cf-ir').addEventListener('click', mostrarDetalle);
   panel.querySelector('#cf-volver').addEventListener('click', mostrarTodas);
   panel.querySelector('#cf-variables-ir').addEventListener('click', mostrarVariables);
@@ -118,7 +124,7 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, ancho, alto);
     const rect = canvas3d.getBoundingClientRect();
     const pulso = 0.5 + 0.5 * Math.sin(tiempo * .003);
-    const visibles = fase === 'detail' ? (elegido ? [elegido] : []) : fase === 'variables' ? planos.filter(x => x.orden <= fraccionVisual).map(x => x.techo) : techos;
+    const visibles = fase === 'detail' ? (elegido ? [elegido] : []) : fase === 'variables' ? planos.filter(x => x.orden <= fraccionVisual * kCat + 1e-9).map(x => x.techo) : techos;
     for (const t of visibles) {
       const puntos = t.W.map(([x,z]) => {
         p.set(x,t.h - .7,z).project(T3.camera);
@@ -162,7 +168,7 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
   function mostrarDetalle() {
     if (!elegido || !activo) return;
     pausar();
-    hidro.fraccion(1); // el edificio elegido debe mostrar sus módulos aunque la línea de tiempo esté en el año 1
+    hidro.fraccion(kCat); // el edificio elegido debe mostrar sus módulos aunque la línea de tiempo esté en el año 1
     destacarTorres(true);
     if (!vistaGeneral) vistaGeneral = { p:T3.camera.position.clone(), c:T3.orbit.target.clone() };
     fase = 'detail'; panel.dataset.phase = fase;
@@ -219,8 +225,8 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     const input = panel.querySelector('#cf-controles input[data-k="anio"]'); if (!input) return;
     const anio = Number(input.value), anterior = serie[Math.floor(anio)], siguiente = serie[Math.ceil(anio)];
     fraccionVisual = Math.max(0, Math.min(1, anio / 10));
-    hidro.fraccion(fraccionVisual);
-    panel.querySelector('#cf-instaladas').textContent = `${planos.filter(x => x.orden <= fraccionVisual).length} / ${planos.length} cubiertas instaladas · despliegue visual supuesto`;
+    hidro.fraccion(fraccionVisual * kCat);
+    panel.querySelector('#cf-instaladas').textContent = `${planos.filter(x => x.orden <= fraccionVisual * kCat + 1e-9).length} / ${planos.length} cubiertas instaladas · despliegue visual supuesto`;
     panel.querySelector('#cf-controles [data-v="anio"]').textContent = anio.toFixed(1).replace('.', ',');
     panel.querySelectorAll('#cf-trace i').forEach((el,i) => el.dataset.active = i+1 === Math.ceil(anio) ? '1' : '0');
     if (!anterior || !siguiente) return;

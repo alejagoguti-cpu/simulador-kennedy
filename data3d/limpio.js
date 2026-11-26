@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=116';
+import { iniciarSimUI } from './sim_ui.js?v=117';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -56,7 +56,7 @@ export const SIMS = [
   { id: 14, par: 0, n: 'Kennedy con propuesta', base: 'C', cam: 'general' }
 ];
 
-const OCULTAR = ['#guia', '#guia-velo', '#su-hist', '#su-graf', '#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et'];
+const OCULTAR = ['#guia', '#guia-velo', '#su-hist', '#su-graf', '#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et', '#hid-red'];
 
 export function iniciarLimpio({ T3 }) {
   const html = document.documentElement;
@@ -153,7 +153,7 @@ export function iniciarLimpio({ T3 }) {
   const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
     if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
   // sin los anillos naranjas de entrada ni los halos de camiones (data3d/origenes.js): la autora no los quiere (solo los carros)
-  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; for (const o of T3.scene.children) { if (o.name || !o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.vertexColors || o.renderOrder < 2 || o.renderOrder > 4) continue; const pa = o.geometry && o.geometry.attributes.position; if (pa && pa.count > 20000 && o.material.visible) o.material.visible = false; } /* sin las cintas de colores en las calles (flujo de carros y sintaxis espacial): se volvían a prender solas */ for (const nm of ['escenarios_sim', 'estrategias', 'red-mercados', 'picos_zonas', 'picos_zonas_base', 'medicion', 'huertas-hidroponicas', 'mercados-barrio'])  { const g = T3.scene.getObjectByName(nm); if (g && g.visible) g.visible = false; } /* sin capas de escenario (columnas, rutas, líneas de colores): mapa limpio */ if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = T3.scene.getObjectByName(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
+  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; for (const o of T3.scene.children) { if (o.name || !o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.vertexColors || o.renderOrder < 2 || o.renderOrder > 4) continue; const pa = o.geometry && o.geometry.attributes.position; if (pa && pa.count > 20000 && o.material.visible) o.material.visible = false; } /* sin las cintas de colores en las calles (flujo de carros y sintaxis espacial): se volvían a prender solas */ for (const nm of ['escenarios_sim', 'estrategias', 'red-mercados', 'picos_zonas', 'picos_zonas_base', 'medicion', 'mercados-barrio'])  { /* las huertas hidropónicas en cubiertas SÍ se ven (con propuesta: se instalan año a año, data3d/huertas_hidro.js) */ const g = T3.scene.getObjectByName(nm); if (g && g.visible) g.visible = false; } /* sin capas de escenario (columnas, rutas, líneas de colores): mapa limpio */ if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = T3.scene.getObjectByName(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
   setInterval(() => { T3.scene.traverse(o => {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
@@ -189,19 +189,42 @@ export function iniciarLimpio({ T3 }) {
     agua: () => `<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 3c3-2 5 2 8 0s5 2 8 0v6H1z" fill="#24323a" stroke="#4d6a74" stroke-width=".8"/></svg>`,
     arbol: () => `<svg viewBox="0 0 18 12" aria-hidden="true"><circle cx="6" cy="6" r="3.6" fill="#3f5f34"/><circle cx="11.5" cy="5" r="4" fill="#4c7340"/></svg>`,
     huerta: () => `<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="1" y="1" width="16" height="8" rx="1.5" fill="#5f7d33"/><path d="M1 3.6h16M1 6.4h16" stroke="#cfe3a5" stroke-width=".8"/></svg>` };
+  sw.hidro = () => `<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="7" width="16" height="4" rx="1" fill="#6f9a3a"/><path d="M4 7V2.5M9 7V2M14 7V2.5" stroke="#e8e7e1" stroke-width="1.8" stroke-linecap="round"/><circle cx="4" cy="4" r="1.3" fill="#8fd16a"/><circle cx="9" cy="3.6" r="1.3" fill="#8fd16a"/><circle cx="14" cy="4" r="1.3" fill="#8fd16a"/></svg>`;
+  sw.resalte = () => `<svg viewBox="0 0 18 12" aria-hidden="true"><defs><linearGradient id="lpcvr" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfff5e" stop-opacity=".95"/><stop offset="1" stop-color="#cfff5e" stop-opacity="0"/></linearGradient></defs><rect x="3" y="1" width="12" height="10" fill="url(#lpcvr)"/><path d="M3 11h12" stroke="#e9ffb0" stroke-width="1.4"/></svg>`;
+  /* CONVENCIONES SIEMPRE ABIERTAS Y SOLO DE LO QUE SE VE: cada entrada lleva su condición de visibilidad (lee el estado de la escena y de
+     los módulos; no toca nada). Se revisan cada 0,8 s y la lista solo se rehace si cambió lo que está a la vista. */
+  const esc3 = (n) => { const o = T3.scene && T3.scene.getObjectByName(n); return !!(o && o.visible); };
+  let vehG = []; const hayVeh = () => { if (!vehG.length && T3.scene) vehG = T3.scene.children.filter(o => o.name === 'vehiculos');
+    for (const g of vehG) { if (!g.visible) continue; for (const o of g.children) if (o.visible && o.isInstancedMesh && o.count > 0) return true; } return false; };
+  const HI = () => window.KEN_HIDRO, hidroVis = () => { const H = HI(); return !!(H && H.grupo && H.grupo.visible); };
   const CONV = [
-    ['Tráfico (de lejos cada vehículo es una píldora)', [[sw.pil('#fff0d2'), 'Carro'], [sw.pil('#ffae1f'), 'Moto'], [sw.pil('#ff3d6e'), 'Camión de carga'], [sw.pil('#7fe3ff'), 'Bicicleta'], [sw.pil('#8b5cf6'), 'Carros nuevos del plan parcial Bavaria (sin propuesta)']]],
-    ['Infraestructura', [[sw.lin('#ff8a1e'), 'Metro Línea 1 en obra (titila)'], [sw.lin('#fff04a'), 'Metro Línea 1 operando (desde 2028)'], [sw.cil(), 'Medidor de capacidad de Corabastos y de cada mercado (par 01): se llena verde, ámbar desde 90 %, rojo sobre el tope; anillo rojo = tope']]],
-    ['Naturaleza', [[sw.agua(), 'Humedales El Burro, La Vaca y Techo'], [sw.arbol(), 'Árboles (inventario de arbolado)'], [sw.huerta(), 'Huertas en cubiertas (solo con propuesta)'], ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M2 6c2-3 4-3 7 0 3-3 5-3 7 0" fill="none" stroke="#d9dccf" stroke-width="1.5" stroke-linecap="round"/></svg>', 'Fauna en 3D (aves, abejas, anfibios): se mueve según el modelo biótico']]],
-    ['Eventos', [[sw.cruz(), 'Muerte de un animal: cruz con el animal encima (botón «Ver» de un aviso)'], [sw.pto('#ff5a4f'), 'Hecho que empeora (en pausa)'], [sw.pto('#5fe08f'), 'Hecho que mejora (en pausa)']]],
-    ['Capas que se prenden a mano', [[sw.halo('#f22914'), 'Ruido de carros: halo rojo alrededor de cada vehículo'], [sw.lin('#e0b23a'), 'Solo relaciones bióticas: líneas con los colores de cada tipo de interacción (los mismos del diagrama de cuerdas del tablero)']]]];
-  const conv = document.createElement('details'); conv.id = 'lp-conv'; conv.className = 'lp-det';
-  conv.innerHTML = '<summary><span class="lp-dt">Convenciones</span><span class="lp-ds">qué es cada cosa</span></summary><div class="lp-db">'
-    + CONV.map(([g, L]) => `<p class="lp-cg">${g}</p><ul class="lp-cv">${L.map(([s, n]) => `<li>${s}<span>${n}</span></li>`).join('')}</ul>`).join('') + '</div>';
+    ['Tráfico (de lejos cada vehículo es una píldora)', [[sw.pil('#fff0d2'), 'Carro', hayVeh], [sw.pil('#ffae1f'), 'Moto', hayVeh], [sw.pil('#ff3d6e'), 'Camión de carga', hayVeh], [sw.pil('#7fe3ff'), 'Bicicleta', hayVeh],
+      [sw.pil('#8b5cf6'), 'Carros nuevos del plan parcial Bavaria (sin propuesta)', () => { const P = window.KEN_TRPLAN; return !!(P && P.visible && P.dibujados > 0); }]]],
+    ['Infraestructura', [[sw.lin('#ff8a1e'), 'Metro Línea 1 en obra (titila)', () => !!ESC.activo && RELOJ.sem < METRO_SEM_OP], [sw.lin('#fff04a'), 'Metro Línea 1 operando (desde 2028)', () => !!ESC.activo && RELOJ.sem >= METRO_SEM_OP],
+      [sw.cil(), 'Medidor de capacidad de Corabastos y de cada mercado (par 01): se llena verde, ámbar desde 90 %, rojo sobre el tope; anillo rojo = tope', () => esc3('abasto_cont')]]],
+    ['Naturaleza', [[sw.agua(), 'Humedales El Burro, La Vaca y Techo', () => true], [sw.arbol(), 'Árboles (inventario de arbolado)', () => true],
+      [sw.hidro(), () => { const H = HI(); return `Huertas hidropónicas en cubiertas: ${(H.instaladas || 0).toLocaleString('es-CO')} de ${(H.techos || 0).toLocaleString('es-CO')} instaladas (primero las de 15 pisos o más, luego las más altas)`; }, () => hidroVis() && HI().instaladas > 0],
+      [sw.resalte(), 'Cubierta recién instalada: se ilumina unos segundos', hidroVis],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M2 6c2-3 4-3 7 0 3-3 5-3 7 0" fill="none" stroke="#d9dccf" stroke-width="1.5" stroke-linecap="round"/></svg>', 'Fauna en 3D (aves, abejas, anfibios): se mueve según el modelo biótico', () => esc3('biotica')]]],
+    ['Eventos', [[sw.cruz(), 'Muerte de un animal: cruz con el animal encima (botón «Ver» de un aviso)', () => { const m = document.getElementById('mm-capa'); return esc3('ojo_x') || !!(m && !m.hidden); }], /* la X la pone data3d/ojo_dios.js (grupo 'ojo_x') */
+      [sw.pto('#ff5a4f'), 'Hecho que empeora (en pausa)', () => !!ESC.activo && RELOJ.pausaSem && esc3('hechos')], [sw.pto('#5fe08f'), 'Hecho que mejora (en pausa)', () => !!ESC.activo && RELOJ.pausaSem && esc3('hechos')]]],
+    ['Capas prendidas', [[sw.halo('#f22914'), 'Ruido de carros: halo rojo alrededor de cada vehículo', () => esc3('ruido-carros')],
+      [sw.lin('#e0b23a'), 'Solo relaciones bióticas: líneas con los colores de cada tipo de interacción (los mismos del diagrama de cuerdas del tablero)', () => !!(window.KEN_BIOTICA_SOLO && window.KEN_BIOTICA_SOLO.activo)]]]];
+  const conv = document.createElement('section'); conv.id = 'lp-conv'; conv.className = 'lp-det'; conv.setAttribute('aria-labelledby', 'lp-conv-t');
+  conv.innerHTML = '<header class="lp-conv-h"><span class="lp-dt" id="lp-conv-t">Convenciones</span><span class="lp-ds">lo que está a la vista</span></header><div class="lp-db"></div>';
+  let firmaConv = '';
+  const pintarConv = () => { const G = []; let n = 0;
+    for (const [g, L] of CONV) { const v = []; for (const [s, t, vis] of L) { let ok = false; try { ok = vis(); } catch (e) { ok = false; } if (ok) v.push([s, typeof t === 'function' ? t() : t]); } if (v.length) { G.push([g, v]); n += v.length; } }
+    const firma = G.map(([g, v]) => g + ':' + v.map(x => x[1]).join('|')).join('/'); if (firma === firmaConv) return; firmaConv = firma;
+    conv.querySelector('.lp-db').innerHTML = G.map(([g, L]) => `<p class="lp-cg">${g}</p><ul class="lp-cv">${L.map(([s, t]) => `<li>${s}<span>${t}</span></li>`).join('')}</ul>`).join('');
+    conv.querySelector('.lp-ds').textContent = `${n} a la vista`; };
+  setInterval(pintarConv, 800); setTimeout(pintarConv, 0);
   { const cs = document.createElement('style'); cs.textContent = `html.limpio body #gs-izq .lp-lista li .lp-acc{grid-column:1/-1;padding:0 10px 8px 12px;min-width:0}
     html.limpio body #gs-izq .lp-lista li:not(.on) .lp-acc,html.limpio body #gs-izq .lp-lista li .lp-acc:empty{display:none}
     html.limpio body #gs-izq .lp-acc #su-der{margin:2px 0 0!important}
     html.limpio body #gs-izq .lp-acc #lp-vars > summary{display:none}
+    html.limpio body #gs-izq #lp-conv .lp-conv-h{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 4px}
+    html.limpio body #gs-izq #lp-conv .lp-cg:first-child{margin-top:0}
     html.limpio body #gs-izq #lp-conv .lp-cg{margin:8px 0 4px;font:400 9.5px/1.2 var(--ui-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ui-tx3)}
     html.limpio body #gs-izq #lp-conv .lp-cv{list-style:none;margin:0;padding:0;display:grid;gap:4px}
     html.limpio body #gs-izq #lp-conv .lp-cv li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:center;font:400 11px/1.35 var(--ui-sans);color:var(--ui-tx2)}
@@ -211,6 +234,8 @@ export function iniciarLimpio({ T3 }) {
   let escE = 'hoy';
   const idDe = (par) => escE === 'con' ? 2 * par : 2 * par - 1;
   function abrirRecorridoDePar(par, con = false, id = null) {
+    /* par 01 con propuesta: recorrido de las cubiertas de 15 pisos (data3d/cubiertas_foco.js, vía data3d/estrategias.js) */
+    { const E = T3.EST; if (E && E.focoCubiertas) { if (par === 1 && con) setTimeout(() => { if (ESC.activo === id) E.focoCubiertas(true); }, 150); else E.focoCubiertas(false); } }
     import('./recorrido_movilidad.js?v=3').then(m => {
       if (par !== 2) return m.cerrarRecorrido();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorrido({ con }).catch(e => console.warn('recorrido movilidad:', e)); }, 150);
@@ -399,7 +424,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=7', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=8']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=8', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=8']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

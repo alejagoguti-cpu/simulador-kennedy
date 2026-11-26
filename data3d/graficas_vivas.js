@@ -90,6 +90,9 @@ export class Linea {
     this.pSin = nodo('path', { fill: 'none', stroke: COL.sin, 'stroke-width': 2, 'stroke-dasharray': '5 3', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, s);
     this.pCon = nodo('path', { fill: 'none', stroke: COL.con, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, s);
     this.cFin = nodo('circle', { class: 'tb-fin', r: 4, stroke: 'var(--tb-sur)', 'stroke-width': 2, visibility: 'hidden' }, s);
+    /* etiquetas al final de cada línea (op.etq): «con 2,1» / «sin 1,9», en tinta de texto; la identidad la da la línea a su lado */
+    this.tCon = nodo('text', { class: 'tb-tv', visibility: 'hidden' }, s); this.tSin = nodo('text', { class: 'tb-tv', visibility: 'hidden' }, s);
+    this.kCon = nodo('line', { stroke: COL.con, 'stroke-width': 2, visibility: 'hidden' }, s); this.kSin = nodo('line', { stroke: COL.sin, 'stroke-width': 2, 'stroke-dasharray': '2 1.5', visibility: 'hidden' }, s);
     this.xL = nodo('line', { stroke: 'var(--ui-tx2,#c9cfc4)', 'stroke-width': 1, visibility: 'hidden' }, s);
     this.xA = nodo('circle', { r: 3.5, fill: COL.con, stroke: 'var(--tb-sur)', 'stroke-width': 2, visibility: 'hidden' }, s);
     this.xB = nodo('circle', { r: 3.5, fill: COL.sin, stroke: 'var(--tb-sur)', 'stroke-width': 2, visibility: 'hidden' }, s);
@@ -110,7 +113,7 @@ export class Linea {
     let mn = Math.min(...vals), mx = Math.max(...vals);
     for (const v of [D.lim, D.cerca]) if (v != null) { mn = Math.min(mn, v); mx = Math.max(mx, v); }
     if (op.cero) mn = Math.min(0, mn);
-    const m = marcas(mn, mx, op.ticks || 3), pl = op.pl || 34, pr = 6, pt = 8, pb = 15, iw = W - pl - pr, ih = alto - pt - pb;
+    const m = marcas(mn, mx, op.ticks || 3), pl = op.pl || 34, pr = op.etq ? 50 : 6, pt = 8, pb = 15, iw = W - pl - pr, ih = alto - pt - pb;
     const X = (s) => pl + (s - 1) / Math.max(1, FIN - 1) * iw, Y = (v) => pt + ih - (v - m.a) / (m.b - m.a || 1) * ih;
     Object.assign(this, { X, Y, pl, iw });
     fija(this.svg, { width: W, viewBox: `0 0 ${W} ${alto}` });
@@ -137,6 +140,13 @@ export class Linea {
     else fija(this.pArea, { d: '' });
     fija(this.pSin, { d: camino(xs, sin, X, Y) }); fija(this.pCon, { d: camino(xs, con, X, Y) });
     if (k1 >= 0) fija(this.cFin, { cx: X(xs[k1]).toFixed(1), cy: Y(run[k1]).toFixed(1), fill: colRun, visibility: 'visible' }); else fija(this.cFin, { visibility: 'hidden' });
+    if (op.etq) { const ult = (S) => { let k = S.length - 1; while (k >= 0 && S[k] == null) k--; return k < 0 ? null : S[k]; }, vc = ult(con), vs = ult(sin);
+      const cl = (y) => Math.max(9, Math.min(alto - 16, y)); let yc = vc == null ? null : cl(Y(vc) + 3), ys = vs == null ? null : cl(Y(vs) + 3);
+      if (yc != null && ys != null && Math.abs(yc - ys) < 10) { const mid = Math.max(14, Math.min(alto - 21, (yc + ys) / 2)), a = yc <= ys ? -5 : 5; yc = mid + a; ys = mid - a; }
+      const xk = W - pr + 4, xt = (xk + 9).toFixed(1);
+      for (const [e, kk, v, y] of [[this.tCon, this.kCon, vc, yc], [this.tSin, this.kSin, vs, ys]]) { if (v == null) { fija(e, { visibility: 'hidden' }); fija(kk, { visibility: 'hidden' }); continue; }
+        const yy = y; fija(e, { x: xt, y: yy.toFixed(1), visibility: 'visible' }); fija(kk, { x1: xk, x2: xk + 6, y1: (yy - 3).toFixed(1), y2: (yy - 3).toFixed(1), visibility: 'visible' });
+        const tx = num(v, op.d || 0); if (e.textContent !== tx) e.textContent = tx; } }
     fija(this.hit, { x: pl, width: iw });
     const ult = run[k1]; this.svg.setAttribute('aria-label', `${op.n}: ${num(ult, op.d || 0)} ${op.u || ''} en la semana ${xs[k1] || ''}. Flechas para recorrer las semanas.`);
     if (this.i >= 0 && this.svg.matches(':hover,:focus')) this.cruz(Math.min(this.i, xs.length - 1));
@@ -274,6 +284,61 @@ export function columnasAño(años, series, W, op = {}) {
     });
     s += '</g>';
   });
+  return s + '</svg>';
+}
+
+/* ---------- flecha de dirección (sube / baja / igual): siempre va con la palabra al lado, nunca sola ---------- */
+export const flecha = (dir, t = 14) => `<svg class="tb-fl" viewBox="0 0 14 14" width="${t}" height="${t}" aria-hidden="true">${dir > 0 ? '<path d="M7 12V2.6M2.8 6.6 7 2.4l4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+  : dir < 0 ? '<path d="M7 2v9.4M2.8 7.4 7 11.6l4.2-4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+  : '<path d="M2.5 5.2h9M2.5 8.8h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'}</svg>`;
+
+/* =========================================================================================================
+   ESCALA (bala horizontal): una pista min–max con bandas de lectura rotuladas (gris neutro, de claro a fuerte), el valor con propuesta
+   (punto lleno, etiqueta arriba) y sin propuesta (aro hueco, etiqueta abajo). Responde «¿dónde está este valor en su escala?».
+   Nodos creados una vez; solo cambian posiciones y textos.
+   ========================================================================================================= */
+export class Escala {
+  constructor(host, op) {
+    this.op = op; this.H = 56; this.k = '';
+    const s = this.svg = nodo('svg', { class: 'tb-svg tb-esc', height: this.H, role: 'img', 'aria-label': op.aria || op.n || '' }, host);
+    this.gB = nodo('g', {}, s);
+    this.mS = nodo('circle', { r: 4.6, fill: 'var(--tb-sur)', 'fill-opacity': '.6', stroke: COL.sin, 'stroke-width': 2, visibility: 'hidden', class: 'ar-an' }, s);
+    this.mC = nodo('circle', { r: 5.5, fill: COL.con, stroke: 'var(--tb-sur)', 'stroke-width': 2, visibility: 'hidden', class: 'ar-an' }, s);
+    this.tC = nodo('text', { class: 'tb-tv', y: 10, 'text-anchor': 'middle' }, s); this.tS = nodo('text', { class: 'tb-tv', y: 44, 'text-anchor': 'middle' }, s);
+  }
+  /* D: {W, con, sin, max (opcional, si la escala crece)} */
+  update(D) {
+    const op = this.op, W = D.W, mn = op.min, mx = D.max != null ? D.max : op.max, pl = 7, pr = 7, x0 = pl, x1 = W - pr, ty = 15, th = 15;
+    const X = (v) => x0 + Math.max(0, Math.min(1, (v - mn) / (mx - mn || 1))) * (x1 - x0), d = op.d || 0, u = op.u ? (op.u === '%' ? ' %' : ' ' + op.u) : '';
+    fija(this.svg, { width: W, viewBox: `0 0 ${W} ${this.H}` });
+    const k = W + '|' + mx; if (k !== this.k) { this.k = k; let s = ''; const B = op.bandas && op.bandas.length ? op.bandas : [[mn, mx, '']];
+      const tonos = ['rgba(255,255,255,.07)', 'rgba(255,255,255,.12)', 'rgba(255,255,255,.18)', 'rgba(255,255,255,.25)'];
+      B.forEach(([a, b, t], i) => { const xa = X(a) + (i ? 1 : 0), xb = X(Math.min(b, mx)) - (i < B.length - 1 ? 1 : 0), w = xb - xa; if (w <= 0) return;
+        s += `<rect x="${xa.toFixed(1)}" y="${ty}" width="${w.toFixed(1)}" height="${th}" rx="${i === 0 || i === B.length - 1 ? 4 : 1}" fill="${tonos[Math.min(tonos.length - 1, B.length === 1 ? 0 : i)]}"${t ? ` data-tt="${esc(`${t}|${num(a, d)}–${num(b, d)}${u}`)}"` : ''}/>`;
+        if (t && w > t.length * 5 + 6) s += `<text class="tb-bnd" x="${(xa + w / 2).toFixed(1)}" y="${ty + 10.5}" text-anchor="middle">${esc(t)}</text>`; });
+      const tk = op.ticks || [mn, mx]; for (const v of tk) { if (v > mx) continue; const x = X(v); s += `<text class="ar-tk" x="${x.toFixed(1)}" y="${this.H - 1}" text-anchor="${x < x0 + 8 ? 'start' : x > x1 - 8 ? 'end' : 'middle'}">${num(v, Number.isInteger(v) ? 0 : op.dt != null ? op.dt : d)}${v === tk[tk.length - 1] ? esc(u) : ''}</text>`; }
+      this.gB.innerHTML = s; }
+    const cl = (x) => Math.max(x0 + 24, Math.min(x1 - 24, x)), cy = ty + th / 2;
+    for (const [m, t, v, n] of [[this.mC, this.tC, D.con, 'con'], [this.mS, this.tS, D.sin, 'sin']]) {
+      if (v == null || !isFinite(v)) { fija(m, { visibility: 'hidden' }); if (t.textContent) t.textContent = ''; continue; }
+      const x = X(v); fija(m, { cx: x.toFixed(1), cy, visibility: 'visible', 'data-tt': `${n === 'con' ? 'Con' : 'Sin'} propuesta|${num(v, d)}${u}` });
+      fija(t, { x: cl(x).toFixed(1) }); const tx = `${n} ${num(v, d)}${u}`; if (t.textContent !== tx) t.textContent = tx; }
+  }
+}
+
+/* ---------- barras segmentadas (una por corrida, misma escala): partes de un todo con su % impreso si cabe ---------- */
+/* filas: [{n, segs: [{v, c, n}], txt}] */
+export function segBarras(filas, W, op = {}) {
+  const h = 16, gapF = 8, Lw = 30, Rw = op.rw || 50, x0 = Lw, x1 = W - Rw, bw = x1 - x0, H = filas.length * (h + gapF) - gapF + 2;
+  const max = op.max || Math.max(1e-9, ...filas.map((f) => f.segs.reduce((a, s) => a + Math.max(0, s.v), 0)));
+  let s = `<svg class="tb-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(op.aria || '')}">`;
+  filas.forEach((f, i) => { const y = i * (h + gapF), tot = f.segs.reduce((a, q) => a + Math.max(0, q.v), 0); let x = x0;
+    s += `<text class="tb-tn" x="0" y="${y + h / 2 + 3.5}">${esc(f.n)}</text>`;
+    const vis = f.segs.filter((q) => q.v > 0);
+    vis.forEach((q, j) => { const w = q.v / max * bw, ww = Math.max(0.5, w - (j < vis.length - 1 ? 2 : 0)), pct = tot ? q.v / tot * 100 : 0;
+      s += `<rect x="${x.toFixed(1)}" y="${y}" width="${ww.toFixed(1)}" height="${h}" rx="3" fill="${q.c}"${f.hueca ? ` fill-opacity=".28" stroke="${q.c}" stroke-dasharray="3 2"` : ''} data-tt="${esc(`${f.n} propuesta · ${q.n}|${q.txt || num(q.v, 1)}|${num(pct)} % del total`)}"/>`;
+      const lab = num(pct) + '%'; if (ww > lab.length * 5.6 + 6) s += `<text class="tb-seg" style="fill:${f.hueca ? 'var(--pi-ink,#f4f3ef)' : q.ink || '#fff'}" x="${(x + 4).toFixed(1)}" y="${y + h / 2 + 3.5}">${lab}</text>`; x += w; });
+    s += `<text class="tb-tv" x="${W}" y="${y + h / 2 + 3.5}" text-anchor="end">${esc(f.txt || '')}</text>`; });
   return s + '</svg>';
 }
 

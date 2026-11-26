@@ -54,13 +54,15 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
   let HIDRO = null, HIDRO_P = null, FOCO = null; // huertas y recorrido de cubiertas de E8
   const hidroponia = (on, pre = false) => { // pre: armarlas escondidas (precarga en ratos libres, data3d/escenario.js)
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = !on; // las terrazas son hidropónicas (no camas de tierra)
-    if (HIDRO) { HIDRO.ver(on); FOCO?.ver(on); return HIDRO; } if (!on && !pre) return;
+    if (HIDRO) { HIDRO.ver(on); if (!on) FOCO?.ver(false); return HIDRO; } if (!on && !pre) return; /* el recorrido de cubiertas (FOCO) lo abre solo la simulación 02 con propuesta: focoCubiertas() */
     /* determinismo: la lista de cubiertas incluye los techos altos y de las torres, que llegan a medida que cargan los edificios; se espera a que
        estén todos (T3.edifCompletos) para que la lista, y con ella la simulación de polinizadores, no dependa del tiempo de carga (tope 120 s) */
     const listos = () => new Promise(r => { const t0 = Date.now(); const mira = () => (T3.edifCompletos || Date.now() - t0 > 120000) ? r() : setTimeout(mira, 500); mira(); });
-    if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=27'), listos(), fetch('data3d/escenario01_construcciones.geojson?v=2').then(r => { if (!r.ok) throw new Error(`Catastro HTTP ${r.status}`); return r.json(); })]).then(([m, , catastro]) => {
-      // Solo cubiertas que coinciden espacialmente con una construcción oficial de 15 pisos o más.
-      // La altura de la malla sirve para dibujar; no se presenta como altura física medida.
+    if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=28'), listos(), fetch('data3d/escenario01_construcciones.geojson?v=2').then(r => { if (!r.ok) throw new Error(`Catastro HTTP ${r.status}`); return r.json(); })]).then(([m, , catastro]) => {
+      /* ORDEN DE INSTALACIÓN (la lista que recibe huertas_hidro.js se instala en este orden, según avance el modelo semanal):
+         1) cubiertas que coinciden espacialmente con una construcción oficial de 15 pisos o más (Catastro), de más a menos pisos;
+         2) las demás cubiertas de antes (E8 «Huertas en cubiertas de vivienda en altura», torres con balcones y techos altos),
+            de la más alta a la más baja según la altura de la malla 3D (ilustrativa, no medida oficial). */
       const cubiertas = (T3.techosAltos || []).map(t => ({ ...t, cx: t.W.reduce((s, p) => s + p[0], 0) / t.W.length, cz: t.W.reduce((s, p) => s + p[1], 0) / t.W.length }));
       const usadas = new Set(), techos = [];
       const candidatos = catastro.features.filter(f => f.properties.pisos >= 15).sort((a, b) => a.properties.pisos - b.properties.pisos || String(a.id).localeCompare(String(b.id)));
@@ -77,10 +79,20 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
         usadas.add(mejor);
         techos.push({ W: mejor.W, h: mejor.h, identificadorCatastral: f.id, pisos: f.properties.pisos, longitud: f.properties.longitud, latitud: f.properties.latitud });
       }
+      techos.sort((a, b) => b.pisos - a.pisos); // estable: a igual número de pisos queda el orden del cruce
       T3.hidroCatastro = { candidatos: candidatos.length, cubiertas: techos.length, ids: techos.map(t => t.identificadorCatastral) };
-      return Promise.all([m.iniciarHidroponia({ THREE, T3, techos, movil }), import('./cubiertas_foco.js?v=7')]).then(([h, foco]) => { FOCO = foco.crearFocoCubiertas({ THREE, T3, techos, hidro: h }); return h; });
-    }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); FOCO?.ver(on2); if (on2 && T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er)); return HIDRO_P;
+      const cat = techos.slice(), clave = (t) => { let x = 0, z = 0; for (const q of t.W) { x += q[0]; z += q[1]; } return Math.round(x / t.W.length / 4) + ',' + Math.round(z / t.W.length / 4); };
+      const vistos = new Set(cat.map(clave)), e8 = D.estrategias.find(x => x.id === 'E8'), c8 = e8 && e8.capas.find(x => /cubiertas/i.test(x.n));
+      const resto = (c8 ? (c8.techos || []).map(t => ({ W: W2(t.slice(0, -1)), h: t[t.length - 1] / 10 })).filter(t => !dentro || dentro(t.W[0][0], t.W[0][1])) : [])
+        .concat(T3.torresTechos || [], (() => { const uW = new Set([...usadas].map(c => c.W)); return (T3.techosAltos || []).filter(t => !uW.has(t.W)); })())
+        .filter(t => { const k = clave(t); if (vistos.has(k)) return false; vistos.add(k); return true; })
+        .sort((a, b) => b.h - a.h);
+      const lista = cat.concat(resto.map(t => ({ W: t.W, h: t.h })));
+      return Promise.all([m.iniciarHidroponia({ THREE, T3, techos: lista, movil }), import('./cubiertas_foco.js?v=8')]).then(([h, foco]) => { FOCO = foco.crearFocoCubiertas({ THREE, T3, techos: cat, hidro: h }); return h; });
+    }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (on2 && T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er)); return HIDRO_P;
   };
+  /* recorrido de las cubiertas de 15 pisos (data3d/cubiertas_foco.js): solo en la simulación 02 Abastecimiento con propuesta (data3d/limpio.js) */
+  const focoCubiertas = (on) => { if (!on) { FOCO?.ver(false); return; } const p = hidroponia(true); Promise.resolve(p && p.then ? p : HIDRO).then(() => FOCO?.ver(true)).catch(() => {}); };
   // E8 Red distribuida de producción alimentaria: sin manchas de color; una red de líneas que une todas las huertas (lotes, cubiertas,
   // viviendas) con sus vecinas, y la cámara se aleja para verla entera. Se apaga con el mismo botón.
   let RED8 = null, camAntes = null;
@@ -230,6 +242,7 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
       return { c: [(x0 + x1) / 2, (z0 + z1) / 2], s: Math.max(x1 - x0, z1 - z0) }; },
     marcar: (id, on) => { PREN[id] = on; conexiones(); }, // E1 y E3 tienen su propio plan: solo cuentan para las conexiones
     // sitios de huerta en el suelo (lotes baldíos) para las colmenas y lombrices de la red biótica
+    focoCubiertas, // recorrido de las cubiertas de 15 pisos (simulación 02)
     hidroponia: (on = true, pre = false) => hidroponia(on, pre), // huertas hidropónicas en techos y balcones con sus polinizadores (solo con la propuesta: data3d/escenario.js)
     sitios: () => { const e = D.estrategias.find(x => x.id === 'E8'); const c = e && e.capas.find(x => /baldío/i.test(x.n)); return c ? c.lotes.map(l => ({ id: 'E8', n: 'Huerta en lote baldío', poly: W2(l) })) : []; }
   };
