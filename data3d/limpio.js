@@ -211,11 +211,11 @@ export function iniciarLimpio({ T3 }) {
   let escE = 'hoy';
   const idDe = (par) => escE === 'con' ? 2 * par : 2 * par - 1;
   function abrirRecorridoDePar(par, con = false, id = null) {
-    import('./recorrido_movilidad.js?v=2').then(m => {
+    import('./recorrido_movilidad.js?v=3').then(m => {
       if (par !== 2) return m.cerrarRecorrido();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorrido({ con }).catch(e => console.warn('recorrido movilidad:', e)); }, 150);
     }).catch(e => console.warn('recorrido movilidad:', e));
-    import('./recorrido_residuos.js?v=1').then(m => {
+    import('./recorrido_residuos.js?v=2').then(m => {
       if (par !== 3) return m.cerrarRecorridoResiduos();
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorridoResiduos({ con }).catch(e => console.warn('recorrido residuos:', e)); }, 150);
     }).catch(e => console.warn('recorrido residuos:', e));

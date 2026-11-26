@@ -18,7 +18,7 @@ const COL = { sin: '#e76624', con: '#338ced' };
 const SEMILLA = 1;
 let T3 = null, THREE = null, M = null, CIE = null, VIAS = null, CORTE = null, PARCHES = null;
 let st = null; // estado del recorrido abierto
-let GR = null; const EXC = []; // blanco y negro (data3d/gris.js) y lo que queda en color
+let GR = null; const EXC = window.KEN_REC_EXCLUIR || (window.KEN_REC_EXCLUIR = []); // ambos recorridos comparten el blanco y negro
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const nf = (v, d = 0) => (v == null || !isFinite(v)) ? '—' : (+v).toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -30,7 +30,7 @@ async function preparar() {
   if (!M) { M = await import('./simulaciones12.js?v=31'); if (M.cargarDatos) await M.cargarDatos(); }
   if (!VIAS || !CIE) { const m = await import('./cierre_gradual.js?v=6'); VIAS = m.VIAS; CIE = window.KEN_CIERRE || m.crearCierre({ T3, RELOJ }); }
   if (!PARCHES) PARCHES = (await import('./sim_red_datos.js?v=2')).PARCHES;
-  if (!GR) GR = (await import('./gris.js?v=1')).crearGris({ T3, excluir: EXC }); // blanco y negro de verdad (vistas 1 y 3): todo menos lo que está en EXC
+  if (!GR) GR = window.KEN_REC_GRIS || (window.KEN_REC_GRIS = (await import('./gris.js?v=1')).crearGris({ T3, excluir: EXC }));
   if (!CORTE) CORTE = await fetch('data3d/movilidad_corte.json?v=2').then(r => r.json());
 }
 

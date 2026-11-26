@@ -8,7 +8,7 @@ import { MERCADOS } from './sim_red_datos.js?v=2';
 
 let actual = null;
 let GR = null;
-const EXC = [];
+const EXC = window.KEN_REC_EXCLUIR || (window.KEN_REC_EXCLUIR = []);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const num = (v, d = 1) => Number.isFinite(v) ? v.toLocaleString('es-CO', { minimumFractionDigits:d, maximumFractionDigits:d }) : '—';
 const limitar = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -168,7 +168,7 @@ export async function abrirRecorridoResiduos({ con=false }={}) {
   const def=SIMS.find(x=>x.id===(con?6:5)),valores={};for(const sl of def.sliders){const main=document.querySelector(`#su-der input[data-k="${CSS.escape(sl.k)}"]`);valores[sl.k]=main?+main.value:sl.val;}
   const s={root,caja:root.querySelector('section'),overlay:root.querySelector('canvas'),ctx:root.querySelector('canvas').getContext('2d'),canvas3d:T3.renderer.domElement,filtro:T3.renderer.domElement.style.filter,T3,THREE:T3.THREE,con,valores,anio:0,serie:[],solicitud:0,worker:null,play:0,frame:0,p:new T3.THREE.Vector3(),general:{p:T3.camera.position.clone(),c:T3.orbit.target.clone()}};
   s.modelo=figura(s);s.estaciones=estaciones3D(s);EXC.length=0;EXC.push(s.estaciones.G,s.modelo);
-  GR=crearGris({T3,excluir:EXC});actual=s;
+  GR=window.KEN_REC_GRIS || (window.KEN_REC_GRIS=crearGris({T3,excluir:EXC}));actual=s;
   root.querySelector('.rr-salir').onclick=cerrarRecorridoResiduos;
   s.tecla=e=>{if(e.key==='Escape')cerrarRecorridoResiduos();};addEventListener('keydown',s.tecla);
   root.querySelectorAll('nav button').forEach(b=>b.onclick=()=>vista(s,b.dataset.ir));
