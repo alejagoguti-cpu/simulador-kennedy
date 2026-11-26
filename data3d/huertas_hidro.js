@@ -59,9 +59,9 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   ]);
   const gRackMetal = mergeGeometries([-1.9, 0, 1.9].map(x => new THREE.BufferGeometry().copy(caja(0.04, 0.04, 1.3, x, 1.5, 0))));
   const gRackPl = mergeGeometries(nivelesA.flatMap(([y, d]) => [-1, 1].map(s => { const g = new THREE.PlaneGeometry(4, 0.62).rotateX(-Math.PI / 2 + s * 0.45); g.translate(0, y + 0.16, s * d); return g; })));
-  // torre vertical aeropónica: 1,9 m, con matas en cruz
-  const gTorre = mergeGeometries([new THREE.CylinderGeometry(0.11, 0.13, 1.9, 10).translate(0, 0.95, 0), new THREE.CylinderGeometry(0.28, 0.3, 0.32, 12).translate(0, 0.16, 0)]);
-  const gTorrePl = mergeGeometries([0, 1, 2].map(k => new THREE.PlaneGeometry(0.62, 1.75).rotateY(k * Math.PI / 3).translate(0, 1.0, 0)));
+  // Referencia visual aportada: torre blanca de 2,10 m, depósito circular de 0,78 m de diámetro y 0,38 m de alto.
+  const gTorre = mergeGeometries([new THREE.CylinderGeometry(0.105, 0.13, 1.72, 12).translate(0, 1.24, 0), new THREE.CylinderGeometry(0.39, 0.39, 0.38, 16).translate(0, 0.19, 0)]);
+  const gTorrePl = mergeGeometries([0, 1, 2, 3].map(k => new THREE.PlaneGeometry(0.57, 1.56).rotateY(k * Math.PI / 4).translate(0, 1.22, 0)));
   // túnel de policarbonato (8 m x 4 m, arco de 2,6 m) y tanque
   const gTunel = new THREE.CylinderGeometry(2.1, 2.1, 8, 16, 1, true, -Math.PI / 2, Math.PI).rotateZ(Math.PI / 2).rotateX(0).scale(1, 1.2, 1);
   const gTunelArcos = mergeGeometries([-4, -2, 0, 2, 4].map(x => new THREE.TorusGeometry(2.1, 0.03, 4, 16, Math.PI).rotateY(Math.PI / 2).scale(1, 1.2, 1).translate(x, 0, 0)));
@@ -89,31 +89,14 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     const inclinado = window.esDosAguas && window.esDosAguas(W.map(q => [q[0], q[1]]), t.h); // casas a dos aguas: sin huerta
     if (inclinado) return;
     const ux = Math.cos(ang), uz = Math.sin(ang), vx = -uz, vz = ux, rot = -ang;
-    let caseta = null; if (t.h >= 16.5) { for (const f of [0, 0.25, -0.25, 0.45, -0.45]) { const x = cx + ux * f * 10, z = cz + uz * f * 10; if (enPoli(W, x, z) && distBorde(W, x, z) > 3.2) { caseta = [x, z]; meter('caseta', x, y, z, rot); break; } } }
-    // rejilla de racks a lo largo del eje largo: filas cada 2,6 m, racks de 4 m cada 4,8 m, a más de 1,2 m del antepecho
-    let puestos = 0; const max = Math.min(movil ? 10 : 34, Math.floor(area / 22)), tunel = area > 450 && rnd() < 0.45;
-    for (let v = -40; v <= 40 && puestos < max; v += 2.6) for (let u = -60; u <= 60 && puestos < max; u += 4.8) {
+    // Filas de módulos independientes con pasillos libres, como en la imagen.
+    let puestos = 0; const max = Math.min(movil ? 36 : 100, Math.floor(area / 3.5));
+    for (let v = -40; v <= 40 && puestos < max; v += 2.1) for (let u = -60; u <= 60 && puestos < max; u += 1.55) {
       const x = cx + u * ux + v * vx, z = cz + u * uz + v * vz;
-      if (!enPoli(W, x, z) || distBorde(W, x, z) < (tunel && puestos < 2 ? 2.6 : 2.3) || (caseta && Math.hypot(x - caseta[0], z - caseta[1]) < 4.6)) continue;
-      if (tunel && puestos === 0) { meter('tunel', x, y, z, rot); puestos++; continue; }
-      if (rnd() < 0.3) { meter('torre', x - ux * 0.8, y, z - uz * 0.8, rot); meter('torre', x + ux * 0.8, y, z + uz * 0.8, rot); FLORES.push([x + ux * 0.8 + vx * 0.45, y + 1.25, z + uz * 0.8 + vz * 0.45, 0, ti, vx, vz]); }
-      else { meter('rack', x, y, z, rot); const sd = rnd() < 0.5 ? 1 : -1; FLORES.push([x + ux * (rnd() * 3 - 1.5) + vx * sd * 0.95, y + 1.0, z + uz * (rnd() * 3 - 1.5) + vz * sd * 0.95, 0, ti, vx * sd, vz * sd]); } // frente a las lechugas del nivel medio, por fuera del rack
+      if (!enPoli(W, x, z) || distBorde(W, x, z) < 1.35) continue;
+      meter('torre', x, y, z, rot);
+      FLORES.push([x + vx * 0.42, y + 1.4, z + vz * 0.42, 0, ti, vx, vz]);
       puestos++;
-    }
-    if (puestos) { const x = cx - (ux + vx) * 1.2, z = cz - (uz + vz) * 1.2; if (enPoli(W, x, z)) meter('tanque', x, y, z, 0); VERDES.push([W, y, ti]); } // cubierta verde completa bajo la huerta
-    // balcones: edificios de 4 pisos o más, en los lados largos, una jardinera cada ~5 m en pisos alternos
-    if (t.h >= 16.5) { // balcones de las torres (las que se modelan también en Foto real)
-      const ccw = A > 0;
-      for (let i = 0; i < n; i++) {
-        const p = W[i], q = W[(i + 1) % n], L = Math.hypot(q[0] - p[0], q[1] - p[1]); if (L < 7) continue;
-        const dx = (q[0] - p[0]) / L, dz = (q[1] - p[1]) / L, nx = ccw ? dz : -dz, nz = ccw ? -dx : dx; // normal hacia afuera
-        const rotB = Math.atan2(nx, nz);
-        for (let piso = 1; piso * 3 + 1 < t.h - 2; piso++) for (let s = 2.5; s < L - 2; s += 5) {
-          if (rnd() > (movil ? 0.22 : 0.42)) continue;
-          const x = p[0] + dx * s + nx * 0.05, z = p[1] + dz * s + nz * 0.05, yy = piso * 3 + 0.95;
-          meter('jard', x, yy, z, rotB); if (rnd() < 0.5) FLORES.push([x + nx * 0.75, yy + 0.75, z + nz * 0.75, 1, ti, nx, nz]);
-        }
-      }
     }
   });
   // índice espacial de flores (para que los polinizadores elijan la siguiente cerca)
@@ -151,7 +134,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   // caseta del ascensor y la escalera: volumen de 4,4 x 3,4 m y 3,2 m de alto, con su puerta metálica de salida a la cubierta y alero
   const gCaseta = new THREE.BoxGeometry(4.4, 3.2, 3.4).translate(0, 1.6, 0), gPuerta = mergeGeometries([new THREE.BoxGeometry(1.0, 2.1, 0.08).translate(0, 1.05, 1.72), new THREE.BoxGeometry(4.8, 0.14, 3.9).translate(0, 3.27, 0)]);
   const matCaseta = new THREE.MeshStandardMaterial({ color: 0xd9d3c7, roughness: 0.9 }), matPuerta = new THREE.MeshStandardMaterial({ color: 0x5b6168, roughness: 0.5, metalness: 0.5 });
-  const capa = (k, partes) => partes.map(([g, m, sombra, det]) => { const im = new THREE.InstancedMesh(g, m, CAP[k]); im.count = 0; im.castShadow = !!sombra && !movil; im.frustumCulled = false; im.userData.det = !!det; grupo.add(im); return im; });
+  const capa = (k, partes) => partes.map(([g, m, sombra, det]) => { const im = new THREE.InstancedMesh(g, m, CAP[k]); im.count = 0; im.castShadow = !!sombra && !movil; im.frustumCulled = false; im.userData.det = !!det; im.userData.tipo = k; grupo.add(im); return im; });
   const IM = { // det: plantas (detalle chico): solo hasta CERCA_PL m de la cámara (más lejos se ven de menos de un píxel; la cubierta verde ya da el color)
     rack: capa('rack', [[gRack, matPVC, true], [gRackMetal, matMetal], [gRackPl, matPlanta, false, true]]),
     torre: capa('torre', [[gTorre, matPVC, true], [gTorrePl, matMata, false, true]]),
@@ -328,9 +311,9 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
 #dock #hid-red{padding:12px 14px!important;box-shadow:none!important;border:0!important;background:none!important}
 @media(max-width:760px){#hid-red{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px);padding:10px 12px}#hid-red .hr-l,#hid-red .hr-t small{display:none}#hid-red .hr-t{margin:2px 0 8px}#hid-red .hr-k{padding:6px 0 0;border-bottom:0}#hid-red .hr-k strong{font-size:16px}}`;
   document.head.appendChild(css);
-  const panel = document.createElement('div'); panel.id = 'hid-red'; panel.dataset.on = '0';
+  const panel = document.createElement('div'); panel.id = 'hid-red'; panel.dataset.on = '0'; panel.dataset.cubiertas = String(techos.length); panel.dataset.modulos = String(INST.torre.length);
   const maxC = Math.max(...Object.values(ESP).map(e => e.cant));
-  panel.innerHTML = '<div class="hr-h">Polinización · con la propuesta</div><div class="hr-t">Huertas hidropónicas en techos y balcones<small>Los polinizadores vuelan de flor en flor y de un edificio a otro.</small></div>'
+  panel.innerHTML = '<div class="hr-h">Polinización · con la propuesta</div><div class="hr-t">Huertas en construcciones de 15 pisos o más<small>' + techos.length + ' cubiertas catastrales · ' + INST.torre.length + ' módulos propuestos. Pendiente de verificación técnica.</small></div>'
     + '<div class="hr-k"><div><strong id="hid-v">0</strong><small>visitas a flores</small></div><div><strong id="hid-x">0</strong><small>vuelos entre edificios</small></div><div><strong id="hid-e">0</strong><small>edificios conectados</small></div></div>'
     + '<div class="hr-l">' + Object.values(ESP).map(e => `<div class="hr-r" title="${e.rol}"><i style="background:${e.c}"></i><span>${e.n}<small>${e.sci}</small></span><u><b style="width:${(e.cant / maxC * 100).toFixed(0)}%;background:${e.c}"></b></u><em>${e.cant}</em></div>`).join('') + '</div>';
   document.body.appendChild(panel);

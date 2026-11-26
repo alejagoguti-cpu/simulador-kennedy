@@ -51,16 +51,35 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
     for (let y = 4; y < 64; y += 16) { g.fillStyle = 'rgba(96,150,64,.22)'; g.fillRect(4, y, 56, 6); for (let x = 6; x < 58; x += 4) { g.fillStyle = ['rgba(130,185,80,.35)', 'rgba(90,140,55,.35)', 'rgba(140,70,90,.25)'][(x + y) % 3]; g.beginPath(); g.arc(x, y + 3, 1.8, 0, 7); g.fill(); } }
     texSurcos = new THREE.CanvasTexture(cv); texSurcos.wrapS = texSurcos.wrapT = THREE.RepeatWrapping; texSurcos.colorSpace = THREE.SRGBColorSpace; return texSurcos;
   }
-  let HIDRO = null, HIDRO_P = null; // huertas hidropónicas de E8 (se arman la primera vez que se prende E8)
+  let HIDRO = null, HIDRO_P = null, FOCO = null; // huertas y recorrido de cubiertas de E8
   const hidroponia = (on, pre = false) => { // pre: armarlas escondidas (precarga en ratos libres, data3d/escenario.js)
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = !on; // las terrazas son hidropónicas (no camas de tierra)
-    if (HIDRO) { HIDRO.ver(on); return HIDRO; } if (!on && !pre) return;
+    if (HIDRO) { HIDRO.ver(on); FOCO?.ver(on); return HIDRO; } if (!on && !pre) return;
     /* determinismo: la lista de cubiertas incluye los techos altos y de las torres, que llegan a medida que cargan los edificios; se espera a que
        estén todos (T3.edifCompletos) para que la lista, y con ella la simulación de polinizadores, no dependa del tiempo de carga (tope 120 s) */
     const listos = () => new Promise(r => { const t0 = Date.now(); const mira = () => (T3.edifCompletos || Date.now() - t0 > 120000) ? r() : setTimeout(mira, 500); mira(); });
-    if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=24'), listos()]).then(([m]) => { const e = D.estrategias.find(x => x.id === 'E8'), c = e && e.capas.find(x => /cubiertas/i.test(x.n)); if (!c) return null;
-      const techos = (c.techos || []).map(t => ({ W: W2(t.slice(0, -1)), h: t[t.length - 1] / 10 })).filter(t => !dentro || dentro(t.W[0][0], t.W[0][1]));
-      return m.iniciarHidroponia({ THREE, T3, techos: (() => { const L = techos.concat(T3.torresTechos || [], T3.techosAltos || []), vistos = new Set(); return L.filter(t => { let x = 0, z = 0; for (const q of t.W) { x += q[0]; z += q[1]; } const k = Math.round(x / t.W.length / 4) + ',' + Math.round(z / t.W.length / 4); if (vistos.has(k)) return false; vistos.add(k); return true; }); })(), movil }); }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); if (on2 && T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er)); return HIDRO_P;
+    if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=26'), listos(), fetch('data3d/escenario01_construcciones.geojson?v=2').then(r => { if (!r.ok) throw new Error(`Catastro HTTP ${r.status}`); return r.json(); })]).then(([m, , catastro]) => {
+      // Solo cubiertas que coinciden espacialmente con una construcción oficial de 15 pisos o más.
+      // La altura de la malla sirve para dibujar; no se presenta como altura física medida.
+      const cubiertas = (T3.techosAltos || []).map(t => ({ ...t, cx: t.W.reduce((s, p) => s + p[0], 0) / t.W.length, cz: t.W.reduce((s, p) => s + p[1], 0) / t.W.length }));
+      const usadas = new Set(), techos = [];
+      const candidatos = catastro.features.filter(f => f.properties.pisos >= 15).sort((a, b) => a.properties.pisos - b.properties.pisos || String(a.id).localeCompare(String(b.id)));
+      for (const f of candidatos) {
+        if (techos.length >= 50) break;
+        const [x, z] = T3.llAMundo(f.properties.longitud, f.properties.latitud);
+        let mejor = null, distancia = 18;
+        for (const t of cubiertas) {
+          if (usadas.has(t)) continue;
+          const d = Math.hypot(x - t.cx, z - t.cz);
+          if (d < distancia) { mejor = t; distancia = d; }
+        }
+        if (!mejor) continue;
+        usadas.add(mejor);
+        techos.push({ W: mejor.W, h: mejor.h, identificadorCatastral: f.id, pisos: f.properties.pisos, longitud: f.properties.longitud, latitud: f.properties.latitud });
+      }
+      T3.hidroCatastro = { candidatos: candidatos.length, cubiertas: techos.length, ids: techos.map(t => t.identificadorCatastral) };
+      return Promise.all([m.iniciarHidroponia({ THREE, T3, techos, movil }), import('./cubiertas_foco.js?v=6')]).then(([h, foco]) => { FOCO = foco.crearFocoCubiertas({ THREE, T3, techos, hidro: h }); return h; });
+    }).then(h => { HIDRO = h; window.KEN_HIDRO = h; /* escenarios_sim.js abre las cubiertas año a año */ if (h) { const on2 = T3.escenario !== 'hoy'; h.ver(on2); FOCO?.ver(on2); if (on2 && T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false; } return h; }).catch(er => console.warn('huertas hidropónicas:', er)); return HIDRO_P;
   };
   // E8 Red distribuida de producción alimentaria: sin manchas de color; una red de líneas que une todas las huertas (lotes, cubiertas,
   // viviendas) con sus vecinas, y la cámara se aleja para verla entera. Se apaga con el mismo botón.

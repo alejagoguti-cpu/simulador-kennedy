@@ -1433,6 +1433,7 @@ async function initTodoReal() {
     T3 = { THREE, renderer, scene, camera, orbit, hemi, sun, skyU, liviano: LIVIANO, movil: MOVIL, night: false, anim: null, last: 0, counts: {},
       waterU: { value: 0 }, sunOff: new THREE.Vector3(0.42, 0.62, 0.35).normalize().multiplyScalar(2600), suelo, reloj: vistaT3(RELOJ) /* vista del reloj universal (minuto del día, día, play, vel) para cielo, biótica, tablero, orígenes */ };
     window.KEN_T3 = T3; T3.lw = lw; T3.LC = LC; // depuración · lw (modelo -> mundo) desde el principio: el metro y otros módulos lo usan antes de que cargue el tráfico
+    T3.llAMundo = (lng, lat) => lw((lng - GEO.LNG0) * MXg - GEO.EX, (lat - GEO.LAT0) * MYg - GEO.EY);
     if (GPU_DEBIL) { T3.gpuDebil = true; T3.aoLento = true; T3.nivelBajo = 1; console.info('[rendimiento] tarjeta gráfica integrada: calidad liviana desde el inicio (?calidad=alta para la completa)'); }
     { let ok; T3.pArboles = new Promise(r => ok = r); T3.arbolesOk = ok; }
     T3.esperaArboles = () => Promise.race([T3.pArboles, new Promise(r => setTimeout(r, KEN ? 1500 : 15000))]); // Kennedy: los edificios y el tráfico no esperan a los árboles
@@ -3782,7 +3783,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=32'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=39'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
