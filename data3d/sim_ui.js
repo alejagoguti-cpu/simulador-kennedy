@@ -40,7 +40,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=30'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=31'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -295,7 +295,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarTablero(); ponerVerde(I); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0));
-      const g = M.gameOver(R.s); if (g && R.def && R.def.par) { gameOver(g); return; } /* la simulación base no se detiene: el game over sale como aviso y sigue corriendo */
+      const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
       if (I.sem % 13 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada trimestre: los picos se recalculan con lo que ya pasó // cada medio año: los picos se recalculan con lo que ya pasó
     }
     if (R.hist.length >= FIN && !R.fin) { R.fin = true; if (R.def && R.def.par) { RELOJ.pausarAños(true); abrirInforme(); } else dispatchEvent(new Event('lp-vuelta')); /* simulación base (sin escenario): vuelve a empezar sola */ }

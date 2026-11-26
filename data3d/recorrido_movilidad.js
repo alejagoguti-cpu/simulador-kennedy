@@ -27,7 +27,7 @@ const movil = () => innerWidth < 760;
 async function preparar() {
   T3 = window.KEN_T3; if (!T3 || !T3.camera || !T3.net) throw new Error('la maqueta aún no está lista');
   THREE = T3.THREE;
-  if (!M) { M = await import('./simulaciones12.js?v=30'); if (M.cargarDatos) await M.cargarDatos(); }
+  if (!M) { M = await import('./simulaciones12.js?v=31'); if (M.cargarDatos) await M.cargarDatos(); }
   if (!VIAS || !CIE) { const m = await import('./cierre_gradual.js?v=6'); VIAS = m.VIAS; CIE = window.KEN_CIERRE || m.crearCierre({ T3, RELOJ }); }
   if (!PARCHES) PARCHES = (await import('./sim_red_datos.js?v=2')).PARCHES;
   if (!GR) GR = (await import('./gris.js?v=1')).crearGris({ T3, excluir: EXC }); // blanco y negro de verdad (vistas 1 y 3): todo menos lo que está en EXC
@@ -79,6 +79,34 @@ function planoCorte(color) {
   const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0], y0 + 0.5, a[1]), new THREE.Vector3(b[0], y0 + 0.5, b[1]), new THREE.Vector3(b[0], y0 + H, b[1]), new THREE.Vector3(a[0], y0 + H, a[1]), new THREE.Vector3(a[0], y0 + 0.5, a[1])]);
   G.add(new THREE.Line(lg, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.95, depthTest: false })));
   G.userData = { a, b, H, y0 }; return G;
+}
+
+/* Puente peatonal propuesto sobre las dos calzadas. Posición sobre el corte OSM;
+   geometría y accesos ilustrativos, sin atribuirle dimensiones de proyecto. */
+function crearPuente() {
+  const P = CORTE.punto, nx = -P.uz, nz = P.ux;
+  const s0 = Math.min(...CORTE.cruces.map(c => c.s)) - 19;
+  const s1 = Math.max(...CORTE.cruces.map(c => c.s)) + 19;
+  const largo = s1 - s0, centro = (s0 + s1) / 2, y0 = T3.viaY || .6, alto = y0 + 11;
+  const G = new THREE.Group(); G.name = 'rm-puente-propuesto';
+  G.position.set(P.x, 0, P.z); G.rotation.y = Math.atan2(-nz, nx);
+  const azul = new THREE.MeshBasicMaterial({ color: 0x338ced, side: THREE.DoubleSide });
+  const claro = new THREE.MeshBasicMaterial({ color: 0xc9ecff, side: THREE.DoubleSide });
+  const vidrio = new THREE.MeshBasicMaterial({ color: 0x89d5ff, transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide });
+  const pieza = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); G.add(m); return m; };
+  pieza(new THREE.BoxGeometry(largo, .8, 5.4), azul, centro, alto, 0);
+  pieza(new THREE.BoxGeometry(largo, .22, 4.5), claro, centro, alto + .52, 0);
+  for (const z of [-2.65, 2.65]) {
+    pieza(new THREE.BoxGeometry(largo, 1.25, .12), vidrio, centro, alto + 1.42, z);
+    pieza(new THREE.BoxGeometry(largo, .16, .22), claro, centro, alto + 2.1, z);
+    for (let s = s0; s <= s1; s += 8) pieza(new THREE.BoxGeometry(.18, 2, .22), claro, s, alto + 1.15, z);
+  }
+  for (const s of [s0, s1]) {
+    pieza(new THREE.BoxGeometry(4, alto - y0, 4), vidrio, s, (alto + y0) / 2, 0);
+    for (const z of [-2.3, 2.3]) pieza(new THREE.BoxGeometry(.3, alto - y0, .3), claro, s, (alto + y0) / 2, z);
+    pieza(new THREE.BoxGeometry(7, .7, 7), azul, s, y0 + .35, 0);
+  }
+  return G;
 }
 
 /* ---------- EL PARO: bloqueo de la vía en el corte A–A' (ILUSTRACIÓN, no un conteo) ----------
@@ -162,13 +190,17 @@ function limpiarEts() { for (const o of st.ets) o.e.remove(); st.ets = []; }
 /* ---------- proyección del modelo (misma semilla que la corrida principal) ---------- */
 function proyectar(val, listo) {
   const id = st.con ? 4 : 3, t0 = Math.round(val.cierreT0), dur = Math.round(val.cierreDur), fin = t0 + dur + 6, e = M.crear(id, SEMILLA, val);
-  const R = { t0, dur, antes: null, pico: null, trafMax: 1, dbMax: 0, congMax: 0, t10Max: 0, comidaMin: 1, comidaMinSem: null, faunaMin: 1, muertesCierre: 0, muertesAntes: 0, atrCierre: 0, atrAntes: 0, xDesMin: new Float32Array(PARCHES.length).fill(1), pedidoMin: null, tope: null, nBajo: 0 };
+  const R = { t0, dur, serie: [], antes: null, pico: null, trafMax: 1, dbMax: 0, congMax: 0, t10Max: 0, comidaMin: 1, comidaMinSem: null, faunaMin: 1, muertesCierre: 0, muertesAntes: 0, atrCierre: 0, atrAntes: 0, xDesMin: new Float32Array(PARCHES.length).fill(1), pedidoMin: null, tope: null, nBajo: 0 };
   let w = 0; const tok = st.tok = (st.tok || 0) + 1;
   const tanda = () => {
     if (!st || st.tok !== tok) return; // otra proyección empezó (el deslizador se movió otra vez)
     const hasta = Math.min(fin, w + 40);
     for (; w < hasta; w++) { M.paso(e); const s = w + 1; // semana del modelo que acaba de correr
-      if (s < t0 - 8) continue; const x = M.ind(e), dentro = x.cierre && x.cierre.fase > 0;
+      const x = M.ind(e), dentro = x.cierre && x.cierre.fase > 0;
+      R.serie.push({ sem:s, fase:x.cierre?.fase || 0, trafico:x.cierre?.traficoDesvio || 1,
+        ruido:x.cierre?.ruidoExtraDb || 0, congestion:x.congestion, tiempo:x.tiempo10km,
+        comida:x.comidaMin, fauna:x.avesRuido?.bienestarFauna, gameOver:M.gameOver(e) });
+      if (s < t0 - 8) continue;
       if (s < t0) { R.antes = x; R.muertesAntes += (x.muertes && x.muertes.semana) || 0; R.atrAntes += (x.atropellos && x.atropellos.semana) || 0; continue; }
       if (!dentro) continue;
       R.trafMax = Math.max(R.trafMax, x.cierre.traficoDesvio || 1); R.dbMax = Math.max(R.dbMax, x.cierre.ruidoExtraDb || 0);
@@ -196,6 +228,7 @@ const IC = {
   atras: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',
   barrera: '<rect x="3" y="8" width="18" height="5" rx="1"/><path d="M7 8l3 5M12 8l3 5M17 8l3 5"/><path d="M6 13v6M18 13v6"/>',
+  puente: '<path d="M2 11h20M3 8h18M5 11v9M19 11v9M5 15h14M8 8V5m8 3V5"/>',
   desvio: '<path d="M5 20V9a4 4 0 0 1 4-4h8"/><path d="M14 2l3 3-3 3"/><path d="M5 20h0"/><circle cx="5" cy="20" r="1.4"/>',
   bodega: '<path d="M3 10 12 4l9 6v10H3V10Z"/><path d="M7 20v-6h10v6M7 17h10"/>',
   carriles: '<path d="M5 21 8 3M19 21 16 3"/><path d="M12 5v3M12 11v3M12 17v3"/>',
@@ -330,6 +363,7 @@ function svgCorte(val) {
     out += `<path d="M${a} ${yD}H${b}M${a} ${yD - 5}v10M${b} ${yD - 5}v10" stroke="#e9ebec"/>`;
     out += `<rect x="${(a + b) / 2 - 34}" y="${yD - 11}" width="68" height="22" rx="11" fill="#15171b" stroke="rgba(255,255,255,.2)"/><text x="${(a + b) / 2}" y="${yD + 4}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700" font-family="monospace">${nf(sep)} m</text>`; }
   out += `<rect x="${x0}" y="${yS - 27}" width="${ancho}" height="3" rx="1.5" fill="${col}"/>`;
+  if (st.con) out += `<path d="M${x0 - 28} ${yS - 9}V${yS - 44}H${x0 + ancho + 28}V${yS - 9}" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><path d="M${x0 - 28} ${yS - 39}H${x0 + ancho + 28}" stroke="#c9ecff" stroke-width="2"/><text x="${W / 2}" y="${yS - 51}" text-anchor="middle" fill="#c9ecff" font-size="10" font-weight="700">PUENTE PEATONAL PROPUESTO</text>`;
   out += `<text x="${W / 2}" y="${H - 10}" text-anchor="middle" fill="#646c71" font-size="9" font-family="monospace">esquema sin escala · OSM no trae anchos</text>`;
   return `<svg class="rm-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Corte esquemático de la Av. de las Américas: ${C.map(c => c.lanes + ' carriles').join(' y ')}, ${nf(sep)} metros entre ejes de calzada, cerrada en la prueba">${out}</svg>`;
 }
@@ -338,7 +372,7 @@ function svgCorte(val) {
 /* vista 2 (de cerca al bloqueo): los carros grabados del simulador siguen su recorrido y pasarían por encima del paro; se esconden ahí */
 function carrosSim(ver) { if (!ver && !st.vehOcultos) { st.vehOcultos = T3.scene.children.filter(o => o.name === 'vehiculos' && o.visible); st.vehOcultos.forEach(o => { o.visible = false; }); }
   else if (ver && st.vehOcultos) { st.vehOcultos.forEach(o => { o.visible = true; }); st.vehOcultos = null; } }
-function paso(n) { st.v = n; st.root.querySelectorAll('#rm-top button').forEach(b => { const on = +b.dataset.ir === n; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'step' : 'false'); }); }
+function paso(n) { pausarPlay(); st.v = n; st.root.querySelectorAll('#rm-top button').forEach(b => { const on = +b.dataset.ir === n; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'step' : 'false'); }); }
 /* gris = true: contexto en blanco y negro y en color solo los destellos y la obra; false: el 3D en color (vista 2). KEN_FOCO (atenúa y deja en
    color las capas que pide sim_ui.js) se mantiene apagado mientras el recorrido está abierto. */
 function encender(gris) { st.gris = gris; EXC.length = 0; EXC.push(st.G); if (CIE.grupo) EXC.push(CIE.grupo); if (gris) GR.on(); else GR.off(); if (window.KEN_FOCO && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 0.3 }); }
@@ -360,6 +394,7 @@ function v1() {
       <div title="OpenStreetMap: ${nf(CORTE.ejeAmericas_km, 1)} km de eje en el extracto"><i class="bol">${ico('barrera')}</i><span><b>Av. de las Américas</b><small>bloqueada · ${nf(CORTE.ejeAmericas_km, 1)} km</small></span></div>
       <div title="Única vía principal paralela a 2,5 km o menos (OpenStreetMap, tools/cierre_desvios_datos.mjs)"><i class="bol">${ico('desvio')}</i><span><b>Av. Primero de Mayo</b><small>recibe el desvío</small></span></div>
       <div title="Destino de los camiones de alimentos (modelo del simulador)"><i class="bol">${ico('bodega')}</i><span><b>Corabastos</b><small>llegada de alimentos</small></span></div>
+      ${st.con ? `<div title="Intervención propuesta: posición ilustrativa sobre el corte; sin medidas de diseño"><i class="bol">${ico('puente')}</i><span><b>Puente peatonal</b><small>cruza las dos calzadas</small></span></div>` : ''}
     </div>
     <details><summary>${ico('info')}Fuente${st.con ? ' y supuesto' : ''}</summary><div><div class="fu">Vías: OpenStreetMap (base 2026-06-01, ODbL) · tools/cierre_desvios_datos.mjs<br>Corabastos: modelo del simulador (sim_red_datos.js)</div>${st.con ? '<p class="fu">Con propuesta el modelo suma una 3.ª ruta (pasajes de Bavaria Común): supuesto, sin trazado propio.</p>' : ''}</div></details>
     <div class="acc"><button type="button" class="pri" data-ir="2">Explorar intervención ${ico('flecha')}</button></div>`;
@@ -368,6 +403,7 @@ function v1() {
   etiqueta(ico('barrera') + 'Américas · paro', [CORTE.punto.x, Y, CORTE.punto.z]);
   const mm = medio(polis('mayo')); etiqueta(ico('desvio') + 'Primero de Mayo', [mm[0], Y, mm[1]]);
   etiqueta(ico('bodega') + 'Corabastos', [896, Y, 1146]);
+  if (st.con) etiqueta(ico('puente') + 'Puente propuesto', [CORTE.punto.x, Y, CORTE.punto.z]);
   enlazar(); div.querySelector('button.pri').focus({ preventScroll: true });
 }
 
@@ -383,8 +419,8 @@ function v2() {
   const lado = q => q.s < 0 ? 'sur' : 'norte';
   const div = document.createElement('section'); div.id = 'rm-v2'; div.className = 'rm-box'; div.setAttribute('aria-labelledby', 'rm-v2-t');
   div.innerHTML = `<span class="chip">${ico('corte')}Corte A–A'</span>
-    <h2 id="rm-v2-t">La vía se bloquea</h2>
-    <p class="sub">El paro corta las dos calzadas: los carros quedan quietos en fila.</p>
+    <h2 id="rm-v2-t">${st.con ? 'Un puente cruza el bloqueo' : 'La vía se bloquea'}</h2>
+    <p class="sub">${st.con ? 'La propuesta incorpora un puente peatonal sobre las dos calzadas mientras el tráfico queda detenido.' : 'El paro corta las dos calzadas: los carros quedan quietos en fila.'}</p>
     ${svgCorte(st.val)}
     <div class="mos">
       ${tile('carriles', C.map(q => q.lanes).join('+'), 'carriles', 'd', 'OpenStreetMap: lanes de cada calzada')}
@@ -402,11 +438,13 @@ function v2() {
       <li>Sin aforos: SUMO es un modelo, no un conteo.</li>
       <li>Personas y carros detenidos del 3D: ilustración del bloqueo, no un conteo; el ancho de carril con que se ubican es de dibujo.</li>
       <li>El modelo semanal reparte el cierre en 3 fases (regla de obra [SUP]); un paro corta de una vez.</li></ul>
+      ${st.con ? '<p>El puente es una propuesta visual: su posición sigue el corte OSM; altura, apoyos y accesos son ilustrativos, no un diseño técnico ni un efecto calculado en los indicadores.</p>' : ''}
       <div class="fu">${esc(CORTE.fuente)} · ${esc(CORTE.herramienta)}</div></div></details>
     <div class="acc"><button type="button" class="ico" data-ir="1" title="Vista general" aria-label="Vista general">${ico('mapa')}</button><span class="esp"></span><button type="button" class="pri" data-ir="3">${ico('ajustes')}Cambiar variables</button></div>`;
   st.panel.appendChild(div);
   const P = CORTE.punto, nx = -P.uz, nz = P.ux, ux2 = P.ux, uz2 = P.uz, sm = Math.min(...C.map(q => q.s)) - 28;
   etiqueta(ico('barrera') + 'Paro', [P.x + ux2 * 18, (T3.viaY || 0.6) + 12, P.z + uz2 * 18]); etiqueta(ico('corte') + "A–A'", [P.x + nx * sm, (T3.viaY || 0.6) + 30, P.z + nz * sm]);
+  if (st.con) etiqueta(ico('puente') + 'Puente peatonal propuesto', [P.x + nx * -32, (T3.viaY || .6) + 23, P.z + nz * -32]);
   enlazar(); div.querySelector('button.pri').focus({ preventScroll: true });
 }
 
@@ -427,6 +465,7 @@ function v3() {
     <h2 id="rm-v3-t">Durante el cierre</h2>
     <div class="prog" aria-hidden="true"><i></i></div>
     <div class="kpis" id="rm-inds" aria-live="polite"></div>
+    <div class="acc"><button type="button" class="pri" id="rm-play">▶ Reproducir cierre</button><span id="rm-tiempo" class="fu">Semana anterior al cierre</span></div>
     ${leyenda()}
     <div class="tit">${ico('ajustes')}Variables</div>
     ${sl.map(s => `<div class="sl" title="${esc(s.ayuda || '')}"><i class="bol">${ico(SL_IC[s.k] || 'ajustes')}</i><label for="rm-${s.k}">${esc(SL_N[s.k] || s.n)} ${marca(SL_T[s.k] || 's')}</label><output data-v="${s.k}"></output><input id="rm-${s.k}" type="range" min="${s.min}" max="${s.max}" step="${s.paso}" value="${st.val[s.k]}" data-k="${s.k}"></div>`).join('')}
@@ -438,6 +477,7 @@ function v3() {
       <li>Cada cambio corre el modelo semanal hasta el fin del cierre y pasa el valor a la simulación principal.</li></ul></div></details>
     <div class="acc"><button type="button" class="ico" data-ir="1" title="Vista general" aria-label="Vista general">${ico('mapa')}</button><span class="esp"></span><button type="button" data-ir="2">${ico('corte')}Volver al corte</button></div>`;
   st.panel.appendChild(div);
+  div.querySelector('#rm-play').onclick = reproducirCierre;
   div.querySelectorAll('input[type=range]').forEach(inp => {
     const s = sl.find(x => x.k === inp.dataset.k), o = div.querySelector(`output[data-v="${CSS.escape(s.k)}"]`), pinta = () => { o.textContent = (SL_U[s.k] || (v => nf(v) + ' ' + (s.unidad || '')))(+inp.value); };
     pinta(); inp.oninput = pinta;
@@ -450,13 +490,46 @@ function v3() {
 function sincronizar(k, v) { const i = document.querySelector(`#su-der input[data-k="${CSS.escape(k)}"]`); if (!i) return; i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }
 
 function calcular() {
+  pausarPlay();
   const box = document.getElementById('rm-inds'); if (!box) return; box.classList.add('carga');
   const bar = st.root.querySelector('.prog i'); if (bar) bar.style.width = '0%';
   st.alProgreso = f => { if (bar) bar.style.width = Math.round(f * 100) + '%'; };
   proyectar({ ...st.val }, R => {
     if (!st || st.v !== 3) return; if (bar) bar.style.width = '100%'; box.classList.remove('carga');
     st.R = R; pintarInds(R); pintarTerritorio(R);
+    const b = st.root.querySelector('#rm-play'); if (b) b.disabled = !R.serie.length;
   });
+}
+
+function pausarPlay() {
+  if (!st) return;
+  if (st.play) cancelAnimationFrame(st.play);
+  st.play = 0;
+  const b = st.root.querySelector('#rm-play'); if (b) b.textContent = '▶ Reproducir cierre';
+}
+function reproducirCierre() {
+  if (!st || !st.R?.serie?.length) return;
+  if (st.play) { pausarPlay(); return; }
+  const R = st.R, L = R.serie, go = L.findIndex(p => p.gameOver), ultimo = go >= 0 ? go : L.length - 1;
+  CIE.poner({ via:'americas', fase:0, ruidoExtraDb:0, traficoDesvio:1 });
+  const inicio = performance.now(), boton = st.root.querySelector('#rm-play'); boton.textContent = 'Ⅱ Pausar';
+  const correr = ahora => {
+    if (!st || st.v !== 3) return;
+    const i = Math.min(ultimo, Math.floor((ahora - inicio) / 12000 * (ultimo + 1)));
+    const x = L[i], tr = x.trafico || 1;
+    CIE.poner({ via:'americas', fase:x.fase, ruidoExtraDb:x.ruido, traficoDesvio:tr });
+    st.gMa.userData.base = .25 + .6 * Math.min(1, Math.max(0, tr - 1));
+    st.root.querySelector('.prog i').style.width = Math.round((i + 1) / (ultimo + 1) * 100) + '%';
+    const estado = st.root.querySelector('#rm-tiempo');
+    estado.textContent = x.gameOver ? `GAME OVER · semana ${x.gameOver.sem} · ${x.gameOver.motivo}` : `Semana ${x.sem} · cierre ${Math.round(x.fase * 100)} %`;
+    st.root.querySelector('#rm-inds').innerHTML =
+      `<div class="t"><b>+${nf((tr - 1) * 100)} %</b><span>tráfico en el desvío</span></div>` +
+      `<div class="t"><b>+${nf(x.ruido,1)} dB</b><span>ruido del desvío</span></div>` +
+      `<div class="t"><b>${nf(x.comida * 100)} %</b><span>comida en la zona peor</span></div>` +
+      `<div class="t"><b>${nf(x.congestion)} %</b><span>congestión</span></div>`;
+    if (i >= ultimo) pausarPlay(); else st.play = requestAnimationFrame(correr);
+  };
+  st.play = requestAnimationFrame(correr);
 }
 
 function pintarInds(R) {
@@ -512,7 +585,7 @@ function cuadro() {
   const tapa = (x, y) => (rp && x > rp.left - 110 && x < rp.right + 110 && y > rp.top - 4 && y < rp.bottom + 30) || (y < top.bottom + 30 && x > top.left - 60 && x < top.right + 60);
   for (const o of st.ets) { v.copy(o.p).project(T3.camera); const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H, vis = v.z < 1 && x > 50 && x < W - 50 && y > 40 && y < H - 10 && !tapa(x, y);
     o.e.style.display = vis ? '' : 'none'; if (vis) o.e.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-100%)`; }
-  if ((st.v === 2 || st.v === 3) && performance.now() - st.tCie > 1500) { st.tCie = performance.now(); // la corrida principal puede quitar la obra (está antes del cierre): se vuelve a poner
+  if ((st.v === 2 || st.v === 3 && !st.play) && performance.now() - st.tCie > 1500) { st.tCie = performance.now(); // la corrida principal puede quitar la obra (está antes del cierre): se vuelve a poner
     const R = st.R, tr = st.v === 3 && R ? R.trafMax : 1 + st.val.desvioMayo / 100 * (st.con ? 2 / 3 : 1); CIE.poner({ via: 'americas', fase: 1, ruidoExtraDb: 10 * Math.log10(tr), traficoDesvio: tr }); }
 }
 
@@ -530,11 +603,12 @@ export async function abrirRecorrido({ con = false } = {}) {
   const gAm = destellos(polis('americas'), col, 44, 'rm-americas'), gMa = destellos(polis('mayo'), col, 18, 'rm-mayo'), gCo = anillo(896, 1146, 230, col, 'rm-corabastos');
   const gPar = new THREE.Group(); gPar.name = 'rm-parches'; const plano = planoCorte(col); plano.visible = false;
   const gParo = crearParo(); gParo.visible = false;
-  G.add(gAm, gMa, gCo, gPar, plano, gParo);
+  const gPu = con ? crearPuente() : null;
+  G.add(gAm, gMa, gCo, gPar, plano, gParo); if (gPu) G.add(gPu);
   // valores: los que tenga el simulador en sus deslizadores; si no, los de simulaciones12.js
   const def = M.SIMS.find(s => s.id === (con ? 4 : 3)), val = {};
   for (const s of def.sliders) { const i = document.querySelector(`#su-der input[data-k="${CSS.escape(s.k)}"]`); val[s.k] = i ? +i.value : s.val; }
-  st = { con, root, panel: root.querySelector('#rm-panel'), capaEt: root.querySelector('#rm-et'), ets: [], G, gAm, gMa, gCo, gPar, plano, gParo, vehOcultos: null, val, v: 0, tCie: 0, R: null };
+  st = { con, root, panel: root.querySelector('#rm-panel'), capaEt: root.querySelector('#rm-et'), ets: [], G, gAm, gMa, gCo, gPar, plano, gParo, gPu, vehOcultos: null, val, v: 0, tCie: 0, R: null };
   st.quitarCuadro = RELOJ.alDibujar(cuadro);
   st.onKey = e => { if (e.key === 'Escape') cerrarRecorrido(); }; addEventListener('keydown', st.onKey);
   root.querySelector('#rm-salir').onclick = () => cerrarRecorrido();
@@ -543,6 +617,7 @@ export async function abrirRecorrido({ con = false } = {}) {
 
 export function cerrarRecorrido() {
   if (!st) return; const s = st; st = null;
+  if (s.play) cancelAnimationFrame(s.play);
   if (s.vehOcultos) s.vehOcultos.forEach(o => { o.visible = true; }); if (s.maxDist0 != null) T3.orbit.maxDistance = s.maxDist0;
   s.quitarCuadro(); if (s.vuelo) T3.siguiendo = false; removeEventListener('keydown', s.onKey);
   GR.off();

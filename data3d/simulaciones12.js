@@ -1152,7 +1152,7 @@ export function paso(E) {
   const x = ind(E);
   referencia(E, x);
   E.vals = {}; for (const R of REGLAS) { const v = VALOR[R.k](x); E.vals[R.k] = v; E.racha[R.k] = MALO[R.k](v) ? E.racha[R.k] + 1 : 0;
-    if (!E.go && ['residuos','habitat'].includes(R.k) && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, enfoque:R.k==='residuos'?'Circularidad':'Ecocentrismo', sem: s.t + 1, inicio:s.t-2, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', valor: Math.round(v * 1000) / 1000 }; }
+    if (!E.go && E.racha[R.k] >= R.semanas) E.go = { regla: R.k, enfoque:R.k==='residuos'?'Circularidad':R.k==='habitat'||R.k==='fauna'||R.k==='humedal'?'Ecocentrismo':R.k==='abasto'?'Comercio ecológico':'Movilidad', sem: s.t + 1, inicio:s.t-R.semanas+2, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', valor: Math.round(v * 1000) / 1000 }; }
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
   verdePaso(E); x.verde = indVerde(E);

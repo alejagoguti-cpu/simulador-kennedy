@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=5';
-import { iniciarSimUI } from './sim_ui.js?v=113';
+import { iniciarSimUI } from './sim_ui.js?v=114';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -210,6 +210,12 @@ export function iniciarLimpio({ T3 }) {
   const ICO_SL = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 14h4M8 11.5V14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
   let escE = 'hoy';
   const idDe = (par) => escE === 'con' ? 2 * par : 2 * par - 1;
+  function abrirMovilidad(par, con = false, id = null) {
+    import('./recorrido_movilidad.js?v=2').then(m => {
+      if (par !== 2) return m.cerrarRecorrido();
+      setTimeout(() => { if (ESC.activo === id) m.abrirRecorrido({ con }).catch(e => console.warn('recorrido movilidad:', e)); }, 150);
+    }).catch(e => console.warn('recorrido movilidad:', e));
+  }
   function refrescarSeis() { const base = escE === 'con' ? 14 : 13; seis.classList.toggle('con', escE === 'con');
     const h = seis.querySelector('.lp-sec'); if (h) h.title = ESC.activo === base ? `Corre Kennedy ${escE === 'con' ? 'con' : 'sin'} propuesta, sin prueba de estrés. Toca una simulación para aplicarla desde ahora y ver sus diapositivas.` : 'Toca otra vez la simulación activa para quitarla.';
     const l = seis.querySelector('.lp-modo'); if (l) l.textContent = escE === 'con' ? 'Con propuesta' : 'Sin propuesta';
@@ -223,13 +229,13 @@ export function iniciarLimpio({ T3 }) {
       <button type="button" class="lp-ver" data-p="${P.par}" aria-label="Ver diapositivas de ${P.n}" title="Diapositivas">${ICO_SL}</button><div class="lp-acc" id="lp-acc-${P.par}" role="region" aria-label="Variables de ${P.n}"></div></li>`).join('') + '</ul>';
     seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
       /* ACORDEÓN: la simulación se aplica y sus variables se abren justo debajo de la fila; las diapositivas solo con su botón */
-      if (ESC.activo === id) { escoger(base, true); SL.cerrar(); if (+b.dataset.p === 2) import('./recorrido_movilidad.js?v=1').then(m => m.cerrarRecorrido()).catch(() => {}); } else { escoger(id, true); /* 02 Movilidad: recorrido de tres vistas (territorio → corte → simulación) */ if (+b.dataset.p === 2) import('./recorrido_movilidad.js?v=1').then(m => m.abrirRecorrido({ con: escE === 'con' })).catch(e => console.warn('recorrido movilidad:', e)); }
+      if (ESC.activo === id) { escoger(base, true); SL.cerrar(); abrirMovilidad(null); } else { escoger(id, true); abrirMovilidad(+b.dataset.p, escE === 'con', id); }
       refrescarSeis(); setTimeout(refrescarSeis, 150); });
     seis.querySelectorAll('.lp-ver').forEach(b => b.onclick = () => SL.abrir(+b.dataset.p, escE === 'con', b));
     refrescarSeis(); }
   escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
     const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? idDe(par) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */
-    pintarSeis(); if (par && SL.abierto) SL.abrir(par, escE === 'con'); });
+    pintarSeis(); abrirMovilidad(par, escE === 'con', par ? idDe(par) : null); if (par && SL.abierto) SL.abrir(par, escE === 'con'); });
   /* orden del panel izquierdo: un observador (no un intervalo que pelea) pone cada bloque en su sitio cuando giro_sim.js o sim_ui.js agregan nodos */
   /* Panel izquierdo angosto, de arriba abajo: «Simulaciones» (#lp-seis) → Variables (plegable) + «Ver informe» (#su-der) → «Capas del mapa»
      (plegable). El reloj grande se esconde (la hora va en la barra de años). Los datos van al tablero de la derecha (#lp-tablero). */
