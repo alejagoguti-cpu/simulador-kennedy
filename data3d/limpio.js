@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=7';
-import { iniciarSimUI } from './sim_ui.js?v=123';
+import { iniciarSimUI } from './sim_ui.js?v=124';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -202,21 +202,27 @@ export function iniciarLimpio({ T3 }) {
     ['Tráfico (de lejos cada vehículo es una píldora)', [[sw.pil('#fff0d2'), 'Carro', hayVeh], [sw.pil('#ffae1f'), 'Moto', hayVeh], [sw.pil('#ff3d6e'), 'Camión de carga', hayVeh], [sw.pil('#7fe3ff'), 'Bicicleta', hayVeh],
       [sw.pil('#8b5cf6'), 'Carros nuevos del plan parcial Bavaria (sin propuesta)', () => { const P = window.KEN_TRPLAN; return !!(P && P.visible && P.dibujados > 0); }]]],
     ['Infraestructura', [[sw.lin('#ff8a1e'), 'Metro Línea 1 en obra (titila)', () => !!ESC.activo && RELOJ.sem < METRO_SEM_OP], [sw.lin('#fff04a'), 'Metro Línea 1 operando (desde 2028)', () => !!ESC.activo && RELOJ.sem >= METRO_SEM_OP],
-      [sw.cil(), 'Medidor de capacidad de Corabastos y de cada mercado (par 01): se llena verde, ámbar desde 90 %, rojo sobre el tope; anillo rojo = tope', () => esc3('abasto_cont')]]],
+      [sw.cil(), 'Medidor de capacidad (verde, ámbar 90 %, rojo sobre el tope)', () => esc3('abasto_cont') && !(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)]]],
     ['Naturaleza', [[sw.agua(), 'Humedales El Burro, La Vaca y Techo', () => true], [sw.arbol(), 'Árboles (inventario de arbolado)', () => true],
       [sw.hidro(), () => { const H = HI(); return `Huertas hidropónicas en cubiertas: ${(H.instaladas || 0).toLocaleString('es-CO')} de ${(H.techos || 0).toLocaleString('es-CO')} instaladas (primero las de 15 pisos o más, luego las más altas)`; }, () => hidroVis() && HI().instaladas > 0],
       [sw.resalte(), 'Cubierta recién instalada: se ilumina unos segundos', hidroVis],
       ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M2 6c2-3 4-3 7 0 3-3 5-3 7 0" fill="none" stroke="#d9dccf" stroke-width="1.5" stroke-linecap="round"/></svg>', 'Fauna en 3D (aves, abejas, anfibios): se mueve según el modelo biótico', () => esc3('biotica')]]],
     /* simulación 01 (data3d/abasto_capas.js): solo lo que está prendido y a la vista */
     ['Simulación 01 · capas', [
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="7" width="12" height="3.2" rx="1" fill="#4ade80"/></svg>', 'Bodegas: nave de vidrio; el líquido es su ocupación (recibo × días / tope). Verde hasta 75 %', () => ab01Vis('bodegas')],
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="4" width="12" height="6.2" rx="1" fill="#fbbf24"/></svg>', 'Ámbar: 90 % de su tope, cerca de llenarse', () => ab01Vis('bodegas')],
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="3" width="14" height="8" rx="1.5" fill="#ef4444"/><rect x="1" y="0.5" width="16" height="2.4" rx="1" fill="#ef4444" opacity=".55"/></svg>', 'Rojo y lámina que titila encima: llena, no cabe más (4 semanas = game over)', () => ab01Vis('bodegas')],
-      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 3c3-2 5 2 8 0s5 2 8 0v6H1z" fill="#6b4f2e" stroke="#5fb8a6" stroke-width=".8"/></svg>', 'Humedal La Vaca: el velo pasa de verde agua a café con la degradación por residuos sin recoger', () => ab01Vis('residuos')],
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><circle cx="5" cy="5" r="3.4" fill="#2f7d4a"/><path d="M5 8.4V11" stroke="#6b5a48" stroke-width="1.4"/><path d="M13 7.5V11" stroke="#6b5a48" stroke-width="1.6"/></svg>', 'Árboles del inventario en La Vaca; los que quedan en tronco se perdieron (0,5 × degradación)', () => ab01Vis('residuos')],
-      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M3 9a6 4.5 0 0 1 12 0z" fill="#5a4632"/></svg>', 'Montones de residuos en el borde del humedal: crecen con lo que no se recoge', () => ab01Vis('residuos')],
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="5" y="2" width="8" height="9" rx="3" fill="#22a89d"/></svg>', () => { const C = window.KEN_AB01C, n = C && C.info().estaciones; return `Estación Circular de barrio (con propuesta): 20 t/día de orgánicos · ${n || 0} de 20 abiertas`; }, () => ab01Vis('residuos') && !!(window.KEN_AB01C && window.KEN_AB01C.info().estaciones)],
-      ['<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="1" y="3.5" width="4.5" height="3" rx="1.2" fill="#4ade80"/><rect x="6.8" y="3.5" width="4.5" height="3" rx="1.2" fill="#fbbf24"/><rect x="12.6" y="3.5" width="4.5" height="3" rx="1.2" fill="#ef4444"/></svg>', () => `Tráfico en las vías principales: verde fluye, ámbar se frena, rojo congestión (hoy ${Math.round(((window.KEN_AB01C && window.KEN_AB01C.info().nivel) || 0.62) * 100)} %)`, () => ab01Vis('trafico')]]],
+      /* v4 (2026-11-26): barra de carga de Corabastos, barritas de mercados, cuadritos de residuos, vías tipo Waze y vehículos morados */
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V5" stroke="#fff" stroke-width="1.2"/><rect x="1" y="1" width="16" height="4" rx="1" fill="#0d1116" stroke="rgba(255,255,255,.4)" stroke-width=".6"/><rect x="1.6" y="1.6" width="7" height="2.8" fill="#4ade80"/><rect x="14" y=".3" width="1.6" height="5.4" fill="#ff3b30"/></svg>', 'Corabastos: inventario ÷ 14.000 t (raya roja = tope)', () => !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V6" stroke="#fff" stroke-width="1"/><rect x="3" y="3" width="12" height="3" rx=".8" fill="#0d1116"/><rect x="3.5" y="3.5" width="6" height="2" fill="#fbbf24"/><rect x="12.4" y="2.2" width="1.2" height="4.6" fill="#ff3b30"/></svg>', 'Mercado de barrio: llenado frente a 17 t/día', () => esc3('abasto_cont') && !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible) && document.querySelectorAll('.cont-etm').length > 0],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="2" y="2" width="2.6" height="2.6" fill="#d08a3c"/><rect x="7" y="5" width="2.6" height="2.6" fill="#e0703a"/><rect x="12" y="2.5" width="2.6" height="2.6" fill="#ff4d3d"/></svg>', 'Residuos sin recoger: 1 cuadrito = 1 t/día', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h5" stroke="#22dc6b" stroke-width="3"/><path d="M6.5 5h5" stroke="#fcc226" stroke-width="3"/><path d="M12 5h5" stroke="#f5383a" stroke-width="3"/><path d="M2 5h2M8 5h2M13.5 5h2" stroke="#fff" stroke-width="1.2" opacity=".8"/></svg>', () => `Vías por congestión: verde, ámbar, rojo (ciudad ${Math.round(((window.KEN_AB01C && window.KEN_AB01C.info().nivel) || 0.62) * 100)} %)`, () => ab01Vis('trafico')],
+      [sw.pil('#a21cff'), 'Vehículos de Bavaria Común a los mercados', () => !!(window.KEN_AB01C && window.KEN_AB01C.morados && window.KEN_AB01C.morados() > 0)],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="7" width="12" height="3.2" rx="1" fill="#4ade80"/></svg>', 'Bodegas: ocupación de cada nave', () => ab01Vis('bodegas')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="4" width="12" height="6.2" rx="1" fill="#fbbf24"/></svg>', 'Nave al 90 %', () => ab01Vis('bodegas')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="3" width="14" height="8" rx="1.5" fill="#ef4444"/><rect x="1" y="0.5" width="16" height="2.4" rx="1" fill="#ef4444" opacity=".55"/></svg>', 'Nave llena (titila)', () => ab01Vis('bodegas')],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 3c3-2 5 2 8 0s5 2 8 0v6H1z" fill="#6b4f2e" stroke="#5fb8a6" stroke-width=".8"/></svg>', 'La Vaca: se pone café con los residuos', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><circle cx="5" cy="5" r="3.4" fill="#2f7d4a"/><path d="M5 8.4V11" stroke="#6b5a48" stroke-width="1.4"/><path d="M13 7.5V11" stroke="#6b5a48" stroke-width="1.6"/></svg>', 'Árboles de La Vaca (tronco = perdido)', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M3 9a6 4.5 0 0 1 12 0z" fill="#5a4632"/></svg>', 'Montones de residuos en el borde', () => ab01Vis('residuos')],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="5" y="2" width="8" height="9" rx="3" fill="#22a89d"/></svg>', () => { const C = window.KEN_AB01C, n = C && C.info().estaciones; return `Estación Circular: ${n || 0} de 20`; }, () => ab01Vis('residuos') && !!(window.KEN_AB01C && window.KEN_AB01C.info().estaciones)],
+    ]],
     ['Eventos', [[sw.cruz(), 'Muerte de un animal: cruz con el animal encima (botón «Ver» de un aviso)', () => { const m = document.getElementById('mm-capa'); return esc3('ojo_x') || !!(m && !m.hidden); }], /* la X la pone data3d/ojo_dios.js (grupo 'ojo_x') */
       [sw.pto('#ff5a4f'), 'Hecho que empeora (en pausa)', () => !!ESC.activo && RELOJ.pausaSem && esc3('hechos')], [sw.pto('#5fe08f'), 'Hecho que mejora (en pausa)', () => !!ESC.activo && RELOJ.pausaSem && esc3('hechos')]]],
     ['Capas prendidas', [[sw.halo('#f22914'), 'Ruido de carros: halo rojo alrededor de cada vehículo', () => esc3('ruido-carros')],
@@ -445,7 +451,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=10', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=10']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=11', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=11']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

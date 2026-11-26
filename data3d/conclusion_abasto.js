@@ -15,11 +15,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const añoDe = (sem) => Math.min(15, Math.floor((Math.max(1, sem) - 1) / 52) + 1);
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const ING = 6460, MERC_T = 17, CAP = 14000, PERD = 0.0155, KG = 0.951, HUERTA_T = 50 * 6 / 365 / 1000;
-const FUENTE = { pobK: '1.034.838 hab (autora)', demT: '984 t/día = población × 0,951 kg (autora)', demanda: '0,951 kg/hab/día (autora)', volumen: '6.460 t/día, DANE-SIPSA 2025', coraTope: 'ocupación 90 %, SDDE-FAO 2018 (inferencia)', autoconsumo: 'supuesto, sin dato para Kennedy', pobCrece: 'DANE 2017–2022', mercados: '≈200 t/día, Contraloría 2025 (derivado)', huertasH: '50 m² × 6 kg/m²·año por huerta (supuesto)' };
+const FUENTE = { pobK: '1.034.838 hab (autora)', demT: '984 t/día = población × 0,951 kg (autora)', demanda: '0,951 kg/hab/día (autora)', volumen: '6.460 t/día, DANE-SIPSA 2025', coraTope: 'ocupación 90 %, SDDE-FAO 2018 (inferencia)', autoconsumo: 'supuesto, sin dato para Kennedy', pobCrece: 'DANE 2017–2022', mercados: '17 t/día cada uno, Contraloría 2025 (derivado)', huertasH: '50 m² × 6 kg/m²·año por huerta (supuesto)' };
 /* palancas de política (población, consumo y crecimiento son la prueba de estrés, no palancas) */
 const PAL = [
   { k: 'autoconsumo', n: 'Autoconsumo', paso: 7.5, max: 30, u: ' %' },
-  { k: 'mercados', n: 'Mercados', paso: 5, max: 20, u: '' },
+  { k: 'mercados', n: 'Mercados', paso: 5, max: 50, u: '' },
   { k: 'huertasH', n: 'Huertas hidropónicas', paso: 500, max: 2000, u: '', soloProp: true },
   { k: 'coraTope', n: 'Tope de ingreso diario', paso: 5, max: 25, u: ' %' },
   { k: 'volumen', n: 'Ingreso a Corabastos', paso: 15, max: 120, u: ' %' }];
@@ -30,8 +30,12 @@ function evaluar(U, x) {
   const porM = U.nAct > 0 ? U.mercT / U.nAct : MERC_T * 0.7, escala = U.demK * (1 - U.auto) > 0 ? resto / (U.demK * (1 - U.auto)) : 1;
   const mercT = Math.min(x.nM * MERC_T, Math.max(0, U.mercT * escala + (x.nM - U.nAct) * Math.min(MERC_T, porM * escala)), resto);
   const huT = Math.min(Math.max(0, resto - mercT), x.nH * HUERTA_T);
-  const RK = Math.max(0, resto - mercT - huT), L = U.resto + RK, tope = ING * (1 + x.topeF), ing = Math.max(0, Math.min(ING * x.vol, tope) - mercT);
-  const perd = U.invIni > 0 ? U.perd * 7 : 0, disp = Math.max(0, U.invIni + 7 * ing - perd), desp = Math.min(7 * L, disp), inv = disp - desp, f = L > 0 ? desp / (7 * L) : 1;
+  /* v4 (docs/sim01_abastecimiento_v4.md): la región manda lo que se pide × «Ingreso»; sale inventario ÷ permanencia (Little); lo que nadie pide se queda */
+  const RK = Math.max(0, resto - mercT - huT), L = U.resto + RK, tope = ING * (1 + x.topeF), ing = Math.max(0, Math.min(x.vol * L / (1 - PERD), tope));
+  const Tp = U.Tp || U.invIni / ING, eq = ing * Tp, invL = eq + (U.invIni - eq) * Math.exp(-7 / Tp);
+  let desp = Math.max(0, U.invIni + 7 * ing - invL) * (1 - PERD), inv = invL;
+  if (desp > 7 * L) { desp = 7 * L; inv = Math.max(0, U.invIni + 7 * ing - desp / (1 - PERD)); }
+  const f = L > 0 ? desp / (7 * L) : 1;
   return { cob: demK > 0 ? (autoT + mercT + huT + f * RK) / demK : 1, sat: inv / CAP };
 }
 const CERCA_RES = 148 + 2 / 3 * 148; // 2/3 del camino de hoy (148 t/día sin recoger) al game over (296)

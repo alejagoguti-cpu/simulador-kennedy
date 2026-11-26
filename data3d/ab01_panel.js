@@ -15,7 +15,7 @@ const ICO_X = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 
 const CAPAS = [
   { k: 'bodegas', n: 'Bodegas', d: 'Naves de vidrio; el líquido es la parte del inventario de Corabastos que guarda cada una frente a su tope', sw: '<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="6" width="12" height="4.2" rx="1" fill="#fbbf24"/></svg>' },
   { k: 'residuos', n: 'Residuos', d: 'La Vaca se degrada: árboles e interacciones bajan con los residuos sin recoger', sw: '<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M1 8c3-2 5 1 8-1s5 1 8-1v4H1z" fill="#6b4f2e"/><circle cx="5" cy="4.5" r="2.6" fill="#2f7d4a"/><path d="M12 6V3.5" stroke="#8d7a63" stroke-width="1.6" stroke-linecap="round"/></svg>' },
-  { k: 'trafico', n: 'Tráfico', d: 'Flujo en las vías principales cerca de Corabastos; se frena y enrojece con la congestión', sw: '<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6h16" stroke="rgba(255,255,255,.25)" stroke-width="4"/><rect x="2" y="4.6" width="4" height="2.8" rx="1.2" fill="#4ade80"/><rect x="8" y="4.6" width="4" height="2.8" rx="1.2" fill="#fbbf24"/><rect x="13.5" y="4.6" width="3" height="2.8" rx="1.2" fill="#ef4444"/></svg>' }];
+  { k: 'trafico', n: 'Tráfico', d: 'Vías por congestión (verde → rojo) y vehículos de Bavaria Común', sw: '<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6h16" stroke="rgba(255,255,255,.25)" stroke-width="4"/><rect x="2" y="4.6" width="4" height="2.8" rx="1.2" fill="#4ade80"/><rect x="8" y="4.6" width="4" height="2.8" rx="1.2" fill="#fbbf24"/><rect x="13.5" y="4.6" width="3" height="2.8" rx="1.2" fill="#ef4444"/></svg>' }];
 const COL = { dem: '#f4f3ef', con: '#7d6bff', sin: '#f2694a', lim: '#ffd27a', pob: '#9ecbff', ok: '#4ade80', amb: '#fbbf24', mal: '#ef4444' };
 const GRAF = [['pob', 'Población y demanda'], ['dis', 'Demanda y alimentos disponibles'], ['cap', 'Capacidad ocupada de Corabastos'], ['sec', 'Déficit por sector'], ['cmp', 'Con frente a sin propuesta']];
 const nf = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (+v).toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d }));
@@ -30,6 +30,10 @@ const CSS = `
 #ab-alerta small i{font-style:normal;font:600 9px/1 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:4px;border:1px solid rgba(255,217,176,.45);margin-right:4px}
 #ab-alerta button{all:unset;cursor:pointer;width:22px;height:22px;display:grid;place-items:center;border-radius:6px;color:#ffd9b0}
 #ab-alerta button:hover{background:rgba(255,255,255,.1)} #ab-alerta button svg{width:12px;height:12px}
+#ab-alerta.go{background:linear-gradient(90deg,rgba(120,18,18,.92),rgba(70,14,14,.88));border-color:rgba(255,90,80,.75);color:#fff;padding-right:12px}
+#ab-alerta.go b,#ab-alerta.go strong,#ab-alerta.go>svg{color:#ffb3ab}#ab-alerta.go::before{background:#ff3b30}#ab-alerta .go4{font:400 10.5px var(--ui-sans,Inter,sans-serif);color:#ffd0cc;opacity:.85}
+#ab-go .r.go{outline:1.5px solid #ff4d4d;outline-offset:2px;border-radius:4px;animation:abGo 1s ease-in-out infinite}#ab-go .r.go span{color:#ff8a80;font-weight:600}
+@keyframes abGo{0%,100%{background:rgba(255,60,50,.22)}50%{background:rgba(255,60,50,.04)}}
 @keyframes abPulso{0%,100%{opacity:1;box-shadow:0 0 0 rgba(255,90,60,0)}50%{opacity:.45;box-shadow:0 0 10px rgba(255,90,60,.9)}}
 @keyframes abIco{0%,100%{opacity:1}50%{opacity:.55}}
 @media(prefers-reduced-motion:reduce){#ab-alerta::before,#ab-alerta>svg{animation:none}}
@@ -67,7 +71,19 @@ function alertaArriba() { let a = document.getElementById('ab-alerta');
     a.innerHTML = `${ICO_ALERTA}<b>Alerta</b><span>Sube la demanda alimentaria</span><strong data-ab="alerta">+0 %</strong><button type="button" aria-label="Cerrar la alerta">${ICO_X}</button>`; document.body.appendChild(a);
     a.querySelector('button').onclick = () => { a.hidden = true; }; }
   return a; }
-export function quitar() { const a = document.getElementById('ab-alerta'); if (a) a.remove(); }
+export function quitar() { const a = document.getElementById('ab-alerta'); if (a) a.remove(); GO = null; }
+/* v4: el GAME OVER dice su causa (la autora vio uno en el año 6 sin entender por qué): la franja de arriba se pone roja con la regla y su
+   valor, y en el panel la fila de esa regla titila en rojo con «GAME OVER». sim_ui.js llama gameOver(g) antes de abrir el informe. */
+let GO = null;
+const GO_FILA = { deficit: 'def', saturacion: 'sat', residuosK: 'res' };
+const GO_N = { deficit: 'Déficit alimentario', saturacion: 'Corabastos saturado', residuosK: 'Residuos sin recoger', trafico: 'Tráfico', ruido: 'Ruido', habitat: 'Hábitat', fauna: 'Fauna', humedal: 'Humedales', residuos: 'Basura', abasto: 'Abasto' };
+function goValor(g) { if (g.regla === 'deficit') return `${g.lugar.replace(/^Sector /, '')} · ${nf(g.valor, 1)} % (mín. 80 %)`; if (g.regla === 'saturacion') return `${nf(g.valor)} % de 14.000 t`;
+  if (g.regla === 'residuosK') return `${nf(g.valor)} t/día (máx. ${RES_GO})`; return ''; }
+export function gameOver(g) { GO = g || null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO);
+  if (GO) a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${Math.floor((GO.sem - 1) / 52) + 1}</b><span>${GO_N[GO.regla] || GO.regla}</span><strong>${goValor(GO)}</strong><span class="go4">4 semanas seguidas</span>`;
+  const der = document.getElementById('su-der'); if (der) marcarGo(der); }
+function marcarGo(der) { const k = GO && GO_FILA[GO.regla]; der.querySelectorAll('#ab-go .r').forEach(e => e.classList.toggle('go', !!k && e.dataset.go === k));
+  const h = der.querySelector('#ab-go h6'); if (h) h.textContent = GO ? `Game over: ${GO_N[GO.regla] || GO.regla}` : 'Game over'; }
 export function htmlAbajo(prop) {
   return `<div id="ab-go" aria-live="polite"><h6 title="Déficit: sector peor servido (límite 80 %). Saturación: inventario ÷ 14.000 t. Residuos: t/día sin recoger (límite 296). 4 semanas seguidas = game over. Mismos límites con y sin propuesta.">Game over</h6>
       <div class="r" data-go="def"><span>Déficit</span><i><u></u><s style="left:80%"></s></i><b>—</b></div>
@@ -122,6 +138,8 @@ export function actualizar(der, H, FIN = 780, B = null, prop = false) {
     if (iP && iD) { iP.value = U.pob; iD.value = U.demK; const b1 = der.querySelector('[data-v="pobK"]'), b2 = der.querySelector('[data-v="demT"]'); if (b1) b1.textContent = nf(U.pob) + ' hab'; if (b2) b2.textContent = nf(U.demK) + ' t/día';
       for (const i of [iP, iD]) i.style.setProperty('--p', Math.max(0, Math.min(100, (i.value - i.min) / (i.max - i.min) * 100)) + '%'); } }
   reglas(der, L, U);
+  if (GO && (!H || H.length < GO.sem)) { GO = null; const a = document.getElementById('ab-alerta'); if (a) a.remove(); alertaArriba(); }
+  marcarGo(der);
   { const a = document.getElementById('ab-alerta'), U0 = X(H && H[0]); if (a) { const e = a.querySelector('[data-ab="alerta"]'), v = U && U0 ? (U.demK / U0.demK - 1) * 100 : 0, t = (v >= 0 ? '+' : '−') + nf(Math.abs(v), 1) + ' %'; if (e && e.textContent !== t) e.textContent = t; } }
   const t = GRAF.find(x => x[0] === VISTA); const put = (k, s) => { const e = der.querySelector(`#ab-graf [data-ab="${k}"]`); if (e && e.innerHTML !== s) e.innerHTML = s; };
   put('t', `${GRAF.indexOf(t) + 1} · ${t[1]}`);
@@ -130,6 +148,7 @@ export function actualizar(der, H, FIN = 780, B = null, prop = false) {
 }
 function reglas(der, L, U) {
   const fila = (k, w, txt, mal, racha) => { const e = der.querySelector(`#ab-go [data-go="${k}"]`); if (!e) return; e.classList.toggle('mal', !!mal); const u = e.querySelector('u'); u.style.width = Math.max(0, Math.min(100, w)).toFixed(1) + '%'; u.style.background = mal ? COL.mal : (k === 'def' ? w < 87 : w > 66) ? COL.amb : COL.ok;
+    if (GO && GO_FILA[GO.regla] === k) racha = 4; /* la fila del game over muestra las 4 semanas cumplidas */
     const b = e.querySelector('b'), h = `${txt}${racha ? `<em>${racha}/4 sem</em>` : ''}`; if (b.innerHTML !== h) b.innerHTML = h; };
   if (!U) { for (const k of ['def', 'sat', 'res']) fila(k, 0, '—', false, 0); return; }
   const r = L.residuosK, S = U.sectores[U.secArg] || {};

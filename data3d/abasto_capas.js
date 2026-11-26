@@ -1,4 +1,6 @@
 /* ============ SIMULACIÓN 01 · CAPAS «BODEGAS», «RESIDUOS» Y «TRÁFICO» (pedido de la autora, docs/sim01_abastecimiento_v2.md) ============
+   v4 (docs/sim01_abastecimiento_v4.md): barra de carga horizontal con pin sobre Corabastos, residuos en cuadraditos que se mueven,
+   vías tipo Waze (cintas con sombreador) en lugar de las partículas, y vehículos morados de Bavaria Común (con propuesta).
    window.KEN_AB01C = { poner(I), ver(on), capa(k, on), estado: { bodegas, residuos, trafico }, info() }
    Datos: el I semanal de data3d/simulaciones12.js (I.abasto.bodegas, I.residuosK, I.congestion01). poner() se llama una vez por semana
    simulada; por cuadro solo se suavizan niveles y se mueven las partículas del tráfico (sin crear objetos).
@@ -86,6 +88,7 @@ export function crearCapas01({ T3 }) {
   const CERO = new THREE.Matrix4().makeScale(0, 0, 0);
   function quitarNaves(prop) { if (!B.listo || B.prop === prop) return; B.prop = prop; const q = new Set(prop ? B.quitadas : []); B.qSet = q; B._y = null;
     for (let i = 0; i < B.n; i++) { const m = q.has(i) ? CERO : B.mVid[i]; B.vid.setMatrixAt(i, m); B.int.setMatrixAt(i, m); }
+    for (const i of q) { B.liq.setMatrixAt(i, CERO); B.reb.setMatrixAt(i, CERO); } B.liq.instanceMatrix.needsUpdate = true; /* v4: el líquido de las naves quitadas tampoco se dibuja */
     B.vid.instanceMatrix.needsUpdate = true; B.int.instanceMatrix.needsUpdate = true;
     const L = []; B.linN.forEach(([a, b], i) => { if (!q.has(i)) for (let k = a; k < b; k++) L.push(B.lin[k]); });
     B.bordes.geometry.setAttribute('position', new THREE.Float32BufferAttribute(L, 3)); B.bordes.geometry.computeBoundingSphere(); }
@@ -96,7 +99,7 @@ export function crearCapas01({ T3 }) {
     if (!B.listo || !gB.visible) return; const y = y0(), k = 1 - Math.exp(-dt * 3); let nReb = 0, cambio = false;
     for (let i = 0; i < B.n; i++) { const m = B.meta[i]; if (Math.abs(m - B.niv[i]) > 1e-4) { B.niv[i] += (m - B.niv[i]) * k; cambio = true; } }
     if (cambio || B._y !== y) { B._y = y;
-      for (let i = 0; i < B.n; i++) { const N = B.nav[i], o = B.niv[i], h = Math.max(0.01, Math.min(1, o)) * ALTO * 0.97;
+      for (let i = 0; i < B.n; i++) { if (B.qSet && B.qSet.has(i)) { B.liq.setMatrixAt(i, CERO); continue; } const N = B.nav[i], o = B.niv[i], h = Math.max(0.01, Math.min(1, o)) * ALTO * 0.97;
         Q.setFromAxisAngle(EJE, N.th); M4.compose(V3.set(N.cx, y + 0.3, N.cz), Q, S3.set(N.L * 0.92, B.meta[i] > 0 ? h : 0.01, N.W * 0.86)); B.liq.setMatrixAt(i, B.qSet && B.qSet.has(i) ? CERO : M4); B.liq.setColorAt(i, rampa(o, CC));
         if (o >= 1) { M4.compose(V3.set(N.cx, y + ALTO, N.cz), Q, S3.set(N.L * 1.02, Math.max(0.6, Math.min(1.2, o - 1) * ALTO), N.W * 1.02)); B.reb.setMatrixAt(nReb++, M4); } }
       B.liq.instanceMatrix.needsUpdate = true; B.liq.instanceColor.needsUpdate = true; B.reb.count = nReb; B.reb.instanceMatrix.needsUpdate = true; }
@@ -153,26 +156,37 @@ export function crearCapas01({ T3 }) {
     for (let k = 0; k < n; k++) { const [x, z] = R_.borde[k]; M4.compose(V3.set(x, y, z), Q.identity(), S3.set(rad, rad * 0.45, rad)); R_.mont.setMatrixAt(k, M4); }
     R_.mont.count = n; R_.mont.instanceMatrix.needsUpdate = true; }
 
-  /* ---------- v3: MEDIDOR DE CORABASTOS (barra vertical: inventario ÷ 14.000 t) ---------- */
-  const GA = { H: 260, W: 34, ESC: 1.3 }; // la barra muestra hasta 130 %; la raya roja es 100 % (14.000 t)
+  /* ---------- v4: MEDIDOR DE CORABASTOS = BARRA DE CARGA horizontal sobre un pin clavado en Corabastos (inventario ÷ 14.000 t) ----------
+     La barra mira siempre a la cámara; se llena de izquierda a derecha (verde → ámbar desde 90 % → rojo); el tope (100 % = 14.000 t) es
+     un remate rojo; sobre 100 % el exceso sigue en rojo hasta 120 %. */
+  const GA = { H: 230, L: 460, A: 54, ESC: 1.2 };
   const gG = new THREE.Group(); gG.name = 'ab01_medidor'; raiz.add(gG);
-  { const [gx, gz] = lw(CORA_C[0] + 520, CORA_C[1] - 120); gG.position.set(gx, 0, gz); }
-  const gMarco = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false, toneMapped: false }));
-  gMarco.scale.set(GA.W, GA.H, GA.W); gMarco.renderOrder = 14;
-  const gLleno = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.9, toneMapped: false }));
-  gLleno.scale.set(GA.W * 0.8, 1, GA.W * 0.8); gLleno.renderOrder = 15;
-  const gTope = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xef4444, toneMapped: false })); gTope.scale.set(GA.W * 1.5, 2.2, GA.W * 1.5); gTope.position.y = GA.H / GA.ESC; gTope.renderOrder = 16;
-  gG.add(gMarco, gLleno, gTope); let gNiv = 0, gMeta = 0;
+  { const [gx, gz] = lw(CORA_C[0], CORA_C[1]); gG.position.set(gx, 0, gz); }
+  const mB = (c, o, dt = true) => new THREE.MeshBasicMaterial({ color: c, transparent: o < 1, opacity: o, depthWrite: false, depthTest: dt, toneMapped: false, fog: false });
+  const geoU = new THREE.BoxGeometry(1, 1, 1), geoIzq = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0, 0);
+  const gPin = new THREE.Mesh(geoU, mB(0xffffff, 0.7)); gPin.scale.set(3, GA.H, 3); gPin.position.y = GA.H / 2; gPin.renderOrder = 14;
+  const gPie = new THREE.Mesh(new THREE.ConeGeometry(16, 34, 4).rotateX(Math.PI), mB(0xffffff, 0.9)); gPie.position.y = 17; gPie.renderOrder = 14;
+  const gBar = new THREE.Group(); gBar.position.y = GA.H; gG.add(gPin, gPie, gBar);
+  const gMarco = new THREE.Mesh(geoU, mB(0x0d1116, 0.7, false)); gMarco.scale.set(GA.L + 14, GA.A + 14, 4); gMarco.renderOrder = 17;
+  const gRiel = new THREE.Mesh(geoU, mB(0xffffff, 0.12, false)); gRiel.scale.set(GA.L, GA.A, 4.5); gRiel.renderOrder = 18;
+  const gLleno = new THREE.Mesh(geoIzq, mB(0x4ade80, 1, false)); gLleno.scale.set(1, GA.A, 5); gLleno.position.x = -GA.L / 2; gLleno.renderOrder = 19;
+  const gTope = new THREE.Mesh(geoU, mB(0xff3b30, 1, false)); gTope.scale.set(7, GA.A + 30, 6); gTope.position.x = -GA.L / 2 + GA.L / GA.ESC; gTope.renderOrder = 20;
+  const gMarcas = []; for (const f of [0.25, 0.5, 0.75]) { const m = new THREE.Mesh(geoU, mB(0xffffff, 0.35, false)); m.scale.set(1.6, GA.A * 0.3, 5.5); m.position.set(-GA.L / 2 + GA.L * f / GA.ESC, -GA.A * 0.35, 0); m.renderOrder = 20; gMarcas.push(m); }
+  gBar.add(gMarco, gRiel, gLleno, gTope, ...gMarcas); let gNiv = 0, gMeta = 0;
   const etG = etq('ab01-et-cora');
-  function moverMedidor(dt) { const y = y0(); gG.position.y = y; gNiv += (gMeta - gNiv) * (1 - Math.exp(-dt * 3)); gLleno.scale.y = Math.max(0.5, Math.min(GA.ESC, gNiv) / GA.ESC * GA.H);
-    gLleno.material.color.copy(rampa(Math.min(1, gNiv), CC)); }
+  function moverMedidor(dt) { const y = y0(); gG.position.y = y; gNiv += (gMeta - gNiv) * (1 - Math.exp(-dt * 3)); gLleno.scale.x = Math.max(1, Math.min(GA.ESC, gNiv) / GA.ESC * GA.L);
+    gLleno.material.color.copy(rampa(Math.min(1, gNiv), CC)); gBar.quaternion.copy(T3.camera.quaternion); // de frente a la cámara (cartel)
+    { const c = T3.camera.position, d = Math.hypot(c.x - gG.position.x, c.y - GA.H, c.z - gG.position.z), k = Math.max(0.6, Math.min(1.6, d / 2000)); gBar.scale.setScalar(k); } // tamaño parejo en pantalla
+    gTope.material.opacity = gNiv > 0.97 ? 0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 220)) : 1; gTope.material.transparent = gNiv > 0.97; }
 
   /* ---------- v3: RESIDUOS SIN RECOGER COMO PUNTOS (pedido de la autora: «que se vean») ----------
      Un punto por cada 2 t/día sin recoger (hoy 148 t/día → 74 puntos; game over 296 → 148), en los puntos críticos de basura del modelo (I.basura.puntos)
      y en el borde de La Vaca. Tamaño fijo en pantalla: se leen desde la cámara de inicio. Color café → rojo con la degradación D. */
-  const RP = { max: 400, pts: null, n: 0 };
+  /* v4: cuadraditos más pequeños (4 px) que se mueven (vaivén corto alrededor de su sitio, al ritmo del reloj) y aumentan con los años:
+     uno por cada t/día sin recoger (hoy 148; game over 296). Un solo objeto Points (una llamada de dibujo). */
+  const RP = { max: 600, pts: null, n: 0, fase: null };
   const geoRP = new THREE.BufferGeometry(); geoRP.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(RP.max * 3), 3)); geoRP.setDrawRange(0, 0);
-  const matRP = new THREE.PointsMaterial({ color: 0xc8823a, size: 7, sizeAttenuation: false, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, toneMapped: false });
+  const matRP = new THREE.PointsMaterial({ color: 0xc8823a, size: 4.5, sizeAttenuation: false, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, toneMapped: false });
   const puntosRP = new THREE.Points(geoRP, matRP); puntosRP.renderOrder = 18; puntosRP.frustumCulled = false; gR.add(puntosRP);
   const azar = (s) => () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
   function candidatosRP() { if (RP.pts || !R_.listo) return; const r = azar(20261126), out = [], y = y0() + 1.5;
@@ -182,38 +196,78 @@ export function crearCapas01({ T3 }) {
       else if (B0.length) { const b = B0[k % B0.length], a = r() * 6.283, d = 10 + r() * 140; x = b.x + Math.cos(a) * d; z = b.z + Math.sin(a) * d; }
       else { const a = r() * 6.283, d = 60 + r() * 260; x = R_.cx + Math.cos(a) * d; z = R_.cz + Math.sin(a) * d; }
       out.push(x, y, z); }
-    RP.pts = out; geoRP.attributes.position.array.set(out); geoRP.attributes.position.needsUpdate = true; }
-  function ponerPuntosRes() { const r = I && I.residuosK; candidatosRP(); if (!r || !RP.pts) return; const n = Math.max(0, Math.min(RP.max, Math.round(r.noRec / 2)));
+    RP.pts = out; RP.fase = Float32Array.from({ length: RP.max * 2 }, () => r() * 6.283); geoRP.attributes.position.array.set(out); geoRP.attributes.position.needsUpdate = true; }
+  function moverPuntosRes() { if (!RP.pts || !RP.n || !gR.visible) return; const a = geoRP.attributes.position.array, t = (RELOJ.tAnim || performance.now() / 1000), P = RP.pts, F = RP.fase;
+    for (let k = 0; k < RP.n; k++) { const o = k * 3; a[o] = P[o] + 6 * Math.sin(t * 1.3 + F[2 * k]); a[o + 2] = P[o + 2] + 6 * Math.cos(t * 1.1 + F[2 * k + 1]); }
+    geoRP.attributes.position.needsUpdate = true; }
+  function ponerPuntosRes() { const r = I && I.residuosK; candidatosRP(); if (!r || !RP.pts) return; const n = Math.max(0, Math.min(RP.max, Math.round(r.noRec)));
     if (n !== RP.n) { RP.n = n; geoRP.setDrawRange(0, n); } matRP.color.copy(COL_CAFE2).lerp(COL_ROJO, Math.min(1, r.D || 0)); }
   const COL_CAFE2 = new THREE.Color('#d08a3c'), COL_ROJO = new THREE.Color('#ff4d3d');
 
-  /* ---------- TRÁFICO ---------- */
-  const TR = { listo: false, ed: [], pts: null, n: 0, max: 0, mesh: null, s: null, e: null, seg: null, nivel: -1, vel: 0, nVis: 0 };
+  /* ---------- v4: TRÁFICO «TIPO WAZE» ----------
+     Las VÍAS mismas se pintan por congestión (verde → ámbar → rojo) con rayas que corren por cada carril en su sentido, al ritmo del reloj
+     de la simulación (RELOJ.tAnim: se detienen en pausa). Vías: «major» y «mid» de data3d/net.json. Una sola malla (cintas) y un
+     sombreador: la congestión de cada vía = nivel de la ciudad (0,62 + 0,033 × años, TomTom, I.congestion01) × factor de la vía
+     [SUP: 0,8 lejos de Corabastos → 1,25 junto a ella, e^(−d/900 m), por los camiones de abasto] × hora [SUP: +35 % × cercanía en la franja
+     con más camiones de Corabastos (franjas de ingreso × SIPSA), −17 % fuera de franja]. Rapidez de las rayas = 1 / (1 + congestión). */
+  const TR = { listo: false, mesh: null, nivel: -1, nAr: 0 };
+  const VS_W = `attribute float aS; attribute float aK; attribute float aN; uniform float uT; uniform float uNiv; uniform float uH;
+    varying float vS; varying float vC; varying float vY;
+    void main(){ float c = uNiv * aK * (1.0 + uH * aN); vC = c; vS = aS - uT * 26.0 / (1.0 + c) ; vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+  const FS_W = `uniform float uOp; varying float vS; varying float vC; varying float vY;
+    void main(){ vec3 g = vec3(0.0,0.62,0.22), a = vec3(0.95,0.6,0.0), r = vec3(0.85,0.04,0.04);
+      vec3 col = vC < 0.85 ? mix(g, a, clamp((vC - 0.6) / 0.25, 0.0, 1.0)) : mix(a, r, clamp((vC - 0.85) / 0.25, 0.0, 1.0));
+      float per = 30.0 + 30.0 / (1.0 + vC); float f = fract(vS / per); float raya = smoothstep(0.0, 0.08, f) * (1.0 - smoothstep(0.42, 0.5, f));
+      gl_FragColor = vec4(mix(col * 0.5, min(vec3(1.0), col * 1.2 + 0.08), raya), uOp); }`;
   const iniTrafico = () => { const N = T3.net; if (!N || !N.edges) return false;
-    const ed = []; for (const [tipo, p] of N.edges) { if (tipo !== 'major' || p.length < 2) continue; const m = p[Math.floor(p.length / 2)]; if (Math.hypot(m[0] - CORA_C[0], m[1] - CORA_C[1]) > R_TRAF) continue;
-      const w = p.map(([x, z]) => lw(x, z)), cum = [0]; for (let i = 1; i < w.length; i++) cum.push(cum[i - 1] + Math.hypot(w[i][0] - w[i - 1][0], w[i][1] - w[i - 1][1])); if (cum[cum.length - 1] < 40) continue; ed.push({ w, cum, L: cum[cum.length - 1] }); }
-    const Ltot = ed.reduce((a, e) => a + e.L, 0), max = Math.min(2600, Math.round(Ltot / 18));
-    const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(14, 2.2, 3.6).translate(0, 1.1, 0), new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.95, toneMapped: false }), max);
-    mesh.renderOrder = 16; mesh.frustumCulled = false; mesh.count = 0; gT.add(mesh);
-    // reparto de partículas por longitud; cada una con su arista, posición a lo largo y sentido (la mitad en cada sentido)
-    const pe = new Uint16Array(max), ps = new Float32Array(max), pd = new Int8Array(max), pg = new Uint16Array(max); let k = 0, acc = 0;
-    ed.forEach((e, j) => { acc += e.L / Ltot * max; while (k < Math.round(acc) && k < max) { pe[k] = j; ps[k] = ((k * 0.6180339) % 1) * e.L; pd[k] = (k & 1) ? 1 : -1; pg[k] = 1; k++; } });
-    Object.assign(TR, { listo: true, ed, mesh, n: k, max, pe, ps, pd, pg }); return true; };
+    const [cx, cz] = lw(CORA_C[0], CORA_C[1]), P = [], S = [], K = [], NN = [], ix = []; let nv = 0, nAr = 0;
+    for (const [tipo, p] of N.edges) { if ((tipo !== 'major' && tipo !== 'mid') || p.length < 2) continue;
+      const w = p.map(([x, z]) => lw(x, z)), m = w[Math.floor(w.length / 2)], d = Math.hypot(m[0] - cx, m[1] - cz), en = Math.exp(-d / 900), k = 0.8 + 0.45 * en, ancho = tipo === 'major' ? 7 : 4.5;
+      let L = 0; for (let i = 1; i < w.length; i++) L += Math.hypot(w[i][0] - w[i - 1][0], w[i][1] - w[i - 1][1]); if (L < 30) continue; nAr++;
+      for (const lado of [1, -1]) { let s = 0;
+        for (let i = 1; i < w.length; i++) { const [x0, z0] = w[i - 1], [x1, z1] = w[i], l = Math.hypot(x1 - x0, z1 - z0); if (l < 0.5) continue; const ux = (x1 - x0) / l, uz = (z1 - z0) / l, nx = -uz * lado, nz = ux * lado;
+          const o0 = ancho * 0.15, o1 = ancho * 1.15; // carril a cada lado del eje
+          const sa = lado > 0 ? s : L - s, sb = lado > 0 ? s + l : L - s - l;
+          P.push(x0 + nx * o0, 0, z0 + nz * o0, x0 + nx * o1, 0, z0 + nz * o1, x1 + nx * o0, 0, z1 + nz * o0, x1 + nx * o1, 0, z1 + nz * o1);
+          S.push(sa, sa, sb, sb); K.push(k, k, k, k); NN.push(en, en, en, en); ix.push(nv, nv + 1, nv + 2, nv + 1, nv + 3, nv + 2); nv += 4; s += l; } } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aS', new THREE.Float32BufferAttribute(S, 1));
+    g.setAttribute('aK', new THREE.Float32BufferAttribute(K, 1)); g.setAttribute('aN', new THREE.Float32BufferAttribute(NN, 1)); g.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(ix, 1) : new THREE.Uint16BufferAttribute(ix, 1));
+    const mat = new THREE.ShaderMaterial({ vertexShader: VS_W, fragmentShader: FS_W, uniforms: { uT: { value: 0 }, uNiv: { value: 0.62 }, uH: { value: 0 }, uOp: { value: 0.92 } }, transparent: true, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -400, side: THREE.DoubleSide, toneMapped: false }); /* sobre la malla de Google (desplazamiento de profundidad) y debajo de los carros */
+    const mesh = new THREE.Mesh(g, mat); mesh.renderOrder = 16; mesh.frustumCulled = false; gT.add(mesh);
+    Object.assign(TR, { listo: true, mesh, nAr }); return true; };
   function ponerTrafico() { const c = I && I.congestion01; if (!TR.listo && !iniTrafico()) return; if (!c) { gT.visible = false; return; } gT.visible = estado.trafico;
-    const nv = Math.round(c.nivel * 1000) / 1000; if (nv === TR.nivel) return; TR.nivel = nv;
-    TR.vel = 22 / (1 + nv);                                               // m/s en pantalla: flujo libre 22 m/s, se frena con el factor 1 + nivel
-    TR.nVis = Math.min(TR.n, Math.round(TR.n * (1 + nv) / 2.2));           // más vehículos con más congestión (2,2 = 1 + nivel máximo dibujado)
-    TR.mesh.material.color.copy(colorCong(nv, CC)); }
-  function moverTrafico(dt) {
-    if (!TR.listo || !gT.visible || !TR.nVis) return; const y = (T3.viaY != null ? T3.viaY : y0() + 0.3) + 0.8, a = TR.mesh.instanceMatrix.array, d = TR.vel * dt;
-    // cada partícula se reparte en las nVis primeras (orden fijo): la densidad cambia sin saltos de posición
-    for (let k = 0; k < TR.nVis; k++) { const e = TR.ed[TR.pe[k]]; let s = TR.ps[k] + d * TR.pd[k]; if (s > e.L) s -= e.L; else if (s < 0) s += e.L; TR.ps[k] = s;
-      let g = TR.pg[k]; const cum = e.cum; while (g < cum.length - 1 && cum[g] < s) g++; while (g > 1 && cum[g - 1] > s) g--; TR.pg[k] = g;
-      const p0 = e.w[g - 1], p1 = e.w[g], l = cum[g] - cum[g - 1] || 1, t = (s - cum[g - 1]) / l, x = p0[0] + (p1[0] - p0[0]) * t, z = p0[1] + (p1[1] - p0[1]) * t;
-      const dx = (p1[0] - p0[0]) / l, dz = (p1[1] - p0[1]) / l, off = TR.pd[k] * 3.2, o = k * 16; // carril a cada lado del eje
-      a[o] = dx; a[o + 1] = 0; a[o + 2] = dz; a[o + 3] = 0; a[o + 4] = 0; a[o + 5] = 1; a[o + 6] = 0; a[o + 7] = 0; a[o + 8] = -dz; a[o + 9] = 0; a[o + 10] = dx; a[o + 11] = 0;
-      a[o + 12] = x - dz * off; a[o + 13] = y; a[o + 14] = z + dx * off; a[o + 15] = 1; }
-    TR.mesh.count = TR.nVis; TR.mesh.instanceMatrix.needsUpdate = true; }
+    TR.nivel = Math.round(c.nivel * 1000) / 1000; TR.mesh.material.uniforms.uNiv.value = TR.nivel; }
+  function moverTrafico() {
+    if (!TR.listo || !gT.visible) return; const u = TR.mesh.material.uniforms, U = I && I.abasto && I.abasto.ab01;
+    TR.mesh.position.y = (T3.viaY != null ? T3.viaY : y0() + 0.3) + 1.2; u.uT.value = RELOJ.tAnim || 0;
+    // hora del reloj: franja de ingreso de carga a Corabastos (más camiones/h → más congestión cerca)
+    const h = ((RELOJ.minutoDia != null ? RELOJ.minutoDia : 0) / 60) % 24, F = U && U.franjas ? U.franjas.find(f => h >= f.h0 && h < f.h1) : null, mx = U && U.franjas ? Math.max(...U.franjas.map(f => f.veh_h)) : 1;
+    const meta = F ? 0.35 * F.veh_h / mx : -0.17; u.uH.value += (meta - u.uH.value) * 0.03; }
+
+  /* ---------- v4: VEHÍCULOS MORADOS (solo con propuesta) ----------
+     Pocos carros morados que van y vuelven entre Bavaria Común y los mercados abiertos (camino más corto por data3d/net.json, como
+     trafico_plan.js). Cuántos: uno por cada 3 mercados abiertos, máx. 14 [escala visual declarada, no un aforo]. Capa «Tráfico». */
+  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], n: 0, col: 0xa21cff, MAX: 14 };
+  function iniMorados() { if (MO.cargando) return; MO.cargando = true;
+    Promise.all([import('./viajes_mercados.js?v=10'), import('./vehiculos.js?v=10')]).then(([vm, mv]) => {
+      MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i);
+      MO.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 4000, cuantos: { carro: MO.MAX } }); MO.VEH.grupo.visible = false;
+      MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 })); MO.listo = true;
+    }).catch(e => console.warn('vehículos morados:', e)); }
+  function rutaMo(x, z) { const key = x + ',' + z; if (MO.rutas.has(key)) return MO.rutas.get(key); const R = MO.R, T = MO.T, n = R.cercano(x, z); let r = null;
+    if (n.i >= 0 && isFinite(T.dist[n.i])) { const out = [[R.X[n.i], R.Z[n.i]]]; let u = n.i, ok = true; while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) { ok = false; break; } const v = R.ea[e] === u ? R.eb[e] : R.ea[e]; out.push([R.X[v], R.Z[v]]); u = v; }
+      if (ok && out.length > 1) { const S = new Float64Array(out.length); for (let k = 1; k < out.length; k++) S[k] = S[k - 1] + Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]); r = S[S.length - 1] > 200 ? { P: out, S, L: S[S.length - 1] } : null; } }
+    MO.rutas.set(key, r); return r; }
+  const enRutaMo = (r, s) => { let a = 0, b = r.S.length - 1; while (b - a > 1) { const m = (a + b) >> 1; if (r.S[m] < s) a = m; else b = m; } const f = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]);
+    const ex = r.P[b][0] - r.P[a][0], ez = r.P[b][1] - r.P[a][1], l = Math.hypot(ex, ez) || 1; return [r.P[a][0] + ex * f, r.P[a][1] + ez * f, ex / l, ez / l]; };
+  function moverMorados() {
+    const ms = I && I.propuesta && I.abasto && I.abasto.mercados ? I.abasto.mercados.filter(m => m.activo) : [];
+    const on = !!(ms.length && estado.trafico && raiz.visible); if (on && !MO.listo) iniMorados(); if (!MO.listo) return; MO.VEH.grupo.visible = on; if (!on) { MO.n = 0; return; }
+    const n = Math.min(MO.MAX, Math.max(2, Math.ceil(ms.length / 3))), tA = RELOJ.tAnim || 0; MO.VEH.inicio(); let k = 0;
+    for (let i = 0; i < n; i++) { const m = ms[Math.floor(i * ms.length / n)], r = rutaMo(m.x, m.z); if (!r) continue; const ida = i % 2 === 0, s0 = ((tA * 14 / r.L) + i * 0.137) % 1, s = (ida ? s0 : 1 - s0) * r.L;
+      let [x, z, fx, fz] = enRutaMo(r, s); if (!ida) { fx = -fx; fz = -fz; } x -= fz * 1.8; z += fx * 1.8;
+      MO.VEH.poner(MO.objs[i], 'carro', x, y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); if (!k) MO.p0 = [Math.round(x), Math.round(z)]; k++; }
+    MO.VEH.fin(); MO.n = k; }
 
   /* ---------- por cuadro (etiquetas mínimas: solo el porcentaje, pedido de la autora) ---------- */
   let tPrev = 0, tTxt = 0;
@@ -221,13 +275,13 @@ export function crearCapas01({ T3 }) {
   const chip = (n, pc, col) => `<span style="opacity:.75">${n}</span> <b style="font-size:13px;color:${col}">${pc}</b>`;
   const colPc = (v) => (v >= 1 ? '#ff8a80' : v >= 0.9 ? '#ffd27a' : '#9be8b0');
   RELOJ.alDibujar(() => {
-    if (!raiz.visible || !I) { if (etG.style.display !== 'none' || etB.style.display !== 'none') ETS.forEach(e => { e.style.display = 'none'; }); return; }
+    if (!raiz.visible || !I) { if (MO.listo && MO.VEH.grupo.visible) MO.VEH.grupo.visible = false; if (etG.style.display !== 'none' || etB.style.display !== 'none') ETS.forEach(e => { e.style.display = 'none'; }); return; }
     const ahora = performance.now(), dt = tPrev ? Math.min(0.1, (ahora - tPrev) / 1000) : 0; tPrev = ahora;
-    moverBodegas(dt, ahora); moverTrafico(dt); moverMedidor(dt);
+    moverBodegas(dt, ahora); moverTrafico(dt); moverMedidor(dt); moverPuntosRes(); moverMorados();
     const leer = ahora - tTxt > 200; if (leer) tTxt = ahora;
     etB.style.display = 'none'; // la nave más llena ya no lleva tarjeta: el medidor de Corabastos dice el porcentaje
     const U = I.abasto && I.abasto.ab01;
-    if (U && enPantalla(gG.position.x, y0() + GA.H + 14, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)));
+    if (U && enPantalla(gG.position.x, y0() + GA.H + (GA.A / 2 + 16) * gBar.scale.x, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)));
     const r = I.residuosK;
     if (r && gR.visible && R_.listo) { if (enPantalla(R_.cx, y0() + 30, R_.cz, etR) && leer) txt(etR, chip('Residuos', nf(r.noRec / r.umbral * 100) + ' %', colPc(r.noRec / r.umbral))); }
     else etR.style.display = 'none';
@@ -238,11 +292,13 @@ export function crearCapas01({ T3 }) {
 
   const api = window.KEN_AB01C = {
     estado, grupo: raiz,
-    poner(x) { I = x || null; raiz.visible = !!I; if (!I) return; const U = I.abasto && I.abasto.ab01; gMeta = U ? U.sat : 0; ponerBodegas(); ponerResiduos(); ponerPuntosRes(); ponerTrafico(); },
+    poner(x) { I = x || null; raiz.visible = !!I; if (!I) return; raiz.traverse(o => { o.castShadow = false; o.receiveShadow = false; }); /* v4: nada de esta capa proyecta sombras (cuadros oscuros sobre el agua) */
+      for (const n of ['degradacion_basura', 'degradacion_monticulos']) { const o = T3.scene.getObjectByName(n); if (o) o.castShadow = false; } /* las bolsas de degradacion.js tampoco, mientras corre la 01 */ const U = I.abasto && I.abasto.ab01; gMeta = U ? U.sat : 0; ponerBodegas(); ponerResiduos(); ponerPuntosRes(); ponerTrafico(); },
     ver(on) { raiz.visible = !!on && !!I; if (!raiz.visible) ETS.forEach(e => { e.style.display = 'none'; }); },
     capa(k, on) { if (!(k in estado)) return; estado[k] = !!on; const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; g.visible = !!on; if (on && I) { R_.D = -1; TR.nivel = -1; api.poner(I); } },
+    morados() { return MO.n; },
     visible(k) { const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; return !!(raiz.visible && g && g.visible); },
-    info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { aristas: TR.ed.length, particulas: TR.n, visibles: TR.nVis, vel: TR.vel } : null, nivel: TR.nivel }; }
+    info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { vias: TR.nAr, hora: +TR.mesh.material.uniforms.uH.value.toFixed(3) } : null, nivel: TR.nivel, morados: MO.n, morado0: MO.p0 || null, moradosG: MO.listo ? { vis: MO.VEH.grupo.visible, padre: !!MO.VEH.grupo.parent, mallas: MO.VEH.grupo.children.filter(o => o.visible && o.count > 0).map(o => o.count) } : null, residuos: RP.n, barra: +gNiv.toFixed(3) }; }
   };
   return api;
 }

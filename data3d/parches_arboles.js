@@ -62,7 +62,7 @@ export function calcularParches(HB, PQ, lw, movil = false) {
   CACHE = OUT; return OUT;
 }
 
-export async function crearParches3D({ T3, P }) {
+export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se apoya en la malla de Google (la altura la pone quien llama; p. ej. el humedal de data3d/propuesta01_3d.js)
   const THREE = T3.THREE, MOV = innerWidth < 760 || matchMedia('(pointer:coarse)').matches;
   const [{ GLTFLoader }, { MeshoptDecoder }, { mergeGeometries }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/libs/meshopt_decoder.module.js'), import('three/addons/utils/BufferGeometryUtils.js')]);
   const grupo = new THREE.Group(); grupo.name = 'parches_arboles'; grupo.visible = false; T3.scene.add(grupo);
@@ -152,7 +152,7 @@ export async function crearParches3D({ T3, P }) {
   marcas.renderOrder = 12; marcas.frustumCulled = false; grupo.add(marcas);
   // apoyar cada parche sobre el suelo real de la malla fotorrealista (rayos hacia abajo, como las huertas de parque)
   const rc = new THREE.Raycaster(), ab = new THREE.Vector3(0, -1, 0), P0 = new THREE.Vector3(); let hecho = false;
-  const apoyar = () => { const tl = T3.tiles; if (hecho || !tl || !tl.group || !grupo.visible) return; const ys = [];
+  const apoyar = () => { const tl = T3.tiles; if (fijo || hecho || !tl || !tl.group || !grupo.visible) return; const ys = [];
     for (const p of P.slice(0, 40)) { rc.set(P0.set(p.c[0], Y + 150, p.c[1]), ab); const hit = rc.intersectObject(tl.group, true)[0]; if (hit && Math.abs(hit.point.y - Y) < 30) ys.push(hit.point.y - Y); }
     if (ys.length > 8) { ys.sort((a, b) => a - b); grupo.position.y = ys[Math.floor(ys.length * 0.3)]; hecho = true; } };
   setInterval(apoyar, 2000);

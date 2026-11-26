@@ -1,5 +1,5 @@
 import {adjuntarBalance} from './balance_final.js?v=3';
-import { conclusionAbasto } from './conclusion_abasto.js?v=4';
+import { conclusionAbasto } from './conclusion_abasto.js?v=5';
 import { TiempoRadial } from './graficas_arte.js?v=2'; // 2026-11-26: relojes de 15 años, línea de tiempo de burbujas y dona del veredicto (paleta URBIA + morados de la portada) // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })

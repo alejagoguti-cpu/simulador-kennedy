@@ -1096,7 +1096,7 @@ async function crearMallaGoogle(T) {
   // la foto ya trae su luz y sus sombras: se muestra tal cual (emisiva), sin que el sol de la escena la aplaste ni la queme
   // máscara de huellas del modelo: donde hay un edificio propio se recorta lo que Google levanta (su versión "derretida") y queda solo su foto del suelo
   T.maskU = { uGrade: { value: REALISTA && !GOOGLE ? new THREE.Vector4(1.2, 0.9, 1.22, 1) : new THREE.Vector4(1, 1, 1, 0) }, uTint: { value: REALISTA && !GOOGLE ? new THREE.Vector3(1.04, 1.0, 0.93) : new THREE.Vector3(1, 1, 1) }, // saturación, contraste, brillo, quitar bruma · tinte
-    uMask: { value: null }, uOn: { value: 0 }, uLC: { value: new THREE.Vector2(LC.x, LC.y) }, uDim: { value: new THREE.Vector2(1 / MASK.XM, 1 / MASK.YM) }, uCut: { value: 2.5 }, uEmpuje: { value: KEN ? 18 : 0 }, uMonte: { value: KEN ? 1 : 0 }, uVis: { value: 0 }, uGradZ: { value: -1 }, uPlanOn: { value: 0 }, uPlanTex: { value: null }, uPlanBox: { value: new THREE.Vector4(0, 0, 0, 0) }, /* escenario D: plan parcial de Bavaria (data3d/plan_bavaria.js): lienzo con el año en que cada sitio se construye o pavimenta; ahí se quita lo que Google levanta (árboles, bodegas) */ // uGradZ: radio de la gradación (si < 0 usa el de la zona); el recorte siempre se limita a la zona // Kennedy: la foto de Google va siempre DETRÁS de lo propio (ver project_vertex)
+    uMask: { value: null }, uOn: { value: 0 }, uLC: { value: new THREE.Vector2(LC.x, LC.y) }, uDim: { value: new THREE.Vector2(1 / MASK.XM, 1 / MASK.YM) }, uCut: { value: 2.5 }, uEmpuje: { value: KEN ? 18 : 0 }, uMonte: { value: KEN ? 1 : 0 }, uVis: { value: 0 }, uGradZ: { value: -1 }, uPlanOn: { value: 0 }, uPlanTex: { value: null }, uPlanBox: { value: new THREE.Vector4(0, 0, 0, 0) }, uGrisV: { value: 0 }, uHoyoOn: { value: 0 }, uHoyoTex: { value: null }, uHoyoBox: { value: new THREE.Vector4(0, 0, 0, 0) }, /* simulación 01 (data3d/gris01.js, data3d/propuesta01_3d.js): blanco y negro menos lo verde · recorte del terreno liberado de Corabastos */ /* escenario D: plan parcial de Bavaria (data3d/plan_bavaria.js): lienzo con el año en que cada sitio se construye o pavimenta; ahí se quita lo que Google levanta (árboles, bodegas) */ // uGradZ: radio de la gradación (si < 0 usa el de la zona); el recorte siempre se limita a la zona // Kennedy: la foto de Google va siempre DETRÁS de lo propio (ver project_vertex)
     uZona: { value: new THREE.Vector3(ZONA.x - LC.x, LC.y - ZONA.y, ZON ? (KEN ? Math.max(ZONA.r, 2400) : ZONA.r) : 1e9) } }; // Kennedy: el recorte llega también a Corabastos y Bavaria (en celular el radio de carga es menor) // fuera de la zona: malla de Google tal cual
   const recorte = (m) => {
     m.onBeforeCompile = (sh) => {
@@ -1109,7 +1109,7 @@ async function crearMallaGoogle(T) {
         // la cámara (la imagen no cambia: mismo punto en pantalla), así los edificios, carros, árboles y animales propios quedan siempre encima
         .replace('#include <project_vertex>', '#include <project_vertex>\nif (uEmpuje > 0.0) { float dl = max(length(mvPosition.xyz), 1.0); vec4 pE = projectionMatrix * vec4(mvPosition.xyz * (1.0 + uEmpuje / dl), 1.0); gl_Position.z = min(pE.z / pE.w, 0.99999) * gl_Position.w; }');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vWPm; uniform sampler2D uMask; uniform float uOn, uCut; uniform vec2 uLC, uDim; uniform vec4 uGrade; uniform vec3 uTint, uZona; uniform float uMonte, uEmpuje, uVis, uGradZ; uniform float uPlanOn; uniform sampler2D uPlanTex; uniform vec4 uPlanBox;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vWPm; uniform sampler2D uMask; uniform float uOn, uCut; uniform vec2 uLC, uDim; uniform vec4 uGrade; uniform vec3 uTint, uZona; uniform float uMonte, uEmpuje, uVis, uGradZ; uniform float uPlanOn; uniform sampler2D uPlanTex; uniform vec4 uPlanBox; uniform float uGrisV, uHoyoOn; uniform sampler2D uHoyoTex; uniform vec4 uHoyoBox;')
         // gradación tipo render de maqueta (Umbra): quita la bruma gris de la foto aérea, sube saturación y contraste y la calienta un poco
         .replace('#include <opaque_fragment>', `{
           vec3 c = max(outgoingLight - uGrade.w * vec3(0.030, 0.036, 0.048), 0.0) / (1.0 - uGrade.w * 0.04);
@@ -1135,10 +1135,16 @@ async function crearMallaGoogle(T) {
             m = max(mix(vec3(lm), m, 1.45), 0.0) * vec3(0.9, 1.07, 0.86);
             outgoingLight = mix(outgoingLight, m, alto);
           }
+          if (uGrisV > 0.0) { // simulación 01: foto en blanco y negro, menos lo verde (árboles y prados reales de la foto quedan en color)
+            float lg = dot(outgoingLight, vec3(0.2126, 0.7152, 0.0722)), mx = max(max(outgoingLight.r, outgoingLight.b), 1e-4);
+            float veg = smoothstep(1.03, 1.16, outgoingLight.g / mx) * smoothstep(0.003, 0.015, outgoingLight.g);
+            outgoingLight = mix(outgoingLight, vec3(lg), uGrisV * (1.0 - veg));
+          }
         }
         #include <opaque_fragment>`)
         .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
           if (uPlanOn > 0.0 && vWPm.y > 0.9) { vec2 tP = (vWPm.xz - uPlanBox.xy) * uPlanBox.zw; if (tP.x >= 0.0 && tP.y >= 0.0 && tP.x < 1.0 && tP.y < 1.0) { float aP = floor(texture2D(uPlanTex, tP).r * 255.0 / 20.0 + 0.5); if (aP > 0.5 && aP < uPlanOn) discard; } } // plan parcial (escenario D): lo que el plan construye o pavimenta queda limpio de árboles y bodegas de la malla de Google (el bosque conservado no se toca)
+          if (uHoyoOn > 0.5 && vWPm.y > 0.9) { vec2 tH = (vWPm.xz - uHoyoBox.xy) * uHoyoBox.zw; if (tH.x > 0.0 && tH.y > 0.0 && tH.x < 1.0 && tH.y < 1.0 && texture2D(uHoyoTex, tH).g > 0.5) discard; } // simulación 01 con propuesta: sin las bodegas de la foto en el terreno liberado (humedal)
           if (uOn > 0.5 && vWPm.y > 0.9 && distance(vWPm.xz, uZona.xy) < uZona.z) { // recorte de edificios de Google solo donde están los propios
             vec2 mu = vec2((vWPm.x + uLC.x) * uDim.x, 1.0 - (uLC.y - vWPm.z) * uDim.y);
             float mk = texture2D(uMask, mu).r; // 1 libre · 0,39 edificio genérico (corte en uCut) · 0 modelo detallado: Corabastos, Bavaria (corte a 0,9 m)
@@ -3795,7 +3801,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       // selector ESTADO ACTUAL / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
       import('./data3d/escenario.js?v=117').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
-      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=148').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
+      if (document.documentElement.classList.contains('limpio')) import('./data3d/limpio.js?v=149').then(m => m.iniciarLimpio({ T3 })).catch(e => console.warn('vista limpia:', e));
       ['picos_indicadores.js?v=2', 'foco.js?v=10', 'ojo_dios.js?v=7'].forEach(f => import('./data3d/' + f).catch(e => console.warn(f, e))); /* módulos visuales para la vista limpia: window.KEN_PICOS_IND, KEN_FOCO, KEN_OJO */
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas

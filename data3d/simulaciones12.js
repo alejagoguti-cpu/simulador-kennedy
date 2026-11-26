@@ -329,7 +329,7 @@ const PAR_SL = {
   1: [{ k: 'pobK', n: 'Población de Kennedy', min: 1034838, max: 1600000, paso: 1000, val: 1034838, unidad: 'hab', ayuda: 'Mínimo: 1.034.838 habitantes (dato de la autora). Crece sola con «Crecimiento de la población»; si la mueves, desde esa semana parte del valor elegido.' },
     { k: 'demT', n: 'Demanda alimentaria', min: 984, max: 1522, paso: 1, val: 984, unidad: 't/día', ayuda: 'Demanda = población × 0,951 kg/hab/día × consumo. Mínimo: la demanda de hoy (984 t/día). Ligada a la población: mover una mueve la otra.' },
     { k: 'demanda', n: 'Consumo por habitante', min: 70, max: 160, paso: 5, val: 100, unidad: '% de 0,951 kg/día', ayuda: '100 % = 0,951 kg por habitante al día: referencia de abastecimiento per cápita (mide abastecimiento, no consumo observado). Más de 100 % es una prueba de estrés declarada.' },
-    { k: 'volumen', n: 'Ingreso a Corabastos', min: 60, max: 120, paso: 5, val: 100, unidad: '% de 6.460 t/día', ayuda: 'Lo que la región manda a Corabastos. 100 % = 6.460 t/día (2.357.973 t en 2025, DANE-SIPSA). No crece con la población: más gente no llena Corabastos, lo vacía.' },
+    { k: 'volumen', n: 'Ingreso a Corabastos', min: 60, max: 120, paso: 5, val: 100, unidad: '% de 6.460 t/día', ayuda: 'Lo que la región manda a Corabastos. 100 % = 6.460 t/día en 2025 (DANE-SIPSA); crece con la región (v4).' },
     { k: 'coraTope', n: 'Tope de ingreso diario', min: 5, max: 25, paso: 1, val: 11, unidad: '% sobre 6.460 t/día', ayuda: 'Lo máximo que pueden descargar sus puertas en un día (inferencia, no cifra oficial: ocupación del 90 % → 11 %, SDDE-FAO 2018). La capacidad de almacenamiento es aparte: 14.000 t.' },
     { k: 'autoconsumo', n: 'Autoconsumo', min: 0, max: 30, paso: 1, val: 0, unidad: '% de la demanda', ayuda: 'Comida de huertas y producción propia que no se compra. Supuesto: no hay dato para Kennedy (Bogotá entera se autoabastece en 4,5 %, DTS logística 2022).' },
     { ...sPob(0.5), min: -0.5, max: 3, n: 'Crecimiento de la población', ayuda: 'Kennedy y la región que compra en Corabastos. 0,5 %/año = tendencia DANE 2017–2022; la proyección SDP 2024–2028 da ≈0 %. Más de 1 %/año es estrés declarado.' }],
@@ -344,7 +344,7 @@ const PAR_SL = {
   6: [{ k: 'presupuesto', n: 'Recursos disponibles', min: 10, max: 100, paso: 5, val: 50, unidad: '% de la necesidad', ayuda: 'Recursos de cada ronda frente a lo que piden todos los sectores juntos [SUP: la prueba].' },
     { k: 'decisionCada', n: 'Semanas entre rondas de asignación', min: 4, max: 52, paso: 1, val: 13, unidad: 'semanas', ayuda: 'Cada cuánto se reparten los recursos.' },
     { k: 'P1.rotacion', n: 'Rotación de vocerías', min: 2, max: 52, paso: 1, val: 12, unidad: 'semanas', ayuda: 'Cada cuánto rota la vocería de las asambleas (con propuesta): rotar seguido evita el desgaste de las vocerías.' }, sPob(), { k: 'P1.cupos', n: 'Promotores por cohorte', min: 0, max: 40, paso: 1, val: 12, unidad: 'por trimestre', ayuda: 'Promotores que forma Bavaria Común cada 13 semanas (con propuesta).' }] };
-const SL_MERC = { k: 'mercados', n: 'Cantidad de mercados', min: 0, max: 20, paso: 1, val: 12, unidad: 'mercados', ayuda: 'Cada uno mueve hasta 17 t/día (131 puestos × 0,13 t, Plaza Distrital de Kennedy, Contraloría 2025). El primero es la Plaza Distrital de Kennedy; los demás, sitios de la propuesta junto a los sectores peor servidos. 12 ≈ 200 t/día; 20 = 340 t/día, lo que mueven las 19 plazas distritales de Bogotá.' };
+const SL_MERC = { k: 'mercados', n: 'Cantidad de mercados', min: 0, max: 50, paso: 1, val: 36, unidad: 'mercados', ayuda: 'Hasta 17 t/día cada uno (Plaza Distrital de Kennedy, Contraloría 2025). En parques, al sur de Corabastos y junto a torres con huertas. 20 = lo que mueven las 19 plazas de Bogotá.' };
 /* v3: huertas hidropónicas activas (solo con propuesta). Producción por huerta = 50 m² (SUP_SIMS.M2_HUERTA) × 6 kg/m²·año (P1.rend de sim_modelos.js)
    [SUP: no hay rendimiento verificado de hidroponía en el proyecto, docs/escenario01_estado.md]. 50 por defecto = las cubiertas de la escena (E8). */
 const SL_HUERTAS = { k: 'huertasH', n: 'Huertas hidropónicas activas', min: 0, max: 2000, paso: 10, val: 50, unidad: 'huertas', ayuda: 'Cada una de 50 m² produce 0,82 kg/día (6 kg/m²·año, valor del modelo de huertas; supuesto: sin rendimiento verificado de hidroponía). Su producción baja la demanda que no cubre la red.' };
@@ -673,12 +673,12 @@ export const AB01 = {
     { n: '20–24 h', h0: 20, h1: 24, p: 0.151, que: 'papa negra' },
     { n: '4–6 h', h0: 4, h1: 6, p: 0.402, que: 'frutas, plátano, granos y procesados' }],
   MERC_T: 17,           // t/día por mercado: 131 puestos × 0,13 t/puesto/día (PDM Kennedy; Contraloría de Bogotá 2025, pp. 25 y 33-34) (derivado)
-  MERC_MAX: 20,         // 20 × 17 = 340 t/día ≈ las 19 plazas distritales de Bogotá (≈342 t/día, IPES 2024 en Contraloría 2025)
-  MERC_DEF: 12,         // 12 × 17 ≈ 200 t/día: valor propuesto en el dossier (antes P1.capAcopio = 600 t/día, 1,8 veces todas las plazas de Bogotá)
+  MERC_MAX: 50,         // v4: «muchos más» (pedido de la autora). 20 × 17 = 340 t/día ≈ las 19 plazas distritales de Bogotá (≈342 t/día, IPES 2024 en Contraloría 2025)
+  MERC_DEF: 36,         // v4: 36 × 17 = 612 t/día (1,8 veces las 19 plazas distritales de Bogotá: contradicción declarada en docs/sim01_abastecimiento_v4.md). v3: 12 × 17 ≈ 200 t/día: valor propuesto en el dossier (antes P1.capAcopio = 600 t/día, 1,8 veces todas las plazas de Bogotá)
   RADIO: 1000, DECAE: 500, // [SUP] radio de compra a pie (15 minutos) y caída del peso con la distancia
   CAPTA: V.SUP.TOPE_MERC,  // [SUP] hasta 60 % de lo fresco de una zona puede salir de sus mercados (sim_vida.js)
   INCL: 3,              // [SUP] km generalizados: ventaja de las zonas cercanas a Corabastos cuando falta (sim_vida.js SUP.INCL)
-  ABRE: 13,             // [SUP] un mercado nuevo de la propuesta abre cada 13 semanas; la Plaza Distrital de Kennedy ya existe
+  ABRE: 8,              // [SUP] v4: un mercado nuevo de la propuesta abre cada 8 semanas (antes 13; los 36 abren en ~5,5 años); la Plaza Distrital de Kennedy ya existe
   PLAZA_KEN: { n: 'Plaza Distrital de Mercado Kennedy', x: 922, z: 2237 }, // OSM (data3d/tiendas.json: 6263,4; 925,3) → mundo con lw()
   SOSTENIBLE_MIN: 87    // veredicto del par 01: sostenible si ningún sector baja de 87 % (zona «cerca» del límite, CERCA.abasto) y Corabastos nunca pasa su tope
 };
@@ -699,11 +699,21 @@ AB01.T_VEH_MEZCLA = AB01.TIPOS.reduce((a, T) => a + T.p * T.c, 0); // 5,95 t: pr
 const AB_POBZ = ZONAS.map(Z => Z[2]), AB_POBT = AB_POBZ.reduce((a, v) => a + v, 0), AB_SH = AB_POBZ.map(p => p / AB_POBT);
 const AB_GC = ZONAS.map((_, z) => Math.exp(-COSTO[z][0] / AB01.INCL)), AB_GCM = AB_GC.reduce((a, g, z) => a + g * ZONAS[z][2], 0) / ZONAS.reduce((a, Z) => a + Z[2], 0);
 const AB_U = AB_GC.map(g => Math.sqrt(AB_GCM / g)); // peso del faltante por zona (ver ab01Paso)
+/* v4 (pedido de la autora: «muchos más» mercados, en parques, bajo Corabastos, donde hay muchas huertas en techos y edificios altos):
+   17 sitios más, calculados con tools en el scratchpad (sitios_merc.mjs) y fijados aquí: parques de más de 1 ha de data3d/parques.json
+   (centroide), grupos a 350 m de las construcciones de 15 pisos o más del catastro (data3d/escenario01_construcciones.geojson: donde van
+   primero las huertas en cubiertas) y el sur de Corabastos; sin repetir sitios de MERCADOS (a menos de 300 m) ni entre sí (450 m). */
+const AB_EXTRA = [{ n: 'Sur de Corabastos', x: 846, z: 2296 }, { n: 'Torres de 15+ pisos (oriente)', x: 4865, z: 721 }, { n: 'Torres de 15+ pisos (norte)', x: 3097, z: -1428 },
+  { n: 'Parque zona verde (occidente)', x: -1442, z: -441 }, { n: 'Parque Cayetano Cañizares', x: 783, z: 1637 }, { n: 'Parque Ciudad Hayuelos', x: 4446, z: -2393 },
+  { n: 'Parque Tejar San Eusebio', x: 4833, z: 2588 }, { n: 'Parque Bellavista-Dindalito', x: -648, z: -550 }, { n: 'Parque Villa Alsacia', x: 3594, z: -521 },
+  { n: 'Parque Bosques de Castilla', x: 2500, z: 358 }, { n: 'Parque Castilla', x: 2869, z: -148 }, { n: 'Parque Riveras de Occidente', x: -9, z: -438 },
+  { n: 'Parque San Ignacio', x: 829, z: -1500 }, { n: 'Parque Ciudad Techo II', x: 1908, z: -225 }, { n: 'Parque Portal de las Américas', x: 3151, z: 728 },
+  { n: 'Parque Primavera', x: 525, z: -759 }, { n: 'Parque La Igualdad', x: 4635, z: 1774 }];
 /* sitios de mercado en orden: la Plaza Distrital de Kennedy y luego los sitios de la red de la propuesta cerca de los sectores más lejos de
    Corabastos (población × costo a Corabastos en su radio), sin dos mercados a menos de 800 m mientras haya otros sitios */
 const AB_SITIOS = (() => {
   const peso = (x, z) => ZONAS.reduce((a, Z, i) => { const d = Math.hypot(Z[0] - x, Z[1] - z); return a + (d <= AB01.RADIO ? Z[2] * COSTO[i][0] * Math.exp(-d / AB01.DECAE) : 0); }, 0);
-  const cand = MERCADOS.map(M => ({ n: M.n, x: M.x, z: M.z, tipo: 'mercado', real: false, s: peso(M.x, M.z) }));
+  const cand = [...MERCADOS, ...AB_EXTRA].map(M => ({ n: M.n, x: M.x, z: M.z, tipo: 'mercado', real: false, s: peso(M.x, M.z) }));
   const out = [{ ...AB01.PLAZA_KEN, tipo: 'plaza', real: true }];
   while (cand.length) { let bi = -1, bs = -1;
     for (let i = 0; i < cand.length; i++) { const c = cand[i], lejos = out.every(o => Math.hypot(o.x - c.x, o.z - c.z) >= 800), s = c.s * (lejos ? 1 : 0.01); if (s > bs) { bs = s; bi = i; } }
@@ -728,7 +738,7 @@ const AB_NZ = ZONAS.length, AB_NEED = new Float64Array(AB_NZ), AB_REST = new Flo
      · Pérdidas = k × inventario inicial × 7, k = 0,0155 × 6.460 / inventario de 2025 (≈100 t/día de residuos de Corabastos, DANE 2012, p. 2:
        0,0155 t por t que entra; se suponen proporcionales a lo almacenado [SUP: lo que no se vende se pierde]).
      · Inventario final = inventario inicial + ingresos − despachos − pérdidas; despachos = mín(pedido, inventario inicial + ingresos − pérdidas).
-       Inventario de 2025 = Σ recibo de cada nave × días que permanece (BOD01) ≈ 9.860 t (70 % de 14.000).
+       Inventario de 2025 = Σ recibo de cada nave × días que permanece (BOD01) ≈ 9.860 t (70 % de 14.000). [v4: la mitad, ≈4.930 t; ver ab01Paso]
      · Saturación = inventario ÷ 14.000 × 100. Todos los compradores reciben la misma fracción f = despachos / pedido; dentro de Kennedy el faltante
        pesa más en las zonas lejos de Corabastos (como antes). Recibido por zona = autoconsumo + mercados + huertas + Corabastos.
      · Sectores (los 8 de GOB_BARRIOS): déficit = máx(0, demanda − recibido); cobertura = recibido ÷ demanda.
@@ -778,9 +788,14 @@ function ab01Paso(E) {
   for (let z = 0; z < NZ; z++) { merc1 += AB_MK[z]; if (huertaP > 0) { const q = Math.min(Math.max(0, AB_REST[z] - AB_MK[z]), huertaP * AB_SH[z]); AB_HU[z] = q; huertaT += q; } }
   // Corabastos: pedido de Kennedy y de la región; inventario semanal (stock y flujo)
   let RK = 0; for (let z = 0; z < NZ; z++) { AB_R[z] = Math.max(0, AB_REST[z] - AB_MK[z] - AB_HU[z]); RK += AB_R[z]; }
-  const resto = KV.RESTO0 * g, L = resto + RK, tope = KV.ING * (1 + A.topeF), S_ = Math.min(KV.ING * A.vol, tope), ing = Math.max(0, S_ - merc1);
-  const inv0 = A.inv, perd = Math.min(inv0, 7 * KV.K_PERD * inv0), disp = Math.max(0, inv0 + 7 * ing - perd), desp = Math.min(7 * L, disp), inv = disp - desp;
-  A.inv = inv; bodPaso(A, inv);
+  /* v4 (docs/sim01_abastecimiento_v4.md, Implementación): la región manda más a medida que crece (ingresos × g, como el pedido del resto);
+     lo que sale cada semana es inventario ÷ permanencia (salida de primer orden, ley de Little), y la permanencia crece con la congestión
+     (TomTom, CONG01): la mercancía tarda más en salir y el inventario sube. Pérdidas = 0,0155 de lo que sale. Lo que nadie pide se queda. */
+  const resto = KV.RESTO0 * g, L = resto + RK, tope = KV.ING * (1 + A.topeF), S_ = Math.min(A.vol * L / (1 - KV.PERD), tope), ing = Math.max(0, S_); // v4: la región manda lo que le piden (× «Ingreso»); lo que compran los mercados directo ya no está en L
+  const Tp = KV.T0 * (1 + CONG01.N0 + CONG01.PP * sem / V.AÑO) / (1 + CONG01.N0), inv0 = A.inv, eq = ing * Tp, invL = eq + (inv0 - eq) * Math.exp(-7 / Tp);
+  let sale = Math.max(0, inv0 + 7 * ing - invL), desp = sale * (1 - KV.PERD), perd = sale * KV.PERD, inv = invL;
+  if (desp > 7 * L) { desp = 7 * L; perd = desp * KV.PERD / (1 - KV.PERD); inv = Math.max(0, inv0 + 7 * ing - desp - perd); }
+  A.inv = inv; A.Tp = Tp; bodPaso(A, inv);
   const lleg = ing, a0 = ing, f = L > 0 ? desp / (7 * L) : 1;
   /* reparto dentro de Kennedy: el faltante total es (1 − f) de lo pedido; cada zona carga una parte del faltante proporcional a
      u = (GC medio / GC de la zona)^0,5 (las zonas lejos de Corabastos pierden más) [SUP: exponente 0,5 para que un faltante pequeño no
@@ -806,7 +821,7 @@ function ab01Paso(E) {
     return { n: S.n, x: S.x, z: S.z, dem: d, rec: r, def: Math.max(0, d - r), cob: c }; });
   const vehDia = lleg / K.T_VEH;
   A.ult = { sem, mes, est, g, pob, demK, autoT, mercT, huertaT, nH: A.nH, mercCap: act.length * K.MERC_T, nAct: act.length, coraPedK: RK, coraK, resto, L, S: S_, ing, lleg, a0, tope, f,
-    invIni: inv0, inv, desp: desp / 7, perd: perd / 7, sat: inv / KV.CAP, cap: KV.CAP, carga: inv / KV.CAP, cobK: demK > 0 ? rec / demK : 1, rec, zMin, sectores, secMin, secArg,
+    invIni: inv0, inv, Tp, desp: desp / 7, perd: perd / 7, sat: inv / KV.CAP, cap: KV.CAP, carga: inv / KV.CAP, cobK: demK > 0 ? rec / demK : 1, rec, zMin, sectores, secMin, secArg,
     bodMax: A.bodU.max, bodArg: A.bodU.arg, bodGlobal: A.bodU.global, kMax: BOD_KMAX,
     vehDia, tipos: K.TIPOS.map(T => ({ k: T.k, n: T.n, veh_dia: vehDia * T.p, t_dia: lleg * T.p * T.c / K.T_VEH_MEZCLA })),
     franjas: K.FRANJAS.map(F => ({ n: F.n, h0: F.h0, h1: F.h1, p: F.p, t_h: lleg * F.p / (F.h1 - F.h0), veh_h: vehDia * F.p / (F.h1 - F.h0), tope_h: tope * F.p / (F.h1 - F.h0) })) };
@@ -869,8 +884,11 @@ const BOD_KMAX = Math.max(...BOD_K);
 const VACA_P = PARCHES.findIndex(p => p.id === 'vaca');
 /* v3: inventario de 2025 = Σ recibo × días que permanece (≈9.860 t); cada nave guarda su parte del inventario (recibo × permanencia / Σ) */
 const BOD_ST = BOD01.NAVES.map(n => (n[3] > 0 ? n[2] * n[4] : 0)), BOD_STT = BOD_ST.reduce((a, v) => a + v, 0), BOD_W = BOD_ST.map(v => v / BOD_STT);
-AB01V3.INV0 = BOD_STT;                                              // t en 2025
-AB01V3.K_PERD = AB01V3.PERD * AB01V3.ING / AB01V3.INV0;             // fracción del inventario que se pierde por día (≈0,0102)
+/* v4: inventario PROMEDIO de 2025 = la mitad de Σ recibo × permanencia (cada lote se vende de a poco durante su permanencia: en promedio
+   queda la mitad) ≈ 4.930 t = 35 % de 14.000 [SUP]. Permanencia media de 2025 T0 = inventario ÷ ingresos ≈ 0,76 días (ley de Little). */
+AB01V3.INV0 = BOD_STT / 2;                                          // t en 2025
+AB01V3.T0 = AB01V3.INV0 / AB01V3.ING;                               // días que permanece en promedio una tonelada en 2025
+AB01V3.K_PERD = AB01V3.PERD * AB01V3.ING / AB01V3.INV0;             // (v3; ya no se usa en ab01Paso)
 AB01V3.RESTO0 = AB01V3.ING * (1 - AB01V3.PERD) - AB01V3.DEM0;      // t/día que despacha al resto de la región en 2025 (equilibrio)
 /* bodegas de una semana (v3): el inventario total se reparte entre las 37 naves por su recibo × permanencia; ocupación = su parte / su tope.
    Solo para verlas llenarse desigual: el game over de saturación usa el total frente a 14.000 t. */
@@ -904,7 +922,7 @@ export const REGLAS_AB01 = [
   { k: 'deficit', n: 'Déficit alimentario', txt: 'un sector de Kennedy recibe menos del 80 % de su demanda (cobertura = recibido ÷ demanda) cuatro semanas seguidas', umbral: 80, unidad: '% de la demanda del sector', semanas: 4,
     fuente: 'Pedido de la autora (docs/sim01_abastecimiento_v3.md). Demanda = población × 0,951 kg/hab/día; déficit = máx(0, demanda − recibido). Sectores: los 8 de Kennedy agrupados por población con su Junta de Acción Comunal (IDPAC). Umbral de 80 %: umbral de prueba del proyecto.' },
   { k: 'saturacion', n: 'Saturación de Corabastos', txt: 'el inventario de Corabastos supera las 14.000 t de su capacidad de referencia cuatro semanas seguidas', umbral: 100, unidad: '% de 14.000 t', semanas: 4,
-    fuente: 'Capacidad de referencia de 14.000 t: documento técnico regional (SDDE-FAO 2018, citado en el DTS de logística de la Gobernación de Cundinamarca 2022); no es un límite diario certificado. Inventario = inventario inicial + ingresos (6.460 t/día, DANE-SIPSA 2025) − despachos − pérdidas (0,0155 t por t que entra, DANE 2012). Inventario de 2025 ≈ 9.860 t (recibo por bodega × días de permanencia, derivado).' },
+    fuente: 'Capacidad de referencia de 14.000 t: documento técnico regional (SDDE-FAO 2018, citado en el DTS de logística de la Gobernación de Cundinamarca 2022); no es un límite diario certificado. Inventario = inventario inicial + ingresos (6.460 t/día en 2025, DANE-SIPSA; crecen con lo que se pide) − despachos − pérdidas (0,0155 de lo que sale, DANE 2012). Inventario promedio de 2025 ≈ 4.930 t (la mitad de recibo por bodega × días de permanencia, derivado); sale inventario ÷ permanencia, y la permanencia crece con la congestión (TomTom) [supuestos, docs/sim01_abastecimiento_v4.md].' },
   { k: 'residuosK', n: 'Residuos de Kennedy', txt: 'los residuos sin recoger de Kennedy (puntos críticos) llegan al doble de hoy, 296 t/día, cuatro semanas seguidas', umbral: 296, unidad: 't/día sin recoger', semanas: 4,
     fuente: 'UAESP (2026): 6.769 t/día en Bogotá, 1.089 en puntos críticos, +5,5 % en 2024–2026; repartido por población: Kennedy 922 t/día, 774 recogidas y 148 en puntos críticos (derivado). UNEP Food Waste Index 2024: 19 % de la comida se desperdicia. Kennedy tiene 71 puntos críticos activos (Alcaldía de Bogotá, 2025). El factor 2× es criterio de diseño [SUP].' }];
 function pruebaIni(E) {
