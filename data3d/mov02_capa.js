@@ -13,7 +13,7 @@
      permeabilidad, personas 3D que los cruzan (cuántas ∝ permeabilidad) y un manto verde bajo cada copa del bosque (árboles con marca 1 de bavaria_arboles.json). Sin nubes de puntos. */
 import { VIAS } from './cierre_gradual.js?v=8';
 import { MERCADOS } from './sim_red_datos.js?v=2';
-import { crearChips } from './chips.js?v=1'; /* chips con ícono plano, como la 01 (2026-11-27) */
+import { crearChips } from './chips.js?v=2'; /* chips con ícono plano, como la 01 (2026-11-27) */
 /* CON PROPUESTA (como la 01): carros MORADOS que van por las vías reales a los mercados de barrio de la propuesta (MERCADOS de sim_red_datos.js): son
    los viajes a Corabastos que se cambian por viajes cortos. Cuántos = 11.465 veh/día a Corabastos × 10 % en la hora pico × 45 % × permeabilidad
    (los mismos datos de mov02_modelo.js) ÷ 20 [escala visual declarada], máx. 30. Cada uno sale de un punto a ~800 m de su mercado. */

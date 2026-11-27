@@ -1487,7 +1487,7 @@ export { REGLAS_MOV02, REGLAS_RES03, REGLAS_456 };
 function shannonAves(E) { const NFA = RED.NFA, occ = E.s.occ; let tot = 0; const c = []; for (let i = 0; i < NFA; i++) { if (!RED.AVE[i]) continue; let n = 0; for (let p = 0; p < NP; p++) n += occ[i * NP + p]; if (n) { c.push(n); tot += n; } }
   let h = 0; for (const n of c) { const p = n / tot; h -= p * Math.log(p); } return h; }
 function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.round(q * 10) / 10).toLocaleString('es-CO');
-  if (E.par === 4) { const t0 = Math.round(v.oleadaT0 || 4), on = sem >= t0 && sem < t0 + S04.OLEADA, S = E.s04;
+  if (E.par === 4) { const t0 = Math.round(v.oleadaT0 || 4), on = sem >= t0 && (sem - t0) % 52 < S04.OLEADA, S = E.s04; /* una oleada cada año (pico enero–febrero) */
     const r = aves04({ flujo: (v.flujoAves != null ? v.flujoAves : 60) / 100, impl: E.prop ? (v.implFauna != null ? v.implFauna : 100) / 100 : 0, barreras: !!v.barrerasFauna, prop: !!E.prop, trafico: x.trafico || 1 });
     if (on) S.pob = S.pob * (1 - r.muerteSem) + S04.RECUP * (1 - S.pob); else S.pob += S04.RECUP * (1 - S.pob);
     S.racha = on && S.pob < 1 - S04.PERDIDA_MAX ? S.racha + 1 : 0;
@@ -1511,9 +1511,10 @@ function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.r
    esa semana y la siguiente (mientras se recoge lo acumulado). */
 function res03Paso(E, x) {
   const Rs = E.res, sem = E.s.t + 1, orgDia = E.o && E.o.gen ? E.o.gen / 7000 : 486;
-  if (sem === Rs.t0) Rs.r = interrupcion({ orgDia, frac: FRAC03, horas: Rs.horas, prop: !!E.prop, cap: E.prop ? Rs.cap : 0, cierreCora: Rs.cierre });
-  const r = Rs.r, fase = sem === Rs.t0 ? 1 : sem === Rs.t0 + 1 ? 0.5 : 0;
-  if (r && sem === Rs.t0 && r.hGo && !E.go) { const Rg = REGLAS_RES03.find(q => q.k === r.reglaGo), peor = r.nodos.slice().sort((a, b) => b.edad - a.edad)[0];
+  const kAno = sem - Rs.t0, esAno = kAno >= 0 && kAno % 52 === 0; /* 2026-11-27: la interrupción se repite cada año (la autora: «que cambie con los años») */
+  if (esAno) Rs.r = interrupcion({ orgDia, frac: FRAC03, horas: Rs.horas, prop: !!E.prop, cap: E.prop ? Rs.cap : 0, cierreCora: Rs.cierre });
+  const r = Rs.r, fase = kAno >= 0 && kAno % 52 === 0 ? 1 : kAno >= 0 && kAno % 52 === 1 ? 0.5 : 0;
+  if (r && esAno && r.hGo && !E.go) { const Rg = REGLAS_RES03.find(q => q.k === r.reglaGo), peor = r.nodos.slice().sort((a, b) => b.edad - a.edad)[0];
     E.go = { regla: r.reglaGo, enfoque: 'Circularidad', sem, inicio: sem, motivo: r.reglaGo === 'acum03' ? `Corabastos y María Paz acumularon ${Math.round(r.acum).toLocaleString('es-CO')} t de orgánicos sin recoger, más de 4.500 t, a las ${r.hGo} h de interrupción` : `${peor.n} lleva más de 48 h con orgánicos sin tratar (${Math.round(peor.calle).toLocaleString('es-CO')} t en la calle) a las ${r.hGo} h de interrupción`,
       lugar: r.reglaGo === 'acum03' ? 'Corabastos y María Paz' : peor.n, x: KEN_XZ[0], z: KEN_XZ[1], valor: r.reglaGo === 'acum03' ? Math.round(r.acum) : r.hGo }; void Rg; }
   x.res03 = r ? { orgDia, t0: Rs.t0, fase, horas: r.horas, prop: r.prop, cap: r.cap, cierreCora: r.cierreCora, nodos: r.nodos, totCalle: r.totCalle, acum: r.acum, eMax: r.eMax, valoriza: r.valoriza, compostDia: r.compostDia, resil: r.resil, hGo: r.hGo, curva: r.curva } : { t0: Rs.t0, fase: 0 };

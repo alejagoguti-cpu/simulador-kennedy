@@ -10,7 +10,7 @@
    06 · nodos: Alcaldía Local (aprox.), Bavaria Común y las 8 Juntas de Acción Comunal del modelo de gobernanza; arcos curvos elevados (tubos): sin
         propuesta estrella desde la Alcaldía; con propuesta red entre Juntas y Bavaria (cian y esmeralda), con pulsos que viajan (cuántos ∝ recursos ×
         participación); balizas por sector: rojo que crece con las semanas sin recursos, amarillo y verde cuando se atiende. */
-import { crearChips } from './chips.js?v=1';
+import { crearChips } from './chips.js?v=2';
 export function crearS456({ T3, RELOJ }) {
   if (window.KEN_S456) return window.KEN_S456;
   const THREE = T3.THREE, lw = T3.lw, Y = () => (T3.sueloY != null ? T3.sueloY : 0.3);

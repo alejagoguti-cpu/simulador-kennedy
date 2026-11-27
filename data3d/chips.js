@@ -2,7 +2,7 @@
    window.KEN_CHIPS = { poner(grupo, lista), quitar(grupo) } · lista = [{ x, y, z, ico, txt, col, title }]
    Vidrio oscuro, ícono plano de línea (SVG, no emoji) y poco texto (el número); se proyectan cada cuadro sobre su lugar en el mundo.
    Pedido de la autora (2026-11-27): «que aparezcan como en la simulación 1, el ícono flat», en todas las simulaciones. */
-const P = (d) => `<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" style="display:inline-block;vertical-align:-2px;margin-right:5px;flex:none" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const P = (d) => `<svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true" style="display:block;flex:none" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 export const ICO = {
   via: P('<path d="M5 1.5 3 14.5M11 1.5l2 13M8 3v2M8 7.5v2M8 12v2"/>'),
   cierre: P('<path d="M2 6h12v4H2zM4 6l2 4M8 6l2 4M12 6l2 4M3.5 10v4M12.5 10v4"/>'),
@@ -21,14 +21,14 @@ export const ICO = {
   alcaldia: P('<path d="M2 14h12M3 14V7h10v7M2 7l6-4.5L14 7M5.5 14V9.5M8 14V9.5M10.5 14V9.5"/>'),
   red: P('<circle cx="8" cy="3" r="1.6"/><circle cx="3" cy="12.5" r="1.6"/><circle cx="13" cy="12.5" r="1.6"/><path d="M7.2 4.4 3.8 11M8.8 4.4l3.4 6.6M4.6 12.5h6.8"/>')
 };
-const CSS = 'position:fixed;z-index:6;pointer-events:auto;transform:translate(-50%,-100%);display:none;align-items:center;padding:4px 9px;border-radius:10px;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#f2f3f5;font:600 11px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)';
+const CSS = 'position:fixed;z-index:6;pointer-events:auto;transform:translate(-50%,-100%);display:none;align-items:center;justify-content:center;width:32px;height:32px;box-sizing:border-box;padding:0;border-radius:50%;border-width:1.5px!important;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#f2f3f5;font:600 11px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)';
 export function crearChips({ T3, RELOJ }) {
   if (window.KEN_CHIPS) return window.KEN_CHIPS;
   const G = new Map(), v = new (T3.THREE.Vector3)(), pool = []; let usados = 0;
   const el = (i) => { if (!pool[i]) { const d = document.createElement('div'); d.className = 'ken-chip'; d.style.cssText = CSS; document.body.appendChild(d); pool[i] = d; } return pool[i]; };
   RELOJ.alDibujar(() => { const C = T3.camera, cv = T3.renderer && T3.renderer.domElement; if (!C || !cv) return; const R = cv.getBoundingClientRect(); let i = 0;
     for (const L of G.values()) for (const c of L) { v.set(c.x, c.y != null ? c.y : (T3.sueloY || 0.3) + 40, c.z).project(C); if (v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
-      const d = el(i++), h = (ICO[c.ico] || '') + '<span>' + c.txt + '</span>', k = h + (c.col || ''); if (d._k !== k) { d.innerHTML = h; d.style.color = c.col || '#f2f3f5'; d.style.borderColor = c.col ? c.col + '88' : 'rgba(255,255,255,.16)'; d._k = k; } if (c.title) d.title = c.title;
+      const d = el(i++), h = ICO[c.ico] || '', k = h + (c.col || ''); if (d._k !== k) { d.innerHTML = h; d.style.color = c.col || '#f2f3f5'; d.style.borderColor = c.col ? c.col + '88' : 'rgba(255,255,255,.16)'; d._k = k; } d.title = [c.title, c.txt].filter(Boolean).join(' · '); /* sin números en el mapa (pedido de la autora): el dato va al pasar el mouse */
       d.style.left = (R.left + (v.x + 1) / 2 * R.width) + 'px'; d.style.top = (R.top + (1 - v.y) / 2 * R.height) + 'px'; d.style.display = 'flex'; }
     for (let j = i; j < usados; j++) pool[j].style.display = 'none'; usados = i; });
   const api = { poner(g, lista) { if (lista && lista.length) G.set(g, lista); else G.delete(g); }, quitar(g) { G.delete(g); } };
