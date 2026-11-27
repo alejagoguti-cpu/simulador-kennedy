@@ -566,7 +566,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (!BAS) { if (!pBas) pBas = import('./basura.js?v=2').then(m => { BAS = m.crearBasura({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.basura) ponerBasura(L); }).catch(() => null); return; }
     BAS.ver(true); BAS.poner({ puntos: I.basura.puntos, total_t_dia: I.basura.total_t_dia, acumulada: I.basura.acumulada, ratas: I.ratas, ratas0: I.ratas0 });
   }
-  function ponerCierre(C) { if (SIN_CAPAS && !(R.def && R.def.par === 2)) C = null; if (R.previa && R.vistaL && R.def && R.def.par === 2) C = R.vistaL.cierre; if (C && C.c != null) C = { ...C, via: C.viaId || C.via, fase: C.c }; /* 02 (2026-11-27): la vía elegida y su % de cierre × obra */ /* 02 Movilidad: la obra del cierre y los desvíos sí se ven (el paro de recorrido_movilidad.js ya no se usa) */
+  function ponerCierre(C) { if (SIN_CAPAS && !(R.def && R.def.par === 2)) C = null; if (R.previa && R.vistaL && R.def && R.def.par === 2) C = R.vistaL.cierre; if (C && C.c != null) C = { ...C, via: C.viaId || C.via, fase: C.c > 0.001 ? C.fase : 0 }; /* la vía cerrada se ve cerrada (rojo, barreras y rótulo) en cuanto hay cierre; el % manda en el tráfico del modelo */ /* 02 (2026-11-27): la vía elegida y su % de cierre × obra */ /* 02 Movilidad: la obra del cierre y los desvíos sí se ven (el paro de recorrido_movilidad.js ya no se usa) */
     if (!C || !(C.fase > 0)) { if (CIE) CIE.quitar(); return; }
     if (!CIE) { if (!pCie) pCie = import('./cierre_gradual.js?v=8').then(m => { CIE = m.crearCierre({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; if (L && L.cierre) ponerCierre(L.cierre); }).catch(() => null); return; }
     CIE.poner({ via: C.via, fase: C.fase, ruidoExtraDb: C.ruidoExtraDb, traficoDesvio: C.traficoDesvio });
@@ -576,7 +576,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let MOV = null, pMov = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02: la semana del cierre */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     if (!m) { if (MOV) MOV.quitar(); return; }
-    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=3').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
+    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=4').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
     MOV.poner(m); }
   /* vista previa (año 1, antes de darle play): el territorio muestra la semana en que la vía ya está cerrada del todo con estos valores */
   const semanaVista = (H) => H.find(h => h.mov02 && h.mov02.fase >= 1) || H[H.length - 1];

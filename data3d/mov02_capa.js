@@ -14,6 +14,10 @@
 import { VIAS } from './cierre_gradual.js?v=8';
 const ART = ['americas', 'boyaca', 'mayo', 'calle38'];
 const BARRIOS = [[3063.8, 275.2], [4620.7, 742.9], [2936.6, 1098.1], [1148.3, 266]]; // Castilla, Marsella, Mandalay, María Paz (mundo; asambleas.json)
+const N_BARRIO = ['Castilla', 'Marsella', 'Mandalay', 'María Paz'];
+/* RÓTULOS (pedido de la autora: «ponías el nombre de la vía»): cada vía alterna lleva su nombre y su ocupación (flujo ÷ capacidad del modelo) con el
+   color de vias_densidad.js (verde < 85 %, amarillo hasta 100 %, carmesí desde 100 %); las calles locales, uno por barrio. La vía cerrada lleva el suyo
+   («… · CERRADA», data3d/cierre_gradual.js). Tamaño fijo en pantalla, como ese. */
 const R_BARRIO = 450, WMAX = 26, WRUIDO = 320;
 
 export function crearMov02({ T3, RELOJ }) {
@@ -23,6 +27,14 @@ export function crearMov02({ T3, RELOJ }) {
   /* FILA: vehículos detenidos en las vías alternas. Cuántos por vía = vehículos por km en fila del modelo (flujo × demora de Akçelik, ley de Little)
      × km de la vía ÷ 4 [escala visual declarada, como la fila de camiones de la 01], máx. 140 por vía; 1 de cada 5 es camión (abastecimiento
      atrapado). Se ponen desde el punto de la vía más cercano a la vía cerrada hacia afuera, cada 7 m en dos carriles. */
+  const ROT = {};
+  function rotulo(clave, x, z) { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 136; const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false }));
+    sp.position.set(x, (T3.sueloY != null ? T3.sueloY : 0.3) + 30, z); sp.scale.set(0.22, 0.029, 1); sp.renderOrder = 31; sp.frustumCulled = false; sp.visible = false; G.add(sp); ROT[clave] = { sp, cv, tx, txt: '' }; }
+  function pintarRot(clave, txt, x) { const R = ROT[clave]; if (!R) return; R.sp.visible = !!txt; if (!txt || R.txt === txt + x.toFixed(2)) return; R.txt = txt + x.toFixed(2);
+    const c = R.cv.getContext('2d'), fondo = x >= 1 ? '#9e0024' : x >= 0.85 ? '#ffdb14' : '#1ad94d', letra = x >= 0.85 && x < 1 ? '#111' : '#fff';
+    c.clearRect(0, 0, 1024, 136); c.font = '700 60px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const w = Math.min(1000, c.measureText(txt).width + 70);
+    c.fillStyle = fondo; c.beginPath(); c.roundRect((1024 - w) / 2, 20, w, 96, 48); c.fill(); c.fillStyle = letra; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, 512, 70); R.tx.needsUpdate = true; }
   const FILA = { VEH: null, objs: [], pos: null, MAX: 600, plan: [], clave: '' };
   const Yv = () => (T3.viaY != null ? T3.viaY : 0.62);
 
@@ -62,6 +74,8 @@ export function crearMov02({ T3, RELOJ }) {
       mallas[k] = { r: mr }; }
     // calles locales de Castilla, Marsella, Mandalay y María Paz
     const loc = []; for (let e = 0; e < E.length; e++) { if (E[e][0] !== 'local') continue; const P = poli(e), m = P[P.length >> 1]; if (BARRIOS.some(b => Math.hypot(m[0] - b[0], m[1] - b[1]) < R_BARRIO)) loc.push({ p: P }); }
+    for (const k of ART) if (tramos[k]) { const L = tramos[k], c = L[L.length >> 1].p, q = c[c.length >> 1]; rotulo(k, q[0], q[1]); }
+    BARRIOS.forEach((b, i) => rotulo('b' + i, b[0], b[1]));
     if (loc.length) { tramos.locales = loc;
       const mr = new THREE.Mesh(cinta(loc, 90, Yv() + 0.85), mat('ruido')); mr.renderOrder = 3; mr.visible = false; mr.frustumCulled = false; G.add(mr); mallas.locales = { r: mr, n: loc.length }; }
     // vehículos de la fila: los mismos modelos de la 01 (vehiculos.js); vias_densidad.js los cuenta
@@ -107,6 +121,8 @@ export function crearMov02({ T3, RELOJ }) {
 
   function aplicar() { const m = M; if (!G || !m) return; G.visible = true;
     planFila(m);
+    for (const k of ART) { const v = m.vias[k]; pintarRot(k, v && k !== m.via && tramos[k] ? `${v.n.toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); if (ROT[k] && v && k !== m.via) { const p = puntoFila[k]; if (p) ROT[k].sp.position.set(p[0], ROT[k].sp.position.y, p[1]); } }
+    BARRIOS.forEach((b, i) => { const v = m.vias.locales; pintarRot('b' + i, v && m.via ? `${N_BARRIO[i].toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); });
     for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const ur = ms.r.material.uniforms;
       colorDb(v.db, ur.uC.value); ur.uA.value = Math.max(0.15, Math.min(1, (v.db - 45) / 35)); ms.r.visible = ruidoOn; }
     const prop = !!m.prop, pm = m.perm || 0;
@@ -114,13 +130,14 @@ export function crearMov02({ T3, RELOJ }) {
     if (peat.im) peat.im.visible = prop && pm > 0.001;
     if (mallas.bosque) { mallas.bosque.visible = prop; mallas.bosque.material.opacity = 0.14 + 0.14 * pm + (ruidoOn ? 0.08 : 0); }
   }
+  const puntoFila = {}; /* donde arranca la fila de cada vía (el rótulo va ahí) */
   function planFila(m) {
     const clave = m.via + '|' + Object.keys(m.vias).map(k => Math.round((m.vias[k].cola || 0) * 2)).join(','); if (clave === FILA.clave) return; FILA.clave = clave;
     const P = []; const Lc = tramos[m.via] || []; let cx = 0, cz = 0, nc = 0; for (const c of Lc) for (const q of c.p) { cx += q[0]; cz += q[1]; nc++; } cx /= nc || 1; cz /= nc || 1;
     for (const k of [...ART, 'locales']) { const v = m.vias[k], L = tramos[k]; if (!v || !L || k === m.via || !(v.cola >= 3)) continue;
       let km = 0; for (const c of L) for (let i = 1; i < c.p.length; i++) km += Math.hypot(c.p[i][0] - c.p[i - 1][0], c.p[i][1] - c.p[i - 1][1]); km /= 2000; /* dos calzadas */
       let n = Math.min(140, Math.round(v.cola * km / 4)); if (n < 1) continue;
-      const orden = L.map(c => ({ c, d: Math.min(...c.p.map(q => Math.hypot(q[0] - cx, q[1] - cz))) })).sort((a, b) => a.d - b.d);
+      const orden = L.map(c => ({ c, d: Math.min(...c.p.map(q => Math.hypot(q[0] - cx, q[1] - cz))) })).sort((a, b) => a.d - b.d); puntoFila[k] = orden[0].c.p[orden[0].c.p.length >> 1];
       for (const { c } of orden) { if (n <= 0 || P.length >= FILA.MAX) break; const p = c.p;
         for (let i = 1; i < p.length && n > 0; i++) { const a = p[i - 1], b = p[i], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz); if (l < 1) continue; const ux = dx / l, uz = dz / l;
           for (let s = 3.5; s < l && n > 0 && P.length < FILA.MAX; s += 7) for (const lado of [1.8, 5.2]) { if (n <= 0) break; P.push([a[0] + ux * s - uz * lado, a[1] + uz * s + ux * lado, Math.atan2(ux, uz), P.length % 5 === 4 ? 'camion' : 'carro']); n--; } } } }
