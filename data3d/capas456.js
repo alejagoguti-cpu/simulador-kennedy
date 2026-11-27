@@ -10,6 +10,7 @@
    06 · nodos: Alcaldía Local (aprox.), Bavaria Común y las 8 Juntas de Acción Comunal del modelo de gobernanza; arcos curvos elevados (tubos): sin
         propuesta estrella desde la Alcaldía; con propuesta red entre Juntas y Bavaria (cian y esmeralda), con pulsos que viajan (cuántos ∝ recursos ×
         participación); balizas por sector: rojo que crece con las semanas sin recursos, amarillo y verde cuando se atiende. */
+import { crearChips } from './chips.js?v=1';
 export function crearS456({ T3, RELOJ }) {
   if (window.KEN_S456) return window.KEN_S456;
   const THREE = T3.THREE, lw = T3.lw, Y = () => (T3.sueloY != null ? T3.sueloY : 0.3);
@@ -18,7 +19,7 @@ export function crearS456({ T3, RELOJ }) {
   function rotulo(g, x, z, alto) { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 136; const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false }));
     sp.position.set(x, Y() + alto, z); sp.scale.set(0.2, 0.0266, 1); sp.renderOrder = 31; sp.frustumCulled = false; g.add(sp); return { sp, cv, tx, txt: '' }; }
-  function pintar(R, txt, fondo, letra = '#fff') { R.sp.visible = !!txt; if (!txt || R.txt === txt + fondo) return; R.txt = txt + fondo; const c = R.cv.getContext('2d');
+  function pintar(R, txt, fondo, letra = '#fff') { R.sp.visible = false; return; /* reemplazado por los chips (chips.js) */ R.sp.visible = !!txt; if (!txt || R.txt === txt + fondo) return; R.txt = txt + fondo; const c = R.cv.getContext('2d');
     const ico = /HUMEDAL/.test(txt) ? '🦆' : /BOSQUE/.test(txt) ? '🌳' : /NAVES/.test(txt) ? '🏭' : /VIVIENDAS/.test(txt) ? '🏢' : /ALCALDÍA/.test(txt) ? '🏛️' : /BAVARIA/.test(txt) ? '🤝' : '🏠'; c.clearRect(0, 0, 1024, 136); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const tw = c.measureText(txt).width, w = Math.min(1010, tw + 70 + (ico ? 96 : 0)), x0 = (1024 - w) / 2;
     c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10; c.fillStyle = fondo; c.beginPath(); c.roundRect(x0, 22, w, 92, 46); c.fill(); c.shadowBlur = 0; c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,.55)'; c.stroke();
     if (ico) { c.beginPath(); c.arc(x0 + 50, 68, 38, 0, Math.PI * 2); c.fillStyle = '#ffffff'; c.fill(); c.font = '44px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ico, x0 + 50, 71); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; }
@@ -61,8 +62,8 @@ export function crearS456({ T3, RELOJ }) {
     return { g, bordes, tb, ta, cor, paso, mPaso, mPila, mArb, mTr, anillos, aves, marcas, rot, bajas, altas, N, pares };
   }
   function poner04(d) { const S = SUB[4]; const prop = d.prop, imp = d.impl || 0, act = d.fase > 0;
-    S.tb.forEach(m => { m.visible = act || !prop; m.material.opacity = prop ? 0.2 * (1 - imp) + 0.05 : 0.6; });
-    S.ta.forEach(m => { m.visible = prop && imp > 0.01; m.material.opacity = 0.25 + 0.5 * imp; });
+    S.tb.forEach(m => { m.visible = false; return; /* sin arcos: las aves muestran la ruta */ m.material.opacity = prop ? 0.2 * (1 - imp) + 0.05 : 0.6; });
+    S.ta.forEach(m => { m.visible = false; return; m.material.opacity = 0.25 + 0.5 * imp; });
     S.cor.forEach(m => { m.visible = prop && imp > 0.01; m.scale.z = 10 + 60 * imp; m.material.opacity = 0.2 + 0.3 * imp; });
     S.paso.visible = prop && imp > 0.01; for (const m of [S.mPaso, S.mPila, S.mArb, S.mTr]) { if (!m) continue; m.opacity = imp; m.depthWrite = imp > 0.95; }
     S.paso.scale.set(1, 0.3 + 0.7 * imp, 1);
@@ -111,26 +112,43 @@ export function crearS456({ T3, RELOJ }) {
     pintar(S.R2, prop ? `NAVES REUTILIZADAS ${Math.round(d.naves).toLocaleString('es-CO')} m² · +${d.calor.toFixed(1)} °C` : `${d.viv.toLocaleString('es-CO')} VIVIENDAS · +${d.calor.toFixed(1)} °C`, prop ? '#0e7490' : '#475569'); }
 
   /* ---------- 06 ---------- */
-  function armar06(d) { const g = new THREE.Group(); G.add(g);
+  /* 06 (2026-11-27, la autora: «sin arcos», «las cosas no van flotando, van entre vías»): los recursos son furgonetas reales (vehiculos.js) que van por
+     las calles (rutas más cortas de viajes_mercados.js) a cada Junta: sin propuesta salen de la Alcaldía Local; con propuesta circulan entre Bavaria
+     Común y las Juntas. Cuántas ∝ recursos × (participación con propuesta) [escala visual declarada]. La información va en chips (chips.js). */
+  async function armar06(d) { const g = new THREE.Group(); G.add(g);
+    const VE = { R: null, arbol: null, arb: new Map(), rutas: new Map(), VEH: null, objs: [], MAX: 60 };
+    try { const [vm, mv] = await Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]); VE.R = vm.construirRed(T3.net, lw); VE.arbol = vm.arbol;
+      VE.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: VE.MAX, camion: 2 } }); VE.VEH.grupo.visible = false; VE.objs = Array.from({ length: VE.MAX }, (_, i) => ({ _vv: 'van', _vc: 0x38bdf8, _pc: 0x38bdf8, _vl: 0 })); } catch (e) { console.warn('06 furgonetas:', e); }
     const ALC = [1461, 1238], BAV = [3977.7, 219.3], J = d.barrios.map(b => [b.jx, b.jz]);
     const arco = (A, B, h) => { const M = new THREE.Vector3((A[0] + B[0]) / 2, Y() + h, (A[1] + B[1]) / 2); return new THREE.QuadraticBezierCurve3(new THREE.Vector3(A[0], Y() + 30, A[1]), M, new THREE.Vector3(B[0], Y() + 30, B[1])); };
-    const estrella = J.map(p => arco(ALC, p, 180)), red = []; for (let i = 0; i < J.length; i++) { red.push(arco(J[i], BAV, 220)); red.push(arco(J[i], J[(i + 1) % J.length], 120)); }
+    const estrella = J.map(p => arco(ALC, p, 80)), red = []; for (let i = 0; i < J.length; i++) { red.push(arco(J[i], BAV, 95)); red.push(arco(J[i], J[(i + 1) % J.length], 55)); }
     const tubos = (L, col, r) => L.map(c => { const m = new THREE.Mesh(new THREE.TubeGeometry(c, 40, r, 6, false), basic(col, 0.7, { depthWrite: false })); m.renderOrder = 9; g.add(m); return m; });
-    const tE = tubos(estrella, 0x64748b, 7), tR = tubos(red, 0x38bdf8, 8); tR.forEach((m, i) => { if (i % 2) m.material.color.set(0x34d399); });
+    const tE = tubos(estrella, 0x94a3b8, 2.2), tR = tubos(red, 0x38bdf8, 2.6); tR.forEach((m, i) => { if (i % 2) m.material.color.set(0x34d399); });
     const nodo = (p, col, r, h) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 24), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.4 })); m.position.set(p[0], Y() + h / 2, p[1]); g.add(m); return m; };
-    const nA = nodo(ALC, 0x94a3b8, 40, 30), nB = nodo(BAV, 0x10b981, 50, 30);
-    const gBal = new THREE.CylinderGeometry(1, 1, 1, 20).translate(0, 0.5, 0), bal = J.map(p => { const m = new THREE.Mesh(gBal, new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.6, transparent: true, opacity: 0.9 })); m.position.set(p[0], Y(), p[1]); g.add(m); return m; });
-    const pul = new THREE.InstancedMesh(new THREE.SphereGeometry(16, 12, 8), basic(0xe0f2fe), 200); pul.count = 0; pul.frustumCulled = false; pul.renderOrder = 12; g.add(pul);
+    const nA = nodo(ALC, 0x94a3b8, 14, 4), nB = nodo(BAV, 0x10b981, 18, 4);
+    const gBal = new THREE.RingGeometry(0.72, 1, 48).rotateX(-Math.PI / 2), bal = J.map(p => { const m = new THREE.Mesh(gBal, new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.75, depthWrite: false, depthTest: false, toneMapped: false })); m.renderOrder = 6; /* anillo plano en el suelo (antes cilindro) */ m.position.set(p[0], Y() + 1, p[1]); g.add(m); return m; });
+    const pul = new THREE.InstancedMesh(new THREE.SphereGeometry(6, 10, 8), basic(0xe0f2fe), 200); pul.count = 0; pul.frustumCulled = false; pul.renderOrder = 12; g.add(pul);
     const rot = d.barrios.map((b, i) => rotulo(g, J[i][0], J[i][1], 260)), rA = rotulo(g, ALC[0], ALC[1], 120), rB = rotulo(g, BAV[0], BAV[1], 120);
     pintar(rA, 'ALCALDÍA LOCAL DE KENNEDY', '#334155'); pintar(rB, 'BAVARIA COMÚN · PARLAMENTO CÍVICO', '#047857');
-    return { g, tE, tR, estrella, red, bal, pul, rot, nA, nB }; }
+    tE.forEach(m => { m.visible = false; }); tR.forEach(m => { m.visible = false; }); pul.visible = false; /* sin arcos ni pulsos en el aire */
+    return { g, tE, tR, estrella, red, bal, pul, rot, nA, nB, VE, ALC, BAV, J }; }
   function poner06(d) { const S = SUB[6]; const prop = d.prop, part = d.part || 0, pres = d.pres || 0.5;
-    S.tE.forEach(m => { m.visible = !prop || part < 0.99; m.material.opacity = (prop ? 0.25 * (1 - part) : 0.75) * (0.4 + 0.6 * pres); m.material.color.set(prop ? 0x64748b : 0x475569); });
-    S.tR.forEach((m, i) => { m.visible = prop && part > 0.01; m.material.opacity = (0.25 + 0.65 * part) * (0.35 + 0.65 * pres) * (d.prio && i % 2 === 0 && d.prio === 1 ? 1.3 : 1); });
-    d.barrios.forEach((b, i) => { const m = S.bal[i], urg = b.urg || 0, c = b.cov; m.scale.set(30 + 6 * urg, 40 + 70 * urg + (c < 0.5 ? 60 : 0), 30 + 6 * urg); m.material.color.set(urg > 0 || c < 0.5 ? (urg >= 4 ? 0xdc2626 : 0xf59e0b) : 0x22c55e); m.material.emissive.copy(m.material.color);
+    S.tE.forEach(m => { m.visible = false; return; m.material.opacity = (prop ? 0.25 * (1 - part) : 0.75) * (0.4 + 0.6 * pres); m.material.color.set(prop ? 0x64748b : 0x475569); });
+    S.tR.forEach((m, i) => { m.visible = false; return; m.material.opacity = (0.25 + 0.65 * part) * (0.35 + 0.65 * pres) * (d.prio && i % 2 === 0 && d.prio === 1 ? 1.3 : 1); });
+    d.barrios.forEach((b, i) => { const m = S.bal[i], urg = b.urg || 0, c = b.cov; const rr = 60 + 14 * Math.min(8, urg); m.scale.set(rr, 1, rr); m.material.color.set(urg > 0 || c < 0.5 ? (urg >= 4 ? 0xdc2626 : 0xf59e0b) : 0x22c55e);
       pintar(S.rot[i], `${b.n.replace('Sector ', '').toUpperCase()} · ${Math.round(c * 100)} %${urg ? ` · ${urg} SEM SIN RECURSOS` : ''}`, urg >= 4 ? '#b91c1c' : urg > 0 || c < 0.5 ? '#b45309' : '#15803d'); });
-    S.nPul = Math.round((prop ? 120 * part : 24) * pres); S.curvas = prop && part > 0.01 ? S.red : S.estrella; S.vel = prop ? 0.12 + 0.2 * part : 0.03; }
-  function cuadro06(t) { const S = SUB[6]; if (!S.curvas) return; const n = Math.min(200, S.nPul || 0), C = S.curvas; S.pul.count = n;
+    S.d06 = d; S.nPul = Math.round((prop ? 120 * part : 24) * pres); S.curvas = prop && part > 0.01 ? S.red : S.estrella; S.vel = prop ? 0.12 + 0.2 * part : 0.03; }
+  function cuadro06(t) { const S = SUB[6], VE = S.VE; if (!VE || !VE.VEH || !VE.R || !S.d06) return; const d = S.d06, prop = d.prop, part = d.part || 0, n = Math.min(VE.MAX, Math.round((prop ? 8 + 40 * part : 14) * (d.pres || 0.5) * 2)); VE.VEH.grupo.visible = G.visible && n > 0; VE.VEH.inicio(); let k = 0, pend = 0;
+    const ruta = (o, dd) => { const key = Math.round(o[0]) + ',' + Math.round(o[1]) + '>' + Math.round(dd[0]) + ',' + Math.round(dd[1]); if (VE.rutas.has(key)) return VE.rutas.get(key); const R = VE.R, a = R.cercano(dd[0], dd[1]), b = R.cercano(o[0], o[1]); if (a.i < 0 || b.i < 0) return null;
+      let T = VE.arb.get(a.i); if (!T) { if (pend++) return null; T = VE.arbol(R, a.i); VE.arb.set(a.i, T); } if (!isFinite(T.dist[b.i])) { VE.rutas.set(key, null); return null; } const P = [[R.X[b.i], R.Z[b.i]]]; let u = b.i; while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) break; u = R.ea[e] === u ? R.eb[e] : R.ea[e]; P.push([R.X[u], R.Z[u]]); }
+      const L = [0]; for (let i = 1; i < P.length; i++) L.push(L[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1])); const r = L[L.length - 1] > 100 ? { P, L, len: L[L.length - 1] } : null; VE.rutas.set(key, r); return r; };
+    const destinos = S.J.map((p, i) => [p, d.barrios[i]]);
+    for (let i = 0; i < n; i++) { const [jp, b] = destinos[i % destinos.length], o = prop ? (i % 2 ? S.BAV : destinos[(i + 3) % destinos.length][0]) : S.ALC, r = ruta(o, jp); if (!r) continue;
+      const u = ((t * (prop ? 14 : 8) / r.len) + i * 0.173) % 1, s = u * r.len; let a = 0, c = r.L.length - 1; while (c - a > 1) { const m = (a + c) >> 1; if (r.L[m] < s) a = m; else c = m; }
+      const fr = (s - r.L[a]) / Math.max(1e-6, r.L[c] - r.L[a]), fx = r.P[c][0] - r.P[a][0], fz = r.P[c][1] - r.P[a][1], l = Math.hypot(fx, fz) || 1, x = r.P[a][0] + fx * fr - fz / l * 1.8, z = r.P[a][1] + fz * fr + fx / l * 1.8;
+      VE.VEH.poner(VE.objs[k++], 'carro', x, Y() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx / l, fz / l)); }
+    VE.VEH.fin(); return;
+    if (!S.curvas) return; const n = Math.min(200, S.nPul || 0), C = S.curvas; S.pul.count = n;
     for (let i = 0; i < n; i++) { const c = C[i % C.length], u = (t * S.vel + i * 0.37) % 1, p = c.getPoint(u); m4.makeTranslation(p.x, p.y, p.z); S.pul.setMatrixAt(i, m4); } S.pul.instanceMatrix.needsUpdate = true; }
 
   RELOJ.alDibujar(() => { if (!G.visible || !par) return; const t = performance.now() / 1000; if (par === 4 && SUB[4]) cuadro04(t); if (par === 6 && SUB[6]) cuadro06(t); });
@@ -138,12 +156,18 @@ export function crearS456({ T3, RELOJ }) {
   const api = {
     async poner(p, d) { par = p; if (!d) { G.visible = false; return; } G.visible = true;
       for (const k of [4, 5, 6]) if (SUB[k]) SUB[k].g.visible = k === p;
-      if (!SUB[p]) { if (!armando[p]) armando[p] = (async () => { SUB[p] = p === 4 ? await armar04() : p === 5 ? await armar05() : armar06(d); })(); await armando[p]; for (const k of [4, 5, 6]) if (SUB[k]) SUB[k].g.visible = k === par; }
+      if (!SUB[p]) { if (!armando[p]) armando[p] = (async () => { SUB[p] = p === 4 ? await armar04() : p === 5 ? await armar05() : await armar06(d); })(); await armando[p]; for (const k of [4, 5, 6]) if (SUB[k]) SUB[k].g.visible = k === par; }
+      if (p !== 6 && SUB[6] && SUB[6].VE && SUB[6].VE.VEH) SUB[6].VE.VEH.grupo.visible = false;
       if (par !== p) return; if (p === 4) poner04(d); else if (p === 5) poner05(d); else poner06(d);
+      { const CH = crearChips({ T3, RELOJ }); let L = [];
+        if (p === 4) L = [{ x: 760, z: 1160, ico: 'agua', txt: Math.round(d.p * 100) + ' % choques', col: d.p > 0.2 ? '#ff8a80' : d.p > 0.1 ? '#ffd27a' : '#9be8b0', title: 'Humedal La Vaca · cruces que terminan en choque' }, { x: 2096, z: -109, ico: 'ave', txt: "H' " + (d.shannon || 0).toFixed(2), col: '#c4b5fd', title: 'Humedal El Burro · diversidad de aves (Shannon)' }, { x: 2997, z: -606, ico: 'ave', txt: Math.round((d.pob || 1) * 100) + ' %', col: d.pob < 0.7 ? '#ff8a80' : '#9be8b0', title: 'Humedal de Techo · aves que quedan' }, { x: 4100, z: 60, ico: 'arbol', txt: d.prop ? 'refugio' : 'aislado', col: d.prop ? '#6ee7b7' : '#fde68a', title: 'Bosque de Bavaria' }];
+        else if (p === 5) L = [{ x: 3977.7, z: 219.3, y: 140, ico: 'arbol', txt: Math.round(d.ecoRest * 100) + ' %', col: d.ecoRest < 0.8 ? '#ff8a80' : '#6ee7b7', title: 'Bosque y rondas que quedan' }, { x: 3830, z: 330, ico: d.prop ? 'fabrica' : 'torre', txt: d.prop ? Math.round(d.naves / 1000) + ' mil m²' : d.viv.toLocaleString('es-CO') + ' viv.', col: d.prop ? '#fcd34d' : '#cbd5e1', title: d.prop ? 'Naves reutilizadas' : 'Viviendas del plan parcial' }, { x: 4130, z: 380, ico: 'brote', txt: d.sueloProd.toFixed(1) + ' ha', col: d.sueloProd < 12 ? '#ff8a80' : '#9be8b0', title: 'Suelo productivo para huertas' }];
+        else L = [...d.barrios.map(b => ({ x: b.jx, z: b.jz, ico: 'gente', txt: Math.round(b.cov * 100) + ' %' + (b.urg ? ' · ' + b.urg + ' sem' : ''), col: b.urg >= 4 ? '#ff8a80' : b.urg > 0 || b.cov < 0.5 ? '#ffd27a' : '#9be8b0', title: b.n + ' · necesidad cubierta' + (b.urg ? ' · semanas sin recursos' : '') })), { x: 1461, z: 1238, ico: 'alcaldia', txt: 'Alcaldía', col: '#cbd5e1' }, { x: 3977.7, z: 219.3, ico: 'red', txt: d.prop ? 'Parlamento' : 'Bavaria', col: '#6ee7b7' }];
+        CH.poner('s456', L); }
       window.KEN_MOM = p === 4 ? [{ t: 'Humedal La Vaca', s: Math.round(d.p * 100) + ' % de los cruces chocan', x: 760, z: 1160 }, { t: 'Humedal El Burro', s: "Shannon H' " + (d.shannon || 0).toFixed(2), x: 2096, z: -109 }, { t: 'Humedal de Techo', s: 'aves ' + Math.round((d.pob || 1) * 100) + ' %', x: 2997, z: -606 }, { t: d.prop ? 'Paso elevado de fauna' : 'Cruce de aves sobre la vía', s: d.prop ? Math.round((d.impl || 0) * 100) + ' % construido' : 'a ras del tráfico', x: 1428, z: 525, d: 200 }]
         : p === 5 ? [{ t: 'Predio Bavaria', s: d.viv.toLocaleString('es-CO') + ' viviendas · bosque ' + Math.round(d.ecoRest * 100) + ' %', x: 3977.7, z: 219.3, d: 420 }, { t: d.prop ? 'Naves reutilizadas' : 'Torres del plan parcial', s: d.prop ? Math.round(d.naves).toLocaleString('es-CO') + ' m²' : '+' + d.calor.toFixed(1) + ' °C', x: 3830, z: 300, d: 260 }]
         : d.barrios.map(b => ({ t: b.jn || b.n, s: Math.round(b.cov * 100) + ' % cubierto' + (b.urg ? ' · ' + b.urg + ' sem sin recursos' : ''), x: b.jx, z: b.jz, d: 300 })); },
-    quitar() { par = 0; G.visible = false; window.KEN_MOM = null; }
+    quitar() { par = 0; G.visible = false; if (SUB[6] && SUB[6].VE && SUB[6].VE.VEH) SUB[6].VE.VEH.grupo.visible = false; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('s456'); }
   };
   window.KEN_S456 = api; return api;
 }

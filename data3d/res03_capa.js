@@ -9,6 +9,7 @@
      reales (vehiculos.js, los de la 01) que van por las vías de cada nodo a su Estación y de las Estaciones a Bavaria; cuántos ∝ t/h movidas.
    · RÓTULOS: nombre del nodo con toneladas en la calle y horas sin tratar (o «tratado» con la propuesta). */
 import { NODOS03 } from './res03_modelo.js?v=1';
+import { crearChips } from './chips.js?v=1';
 const POS = { cora: [1054.7, 995.9], bavaria: [3977.7, 219.3] };
 const pos = (n) => n.p ? n.p[0] : POS[n.k];
 
@@ -23,7 +24,7 @@ export function crearRes03({ T3, RELOJ }) {
   function rotulo(x, z, alto) { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 136; const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false }));
     sp.position.set(x, Y() + alto, z); sp.scale.set(0.22, 0.029, 1); sp.renderOrder = 31; sp.frustumCulled = false; G.add(sp); return { sp, cv, tx, txt: '' }; }
-  function pintar(Rt, txt, fondo, letra = '#fff') { Rt.sp.visible = !!txt; if (!txt || Rt.txt === txt + fondo) return; Rt.txt = txt + fondo; const c = Rt.cv.getContext('2d');
+  function pintar(Rt, txt, fondo, letra = '#fff') { Rt.sp.visible = false; return; /* reemplazado por los chips (chips.js) */ Rt.sp.visible = !!txt; if (!txt || Rt.txt === txt + fondo) return; Rt.txt = txt + fondo; const c = Rt.cv.getContext('2d');
     const ico = /BAVARIA/.test(txt) ? '🌱' : /ESTACIÓN/.test(txt) ? '♻️' : /CORABASTOS/.test(txt) ? '🏭' : '🗑️'; c.clearRect(0, 0, 1024, 136); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const tw = c.measureText(txt).width, w = Math.min(1010, tw + 70 + (ico ? 96 : 0)), x0 = (1024 - w) / 2;
     c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10; c.fillStyle = fondo; c.beginPath(); c.roundRect(x0, 22, w, 92, 46); c.fill(); c.shadowBlur = 0; c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,.55)'; c.stroke();
     if (ico) { c.beginPath(); c.arc(x0 + 50, 68, 38, 0, Math.PI * 2); c.fillStyle = '#ffffff'; c.fill(); c.font = '44px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ico, x0 + 50, 71); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; }
@@ -83,6 +84,11 @@ export function crearRes03({ T3, RELOJ }) {
       if (n.t === 'bavaria') pintar(o.rot, r.prop && r.cap > 0 ? `BAVARIA COMÚN · COMPOST ${Math.round(r.compostDia).toLocaleString('es-CO')} t/día` : '', '#047857');
       else if (t > 0.5) pintar(o.rot, `${n.n.toUpperCase()} · ${tt} t · ${Math.round(h)} h`, h >= 48 ? '#581c87' : h >= 24 ? '#c2410c' : '#b45309');
       else pintar(o.rot, r.prop && n.t === 'estacion' && r.cap > 0 ? `ESTACIÓN ${n.n.toUpperCase()} · trata ${Math.round(q.tratado / Math.max(1, r.horas / 24)).toLocaleString('es-CO')} t/día` : '', '#0e7490'); }
+    { const L = []; for (const q of r.nodos) { const n = NODOS03.find(z => z.k === q.k), p = pos(n), t = q.calle * dec;
+        if (t > 0.5) L.push({ x: p[0], z: p[1], ico: 'basura', txt: Math.round(t).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h', col: q.edad >= 48 ? '#d8b4fe' : q.edad >= 24 ? '#fdba74' : '#fde68a', title: n.n + ' · orgánicos sin recoger' });
+        else if (r.prop && r.cap > 0 && n.t === 'estacion') L.push({ x: p[0], z: p[1], ico: 'estacion', txt: Math.round(q.tratado / Math.max(1, r.horas / 24)).toLocaleString('es-CO') + ' t/día', col: '#67e8f9', title: 'Estación Circular ' + n.n });
+        else if (r.prop && r.cap > 0 && n.t === 'bavaria') L.push({ x: p[0], z: p[1], ico: 'brote', txt: Math.round(r.compostDia).toLocaleString('es-CO') + ' t/día', col: '#6ee7b7', title: 'Bavaria Común · compost para las huertas' }); }
+      crearChips({ T3, RELOJ }).poner('res03', L); }
     window.KEN_MOM = r.nodos.filter(q => q.calle > 0.5 || (r.prop && q.t !== 'barrio' && q.t !== 'cora')).map(q => { const n = NODOS03.find(z => z.k === q.k), p = pos(n); return { t: n.n, s: q.calle > 0.5 ? Math.round(q.calle).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h sin tratar' : 'tratando ' + Math.round(q.tratado / Math.max(1, r.horas / 24)) + ' t/día', x: p[0], z: p[1], d: 220 }; });
     // viajes: cada nodo a su estación y de las estaciones a Bavaria; camiones ∝ t/h tratadas [escala: 1 camión por 1,5 t/h, máx. 8 por viaje]
     viajes = []; if (r.prop && r.cap > 0) { const est = NODOS03.filter(n => n.t === 'estacion'), bav = pos(NODOS03.find(n => n.t === 'bavaria'));
@@ -94,7 +100,7 @@ export function crearRes03({ T3, RELOJ }) {
     async poner(r) { R = r || null; if (!R || !(R.fase > 0)) { if (G) G.visible = false; viajes = []; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     riesgo(on) { riesgoOn = !!on; aplicar(); return riesgoOn; },
     get riesgoOn() { return riesgoOn; },
-    quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; }
+    quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('res03'); }
   };
   window.KEN_RES03 = api; return api;
 }

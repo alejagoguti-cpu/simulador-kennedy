@@ -13,6 +13,7 @@
      permeabilidad, personas 3D que los cruzan (cuántas ∝ permeabilidad) y un manto verde bajo cada copa del bosque (árboles con marca 1 de bavaria_arboles.json). Sin nubes de puntos. */
 import { VIAS } from './cierre_gradual.js?v=8';
 import { MERCADOS } from './sim_red_datos.js?v=2';
+import { crearChips } from './chips.js?v=1'; /* chips con ícono plano, como la 01 (2026-11-27) */
 /* CON PROPUESTA (como la 01): carros MORADOS que van por las vías reales a los mercados de barrio de la propuesta (MERCADOS de sim_red_datos.js): son
    los viajes a Corabastos que se cambian por viajes cortos. Cuántos = 11.465 veh/día a Corabastos × 10 % en la hora pico × 45 % × permeabilidad
    (los mismos datos de mov02_modelo.js) ÷ 20 [escala visual declarada], máx. 30. Cada uno sale de un punto a ~800 m de su mercado. */
@@ -35,7 +36,7 @@ export function crearMov02({ T3, RELOJ }) {
   function rotulo(clave, x, z) { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 136; const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false }));
     sp.position.set(x, (T3.sueloY != null ? T3.sueloY : 0.3) + 30, z); sp.scale.set(0.22, 0.029, 1); sp.renderOrder = 31; sp.frustumCulled = false; sp.visible = false; G.add(sp); ROT[clave] = { sp, cv, tx, txt: '' }; }
-  function pintarRot(clave, txt, x) { const R = ROT[clave]; if (!R) return; R.sp.visible = !!txt; if (!txt || R.txt === txt + x.toFixed(2)) return; R.txt = txt + x.toFixed(2);
+  function pintarRot(clave, txt, x) { const R = ROT[clave]; if (!R) return; R.sp.visible = false; return; /* reemplazado por los chips (chips.js) */ R.sp.visible = !!txt; if (!txt || R.txt === txt + x.toFixed(2)) return; R.txt = txt + x.toFixed(2);
     const c = R.cv.getContext('2d'), fondo = x >= 1 ? '#9e0024' : x >= 0.85 ? '#ffdb14' : '#1ad94d', letra = x >= 0.85 && x < 1 ? '#111' : '#fff';
     const ico = /^(AV|CALLE)/.test(txt) ? '🚗' : '🏘️'; c.clearRect(0, 0, 1024, 136); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const tw = c.measureText(txt).width, w = Math.min(1010, tw + 70 + (ico ? 96 : 0)), x0 = (1024 - w) / 2;
     c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10; c.fillStyle = fondo; c.beginPath(); c.roundRect(x0, 22, w, 92, 46); c.fill(); c.shadowBlur = 0; c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,.55)'; c.stroke();
@@ -143,6 +144,11 @@ export function crearMov02({ T3, RELOJ }) {
       for (const k of ART) { const v = m.vias[k], p = puntoFila[k]; if (v && p && k !== m.via) M2.push({ t: 'Fila en ' + v.n, s: Math.round(v.x * 100) + ' % de su capacidad', x: p[0], z: p[1] }); }
       if (m.prop) M2.push({ t: 'Pasajes de Bavaria', s: Math.round((m.perm || 0) * 100) + ' % de permeabilidad', x: 3977.7, z: 219.3, d: 320 }); window.KEN_MOM = M2; }
     for (const k of ART) { const v = m.vias[k]; pintarRot(k, v && k !== m.via && tramos[k] ? `${v.n.toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); if (ROT[k] && v && k !== m.via) { const p = puntoFila[k]; if (p) ROT[k].sp.position.set(p[0], ROT[k].sp.position.y, p[1]); } }
+    { const CH = crearChips({ T3, RELOJ }), cc = (q) => q >= 1 ? '#ff8a80' : q >= 0.85 ? '#ffd27a' : '#9be8b0', L = [];
+      for (const k of ART) { const v = m.vias[k], R = ROT[k]; if (!v || !R || !tramos[k]) continue; const p = R.sp.position; if (k === m.via && m.c > 0.02) L.push({ x: p.x, z: p.z, ico: 'cierre', txt: 'Cerrada ' + Math.round(m.c * 100) + ' %', col: '#ff8a80', title: v.n }); else L.push({ x: p.x, z: p.z, ico: 'via', txt: Math.round(v.x * 100) + ' %', col: cc(v.x), title: v.n + ' · flujo ÷ capacidad' }); }
+      const vl = m.vias.locales; if (vl) BARRIOS.forEach((b, i) => L.push({ x: b[0], z: b[1], ico: 'barrio', txt: Math.round(vl.x * 100) + ' %', col: cc(vl.x), title: N_BARRIO[i] + ' · calles locales' }));
+      if (m.prop) L.push({ x: 3977.7, z: 219.3, ico: 'pasaje', txt: Math.round((m.perm || 0) * 100) + ' %', col: '#86efac', title: 'Pasajes de Bavaria · permeabilidad' });
+      CH.poner('mov02', L); }
     BARRIOS.forEach((b, i) => { const v = m.vias.locales; pintarRot('b' + i, v && m.via ? `${N_BARRIO[i].toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); });
     for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const ur = ms.r.material.uniforms;
       colorDb(v.db, ur.uC.value); ur.uA.value = Math.max(0.15, Math.min(1, (v.db - 45) / 35)); ms.r.visible = ruidoOn; }
@@ -167,7 +173,7 @@ export function crearMov02({ T3, RELOJ }) {
     async poner(m) { M = m || null; if (!M) { if (G) G.visible = false; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     ruido(on) { ruidoOn = !!on; aplicar(); return ruidoOn; },
     get ruidoOn() { return ruidoOn; },
-    quitar() { M = null; if (G) G.visible = false; window.KEN_MOM = null; }
+    quitar() { M = null; if (G) G.visible = false; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('mov02'); }
   };
   window.KEN_MOV02 = api; return api;
 }
