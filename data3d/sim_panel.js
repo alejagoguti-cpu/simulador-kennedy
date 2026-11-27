@@ -67,10 +67,10 @@ export const PAR_CFG = {
   3: { titulo: 'Interrupción de la recolección',
     alerta(I, val) { const s = I ? I.sem : 0, r = I && I.res03; if (s < (val.resT0 || 4)) return ['Se interrumpirá la recolección', 'en ' + nf((val.resT0 || 4) - s) + ' sem · ' + nf(val.resHoras) + ' h'];
       if (r && r.fase > 0) return ['Sin recolección ' + nf(r.horas) + ' h', nf(r.totCalle) + ' t en la calle']; return ['Recolección normal', 'se interrumpió ' + nf(val.resHoras) + ' h']; },
-    vivo: [['Residuos acumulados en la calle', (I) => I.res03 && I.res03.fase > 0 ? I.res03.totCalle : 0, 4500, (v) => nf(v) + ' t'],
-      ['Tiempo máximo sin tratar', (I) => I.res03 && I.res03.fase > 0 ? I.res03.eMax : 0, 72, (v) => nf(v) + ' h'],
-      ['Compost para las huertas', (I) => I.res03 && I.res03.fase > 0 ? I.res03.compostDia : 0, 300, (v) => nf(v) + ' t/día'],
-      ['Resiliencia sanitaria', (I) => I.res03 && I.res03.fase > 0 ? I.res03.resil : 100, 100, (v) => nf(v) + ' %']],
+    vivo: [['Residuos acumulados en la calle', (I) => I.res03 && I.res03.nodos ? I.res03.totCalle : 0, 4500, (v) => nf(v) + ' t'], /* la última interrupción (una por año) */
+      ['Tiempo máximo sin tratar', (I) => I.res03 && I.res03.nodos ? I.res03.eMax : 0, 72, (v) => nf(v) + ' h'],
+      ['Compost entregado a las huertas', (I) => I.res03 && I.res03.prop ? I.res03.compAcum / 1000 : 0, 1000, (v) => nf(v, 1) + ' mil t'], /* acumulado: la red trata todo el año */
+      ['Resiliencia sanitaria', (I) => I.res03 && I.res03.nodos ? I.res03.resil : 100, 100, (v) => nf(v) + ' %']],
     graf: [{ t: '¿Cuánta basura queda en la calle?', s: [{ f: (I) => I.res03 && I.res03.fase > 0 ? I.res03.totCalle : 0, n: 'en la calle' }, { f: (I) => I.res03 && I.res03.fase > 0 ? I.res03.acum : 0, n: 'Corabastos + María Paz', c: COL.tur }], lim: 4500, limTxt: 'game over 4.500 t', fmt: (v) => nf(v) + ' t', sub: (I) => I.res03 && I.res03.nodos ? I.res03.nodos.filter(n => n.calle > 0.5).map(n => n.n.split(' ')[0] + ' ' + nf(n.calle) + ' t').join(' · ') || 'Todo se trata: nada queda en la calle.' : '' },
       { t: '¿Cuánto tiempo sin tratar?', s: [{ f: (I) => I.res03 && I.res03.fase > 0 ? I.res03.eMax : 0, n: 'horas' }], lim: 48, limTxt: 'game over 48 h', fmt: (v) => nf(v) + ' h', sub: (I) => I.res03 && I.res03.prop ? 'Con la red cada nodo lleva sus orgánicos a su Estación y lo que no cabe a Bavaria; la meta de la propuesta es menos de 12 h.' : 'Sin recolección todo se queda en la calle desde la primera hora.' },
       { t: '¿Cuánto se vuelve compost?', s: [{ f: (I) => I.res03 && I.res03.fase > 0 ? I.res03.compostDia : 0, n: 'compost' }], fmt: (v) => nf(v) + ' t/día', sub: (I) => `Se valoriza ${nf((I.res03 && I.res03.valoriza || 0) * 100)} % de lo generado; compost = 40 % de la masa tratada (supuesto).` },

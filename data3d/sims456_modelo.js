@@ -43,8 +43,8 @@ export function suelo05({ años = 0, presion = 1, reuso = 0, blindaje = false, p
   viv *= presion; arb *= presion; if (prop) arb = 0; else if (blindaje) arb *= S05.SUELTOS;
   const avance = viv / S05.VIV_TOT, ecoRest = 1 - arb / S05.ARB_TOT;
   const sueloProd = prop ? S05.LIBRE_HA : Math.max(0, S05.LIBRE_HA - S05.TORRES_HA * avance);
-  const imperm = prop ? 0.1 + 0.05 * presion : Math.min(1, 0.15 + 0.6 * avance);
-  return { viv: Math.round(viv), avance, arbPerdidos: Math.round(arb), ecoRest, sueloProd, sueloFr: sueloProd / S05.SUELO_MIN, naves: Math.round(S05.NAVES_M2 * (prop ? reuso : 0)), calor: S05.CALOR * imperm, imperm };
+  const imperm = prop ? 0.1 + 0.1 * presion * avance : Math.min(1, 0.15 + 0.6 * avance); /* crece con lo construido */
+  return { viv: Math.round(viv), avance, arbPerdidos: Math.round(arb), ecoRest, sueloProd, sueloFr: sueloProd / S05.SUELO_MIN, naves: Math.round(S05.NAVES_M2 * (prop ? reuso * Math.min(1, k / 5) : 0)) /* las naves se reactivan en 5 años */, calor: S05.CALOR * imperm, imperm };
 }
 export const S06 = { COB_MIN: 0.5, SEM_MAX: 4, SOST_MIN: 0.4 };
 

@@ -76,7 +76,7 @@ import { EXPO } from './exposicion_trafico.js?v=1';
 import { PLAN_BAV } from './plan_bavaria_datos.js?v=2';
 import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=3';
 import { interrupcion, repartoZonas, REGLAS_RES03, RES03 } from './res03_modelo.js?v=1';
-import { aves04, suelo05, S04, S05, S06, REGLAS_456 } from './sims456_modelo.js?v=1'; /* sims. 04, 05 y 06 (2026-11-27) */ /* sim. 03: interrupción de la recolección por horas (2026-11-27) */
+import { aves04, suelo05, S04, S05, S06, REGLAS_456 } from './sims456_modelo.js?v=2'; /* sims. 04, 05 y 06 (2026-11-27) */ /* sim. 03: interrupción de la recolección por horas (2026-11-27) */
 const FRAC03 = repartoZonas(ZONAS); /* sim. 02: red vial con cierre (pedido de la autora, 2026-11-27) */
 const RODEO02 = rodeos(CIERRES, ZONAS); // la misma instancia que usa sim_vida.js
 
@@ -1469,7 +1469,7 @@ function indBiodiversidad(E) {
    Reglas propias (REGLAS_MOV02): más de 2 arterias > 140 % (en la semana), tiempo de viaje > 2,0× (en la semana), una zona < 80 % 4 semanas seguidas. */
 function mov02Paso(E, x) {
   const C = E.cie, o = E.o, sem = E.s.t + 1; E.ind0Traf = x.trafico || 1;
-  const r = red02({ via: C.via, c: C.c || 0, dem: x.trafico || 1, prop: !!E.prop, perm: E.prop ? Math.max(0, Math.min(1, (E.val.permeab != null ? E.val.permeab : 100) / 100)) : 0, rodeo: RODEO02[C.via] || 1,
+  const r = red02({ via: C.via, c: C.c || 0, dem: x.trafico || 1, prop: !!E.prop, perm: E.prop ? Math.max(0, Math.min(1, (E.val.permeab != null ? E.val.permeab : 100) / 100)) * Math.min(1, Math.max(0.08, sem / 156)) /* los pasajes se abren en 3 años */ : 0, rodeo: RODEO02[C.via] || 1,
     Z: { zRec: o.zRec, zLoc: o.zLoc, zRed: o.zRed, need: o.demandaZona } });
   E.mov = r; const RM = E.rachaMov, nf1 = (v) => (Math.round(v * 10) / 10).toLocaleString('es-CO');
   RM.arterias = r.sobre > MOV02.N_ART ? RM.arterias + 1 : 0; RM.tiempo = r.tt > MOV02.TT_MAX ? RM.tiempo + 1 : 0;
@@ -1488,7 +1488,7 @@ function shannonAves(E) { const NFA = RED.NFA, occ = E.s.occ; let tot = 0; const
   let h = 0; for (const n of c) { const p = n / tot; h -= p * Math.log(p); } return h; }
 function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.round(q * 10) / 10).toLocaleString('es-CO');
   if (E.par === 4) { const t0 = Math.round(v.oleadaT0 || 4), on = sem >= t0 && (sem - t0) % 52 < S04.OLEADA, S = E.s04; /* una oleada cada año (pico enero–febrero) */
-    const r = aves04({ flujo: (v.flujoAves != null ? v.flujoAves : 60) / 100, impl: E.prop ? (v.implFauna != null ? v.implFauna : 100) / 100 : 0, barreras: !!v.barrerasFauna, prop: !!E.prop, trafico: x.trafico || 1 });
+    const r = aves04({ flujo: (v.flujoAves != null ? v.flujoAves : 60) / 100, impl: E.prop ? (v.implFauna != null ? v.implFauna : 100) / 100 * (0.6 + 0.4 * Math.min(1, sem / 208)) : 0 /* el paso de fauna y los corredores se terminan en 4 años */, barreras: !!v.barrerasFauna, prop: !!E.prop, trafico: x.trafico || 1 });
     if (on) S.pob = S.pob * (1 - r.muerteSem) + S04.RECUP * (1 - S.pob); else S.pob += S04.RECUP * (1 - S.pob);
     S.racha = on && S.pob < 1 - S04.PERDIDA_MAX ? S.racha + 1 : 0;
     if (on && !E.go && r.p > S04.TASA_MAX) E.go = { regla: 'tasa04', enfoque: 'Ecocentrismo', sem, inicio: sem, motivo: `${nf1(r.p * 100)} % de los cruces de aves entre los humedales terminan en choque con los carros (más del 20 %)`, lugar: 'Av. Ciudad de Cali y Av. de las Américas', x: 1428, z: 525, valor: Math.round(r.p * 1000) / 10 };
@@ -1514,10 +1514,12 @@ function res03Paso(E, x) {
   const kAno = sem - Rs.t0, esAno = kAno >= 0 && kAno % 52 === 0; /* 2026-11-27: la interrupción se repite cada año (la autora: «que cambie con los años») */
   if (esAno) Rs.r = interrupcion({ orgDia, frac: FRAC03, horas: Rs.horas, prop: !!E.prop, cap: E.prop ? Rs.cap : 0, cierreCora: Rs.cierre });
   const r = Rs.r, fase = kAno >= 0 && kAno % 52 === 0 ? 1 : kAno >= 0 && kAno % 52 === 1 ? 0.5 : 0;
+  /* con propuesta la red trata todo el año: compost acumulado para las huertas = mín(generado, capacidad) × 7 días × 40 % (RES03.COMPOST) */
+  if (E.prop) { const gen = orgDia + RES03.CORA_T_DIA, capD = (5 * RES03.EST_T_DIA + RES03.BAV_T_DIA) * Rs.cap; Rs.compAcum = (Rs.compAcum || 0) + Math.min(gen, capD) * 7 * RES03.COMPOST; }
   if (r && esAno && r.hGo && !E.go) { const Rg = REGLAS_RES03.find(q => q.k === r.reglaGo), peor = r.nodos.slice().sort((a, b) => b.edad - a.edad)[0];
     E.go = { regla: r.reglaGo, enfoque: 'Circularidad', sem, inicio: sem, motivo: r.reglaGo === 'acum03' ? `Corabastos y María Paz acumularon ${Math.round(r.acum).toLocaleString('es-CO')} t de orgánicos sin recoger, más de 4.500 t, a las ${r.hGo} h de interrupción` : `${peor.n} lleva más de 48 h con orgánicos sin tratar (${Math.round(peor.calle).toLocaleString('es-CO')} t en la calle) a las ${r.hGo} h de interrupción`,
       lugar: r.reglaGo === 'acum03' ? 'Corabastos y María Paz' : peor.n, x: KEN_XZ[0], z: KEN_XZ[1], valor: r.reglaGo === 'acum03' ? Math.round(r.acum) : r.hGo }; void Rg; }
-  x.res03 = r ? { orgDia, t0: Rs.t0, fase, horas: r.horas, prop: r.prop, cap: r.cap, cierreCora: r.cierreCora, nodos: r.nodos, totCalle: r.totCalle, acum: r.acum, eMax: r.eMax, valoriza: r.valoriza, compostDia: r.compostDia, resil: r.resil, hGo: r.hGo, curva: r.curva } : { t0: Rs.t0, fase: 0 };
+  x.res03 = r ? { compAcum: Rs.compAcum || 0, orgDia, t0: Rs.t0, fase, horas: r.horas, prop: r.prop, cap: r.cap, cierreCora: r.cierreCora, nodos: r.nodos, totCalle: r.totCalle, acum: r.acum, eMax: r.eMax, valoriza: r.valoriza, compostDia: r.compostDia, resil: r.resil, hGo: r.hGo, curva: r.curva } : { t0: Rs.t0, fase: 0 };
 }
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
