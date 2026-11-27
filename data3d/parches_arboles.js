@@ -26,7 +26,7 @@ export const FAUNA_PARCHE = { copeton: 2, mirla: 2, colibri: 2, torcaza: 1, cuca
 
 const azar = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const dentro = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > z) !== (P[j][1] > z) && x < (P[j][0] - P[i][0]) * (z - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
-let CACHE = null;
+let CACHE = null; const MODELOS = {};
 export const parchesCalculados = () => CACHE; // los usa data3d/indicadores.js (sin recalcular)
 export function calcularParches(HB, PQ, lw, movil = false) {
   if (CACHE) return CACHE;
@@ -54,11 +54,11 @@ export function calcularParches(HB, PQ, lw, movil = false) {
     const pts = []; for (const p of h.pods || []) for (const q of p.pi || []) pts.push(q);
     const rIn = pts.length ? Math.max(...pts.map(q => Math.hypot(q[0] - h.c[0], q[1] - h.c[1]))) : 20;
     const pq = parques.find(p => dentro(h.c[0], h.c[1], p.poly)); if (pq) pq.usado = true;
-    parche('Parche nativo · ' + h.n.replace(/^Huerta efímera del /i, ''), h.c, pq ? pq.poly : null, Math.min(rIn, 60), movil ? 2 : 3, [[h.c[0], h.c[1], Math.min(rIn, 60) + 5]]);
+    parche('Corredor verde nativo · ' + h.n.replace(/^Huerta efímera del /i, ''), h.c, pq ? pq.poly : null, Math.min(rIn, 60), movil ? 2 : 3, [[h.c[0], h.c[1], Math.min(rIn, 60) + 5]]);
   }
   // 2) en los demás parques grandes (los más grandes primero)
   const resto = parques.filter(p => !p.usado && p.area > 4000).sort((a, b) => b.area - a.area).slice(0, movil ? 18 : 34);
-  for (const p of resto) if (dentro(p.c[0], p.c[1], p.poly)) parche('Parche nativo · ' + p.n, p.c, p.poly, 4, p.area > 15000 ? 3 : 2, []);
+  for (const p of resto) if (dentro(p.c[0], p.c[1], p.poly)) parche('Corredor verde nativo · ' + p.n, p.c, p.poly, 4, p.area > 15000 ? 3 : 2, []);
   CACHE = OUT; return OUT;
 }
 
@@ -67,7 +67,7 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
   const [{ GLTFLoader }, { MeshoptDecoder }, { mergeGeometries }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/libs/meshopt_decoder.module.js'), import('three/addons/utils/BufferGeometryUtils.js')]);
   const grupo = new THREE.Group(); grupo.name = 'parches_arboles'; grupo.visible = false; T3.scene.add(grupo);
   const Y = (T3.sueloY != null ? T3.sueloY : 0.35);
-  const ld = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), L = (n) => ld.loadAsync('data3d/models/' + n + '.glb').catch(() => null);
+  const ld = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), L = (n) => MODELOS[n] || (MODELOS[n] = ld.loadAsync('data3d/models/' + n + '.glb').catch(() => null)); /* una sola descarga y decodificación por modelo para todos los parches (antes cada llamada los volvía a cargar) */
   const aF = (g) => { for (const k of Object.keys(g.attributes)) { const a = g.attributes[k]; if (!a.isInterleavedBufferAttribute && a.array instanceof Float32Array) continue; const n = a.count, s = a.itemSize, F = new Float32Array(n * s), get = [a.getX, a.getY, a.getZ, a.getW]; for (let i = 0; i < n; i++) for (let j = 0; j < s; j++) F[i * s + j] = get[j].call(a, i); g.setAttribute(k, new THREE.BufferAttribute(F, s)); } return g; };
   const NOMS = ['island_tree_01', 'island_tree_02', 'arbolpeq'], CARG = await Promise.all(NOMS.flatMap(m => [L(m + '_L1_madera'), L(m + '_L1_hojas')])), MOD = {}; NOMS.forEach((m, i) => { MOD[m] = [CARG[i * 2], CARG[i * 2 + 1]]; }); // los seis modelos a la vez
   // geometría normalizada de cada modelo: base en 0, 1 m de alto
@@ -81,7 +81,7 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
   /* NIVELES DE DETALLE (fluidez): los ~2.000 árboles escaneados (3 a 10 mil triángulos cada uno) ya no se dibujan todos en cada cuadro.
      Cerca de la cámara (< CERCA m) va el modelo escaneado de siempre (con sombra y flores); más lejos, una «foto» del mismo árbol de la misma
      especie (cruz de 2 planos + lámina vista desde arriba: 6 triángulos), tomada al cargar con el mismo material y tinte. */
-  const CERCA = MOV ? 180 : 300, ESP = [], C = new THREE.Color();
+  const CERCA0 = MOV ? 180 : 300, ESP = [], C = new THREE.Color(); let CERCA = CERCA0; /* calidad media/liviana (data3d/calidad.js): modelos escaneados en un radio menor; más lejos, la foto del mismo árbol */
   const foto = (partes, ancho) => { // fotos del árbol normalizado (1 m de alto): de lado y desde arriba
     const lado = Math.max(1, ancho) * 1.08, s = new THREE.Scene(), r = T3.renderer, c0 = new THREE.Color(); r.getClearColor(c0); const a0 = r.getClearAlpha(), rt0 = r.getRenderTarget();
     s.add(new THREE.HemisphereLight(0xdfeaff, 0x6a7a55, 1.4)); const sol = new THREE.DirectionalLight(0xfff1d6, 2.6); sol.position.set(30, 60, 40); s.add(sol);
@@ -122,7 +122,7 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
   const repartir = (forzar) => {
     const cp = T3.camera.position, gy = grupo.position.y;
     if (!forzar && Math.abs(cp.x - ult.x) + Math.abs(cp.y - ult.y) + Math.abs(cp.z - ult.z) < (T3.orbit ? Math.max(8, cp.distanceTo(T3.orbit.target) * 0.02) : 8) && ult.d === dens) return;
-    ult.x = cp.x; ult.y = cp.y; ult.z = cp.z; ult.d = dens; let nf = 0; const R2 = CERCA * CERCA;
+    ult.x = cp.x; ult.y = cp.y; ult.z = cp.z; ult.d = dens; let nf = 0; const QC = window.KEN_CALIDAD ? window.KEN_CALIDAD.cfg : null; CERCA = QC ? Math.min(CERCA0, QC.parcheCerca) : CERCA0; const R2 = CERCA * CERCA;
     for (const S of ESP) { let nc = 0, nl = 0;
       for (const t of S.lista) { if (t.k >= dens) continue; const fe = EDAD ? EDAD(t.k, t) : 1; if (fe <= 0) continue; /* edad(fn): data3d/cambio_50.js escala cada árbol por su edad (0 = aún no sembrado) */ O.position.set(t.x, Y + (t.y || 0), t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h * fe); O.updateMatrix(); /* t.y: árboles sobre un relieve propio (ecoducto de data3d/ecoducto.js) */
         const dx = t.x - cp.x, dy = Y + (t.y || 0) + gy + t.h * 0.5 - cp.y, dz = t.z - cp.z;
@@ -158,6 +158,7 @@ export async function crearParches3D({ T3, P, fijo = false }) { // fijo: no se a
   setInterval(apoyar, 2000);
   const cuadro = () => { requestAnimationFrame(cuadro); if (!grupo.visible) return; repartir(false); const y = T3.camera.position.y; UA.uA.value = Math.max(0, Math.min(1, (y - 220) / 300)); };
   requestAnimationFrame(cuadro);
+  if (window.KEN_CALIDAD) window.KEN_CALIDAD.on(() => { if (grupo.visible) repartir(true); else ult.d = -1; });
   const n = todos.length, porEsp = Object.fromEntries(Object.keys(ESPECIES).map(k => [k, todos.filter(t => t.sp === k).length]));
   return { grupo, ver(on) { grupo.visible = !!on; }, edad(fn) { EDAD = fn || null; repartir(true); }, get dens() { return dens; }, densidad(d) { dens = d; for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } repartir(true); }, n, parches: P.length, porEsp };
 }

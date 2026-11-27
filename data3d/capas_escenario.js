@@ -113,7 +113,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
   const LREF = [0, 60, 68, 74], BANDA = [55, 65, 70], BANDA_N = ['Amarillo claro · tranquilo', 'Amarillo · moderado', 'Naranja · ruidoso', 'Rojo · muy ruidoso'], BANDA_C = ['#fff7b3', '#ffd646', '#f57c00', '#d32f2f'];
   RM.LREF = LREF; RM.BANDA = BANDA; RM.BANDA_C = BANDA_C; RM.aj = { vel: 50, hor: 0 }; RM.vista = 'auto'; RM.niv = null; RM.fl = null; RM.densPre = 1; RM.arbPre = null;
   let pArb = 0; const precargarArboles = () => { if (pArb || window.KEN_PARCHES || typeof T3.lw !== 'function') return; pArb = 1; // los árboles de los parches se calculan aparte para que el panel dé lo mismo en «hoy» y en «propuesta» (la capa 3D solo se crea con la propuesta)
-    Promise.all([import('./parches_arboles.js?v=9'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {
+    Promise.all([import('./parches_arboles.js?v=12'), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()), fetch('data3d/parques.json').then(r => r.json())]).then(([m, HB, PQ]) => {
       const kA = (t) => { const h = Math.sin(t.x * 12.9898 + t.z * 78.233) * 43758.5453; return h - Math.floor(h); }; // la misma clave de densidad de parches_arboles.js
       RM.arbPre = m.calcularParches(HB, PQ, T3.lw, matchMedia('(pointer:coarse)').matches).flatMap(p => p.arboles).map(t => ({ x: t.x, z: t.z, k: kA(t) })); RM.ver++; }).catch(e => { pArb = 0; console.warn('árboles del ruido:', e); }); };
   RM.vistaEf = () => RM.vista === 'auto' ? (pro() ? 'pro' : 'hoy') : RM.vista;
@@ -166,7 +166,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
   const SLIDERS = [
     { k: 'cam', t: 'Camiones que siguen entrando a Corabastos', min: 5, max: 100, step: 1, ter: 'Menos camiones en la Av. Ciudad de Cali y en las vías hasta 2,6 km de Corabastos.', v: () => { const q = RM.camionesQueSiguen(); return q == null ? null : Math.round(q * 100); }, f: (v) => v + ' %' },
     { k: 'merc', t: 'Mercados de barrio', min: 0, max: 40, step: 1, ter: 'Se compra cerca de casa: menos viajes largos de carros en todas las calles.', v: () => T3.coraCS ? T3.coraCS.merc : null, f: (v) => v + ' mercados' },
-    { k: 'arb', t: 'Árboles nuevos (densidad de parches)', min: 15, max: 100, step: 5, ter: 'Los parches de árboles y el parque humedal absorben parte del sonido.', v: () => { const K = window.KEN_PARCHES; return Math.round((K && K.dens != null ? K.dens : RM.densPre) * 100); }, f: (v) => v + ' %' },
+    { k: 'arb', t: 'Árboles nuevos (densidad de corredores verdes)', min: 15, max: 100, step: 5, ter: 'Los corredores verdes de árboles y el parque humedal absorben parte del sonido.', v: () => { const K = window.KEN_PARCHES; return Math.round((K && K.dens != null ? K.dens : RM.densPre) * 100); }, f: (v) => v + ' %' },
     { k: 'vel', t: 'Velocidad máxima en calles de barrio', min: 30, max: 50, step: 10, ter: 'Solo calles locales e intermedias; las avenidas no cambian.', v: () => RM.aj.vel, f: (v) => v + ' km/h' },
     { k: 'hor', t: 'Horario de la carga de Corabastos', min: 0, max: 2, step: 1, ter: 'La carga de noche pesa más para el oído que la de día.', v: () => RM.aj.hor, f: (v) => ['De noche (como hoy)', 'Repartida', 'De día'][v] }];
   const setCS = (k, v) => { const i = document.querySelector(`#gs-csl input[data-k="${k}"]`); if (i) { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); } else if (T3.coraCS) { T3.coraCS[k] = v; dispatchEvent(new Event('cora-cambio')); } };
@@ -211,7 +211,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
     const RAN = ['menos de 55 dB', '55 a 65 dB', '65 a 70 dB', 'más de 70 dB']; q('[data-ley]').innerHTML = '<div class="h"><span>% de las calles en cada rango</span><span>hoy → propuesta</span></div>' + BANDA_N.map((n, i) => `<div class="f"><i style="background:${BANDA_C[i]}"></i><span>${n.split(' · ')[0]} <small>${RAN[i]}</small></span><b>${fmt(nv.hoy.pct[i])} % → ${fmt(nv.prop.pct[i])} %</b></div>`).join('');
     q('[data-cora]').innerHTML = nv.hoy.cora != null ? `<b>Cerca de Corabastos (hasta 1 km):</b> ${fmt(nv.hoy.cora, 1)} → ${fmt(nv.prop.cora, 1)} dB (${mas(nv.prop.cora - nv.hoy.cora)} dB). Es donde más cambia; el promedio de toda la localidad lo diluye.` : '';
     SLIDERS.forEach(s => { const b = q(`[data-s="${s.k}"]`), i = b.querySelector('input'), v = s.v(), e = nv.ef[s.k]; b.hidden = v == null && s.k !== 'vel' && s.k !== 'hor'; if (v != null && !b.dataset.mov && document.activeElement !== i) { i.value = v; b.querySelector('[data-o]').textContent = s.f(v); }
-      const ef = b.querySelector('[data-ef]'); ef.textContent = s.k === 'arb' ? `aporta ${mas(e, 2)} dB en promedio · ${mas(nv.ef.arbLoc)} dB en las ${fmt(nv.ef.arbPct)} % de calles junto a un parche` : Math.abs(e) < 0.05 ? 'sin efecto con este valor' : `aporta ${mas(e)} dB`; const ee = s.k === 'arb' ? nv.ef.arbLoc : e; ef.className = ee < -0.049 ? 'bien' : ee > 0.049 ? 'mal' : ''; });
+      const ef = b.querySelector('[data-ef]'); ef.textContent = s.k === 'arb' ? `aporta ${mas(e, 2)} dB en promedio · ${mas(nv.ef.arbLoc)} dB en las ${fmt(nv.ef.arbPct)} % de calles junto a un corredor verde` : Math.abs(e) < 0.05 ? 'sin efecto con este valor' : `aporta ${mas(e)} dB`; const ee = s.k === 'arb' ? nv.ef.arbLoc : e; ef.className = ee < -0.049 ? 'bien' : ee > 0.049 ? 'mal' : ''; });
     const ml = q('[data-mley]'); ml.innerHTML = ve === 'dif' ? '<div class="g d"></div><div class="l"><span>−6 dB o más</span><span>−3</span><span>sin cambio</span></div>' : `<div class="g">${BANDA_C.map(c => `<i style="background:${c}"></i>`).join('')}</div><div class="l"><span>&lt; 55</span><span>55–65</span><span>65–70</span><span>&gt; 70 dB</span></div>`;
   }
   /* ---------- usos: Bavaria cambia de uso y aparece la agricultura urbana ---------- */
@@ -248,7 +248,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
       fila('Ruido en la Av. Ciudad de Cali', '0 dB', ru ? fmt(ru.db, 1) + ' dB' : '–', true, 'Menos camiones: el ruido baja con el tráfico pesado.') +
       fila('Ruido medio en las calles de Kennedy', '0 dB', zr ? fmt(zr.ahora.tot, 1) + ' dB' : '–', true, 'Menos tráfico a Corabastos, viajes de compra más cortos y más árboles en parques, huertas y parque humedal. [SUP]') +
       fila('Orgánicos que vuelven a la tierra', fmt(A2.pct[t], 1) + ' %', fmt(P2.pct[t], 1) + ' %', true, 'Se compostan en el barrio o en Bavaria en vez de ir a Doña Juana.', [A2.pct[t], P2.pct[t]]) +
-      fila('Aves en el humedal El Burro', fmt(A3.aves[t]), fmt(P3.aves[t]), P3.aves[t] >= A3.aves[t], 'Las huertas con corredores unen parches de hábitat.', [A3.aves[t], P3.aves[t]]) +
+      fila('Aves en el humedal El Burro', fmt(A3.aves[t]), fmt(P3.aves[t]), P3.aves[t] >= A3.aves[t], 'Las huertas con corredores unen zonas verdes de hábitat.', [A3.aves[t], P3.aves[t]]) +
       fila('Pasajes nuevos (sintaxis)', '0', String(sx().pas), true, 'Abrir Bavaria une barrios que hoy lo rodean.');
   }
   /* ---------- tarjeta al cambiar a la propuesta ---------- */

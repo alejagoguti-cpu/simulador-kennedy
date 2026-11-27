@@ -509,14 +509,14 @@ const PQ = await fetch('data3d/parques.json').then(r => r.json()).catch(() => []
   nod.forEach((a, i) => nod.map((b, j) => [j, Math.hypot(b.c[0] - a.c[0], b.c[1] - a.c[1])]).filter(([j]) => j !== i).sort((x, y) => x[1] - y[1]).slice(0, 2).forEach(([j]) => { const k = Math.min(i, j) + '-' + Math.max(i, j); if (pares.has(k)) return; pares.add(k); cs.push(curva(a.c, nod[j].c, null, 4, 4)); }));
   cs.forEach(c => tubo('bioLinks', c, MOVIL ? 5 : 3.5, COL.verde, 0.7)); pulsos('bioLinks', cs, ['#f2c230', COL.crema, '#d0517a'], 3, 0.07, 5);
   nod.slice(0, 1 + HUM.filter(h => !h.cora).length).forEach(o => addEt(`<i style="background:${COL.verde}"></i>${o.n}`, [o.c[0], 60, o.c[1]], ['bio']));
-  addEt('<i style="background:#f2c230"></i>Polinizadores y aves entre parches', (() => { const c = cs[Math.floor(cs.length / 2)]; const p = c ? c.getPoint(0.5) : new THREE.Vector3(); return [p.x, p.y + 30, p.z]; })(), ['bio', 'parches']); }
+  addEt('<i style="background:#f2c230"></i>Polinizadores y aves entre corredores verdes', (() => { const c = cs[Math.floor(cs.length / 2)]; const p = c ? c.getPoint(0.5) : new THREE.Vector3(); return [p.x, p.y + 30, p.z]; })(), ['bio', 'parches']); }
 // plantas en flor alrededor de los espacios de producciÃ³n (borde de las manzanas de huerta)
 { const F = ['#f2c230', '#d0517a', '#f4f0da', '#d9534f', '#b48ad6']; const pts = [], cols = []; let s = 7; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
   for (const b of (D.bloques || [])) for (let i = 0; i < b.length; i++) { const [ax, ay] = b[i], [bx, by] = b[(i + 1) % b.length]; const L = Math.hypot(bx - ax, by - ay); for (let u = 0; u < L; u += 2.2) { const t = u / L; const [X, Z] = W(ax + (bx - ax) * t + (rnd() - 0.5) * 1.6, ay + (by - ay) * t + (rnd() - 0.5) * 1.6); pts.push(X, 1.8, Z); const c = new THREE.Color(F[Math.floor(rnd() * F.length)]); cols.push(c.r, c.g, c.b); } }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
   const p = new THREE.Points(g, xmat('flores', new THREE.PointsMaterial({ size: MOVIL ? 3 : 4, sizeAttenuation: false, vertexColors: true }), 1)); p.renderOrder = 9; xg('flores').g.add(p); }
 addEt('<i style="background:#d0517a"></i>Plantas en flor junto a las huertas', (() => { const b = (D.bloques || [])[0]; if (!b) return [0, 10, 0]; const p = W(...b[0]); return [p[0], 14, p[1]]; })(), ['parches']);
-addEt(`<i style="background:${COL.verde}"></i>Parche de Ã¡rboles conectado`, [ZB[0], 40, ZB[1]], ['parches']);
+addEt(`<i style="background:${COL.verde}"></i>Corredor verde de Ã¡rboles conectado`, [ZB[0], 40, ZB[1]], ['parches']);
 // control de ratas: almacenamiento cerrado en el compostaje y aves rapaces que patrullan
 { const m = xmat('ratas', new THREE.MeshLambertMaterial({ color: '#5b6b62' }), 1), tapa = xmat('ratas', new THREE.MeshLambertMaterial({ color: COL.verde }), 1);
   for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(5, 3.2, 3.4), m), t = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.5, 3.7), tapa); const [X, Z] = W(9492 + i * 7, 3054); b.position.set(X, 2.8, Z); t.position.set(X, 4.6, Z); b.renderOrder = t.renderOrder = 9; xg('ratas').g.add(b, t); } }
@@ -697,8 +697,8 @@ const PARCHES = [];
   const ala = new THREE.BufferGeometry(); ala.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -2, 0, 0, 2, -7, 0.8, 0, 0, 0, -2, 0, 0, 2, 7, 0.8, 0, 0, 0, -2, 0, 0, 2, 0, 0.2, 5], 3));
   const am = xmat('puentes', new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }), 1); const aves = cs.slice(0, 16).map((c, i) => { const b = new THREE.Mesh(ala, am); b.scale.setScalar(2.4); b.renderOrder = 13; xg('puentes').g.add(b); return { b, c, ph: i * 0.37 }; });
   xg('puentes').upd.push((t) => aves.forEach(({ b, c, ph }) => { const u = (t * 0.07 + ph) % 1; c.getPoint(u, tmp); b.position.copy(tmp); c.getTangent(u, tmp2); b.rotation.set(0, Math.atan2(tmp2.x, tmp2.z), Math.sin(t * 9 + ph * 7) * 0.4); }));
-  addEt(`<i style="background:${COL.verde}"></i>Parches que eran islas`, [PARCHES[3] ? PARCHES[3].c[0] : 300, 120, PARCHES[3] ? PARCHES[3].c[1] : 300], ['islas']);
-  addEt('<i style="background:#ffffff"></i>Aves y polinizadores entre parches', (() => { const c = cs[2] || cs[0]; const p = c ? c.getPoint(0.5) : new THREE.Vector3(); return [p.x, p.y + 30, p.z]; })(), ['puentes']);
+  addEt(`<i style="background:${COL.verde}"></i>Corredores verdes que eran islas`, [PARCHES[3] ? PARCHES[3].c[0] : 300, 120, PARCHES[3] ? PARCHES[3].c[1] : 300], ['islas']);
+  addEt('<i style="background:#ffffff"></i>Aves y polinizadores entre corredores verdes', (() => { const c = cs[2] || cs[0]; const p = c ? c.getPoint(0.5) : new THREE.Vector3(); return [p.x, p.y + 30, p.z]; })(), ['puentes']);
   addEt(`<i style="background:${COL.verde}"></i>Alimento y refugio`, [ZB[0], 160, ZB[1]], ['islas']); }
 // 10.4 control de ratas: la cadena residuos â†’ ratas, cortada por almacenamiento y retiro, y la depredaciÃ³n de las rapaces
 { const N = [{ id: 'res', n: 'Residuos', c: '#a77b5a', r: 9, p: [-60, 0, 0], et: true }, { id: 'rat', n: 'Ratas', c: '#9aa0a6', r: 9, p: [60, 0, 0], et: true }, { id: 'alm', n: 'Almacenamiento cerrado', c: COL.verde, r: 8, p: [-30, 60, 40], et: true }, { id: 'ret', n: 'Retiro oportuno', c: COL.verde, r: 8, p: [-30, 60, -40], et: true }, { id: 'rap', n: 'Aves rapaces', c: '#F2EFE8', r: 9, p: [80, 90, 0], et: true }];
@@ -1042,8 +1042,8 @@ Object.assign(LEY, {
   form: '<div class="t">FormaciÃ³n en Bavaria</div>' + f_(COL.verde, 'MÃ³dulos demostrativos') + f_(COL.ocre, 'Talleres'),
   viv: '<div class="t">ProducciÃ³n en las viviendas</div>' + f_(COL.ocre, 'AcompaÃ±amiento de promotores') + f_('#8fc46a', `${V.techos_n} cubiertas con huerta`),
   exc: '<div class="t">Excedentes</div>' + f_(COL.verde, 'De las viviendas al mercado barrial mÃ¡s cercano'),
-  bio: '<div class="t">Red biÃ³tica</div>' + f_(COL.verde, 'Parches de Ã¡rboles y parques') + f_('#5fb3d9', 'Humedales') + f_('#f2c230', 'Polinizadores y aves en movimiento'),
-  parches: '<div class="t">Parches conectados</div>' + f_('#d0517a', 'Plantas en flor junto a las huertas') + f_(COL.verde, 'VÃ­nculos entre parches'),
+  bio: '<div class="t">Red biÃ³tica</div>' + f_(COL.verde, 'Corredores verdes de Ã¡rboles y parques') + f_('#5fb3d9', 'Humedales') + f_('#f2c230', 'Polinizadores y aves en movimiento'),
+  parches: '<div class="t">Corredores verdes conectados</div>' + f_('#d0517a', 'Plantas en flor junto a las huertas') + f_(COL.verde, 'VÃ­nculos entre corredores verdes'),
   ratas: '<div class="t">Control de ratas</div>' + f_('#5b6b62', 'Almacenamiento cerrado') + f_(COL.crema, 'Aves rapaces'),
   nain8m: `<div class="t">IntegraciÃ³n R800 + mercados</div><div class="rampa" style="background:${rampaCSS}"></div><div class="ext"><span>segregado</span><span>integrado</span></div>` + f_(COL.verde, 'Mercados barriales'),
   nachm: `<div class="t">ElecciÃ³n + mercados</div><div class="rampa" style="background:${rampaCSS}"></div><div class="ext"><span>pocos recorridos</span><span>muchos</span></div>` + f_(COL.verde, 'Mercados barriales'),
@@ -1057,7 +1057,7 @@ Object.assign(LEY, {
   form: '<div class="t">FormaciÃ³n</div>' + f_(COL.verde, 'MÃ³dulos demostrativos') + f_(COL.ocre, 'Promotores barriales, primeros ciclos'),
   jb: '<div class="t">Referente local</div>' + f_(COL.verde, 'JardÃ­n BotÃ¡nico de BogotÃ¡') + f_(COL.ocre, 'Bavaria ComÃºn'),
   bioRed: LEY_BIO,
-  islas: '<div class="t">De islas a red</div>' + f_(COL.verde, 'Parches de Ã¡rboles y parques') + f_('#ffffff', 'Aves que se desplazan') + f_('#f2c230', 'Polinizadores'),
+  islas: '<div class="t">De islas a red</div>' + f_(COL.verde, 'Corredores verdes de Ã¡rboles y parques') + f_('#ffffff', 'Aves que se desplazan') + f_('#f2c230', 'Polinizadores'),
   ocupado: '<div class="t">DÃ³nde se interviene</div>' + f_(COL.ocre, 'Huellas ya ocupadas') + f_(COL.verde, 'Bosque sin intervenir'),
   colectivo: '<div class="t">Salvemos el Bosque de Bavaria</div>' + f_(COL.verde, 'Colectivo ciudadano'),
 });
@@ -1208,8 +1208,8 @@ const SL = [
   { b: '09', e: 'g16', l: 'Lo que sobra en las viviendas se vende en el mercado barrial mÃ¡s cercano.', g: 'Cuando hay excedentes, su venta en los mercados barriales ofrece una posibilidad de ingreso complementario.' },
   { b: '09', e: 'g17', l: 'El JardÃ­n BotÃ¡nico ya forma y asesora huertas urbanas en BogotÃ¡.', g: 'El JardÃ­n BotÃ¡nico de BogotÃ¡ es un referente local por su trabajo en formaciÃ³n y asistencia tÃ©cnica para la producciÃ³n urbana.' },
   { b: '10', e: 'g18', l: 'Especies y plantas de Kennedy unidas por quiÃ©n come, poliniza o anida en quiÃ©n.', g: 'La red de relaciones biÃ³ticas de Kennedy nos ayuda a definir quÃ© vÃ­nculos queremos fortalecer.' },
-  { b: '10', e: 'g19', l: 'Flores junto a las huertas atraen abejas y colibrÃ­es.', g: 'Alrededor de los espacios de producciÃ³n incorporamos plantas en flor para atraer polinizadores y conectamos parches de Ã¡rboles con la vegetaciÃ³n existente.' },
-  { b: '10', e: 'g20', l: 'Los parches de Ã¡rboles se unen y las aves pasan de uno a otro.', g: 'AsÃ­, los parches dejan de funcionar como islas aisladas y ofrecen alimento y refugio en distintos puntos, lo que facilita que las aves y los polinizadores se desplacen entre ellos.' },
+  { b: '10', e: 'g19', l: 'Flores junto a las huertas atraen abejas y colibrÃ­es.', g: 'Alrededor de los espacios de producciÃ³n incorporamos plantas en flor para atraer polinizadores y conectamos corredores verdes de Ã¡rboles con la vegetaciÃ³n existente.' },
+  { b: '10', e: 'g20', l: 'Los corredores verdes de Ã¡rboles se unen y las aves pasan de uno a otro.', g: 'AsÃ­, los corredores verdes dejan de funcionar como islas aisladas y ofrecen alimento y refugio en distintos puntos, lo que facilita que las aves y los polinizadores se desplacen entre ellos.' },
   { b: '10', e: 'g21', l: 'Con residuos cerrados y recogidos a tiempo, las ratas no encuentran comida.', g: 'El control de ratas empieza con el almacenamiento cerrado y el retiro oportuno de residuos.' },
   { b: '10', e: 'g22', l: 'Las aves rapaces cazan ratas: un control natural.', g: 'Las aves rapaces pueden contribuir a ese control mediante la depredaciÃ³n.' },
   { b: '10', e: 'g23', l: 'Rojo = calles mÃ¡s accesibles. Los mercados se ubican sobre ellas.', g: 'Con la sintaxis espacial, usamos la integraciÃ³n para identificar tramos accesibles donde ubicar mercados' },

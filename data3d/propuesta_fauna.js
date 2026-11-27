@@ -81,12 +81,13 @@ export function crearFauna({ T3, eco }) {
   function ponerEnjambres(forzar) {
     const H = window.KEN_HIDRO, c = T3.orbit ? T3.orbit.target : T3.camera.position; const frac = H && H.grupo && H.grupo.visible ? (H.frac != null ? H.frac : 0) : 0;
     if (!forzar && c.distanceTo(ultC) < 40 && Math.abs(frac - ultFrac) < 0.002) return; ultC.copy(c); ultFrac = frac;
+    const CAPQ = Math.round(MAXA * ({ medio: 0.7, liviano: 0.4 }[window.KEN_CALIDAD && window.KEN_CALIDAD.nivel] || 1)); /* calidad (data3d/calidad.js): menos insectos dibujados en medio/liviano */
     let n = 0; const R2 = 650 * 650, porTecho = Math.round(26 + 40 * sat((H && H.instaladas || 0) / 300)); // más huertas instaladas → más polinizadores por cubierta
-    const meter = (x, y, z, k, dispersa) => { for (let i = 0; i < k && n < MAXA; i++, n++) { const h = hsh(x * 0.37 + z * 0.11 + i * 1.618);
+    const meter = (x, y, z, k, dispersa) => { for (let i = 0; i < k && n < CAPQ; i++, n++) { const h = hsh(x * 0.37 + z * 0.11 + i * 1.618);
       aC[n * 3] = x + (hsh(h + 1) - 0.5) * dispersa; aC[n * 3 + 1] = y + 0.6 + hsh(h + 2) * 1.6; aC[n * 3 + 2] = z + (hsh(h + 3) - 0.5) * dispersa;
       const mar = hsh(h + 4) < 0.14; aF[n * 4] = h * 60; aF[n * 4 + 1] = (mar ? 2.2 : 1.1) + hsh(h + 5) * 2.2; aF[n * 4 + 2] = (mar ? 0.25 : 0.55) + hsh(h + 6) * 0.5; aF[n * 4 + 3] = mar ? 1 : 0; } };
     nTechos = 0;
-    if (H && H.centros && frac > 0) for (const [ce, ord] of H.centros()) { if (!ce || ord > frac) continue; const dx = ce[0] - c.x, dz = ce[2] - c.z; if (dx * dx + dz * dz > R2) continue; nTechos++; meter(ce[0], ce[1], ce[2], porTecho, 9); if (n >= MAXA) break; }
+    if (H && H.centros && frac > 0) for (const [ce, ord] of H.centros()) { if (!ce || ord > frac) continue; const dx = ce[0] - c.x, dz = ce[2] - c.z; if (dx * dx + dz * dz > R2) continue; nTechos++; meter(ce[0], ce[1], ce[2], porTecho, 9); if (n >= CAPQ) break; }
     // sobre el puente de fauna (flores de los arbustos del borde) cuando ya tiene cubierta verde
     if (eco && eco.puente && años > 2) { const p = eco.puente; if ((p.x - c.x) ** 2 + (p.z - c.z) ** 2 < R2) for (let k = 0; k < 10; k++) { const a = k * 2.39, r = 8 + (k % 4) * 9; meter(p.x + Math.cos(a) * r, Y0 + 9.5, p.z + Math.sin(a) * r, Math.round(10 + 20 * sat((años - 2) / 4)), 10); } }
     nEnj = n; geo.instanceCount = n; geo.attributes.aC.needsUpdate = true; geo.attributes.aF.needsUpdate = true; }

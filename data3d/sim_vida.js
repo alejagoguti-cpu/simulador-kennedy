@@ -175,14 +175,14 @@ function apto(i, p, q) { const g = ESPECIES[i][2]; return (GRUPOS[g].hab[TIPO[p]
 
 /* ---------- REGLAS DE GAME OVER (fijas, iguales para A, B y C; 4 semanas seguidas) ---------- */
 export const REGLAS = [
-  { k: 'habitat', n: 'Hábitat', txt: 'las especies con presencia en los parches caen 30 % o más frente al inicio', sem: 4,
+  { k: 'habitat', n: 'Hábitat', txt: 'las especies con presencia en los corredores verdes caen 30 % o más frente al inicio', sem: 4,
     malo: (o) => o.esp <= o.esp0 * 0.7, riesgo: (o) => o.esp <= o.esp0 * 0.85, val: (o) => o.esp },
   { k: 'abasto', n: 'Abastecimiento', txt: 'alguna zona recibe menos del 80 % de los alimentos que necesita', sem: 4,
     malo: (o) => o.zMin < 0.8, riesgo: (o) => o.zMin < 0.9, val: (o) => o.zMin * 100 },
   { k: 'residuos', n: 'Residuos', txt: 'los orgánicos pendientes de tratamiento superan la capacidad de almacenamiento', sem: 4,
     malo: (o) => o.pend > o.alm, riesgo: (o) => o.pend > o.alm * 0.7, val: (o) => o.pend / Math.max(1, o.alm) * 100 }
 ];
-export const MOTIVO = { habitat: 'se perdió 30 % o más de las especies en los parches', abasto: 'una zona recibió menos del 80 % de los alimentos', residuos: 'los orgánicos pendientes superaron el almacenamiento' };
+export const MOTIVO = { habitat: 'se perdió 30 % o más de las especies en los corredores verdes', abasto: 'una zona recibió menos del 80 % de los alimentos', residuos: 'los orgánicos pendientes superaron el almacenamiento' };
 
 const BASE = { A: { N: 300, q: 0.0025 }, D: { N: 300, q: 0.0025 }, B: { N: 2506, q: 0.0073 }, C: { N: 5400, q: 0.0073 } };
 const A0 = 120, W0 = 0.55; // mismas condiciones iniciales para A, B y C

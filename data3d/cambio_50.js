@@ -24,7 +24,7 @@
    Animaciones solo cosméticas (RELOJ.tAnim); la lógica solo mira RELOJ.sem. Sin azar. */
 import { RELOJ } from './reloj.js?v=5';
 import { SIMST } from './sim_modelos.js?v=7';
-import { crecimiento } from './sim_vida.js?v=8';
+import { crecimiento } from './sim_vida.js?v=9';
 import { añoActual } from './tope_anos.js?v=3';
 
 const TAU = 6, ADULTO = 20; // [SUP] años: tiempo característico de crecimiento y edad en que el árbol llega al ~95 % de su altura
@@ -99,7 +99,7 @@ export async function iniciarCambio50({ T3 }) {
   const fila = (n, v0, v1, buena, unidad = '', d = 0, nota = '') => ({ n, v0, v1, buena, unidad, d, nota });
   function filas(s) { const { e, o } = s, R = [];
     R.push(fila('Hogares con huerta', s.a0.act, o.act, 1, '', 0, 'o.act'));
-    if (e !== 'A') { R.push(fila('Cubiertas con huerta', s.cub0, s.cub, 1, '', 0, 'KEN_HIDRO.frac × techos')); R.push(fila('Árboles nativos de los parches', 0, s.arb, 1, '', 0, 'o.act / o.N')); }
+    if (e !== 'A') { R.push(fila('Cubiertas con huerta', s.cub0, s.cub, 1, '', 0, 'KEN_HIDRO.frac × techos')); R.push(fila('Árboles nativos de los corredores verdes', 0, s.arb, 1, '', 0, 'o.act / o.N')); }
     if (e === 'C') R.push(fila('Mercados de la red abiertos', 0, o.nodos, 1, ' de 35', 0, 'o.nodos'));
     if (e !== 'A') { R.push(fila('Bodegas de Corabastos desmontadas', 0, s.cora.desm, 1, ' de ' + s.cora.total, 0, 'o.cora.desm')); R.push(fila('Borde de humedal restaurado', 0, s.cora.borde / 1e4, 1, ' ha', 1, 'o.cora.borde')); }
     R.push(fila('Integridad del humedal El Burro', W0_HUM, o.hum, 1, ' %', 0, 'o.hum'));

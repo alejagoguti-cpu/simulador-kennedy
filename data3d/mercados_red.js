@@ -86,7 +86,7 @@ if (typeof window !== 'undefined') window.KEN_MERCADOS = { abiertos: mercadosAbi
 export async function crearRedMercados({ T3, cj }) {
   const THREE = T3.THREE;
   const sitios = MERCADOS.map(m => ({ id: m.id, n: m.n, tipo: m.tipo === 'plazoleta' ? 'plaza' : 'barrio', mx: m.mx, my: m.my, a: m.a, s: m.s, parque: m.parque }));
-  const { crearMercados } = await import('./mercados_barrio.js?v=5');
+  const { crearMercados } = await import('./mercados_barrio.js?v=6');
   const dib = await crearMercados({ T3, cj, sitios });
   const grupo = new THREE.Group(); grupo.name = 'red-mercados'; grupo.visible = false; T3.scene.add(grupo);
   const POR = new Map(MERCADOS.map(m => [m.id, m]));
@@ -203,6 +203,7 @@ export async function crearRedMercados({ T3, cj }) {
     ver(on) { visible = !!on; grupo.visible = visible; dib.ver(visible);
       if (visible) { sembrado = false; ultClave = ''; abiertosIds = '\u0000'; refrescar(true); } else { apagar(); sembrado = false; abiertosIds = ''; abPrev = new Set(); dib.mostrar([]); aros.count = faros.count = 0; if (malla) { grupo.remove(malla); malla.geometry.dispose(); malla = null; } nacimiento.clear(); } },
     refrescar: () => refrescar(true),
+    precalentar: () => (dib.precalentar ? dib.precalentar() : null), /* geometría de los sitios armada escondida (data3d/escenario.js, precarga) */
     quitar() { apagar(); dib.quitar && dib.quitar(); T3.scene.remove(grupo); }
   };
 }

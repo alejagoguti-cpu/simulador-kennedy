@@ -185,7 +185,7 @@ function escenaAbandono(nombre, causa) {
       if (t < TS) { A.g.position.copy(pos0); A.g.rotation.set(0, 0.4 + Math.sin(t * 1.3) * 0.25, 0); plegar(A, 0); }
       else { const u = sm(TS, TS + 2.4, t); A.g.position.lerpVectors(pos0, pos1, u); A.g.position.y += Math.sin(u * Math.PI) * 1.5; A.g.rotation.set(0, Math.atan2(-(pos1.z - pos0.z), pos1.x - pos0.x), 0); aletear(A, t); A.g.visible = u < 0.98; }
       if (t < TS) A.g.visible = true;
-      return t < TS - 0.6 ? (ruido ? '1 · El ruido de la vía no la deja oír ni cantar' : '1 · El parche pierde árboles y alimento') : t < TS + 1.2 ? '2 · Se va del lugar' : '3 · Población local perdida';
+      return t < TS - 0.6 ? (ruido ? '1 · El ruido de la vía no la deja oír ni cantar' : '1 · El corredor verde pierde árboles y alimento') : t < TS + 1.2 ? '2 · Se va del lugar' : '3 · Población local perdida';
     } };
 }
 

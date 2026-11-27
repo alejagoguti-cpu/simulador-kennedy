@@ -48,7 +48,7 @@ export async function crearIndicadores({ THREE, T3 }) {
   let KMERC = null; // los 8 mercados de barrio que reciben la carga de Corabastos (marco del modelo); se pasan al mundo cuando T3.lw existe
   const mercadosMundo = () => { if (MERCADOS.length || !KMERC) return; const f = typeof T3.lw === 'function' ? T3.lw : lw; MERCADOS = KMERC.map(m => f(m.p[0], m.p[1])); };
   fetch('data3d/carga.json?v=1').then(r => r.json()).then(K => { KMERC = K.mercados || []; mercadosMundo(); }).catch(() => {});
-  const leerParches = () => import('./parches_arboles.js?v=9').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
+  const leerParches = () => import('./parches_arboles.js?v=12').then(m => { const P = m.parchesCalculados(); if (P) PARCHES = P; return !!P; }).catch(() => false);
   const cerca = (L, x, z, r0, r1) => { let w = 0; for (const c of L) { const dx = c[0] - x, dz = c[1] - z; if (Math.abs(dx) > r1 || Math.abs(dz) > r1) continue; const v = caida(Math.hypot(dx, dz), r0, r1); if (v > w) w = v; } return w; };
   /* Con las 12 simulaciones (data3d/sim_ui.js) T3.simInd = {huerta, merc, cora, bav, verde, techo} de 0 a 1 dice cuánto de cada intervención existe en la semana
      actual del modelo: los picos se recalculan con eso (cada año) en vez de con la propuesta completa. Sin simInd todo vale 1 (la propuesta entera). */
@@ -213,11 +213,11 @@ export function panelIndicadores(api, on) {
   el.style.cssText = 'position:fixed;left:' + (innerWidth > 760 ? 290 : 8) + 'px;bottom:96px;z-index:41;width:min(262px,calc(100vw - 32px));max-height:calc(100vh - 200px);overflow:auto;background:rgba(13,15,18,.86);border:1px solid rgba(255,255,255,.075);border-radius:10px;padding:9px 11px;color:#e9ebec;font:10.5px/1.35 Inter,system-ui,sans-serif;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)';
   const grad = (r) => 'linear-gradient(to top,' + r.join(',') + ')', gradH = (r) => 'linear-gradient(90deg,' + r.join(',') + ')';
   // qué hace la propuesta en cada indicador (texto corto para el panel)
-  const QUE = { PM: 'Menos carros y camiones hacia Corabastos: baja la presión en sus vías.', PA: 'Menos tráfico hacia Corabastos y los árboles nuevos de los parches filtran el aire: baja la presión sobre el aire.',
+  const QUE = { PM: 'Menos carros y camiones hacia Corabastos: baja la presión en sus vías.', PA: 'Menos tráfico hacia Corabastos y los árboles nuevos de los corredores verdes filtran el aire: baja la presión sobre el aire.',
     EPO: 'Menos camiones cerca de Corabastos y más árboles junto a las casas: menos gente expuesta.', CV: 'Corabastos reducido: menos conflicto entre vivienda y carga.',
     CCL: 'El comercio se reparte: Corabastos pierde los camiones que ya no llegan, sus picos rojos bajan y aparecen centros medianos en los 8 mercados de barrio, Bavaria Común y las huertas.',
     IC: 'Los árboles nuevos dan sombra, los techos verdes y las lagunas del parque de Corabastos refrescan: bajan las islas de calor donde se siembran.',
-    SE: 'Cada árbol nuevo de los parches nativos y del parque de Corabastos, más los techos verdes y las huertas: sube el soporte ecológico donde se siembra.', OC: 'Cada huerta tiene una junta que la cuida: suben las organizaciones.', CO: 'Escuela de huertas y laboratorios de Bavaria Común: sube el conocimiento.' };
+    SE: 'Cada árbol nuevo de los corredores verdes nativos y del parque de Corabastos, más los techos verdes y las huertas: sube el soporte ecológico donde se siembra.', OC: 'Cada huerta tiene una junta que la cuida: suben las organizaciones.', CO: 'Escuela de huertas y laboratorios de Bavaria Común: sube el conocimiento.' };
   const fmtN = (n) => Math.round(n).toLocaleString('es-CO');
   const cuenta = (c, r) => { if (!r) return '';
     if (['SE', 'IC', 'PA', 'EPO'].includes(c) && (r.arboles || r.techos)) return `<div style="margin-top:3px;color:#c9cdd0">Cuenta ${fmtN(r.arboles)} árboles nuevos${r.techos && c !== 'EPO' ? ` y ${fmtN(r.techos)} techos verdes` : ''}.</div>`;

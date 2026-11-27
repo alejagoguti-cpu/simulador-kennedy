@@ -17,7 +17,7 @@ const PASO = 2; // las series de 15 años se muestrean cada 2 semanas (390 punto
 
 /* ---------- LÍMITES: las 7 REGLAS de simulaciones12.js (VALOR, MALO y CERCA copiados de allí; abasto como el game over real: por sector) ---------- */
 const LIMITES = [
-  { k: 'habitat', n: 'Hábitat', larga: 'Presencia especie × parche', v: (I) => I.pares / Math.max(1, I.pares0) * 100, u: 70, c: 80, abajo: true, un: '%', d: 0, go: true, txt: '% de la ocupación especie × parche del inicio' },
+  { k: 'habitat', n: 'Hábitat', larga: 'Presencia especie × corredor verde', v: (I) => I.pares / Math.max(1, I.pares0) * 100, u: 70, c: 80, abajo: true, un: '%', d: 0, go: true, txt: '% de la ocupación especie × corredor verde del inicio' },
   { k: 'residuos', n: 'Residuos', larga: 'Orgánicos pendientes / almacenamiento', v: (I) => I.residuos * 100, u: 100, c: 85, abajo: false, un: '%', d: 0, go: true, txt: '% de la capacidad de almacenamiento' },
   { k: 'abasto', n: 'Abasto', larga: 'Sector peor abastecido', v: minSector, u: 80, c: 87, abajo: true, un: '%', d: 0, go: true, txt: '% de su demanda de alimentos' },
   { k: 'fauna', n: 'Fauna', larga: 'Especies de fauna presentes', v: (I) => I.fauna / Math.max(1, I.fauna0) * 100, u: 90, c: 94, abajo: true, un: '%', d: 0, go: false, txt: '% de las especies del inicio' },
@@ -33,10 +33,10 @@ const estadoDe = (L, v) => (v == null ? null : malo(L, v) ? 'critico' : cerca(L,
 /* ---------- INDICADORES (claves verificadas en R.hist con la sonda del modelo) ---------- */
 const IND = {
   eco: { n: 'Índice ecocéntrico', c: 'Índice ecocéntrico', u: '/100', f: (I) => I.eco.indice * 100, sube: true },
-  presencia: { n: 'Presencia especie × parche', u: '%', f: (I) => T(I).presencia, sube: true, regla: 'habitat', ay: 'Ocupación de los parches por todas las especies; inicio = 100 %.' },
+  presencia: { n: 'Presencia especie × corredor verde', u: '%', f: (I) => T(I).presencia, sube: true, regla: 'habitat', ay: 'Ocupación de los corredores verdes por todas las especies; inicio = 100 %.' },
   fauna: { n: 'Especies de fauna', u: 'esp.', f: (I) => I.fauna, sube: true, regla: 'fauna' },
-  red: { n: 'Interacciones activas', c: 'Interacciones', u: '', f: (I) => T(I).red, sube: true, ay: 'Relaciones de la red biótica que ocurren dentro de cada parche.' },
-  conectados: { n: 'Hábitat conectado', u: '%', f: (I) => T(I).conectados, sube: true, ay: 'Parches de hábitat con vecino a 500 m o corredor.' },
+  red: { n: 'Interacciones activas', c: 'Interacciones', u: '', f: (I) => T(I).red, sube: true, ay: 'Relaciones de la red biótica que ocurren dentro de cada corredor verde.' },
+  conectados: { n: 'Hábitat conectado', u: '%', f: (I) => T(I).conectados, sube: true, ay: 'Zonas verdes de hábitat con vecino a 500 m o corredor.' },
   verde: { n: 'Superficie verde', u: 'ha', f: (I) => T(I).verde, sube: true },
   shannon: { n: 'Diversidad de Shannon H′', c: 'Shannon H′', u: '', d: 2, f: (I) => I.biodiversidad.shannon, sube: true },
   humedal: { n: 'Humedales que funcionan', c: 'Humedales funcionales', u: '%', f: (I) => I.humedalFuncional, sube: true, regla: 'humedal' },
@@ -397,15 +397,15 @@ export function iniciarPanelDatos({ R, getM, getFIN }) {
   function tabEco(div, c0) {
     div.insertAdjacentHTML('beforeend', leyenda(c0));
     const U = [kpis(div, ['presencia', 'fauna', 'conectados'])];
-    U.push(graficaLinea(div, 'presencia', 'Presencia de fauna en el territorio', 'Ocupación especie × parche (inicio = 100 %). Bajo 70 % durante 4 semanas: game over.'));
+    U.push(graficaLinea(div, 'presencia', 'Presencia de fauna en el territorio', 'Ocupación especie × corredor verde (inicio = 100 %). Bajo 70 % durante 4 semanas: game over.'));
     // mapa de calor de especies × años
-    { const { cu, der } = seccion(div, 'Especies por año', 'Parches ocupados al cierre de cada año (el año en curso se llena semana a semana). Color relativo al máximo de cada especie; vacío = ausente.');
-      const M = new MapaCalor(cu, { n: 'Parches ocupados por especie y año' });
+    { const { cu, der } = seccion(div, 'Especies por año', 'Corredores verdes ocupados al cierre de cada año (el año en curso se llena semana a semana). Color relativo al máximo de cada especie; vacío = ausente.');
+      const M = new MapaCalor(cu, { n: 'Corredores verdes ocupados por especie y año' });
       cu.insertAdjacentHTML('beforeend', `<div class="tb-ley" style="margin:6px 0 0"><span>menos</span>${['#1757ac', '#2370cd', '#338ced', '#6aabf1', '#9dc8f7', '#cce3fd'].map((x) => `<svg width="14" height="8" aria-hidden="true"><rect width="14" height="8" rx="1.5" fill="${x}"/></svg>`).join('')}<span>más</span><span><svg width="10" height="8" aria-hidden="true"><rect x=".5" y=".5" width="9" height="7" rx="1.5" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.2)"/></svg>ausente</span><span>${clave('var(--ui-tx,#f1f3ee)', 'tick')}año en curso</span></div>`);
       U.push((c) => { const esp = T(c.I).especies || []; if (!esp.length) return; const nA = Math.min(15, Math.ceil(c.n / 52)), actual = nA - 1;
         const filasV = esp.map((e, r) => { const a = []; for (let y = 0; y < 15; y++) { if (y >= nA) { a.push(null); continue; } const J = y === actual ? c.I : finAño(c, y), x = (T(J).especies || [])[r]; a.push(x ? x.valor : null); } return a; });
         const celdas = filasV.map((a, r) => { const mx = Math.max(1, ...a.filter((v) => v != null)); return a.map((v, y) => { if (v == null) return null; const Bj = c.B && c.B[Math.min(c.n - 1, (y + 1) * 52 - 1)], vb = Bj ? ((T(Bj).especies || [])[r] || {}).valor : null;
-          return { v, max: mx, tt: `${esp[r].n}|Año ${y + 1}${y === actual ? ' (en curso)' : ''}: ${num(v)} parches|${c.otro} propuesta: ${num(vb)}` }; }); });
+          return { v, max: mx, tt: `${esp[r].n}|Año ${y + 1}${y === actual ? ' (en curso)' : ''}: ${num(v)} corredores verdes|${c.otro} propuesta: ${num(vb)}` }; }); });
         M.update({ W: c.W, nombres: esp.map((e) => e.n), celdas, actual, valores: esp.map((e) => num(e.valor)) });
         der.textContent = `${esp.filter((e) => e.valor > 0).length} de ${esp.length} presentes`; }); }
     // muertes por causa y año (columnas apiladas)

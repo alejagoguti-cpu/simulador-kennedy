@@ -8,7 +8,7 @@
    · cerrar() quita la tarjeta y la marca y devuelve la cámara, también en arco, a donde estaba antes del primer ir(); se resuelve al volver.
    Si otro módulo mueve la cámara con T3.anim (p. ej. al escoger una simulación), el vuelo se cancela y le cede el paso. */
 import { RELOJ } from './reloj.js?v=5';
-import { abrirMomento, cerrarMomento, alasAve } from './momento_muerte.js?v=2';
+import { abrirMomento, cerrarMomento, alasAve } from './momento_muerte.js?v=3';
 
 const CEL = 40, X0 = -8000, Z0 = -8000, NX = 400, NZ = 400;  // mapa de alturas: 16 × 16 km en celdas de 40 m
 const MARGEN = 45;          // m libres por encima de lo más alto de la ruta

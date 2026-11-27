@@ -5,7 +5,7 @@
      coordenadas del modelo (7204,9, 3710,5) → mundo lw() = (1863,6, −548,6). Es el único punto donde una vía arterial corta un humedal de
      Kennedy con humedal a ambos lados (La Vaca norte y sur están separados por barrio, no por una vía; Techo solo tiene vías locales).
    · FORMA (referentes: pasos de fauna verdes sobre autopistas): la vía queda igual y los carros pasan por debajo (luz libre 6–6,9 m, intradós
-     en arco); encima un tablero de 52 m de ancho en el centro que se abre a 80 m en los extremos (planta en reloj de arena, bordes curvos),
+     en arco); encima un tablero de 70 m de ancho en el centro que se abre a 105 m en los extremos (planta en reloj de arena, bordes curvos),
      con rampas de tierra de 48 m a cada lado que bajan al humedal. Borde del tablero en concreto claro (labio delgado y arco, lo que se ve
      desde la vía); muros de contención curvos en las cuatro esquinas; sobre todo, bosque nativo continuo (modelos escaneados de
      data3d/parches_arboles.js): arbustos de flor en los bordes (pantalla contra luces y ruido), dosel en el centro y en las rampas.
@@ -16,13 +16,13 @@
    · CALENDARIO [SUP]: obra del puente en el año 1 (aparece con tierra), cubierta verde en los años 1,3–3, árboles del puente sembrados en los
      años 1,5–2,5; árboles de borde sembrados entre los años 0,5 y 4; todos llegan a adultos 3,5 años después de sembrados.
    · La malla de Google se recorta bajo el puente (uPuenteOn/uPuenteC en index.html) para que sus árboles no atraviesen el tablero. */
-import { crearParches3D, ESPECIES } from './parches_arboles.js?v=11';
+import { crearParches3D, ESPECIES } from './parches_arboles.js?v=12';
 
 const CL = [7204.9, 3710.5], UL = [0.73952, 0.67314]; // centro y eje de la vía (coordenadas del modelo)
 const AB = 22, RAMPA = 70, H = 8.6; // media luz del vano (m), fin de las rampas (m), altura del tablero sobre el suelo
 const sat = (v) => Math.max(0, Math.min(1, v)), sm = (a, b, x) => { const t = sat((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 /* perfil (s: a través de la vía; w: a lo largo de la vía) — el mismo que usa el recorte de index.html */
-export const anchoMedio = (s) => 26 + 14 * sm(10, RAMPA, Math.abs(s));
+export const anchoMedio = (s) => 35 + 17.5 * sm(10, RAMPA, Math.abs(s)); /* 2026-11-26: tablero de 70 m en el centro y 105 m en los extremos (antes 52 y 80) */
 const alto = (s) => { const a = Math.abs(s); return a <= AB + 2 ? H : H * (0.5 + 0.5 * Math.cos(Math.PI * Math.min(1, (a - AB - 2) / (RAMPA - AB - 2)))); };
 const intrados = (s) => 6.0 + 0.9 * (1 - (s / AB) ** 2); // arco del intradós sobre la vía
 
@@ -103,12 +103,13 @@ export function crearEcoducto({ T3 }) {
   /* ---------- árboles: los del puente (sobre el relieve, t.y) y los de borde de los tres humedales ---------- */
   const A = []; const R = (() => { let s = 4242; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
   const borde = ['chilco', 'tibar', 'arrayan', 'raque', 'mortino', 'arrayan'], seto = ['arrayan', 'arrayan', 'aliso', 'tibar', 'arrayan', 'chilco', 'sauco'], medio = ['sauco', 'chicala', 'arrayan', 'aliso'], dosel = ['caucho', 'aliso', 'aliso', 'caucho', 'sauco'];
-  const puente = [];
-  for (let s = -RAMPA + 6; s < RAMPA - 4; s += 3.1) for (let t = -0.95; t <= 0.95; t += 3.1 / 40) {
+  const puente = [], ESC_T = anchoMedio(0) / 26; /* 26 m = media luz del tablero anterior: la densidad de siembra se conserva por metro */
+  const QC0 = window.KEN_CALIDAD ? window.KEN_CALIDAD.nivel : 'alto', SALTA = QC0 === 'liviano' ? 0.3 : QC0 === 'medio' ? 0.15 : 0; /* calidad media/liviana: menos árboles sobre el puente (instanciados igual) */
+  for (let s = -RAMPA + 6; s < RAMPA - 4; s += 3.1) for (let t = -0.95; t <= 0.95; t += 3.1 / (40 * ESC_T)) { /* ESC_T: mismo espaciado en metros con el tablero más ancho */
     const ss = s + (R() - 0.5) * 2.4, tt = t + (R() - 0.5) * 0.05, a = Math.abs(tt), w = tt * hw(ss, tt < 0 ? 0 : 1), y = cima(ss, tt);
     if (y < 0.6) continue; let L;
     if (a > 0.8) L = seto; else if (Math.abs(ss) <= AB + 2) L = R() < 0.55 ? medio : (R() < 0.6 ? seto : dosel); else L = R() < 0.6 ? dosel : medio;
-    if (R() < 0.07) continue; const sp = L[Math.floor(R() * L.length)], [x, , z] = P(ss, w, 0);
+    if (R() < 0.07) continue; if (SALTA && hs(ss, tt) < SALTA) continue; const sp = L[Math.floor(R() * L.length)], [x, , z] = P(ss, w, 0);
     puente.push({ x, z, y: y - 0.15, sp, h: ESPECIES[sp].alto * (0.75 + R() * 0.35) * (Math.abs(ss) <= AB + 2 && ESPECIES[sp].estrato === 0 ? 0.7 : 1), rot: R() * 6.283, pu: 1 }); }
   // taludes de las rampas: también con bosque (sin franjas de pasto pelado)
   for (const l of [0, 1]) { const sg = l ? 1 : -1; for (let s = -RAMPA + 8; s < RAMPA - 6; s += 3.6) { if (Math.abs(s) < AB + 3) continue; const T = talud(s); if (T < 2) continue;

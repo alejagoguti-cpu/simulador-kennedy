@@ -1,4 +1,4 @@
-﻿/* ============ SIMULACIÓN 01 EN EL PANEL IZQUIERDO (acordeón de limpio.js, dentro de #su-der de sim_ui.js) ============
+/* ============ SIMULACIÓN 01 EN EL PANEL IZQUIERDO (acordeón de limpio.js, dentro de #su-der de sim_ui.js) ============
    v5 (docs/sim01_abastecimiento_v5.md, 2026-11-26):
    · ALERTA arriba del todo, con degradé (paleta URBIA), sin tapar la franja de eventos (feed_eventos.js va debajo).
    · «Población de Kennedy» y «Demanda alimentaria» LIGADAS y se mueven solas con los años (crecimiento por defecto 0,5 %/año).
@@ -23,7 +23,7 @@ const GRAF = [['pob', '¿Cuánta gente hay que alimentar?'], ['dis', '¿Alcanza 
 const nf = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (+v).toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d }));
 const CSS = `
 #ab-alerta{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:9px;align-items:center;max-width:calc(100vw - 32px);white-space:nowrap;padding:6px 6px 6px 12px;border-radius:12px;
-  background:linear-gradient(100deg,#304ffe 0%,#7d6bff 52%,#f2694a 100%);border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(30,20,90,.35);color:#fff;overflow:hidden;font:400 11.5px/1.35 var(--ui-sans,Inter,system-ui,sans-serif)}
+  background:linear-gradient(100deg,#304ffe 0%,#3d8fe6 55%,#4fd1c5 100%);border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(20,40,110,.35);text-shadow:0 1px 2px rgba(10,20,60,.45);color:#fff;overflow:hidden;font:400 11.5px/1.35 var(--ui-sans,Inter,system-ui,sans-serif)}
 #ab-alerta[hidden]{display:none}#ab-alerta>svg{width:16px;height:16px;flex:none;color:#fff;animation:abIco 1.1s ease-in-out infinite}
 #ab-alerta span{font:500 12px var(--ui-sans,Inter,sans-serif);color:#fff;overflow:hidden;text-overflow:ellipsis}
 #ab-alerta b{font:600 10px/1 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.85)}
@@ -39,6 +39,7 @@ const CSS = `
 #su-der .su-sl.ab-lig{position:relative;padding-left:9px} #su-der .su-sl.ab-lig::before{content:"";position:absolute;left:0;top:4px;bottom:2px;width:2px;border-radius:2px;background:${COL.vio};opacity:.8}
 #su-der .su-sl.ab-auto{position:relative;padding-left:9px} #su-der .su-sl.ab-auto::before{content:"";position:absolute;left:0;top:4px;bottom:2px;width:2px;border-radius:2px;background:${COL.tur};opacity:.8}
 #su-der .ab-lim{margin:3px 0 0;font:400 10px/1.3 var(--ui-sans,Inter,sans-serif);color:var(--ui-tx3,#bcc4b5)} #su-der .ab-lim b{font:600 12px/1 'Barlow Condensed',var(--ui-sans,Inter),sans-serif;color:${COL.oro}}
+#su-der .ab-autob{all:unset;cursor:pointer;margin-left:4px;padding:1px 7px;border-radius:6px;border:1px solid rgba(255,255,255,.22);font:500 10px/1.4 var(--ui-sans,Inter,sans-serif);color:#fff} #su-der .ab-autob[hidden]{display:none} #su-der .ab-autob:focus-visible{outline:2px solid ${COL.tur}}
 #ab-fx{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px;padding:5px 10px;border-radius:9px;border:1px solid rgba(125,107,255,.55);background:rgba(125,107,255,.14);font:600 11px/1 var(--ui-sans,Inter,sans-serif);color:#e8e5ff}
 #ab-fx svg{width:18px;height:13px} #ab-fx:hover{background:rgba(125,107,255,.26)} #ab-fx:focus-visible{outline:2px solid ${COL.vio};outline-offset:2px}
 @media (pointer:coarse){#ab-fx{padding:9px 12px}}
@@ -96,7 +97,7 @@ export function quitar() { const a = document.getElementById('ab-alerta'); if (a
 let GO = null;
 const GO_FILA = { deficit: 'def', saturacion: 'sat', residuosK: 'res' };
 const GO_N = { deficit: 'Déficit alimentario', saturacion: 'Límite de abastecimiento de Corabastos', residuosK: 'Residuos sin recoger', trafico: 'Tráfico', ruido: 'Ruido', habitat: 'Hábitat', fauna: 'Fauna', humedal: 'Humedales', residuos: 'Basura', abasto: 'Abasto' };
-function goValor(g) { if (g.regla === 'deficit') return `${g.lugar.replace(/^Sector /, '')} · ${nf(g.valor, 1)} % (mín. 80 %)`; if (g.regla === 'saturacion') return `${nf(g.valor)} % de 14.000 t`;
+function goValor(g) { if (g.regla === 'deficit') return `${g.lugar.replace(/^Sector /, '')} · ${nf(g.valor, 1)} % (mín. 80 %)`; if (g.regla === 'saturacion') return `${nf(g.valor)} % de su límite`;
   if (g.regla === 'residuosK') return `${nf(g.valor)} t/día (máx. ${RES_GO})`; return ''; }
 export function gameOver(g) { GO = g || null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO); feedBajo();
   if (GO) a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${Math.floor((GO.sem - 1) / 52) + 1}</b><span>${GO_N[GO.regla] || GO.regla}</span><strong>${goValor(GO)}</strong><span class="go4">4 semanas seguidas</span>`;
@@ -107,7 +108,7 @@ export function htmlAbajo(prop) {
   return `<button type="button" id="ab-fx" aria-haspopup="dialog" title="Cómo se calcula cada variable y cada gráfica, con los valores de esta semana">${ICO_FX}<span>Fórmulas</span></button>
     <div id="ab-go" aria-live="polite"><h6 title="4 semanas seguidas pasando un límite = game over. Mismos límites con y sin propuesta.">Game over · límites</h6>
       <div class="r" data-go="def" title="Sector de Kennedy peor servido: recibido ÷ demanda. Límite: 80 %"><span>Déficit alimentario</span><b>—</b><i><u></u><s style="left:80%"></s></i></div>
-      <div class="r" data-go="sat" title="Inventario de Corabastos ÷ 14.000 t (capacidad de referencia, fija). Límite: 100 %"><span>Límite de abastecimiento de Corabastos</span><b>—</b><i><u></u><s style="left:${(100 / 1.3).toFixed(1)}%"></s></i></div>
+      <div class="r" data-go="sat" title="Inventario de Corabastos ÷ su capacidad: 14.000 t de referencia; con propuesta, la de las naves que quedan. Límite: 100 %"><span>Límite de abastecimiento de Corabastos</span><b>—</b><i><u></u><s style="left:${(100 / 1.3).toFixed(1)}%"></s></i></div>
       <div class="r" data-go="res" title="Residuos de Kennedy sin recoger. Límite: 296 t/día (el doble de hoy)"><span>Residuos sin recoger</span><b>—</b><i><u></u><s style="left:${(100 / 1.3).toFixed(1)}%"></s></i></div></div>
     <div id="ab-graf"><h6>Gráficas</h6><div class="tabs" role="tablist">${GRAF.map(([k, n], i) => `<button type="button" role="tab" data-g="${k}" aria-selected="${i ? 'false' : 'true'}" title="${n}">${i + 1}</button>`).join('')}</div>
       <h5 data-ab="t"></h5><p data-ab="s"></p><svg viewBox="0 0 260 132" role="img" aria-label="Gráfica de la simulación 01"></svg><ul data-ab="ley"></ul></div>
@@ -132,7 +133,7 @@ function enlazar(der, { R, recalcular }) {
   const iP = der.querySelector('input[data-k="pobK"]'), iD = der.querySelector('input[data-k="demT"]'), iC = der.querySelector('input[data-k="demanda"]'), iV = der.querySelector('input[data-k="volumen"]');
   const arr = (on) => { der._abArrastra = on; };
   if (iV) { const box = iV.closest('.su-sl'); box.classList.add('ab-auto');
-    if (!box.querySelector('.ab-lim')) box.insertAdjacentHTML('beforeend', '<p class="ab-lim">Se mueve solo con la comida que se pide. Límite de Corabastos: <b>14.000 t</b> de inventario (capacidad de referencia, no cambia con las huertas ni con los mercados).</p>');
+    if (!box.querySelector('.ab-lim')) box.insertAdjacentHTML('beforeend', '<p class="ab-lim">Se mueve solo con la comida que se pide. Límite de Corabastos: <b>14.000 t</b> de inventario (capacidad de referencia, no cambia con las huertas ni con los mercados). Con propuesta baja con las naves que se quitan (años 1 a 8): al final 7.103 t.</p>');
     const etqV = (pos) => { const b = der.querySelector('[data-v="volumen"]'); if (b) b.textContent = nf(pos * ING0 / 100) + ' t/día'; iV.style.setProperty('--p', Math.max(0, Math.min(100, (pos - iV.min) / (iV.max - iV.min) * 100)) + '%'); };
     der._abEtqV = etqV;
     iV.addEventListener('pointerdown', () => { der._abArrV = true; }); iV.addEventListener('blur', () => { der._abArrV = false; });
@@ -141,6 +142,12 @@ function enlazar(der, { R, recalcular }) {
     iV.onchange = () => { const L = R.hist[R.hist.length - 1], U = X(L), vol = U ? U.vol * 100 : (R.valores.volumen || 100), pos0 = U ? U.ing / ING0 * 100 : 100;
       R.valores.volumen = Math.max(30, Math.min(200, Math.round(vol * (+iV.value) / Math.max(1, pos0) * 10) / 10)); der._abArrV = false; recalcular && recalcular(); };
     etqV(+iV.value); }
+  /* v5.2: «Huertas hidropónicas activas» en auto por defecto (se instalan con los años, como en el mapa); al moverlo queda fijo; «Auto» lo devuelve */
+  const iH = der.querySelector('input[data-k="huertasH"]');
+  if (iH) { const box = iH.closest('.su-sl'); box.classList.add('ab-auto'); if (+iH.value < 0) iH.value = 0;
+    if (!box.querySelector('.ab-lim')) box.insertAdjacentHTML('beforeend', '<p class="ab-lim">Se instalan solas con los años (≈147 en el año 1, ≈1.470 en el 10, las 2.132 cubiertas aptas en el 15, primero las más altas). Muévelo para fijar un número. <button type="button" class="ab-autob">Auto</button></p>');
+    const b = box.querySelector('.ab-autob'); if (b) b.onclick = () => { R.valores.huertasH = -1; recalcular && recalcular(); };
+    iH.addEventListener('pointerdown', () => { der._abArrH = true; }); iH.addEventListener('change', () => { der._abArrH = false; }); }
   if (!iP || !iD) return;
   iP.closest('.su-sl').classList.add('ab-lig'); iD.closest('.su-sl').classList.add('ab-lig');
   const cons = () => (iC ? +iC.value : (R.valores.demanda || 100)) / 100;
@@ -175,16 +182,16 @@ function pintarFx(der) { const p = document.getElementById('ab-fxp'); if (!p || 
       + f('Población de Kennedy', nf(U.pob) + ' hab', `1.034.838 × (1 + ${i(nf(U.crece * 100, 1) + ' %')})^(semana ÷ 52)`)
       + f('Demanda alimentaria', nf(U.demK) + ' t/día', `población × 0,951 kg × consumo ${i(nf(U.dem * 100) + ' %')} ÷ 1.000`)
       + f('Comida que producen los hogares', nf(U.autoT, 1) + ' t/día', `demanda × ${i(nf(U.auto * 100) + ' %')} (supuesto, 0 % por defecto)`)
-      + (prop ? f('Mercados de barrio', nf(U.mercT) + ' t/día', `${i(nf(U.nAct))} abiertos de ${nf(U.nM)} · cada uno hasta 80 % de 28 t/día (215 puestos × 0,13 t) · compran a pie los hogares a 1 km o menos (hasta 60 % de lo fresco)`)
-        + f('Acopio regional de los mercados', nf(U.regT || 0) + ' t/día', `Σ (70 % de 28 t/día − lo que compra Kennedy) en cada mercado abierto · supuesto de la propuesta`)
-        + f('Huertas hidropónicas', nf(U.huertaT, 2) + ' t/día', `${i(nf(U.nH))} huertas × 50 m² × 6 kg/m²·año ÷ 365`) : '')
+      + (prop ? f('Mercados de barrio', nf(U.mercT) + ' t/día', `${i(nf(U.nAct))} abiertos de ${nf(U.nM)} · cada uno hasta 70 % de 28 t/día (215 puestos × 0,13 t), también cuando falta comida en Corabastos · compran a pie los hogares a 1 km o menos (hasta 60 % de lo fresco)`)
+        + f('Acopio regional de los mercados', nf(U.regT || 0) + ' t/día', `Σ (55 % de 28 t/día − lo que compra Kennedy) en cada mercado abierto · supuesto de la propuesta (la barra de cada mercado = Kennedy + acopio, máx. 70 %)`)
+        + f('Huertas hidropónicas', nf(U.huertaT, 2) + ' t/día', `${i(nf(U.nH))} huertas × 50 m² × 6 kg/m²·año ÷ 365 · en auto se instalan solas: 2.132 cubiertas × semana ÷ 754 (las mismas que se ven en el mapa)`) : '')
       + f('Pedido a Corabastos', nf(U.L) + ' t/día', `resto de la región ${i(nf(resto0))}${prop ? ' − acopio regional ' + i(nf(U.regT || 0)) : ''} + lo que Kennedy le pide ${i(nf(U.coraPedK))}`)
       + f('Ingreso a Corabastos', nf(U.ing) + ' t/día', `«Ingreso» ${i(nf(U.vol * 100) + ' %')} × pedido ÷ (1 − 0,0155), máx. 6.460 × (1 + ${nf(U.topeF * 100)} %) = ${nf(U.tope)}`)
-      + f('Congestión junto a Corabastos', nf(U.cC * 100) + ' %', `${prop ? 'nivel de 2025 0,62 (supuesto de la propuesta)' : `nivel de la ciudad 0,62 + 0,033 × ${nf(años, 1)} años = ${i(nf(U.cCiudad, 3))}`} × ingreso ÷ 6.460`)
+      + f('Congestión junto a Corabastos', nf(U.cC * 100) + ' %', `${prop ? `nivel de 2025 0,62 × (1 − 0,25 ×  de mercados abiertos) (supuesto de la propuesta, el mismo de las vías)` : `nivel de la ciudad 0,62 + 0,033 × ${nf(años, 1)} años = ${i(nf(U.cCiudad, 3))}`} × ingreso ÷ 6.460`)
       + f('Permanencia de la mercancía', nf(U.Tp, 2) + ' días', `0,76 días × (1 + congestión) ÷ 1,62 × cola ${i(nf(U.cola || 1, 2))}`)
       + f('Regla del modelo (decisión de la autora): cuando no hay dónde poner la comida, la mercancía sale más lento y Corabastos se llena', 'cola ' + nf(U.cola || 1, 2), `cola = 1 + 0,5 × [(1 − 0,35) ÷ (1 − ρ) − 1], ρ = inventario ÷ 14.000 = ${i(nf(U.sat, 2))}: cuanto más llena está la central, más tarda en salir lo que entra (con ρ = 0,35, el nivel de 2025, la cola vale 1)`)
       + f('Inventario de Corabastos', nf(U.inv) + ' t', `inventario anterior + ingresos − despachos − pérdidas (0,0155 de lo que sale) · tiende a ingreso × permanencia = ${nf(U.ing * U.Tp)}`)
-      + f('Límite de abastecimiento de Corabastos', nf(U.sat * 100) + ' %', `inventario ÷ ${i('14.000 t')} (capacidad de referencia, fija) · game over sobre 100 % 4 semanas`)
+      + f('Límite de abastecimiento de Corabastos', nf(U.sat * 100) + ' %', `inventario ÷ ${i(nf(U.cap || 14000) + ' t')} (14.000 t de referencia${U.nQuit ? ' × tope de las naves que quedan: ' + U.nQuit + ' de 18 naves quitadas' : ''}) · game over sobre 100 % 4 semanas`)
       + f('Déficit alimentario', nf(U.secMin * 100, 1) + ' %', `sector peor servido: recibido ÷ demanda (${(U.sectores[U.secArg] || {}).n || '—'}) · game over bajo 80 % 4 semanas`)
       + (r ? f('Residuos sin recoger', nf(r.noRec) + ' t/día', `922 × 1,027^años + 0,19 × (comida que llega − 984) − 774 recogidas − ${i(nf(r.trat))} tratadas · game over sobre 296 4 semanas`) : '')
       + `</dl><h4>Gráficas</h4><dl>`
@@ -205,6 +212,10 @@ export function actualizar(der, H, FIN = 780, B = null, prop = false) {
   if (U && !der._abArrastra) { const iP = der.querySelector('input[data-k="pobK"]'), iD = der.querySelector('input[data-k="demT"]');
     if (iP && iD) { iP.value = U.pob; iD.value = U.demK; const b1 = der.querySelector('[data-v="pobK"]'), b2 = der.querySelector('[data-v="demT"]'); if (b1) b1.textContent = nf(U.pob) + ' hab'; if (b2) b2.textContent = nf(U.demK) + ' t/día';
       for (const i of [iP, iD]) i.style.setProperty('--p', Math.max(0, Math.min(100, (i.value - i.min) / (i.max - i.min) * 100)) + '%'); } }
+  { const iH = der.querySelector('input[data-k="huertasH"]'), R0 = der._abR, auto = !R0 || R0.valores.huertasH == null || R0.valores.huertasH < 0;
+    if (iH && !der._abArrH) { const n = U && U.nH != null ? U.nH : 0, b = der.querySelector('[data-v="huertasH"]'), t = (auto ? 'auto · ' : 'fijo · ') + nf(auto ? n : R0.valores.huertasH) + ' huertas';
+      if (auto) iH.value = n; if (b && b.textContent !== t) b.textContent = t; iH.style.setProperty('--p', Math.max(0, Math.min(100, (iH.value - iH.min) / (iH.max - iH.min) * 100)) + '%');
+      const ab = der.querySelector('.ab-autob'); if (ab) ab.hidden = auto; } }
   if (U && !der._abArrV) { const iV = der.querySelector('input[data-k="volumen"]'); if (iV) { const pos = U.ing / ING0 * 100; iV.value = pos; if (der._abEtqV) der._abEtqV(pos); } }
   reglas(der, L, U);
   if (GO && (!H || H.length < GO.sem)) { GO = null; const a = document.getElementById('ab-alerta'); if (a) a.remove(); alertaArriba(); }
@@ -223,7 +234,7 @@ function reglas(der, L, U) {
   if (!U) { for (const k of ['def', 'sat', 'res']) fila(k, 0, '—', false, 0); return; }
   const r = L.residuosK, S = U.sectores[U.secArg] || {};
   fila('def', U.secMin * 100, `${nf(U.secMin * 100, 1)} %`, U.secMin < 0.8, U.rachaDef);
-  fila('sat', U.sat * 100 / 1.3, `${nf(U.sat * 100)} % de 14.000 t`, U.sat > 1, U.rachaSat);
+  fila('sat', U.sat * 100 / 1.3, `${nf(U.sat * 100)} % de ${nf(U.cap || 14000)} t`, U.sat > 1, U.rachaSat);
   fila('res', r ? r.noRec / RES_GO * 100 / 1.3 : 0, r ? `${nf(r.noRec)} de ${RES_GO} t/día` : '—', r && r.noRec >= RES_GO, U.rachaRes);
   const d = der.querySelector('#ab-go [data-go="def"] span'); if (d) d.textContent = 'Déficit alimentario' + (S.n ? ' · ' + S.n.replace(/^Sector /, '') : '');
 }

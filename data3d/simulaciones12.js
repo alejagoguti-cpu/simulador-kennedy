@@ -1,4 +1,4 @@
-﻿/* Revisión ecológica: se eliminan los descuentos de mortalidad y restauración activados únicamente por E.prop.
+/* Revisión ecológica: se eliminan los descuentos de mortalidad y restauración activados únicamente por E.prop.
    Los coeficientes de riesgo existentes siguen siendo supuestos, no estimaciones de abundancia observada. */
 /* ============ LAS 12 SIMULACIONES · módulo ES para el navegador y para node ============
    Reúne el modelo semanal data3d/sim_vida.js (abastecimiento por zona, residuos orgánicos, hábitat de Levins) con la red trófica compartida
@@ -68,9 +68,9 @@
    · extinciones: una especie desaparece de TODA Kennedy esa semana; parche = su último parche (si eran varios a la vez, el de más área);
      motivo = el que anotó data3d/red_trofica.js al extinguirse en ese parche (sin recursos de la red, tráfico y ruido, tala, humedal degradado o
      azar demográfico). */
-import { redCompleta, evaluarEstado } from './evaluacion_ecologica.js?v=1';
-import * as V from './sim_vida.js?v=ab02';
-import { crearRed, MOTIVOS } from './red_trofica.js?v=2';
+import { redCompleta, evaluarEstado } from './evaluacion_ecologica.js?v=2';
+import * as V from './sim_vida.js?v=ab01';
+import { crearRed, MOTIVOS } from './red_trofica.js?v=3';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
 import { PLAN_BAV } from './plan_bavaria_datos.js?v=2'; // la misma instancia que usa sim_vida.js
@@ -293,10 +293,10 @@ export const PARES = [
     sin: 'Continúa la capacidad de tratamiento de referencia.', con: 'Se habilita una red de Estaciones Circulares distribuidas y compostaje de proximidad.',
     visible: 'Estaciones Circulares y residuos: nodos de tratamiento, acumulación y recorridos.',
     pregSin: '¿Qué pasaría si aumentan los residuos orgánicos y todo sigue yendo al relleno Doña Juana?', pregCon: '¿Qué pasaría si aumentan los residuos orgánicos y hay Estaciones Circulares de compost en los barrios?' },
-  { par: 4, n: '04 Biodiversidad', prueba: 'Fragmentación o pérdida de un parche ecológico', capa: 'biodiversidad',
+  { par: 4, n: '04 Biodiversidad', prueba: 'Fragmentación o pérdida de un corredor verde', capa: 'biodiversidad',
     sin: 'Las especies responden al hábitat y las barreras existentes.', con: 'Se incorporan conexiones vegetales, refugios y restauración de hábitat.',
-    visible: 'Hábitat, especies y conexiones: ocupación de parches y desplazamientos posibles.',
-    pregSin: '¿Qué pasaría si se pierde parte de un humedal o del bosque de Bavaria y las especies solo tienen los parches de hoy?', pregCon: '¿Qué pasaría si se pierde parte de un humedal o del bosque de Bavaria y hay conexiones vegetales, refugios y restauración?' },
+    visible: 'Hábitat, especies y conexiones: ocupación de corredores verdes y desplazamientos posibles.',
+    pregSin: '¿Qué pasaría si se pierde parte de un humedal o del bosque de Bavaria y las especies solo tienen los corredores verdes de hoy?', pregCon: '¿Qué pasaría si se pierde parte de un humedal o del bosque de Bavaria y hay conexiones vegetales, refugios y restauración?' },
   { par: 5, n: '05 Población y especulación', prueba: 'Aumento de la presión inmobiliaria sobre sectores con crecimiento poblacional', capa: 'suelo',
     sin: 'Los inmuebles y actividades responden a la presión de mercado bajo las reglas de referencia.', con: 'Se implementan espacios productivos y comunitarios protegidos e instrumentos de gestión del suelo.',
     visible: 'Usos del suelo y presión inmobiliaria: actividades que permanecen, se desplazan o cambian de uso.',
@@ -336,18 +336,18 @@ const PAR_SL = {
   2: [sT0, sDur, { k: 'desvioMayo', n: 'Desvío a la Av. Primero de Mayo', min: 0, max: 100, paso: 5, val: 50, unidad: '%' /* 2026-11-26: menos texto; % del tráfico de la vía cerrada */, ayuda: 'Supuesto: no hay aforo del desvío. Es la única vía principal paralela a 2,5 km o menos en OpenStreetMap; el resto del tráfico se reparte por calles locales.' }, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
-  4: [{ k: 'parche', n: 'Parche que se pierde', val: 1, opciones: [[1,'Humedal El Burro'],[2,'Humedal de Techo'],[3,'Humedal La Vaca'],[4,'Bosque de Bavaria']], ayuda: 'El lugar elegido recibe la pérdida de área y cambia la red de especies.' },
-    { k: 'parchePerdida', n: 'Área del parche que se pierde', min: 10, max: 100, paso: 5, val: 50, unidad: '%', ayuda: 'Relleno, obra o fragmentación: la calidad del parche baja como la raíz del área que queda.' },
+  4: [{ k: 'parche', n: 'Corredor verde que se pierde', val: 1, opciones: [[1,'Humedal El Burro'],[2,'Humedal de Techo'],[3,'Humedal La Vaca'],[4,'Bosque de Bavaria']], ayuda: 'El lugar elegido recibe la pérdida de área y cambia la red de especies.' },
+    { k: 'parchePerdida', n: 'Área del corredor verde que se pierde', min: 10, max: 100, paso: 5, val: 50, unidad: '%', ayuda: 'Relleno, obra o fragmentación: la calidad del corredor verde baja como la raíz del área que queda.' },
     { k: 'parcheT0', n: 'Semana en que se pierde', min: 1, max: 1000, paso: 1, val: 104, unidad: 'semana', ayuda: 'Semana del modelo en que ocurre la pérdida.' }, sArb, sRec],
   5: [{ k: 'presionSuelo', n: 'Presión inmobiliaria extra', min: 0, max: 10, paso: 0.5, val: 3, unidad: '%/año', ayuda: 'Alza anual extra del suelo en los sectores que crecen (junto a las estaciones del metro y a Bavaria) [SUP: la prueba].' },
     sPob(1), { k: 'proteccion', n: 'Instrumentos de gestión del suelo (propuesta)', min: 0, max: 100, paso: 5, val: 50, unidad: '%', ayuda: 'Solo en la corrida con propuesta: captura de plusvalías, vivienda protegida y suelo comunitario; frena esa parte del alza en arriendos.' }, sTraf],
   6: [{ k: 'presupuesto', n: 'Recursos disponibles', min: 10, max: 100, paso: 5, val: 50, unidad: '% de la necesidad', ayuda: 'Recursos de cada ronda frente a lo que piden todos los sectores juntos [SUP: la prueba].' },
     { k: 'decisionCada', n: 'Semanas entre rondas de asignación', min: 4, max: 52, paso: 1, val: 13, unidad: 'semanas', ayuda: 'Cada cuánto se reparten los recursos.' },
     { k: 'P1.rotacion', n: 'Rotación de vocerías', min: 2, max: 52, paso: 1, val: 12, unidad: 'semanas', ayuda: 'Cada cuánto rota la vocería de las asambleas (con propuesta): rotar seguido evita el desgaste de las vocerías.' }, sPob(), { k: 'P1.cupos', n: 'Promotores por cohorte', min: 0, max: 40, paso: 1, val: 12, unidad: 'por trimestre', ayuda: 'Promotores que forma Bavaria Común cada 13 semanas (con propuesta).' }] };
-const SL_MERC = { k: 'mercados', n: 'Cantidad de mercados', min: 0, max: 50, paso: 1, val: 44, unidad: 'mercados', ayuda: 'Mercados de barrio de la propuesta: abren uno tras otro hasta el año 13,5. Capacidad de cada uno 28 t/día (215 puestos como la Plaza Distrital de Kennedy, Contraloría 2025); trabajan hasta 80 %. En parques, al sur de Corabastos y junto a torres con huertas.' };
+const SL_MERC = { k: 'mercados', n: 'Cantidad de mercados', min: 0, max: 50, paso: 1, val: 44, unidad: 'mercados', ayuda: 'Mercados de barrio de la propuesta: abren uno tras otro hasta el año 13,5. Capacidad de cada uno 28 t/día (215 puestos como la Plaza Distrital de Kennedy, Contraloría 2025); trabajan hasta 70 %. En parques, al sur de Corabastos y junto a torres con huertas.' };
 /* v3: huertas hidropónicas activas (solo con propuesta). Producción por huerta = 50 m² (SUP_SIMS.M2_HUERTA) × 6 kg/m²·año (P1.rend de sim_modelos.js)
-   [SUP: no hay rendimiento verificado de hidroponía en el proyecto, docs/escenario01_estado.md]. 50 por defecto = módulos distribuidos entre las cubiertas elegibles; módulos y cubiertas son cantidades distintas. */
-const SL_HUERTAS = { k: 'huertasH', n: 'Meta de huertas hidropónicas al año 10', min: 0, max: 2000, paso: 10, val: 50, unidad: 'huertas', ayuda: 'Cada una de 50 m² produce 0,82 kg/día (6 kg/m²·año, valor del modelo de huertas; supuesto: sin rendimiento verificado de hidroponía). Se instalan de forma progresiva durante 10 años. Su producción baja la demanda que no cubre la red.' };
+   [SUP: no hay rendimiento verificado de hidroponía en el proyecto, docs/escenario01_estado.md]. Por defecto «auto» (se instalan solas con los años en las cubiertas aptas, primero las más altas); si se mueve, el número es la meta al año 10 (instalación progresiva). */
+const SL_HUERTAS = { k: 'huertasH', n: 'Huertas hidropónicas (auto o meta al año 10)', min: 0, max: 2132, paso: 10, val: -1, unidad: 'huertas', ayuda: 'Auto por defecto: se instalan solas con los años (primero las cubiertas más altas). Al moverlo, el número es la meta al año 10 y se instalan de forma progresiva. Cada una de 50 m² produce 0,82 kg/día (6 kg/m²·año, valor del modelo de huertas; supuesto: sin rendimiento verificado de hidroponía). Su producción baja la demanda que no cubre la red.' };
 const SL_CUBIERTAS = { k: 'tipoCubierta', n: 'Cubiertas donde instalar huertas', val: 0, opciones: [[0,'Edificios de 15 pisos · Catastro'],[1,'Edificios de 2 pisos · altura estimada']], ayuda: 'Cambia las cubiertas elegibles. Las de 2 pisos se identifican por los 6 m del modelo 3D, no por catastro verificado.' };
 const SL_ESTACION = { k: 'estacionObjetivo', n: 'Dónde instalar Estaciones Circulares', val: -1, opciones: [[-1,'Toda la red de mercados'], ...MERCADOS.map((M,k) => [k,M.n])], ayuda: 'Elegir un mercado limita la intervención, la capacidad y los recorridos a ese punto.' };
 const SL_SUELO = { k: 'zonaSuelo', n: 'Zona de presión y protección', val: -1, opciones: [[-1,'Todas las zonas de crecimiento'], ...METRO_SUP.EST.map((S,k) => [k,'Metro · '+S.n]), [METRO_SUP.EST.length,'Entorno de Bavaria']], ayuda: 'La presión extra y, con propuesta, la protección se aplican en el entorno elegido.' };
@@ -388,11 +388,75 @@ function mecanismosProp(E, t) {
     S0[i] = cr ? Math.exp(-C * cr * r) : PRE.S0[i]; } }
 const S0de = (E) => E.S0 || PRE.S0;
 
+/* ---------- MECANISMOS DE LA PROPUESTA · OBRAS (2026-11-26, docs/indicadores_macromodelos.md «Mecanismos de la propuesta») ----------
+   Lo que «Kennedy con propuesta» construye en el 3D entra al modelo con los MISMOS datos y calendarios, precalculados en data3d/propuesta_obras.json
+   por tools/propuesta_obras_datos.mjs (mundo del simulador, el marco de PARCHES). Solo en las corridas con propuesta (E.obras); sin propuesta nada
+   de esto existe y la corrida es idéntica. Cada obra se suma por fases desde su propia semana. Reglas (las del modelo, no paralelas):
+   · ÁREA → HÁBITAT: el modelo hace depender la extinción y la colonización de √(área) (sim_vida.js SQA, KER) y la pérdida de humedal se aplica como
+     √(área / área inicial) sobre el factor de hábitat E.xH (basuraPaso). Una obra que agrega ΔA ha al parche p usa la misma regla:
+     xObra[p] = √(1 + ΔA_p(t) / ha_p), que multiplica E.xH (red trófica: todas las especies del parche).
+       El Burro: tablero y taludes del ecoducto (cubierta verde, años 1,3–3) + copa de los árboles de borde. La Vaca: franjas de pradera húmeda,
+       juncos y agua del predio liberado de Corabastos (cada celda desde la semana en que se quita su nave, 0,6 años de obra y 4 de crecimiento)
+       menos el borde que ya restaura sim_vida.js (bordeVaca), + barrera de árboles + copa de borde. Techo: copa de borde. Bosque de Bavaria: celdas
+       del humedal artificial (agua años 3–4, plantas 3–6). Par 01: huertas hidropónicas sobre lo que el modelo ya monta en cubiertas.
+       [SUP] la copa de árboles nativos junto al humedal cuenta como área de hábitat del parche (el modelo no separa franjas dentro de un parche).
+   · ÁRBOLES EN PARQUES → calidad de los parques (sim_vida.js: 0,3 + 0,3·tamaño + 0,2·árboles): P3.arboles = valor inicial + copa nueva en parques /
+     ha de parques del modelo [SUP: densidad ≈ fracción de copa].
+   · CALLES VERDES → corredores entre zonas verdes (ind(s).verde y conectividad del marco ecocéntrico): par de zonas unido por filas de árboles
+     adultos (tools/propuesta_obras_datos.mjs: 50 m de brecha, ≤ 2.000 m) [SUP; las aves de bosque urbano evitan cruzar claros de decenas de metros
+     y usan las calles arboladas como corredores: Tremblay y St. Clair 2009, J. Appl. Ecol. 46: 1314–1322; Fernández-Juricic 2000, Conserv. Biol. 14: 513–521].
+     El núcleo de dispersión de la red trófica (red_trofica.js) no cambia: los corredores no mueven la colonización (pendiente, ver docs).
+     Ruido para la fauna: la fase 2 (la fase 1 ya está en PROP_SUP.MIT) baja OBRA_DB dB en cada zona verde × fracción de árboles de calle a 100 m que
+     son de fase 2 × madurez [SUP 1 dB: una fila de árboles atenúa del orden de 1 dB o menos; franjas anchas y densas logran más; Van Renterghem et al. 2015,
+     «Using natural means to reduce surface transport noise during propagation outdoors», Applied Acoustics 92: 86–101]; para
+     las aves también por la zona de efecto (misma regla de zonaPredio). El ruido de las calles (ruidoDb, L_Aeq) no cambia por los árboles.
+   · ÁREA VERDE (ind(s).verde): nodos nuevos «Puente de fauna», «Humedal La Vaca ampliado» (reemplaza los bordes liberados de sim_vida.js para no
+     contarlos dos veces) y «Humedal artificial de Bavaria». La copa de las calles no se suma al área verde (está sobre andenes), sí al carbono.
+   · HUMEDALES: humedalHa y área funcional suman La Vaca ampliada (agua, juncos, pradera húmeda) y las celdas de Bavaria.
+   · AUTONOMÍA (par 01): lo que producen las huertas hidropónicas también es comida local consumida. */
+export const OBRA_SUP = { OBRA_DB: 1, ADULTO_CV: 3.5 };
+const smooth = (a, b, x) => { const u = cl01((x - a) / (b - a)); return u * u * (3 - 2 * u); };
+const gArb = (dt, adulto, e0) => dt <= 0 ? 0 : e0 + (1 - e0) * Math.min(1, dt / adulto);                  // tamaño de un árbol sembrado hace dt años (0 → e0 → 1)
+const gCoh = (años, a0, a1, adulto, e0) => { let s = 0; for (let k = 0; k < 5; k++) s += gArb(años - (a0 + (a1 - a0) * (k + 0.5) / 5), adulto, e0); return s / 5; }; // cohorte sembrada entre a0 y a1
+function obrasPrep(J) {
+  const ix = (id) => PARCHES.findIndex(p => p.id === id);
+  const pares = J.calles.pares.map(([a, b, s]) => [ix(a), ix(b), s]).filter(r => r[0] >= 0 && r[1] >= 0);
+  const ruido = Object.entries(J.calles.ruido).map(([id, L]) => [ix(id), L]).filter(r => r[0] >= 0);
+  const cub = PARCHES.map((p, i) => p.t === 'modCubierta' ? i : -1).filter(i => i >= 0), cubHa = cub.reduce((a, p) => a + PARCHES[p].ha, 0);
+  return { J, pares, ruido, cub, cubHa, burro: ix('burro'), vaca: ix('vaca'), techo: ix('techo'), bosque: ix('bosqueBav'), pq4: ix('pq4') }; }
+function obrasPaso(E, t) {
+  const O = E.obras; if (!O) return; const OB = OBRAS, J = OB.J, años = t / V.AÑO, B = J.bordes.porParche, Vc = J.vaca;
+  const eco = J.ecoducto.ha * (años >= J.ecoducto.obra ? smooth(J.ecoducto.cubierta[0], J.ecoducto.cubierta[1], años) : 0);
+  const gB = gCoh(años, J.bordes.siembra[0], J.bordes.siembra[1], J.bordes.adulto, J.bordes.e0), cb = (id) => (B[id] ? B[id].copaHa : 0) * gB;
+  let wet = 0, bar = 0; Vc.semanas.forEach((s, k) => { const la = años - s / V.AÑO; wet += (Vc.bandas.pradera[k] + Vc.bandas.juncos[k] + Vc.bandas.agua[k]) * cl01((la - Vc.obra) / Vc.crece);
+    bar += Vc.bandas.barrera[k] * gCoh(la, Vc.arboles.siembra, Vc.arboles.siembra + 1.5, Vc.arboles.adulto, Vc.arboles.e0); });
+  const o = E.o, bsv = o && o.cora ? (o.cora.borde || 0) / 1e4 * (o.cora.mad || 0) : 0, wetX = Math.max(0, wet - bsv); // lo que sim_vida.js ya restaura no se cuenta dos veces
+  const Bv = J.bavaria, bav = Bv.agua * cl01(años - Bv.llena[0]) + Bv.vegetacion * cl01((años - Bv.plantas[0]) / (Bv.plantas[1] - Bv.plantas[0]));
+  const P = J.parques, pqC = P.copaHa * gCoh(años, P.siembra[0], P.siembra[1], P.adulto, P.e0) + P.anillo.copaHa * gCoh(años, P.anillo.siembra[0], P.anillo.siembra[1], P.anillo.adulto, P.anillo.e0);
+  let cv = 0; for (const [s, , c] of J.calles.calles) cv += c * gArb(años - s / V.AÑO, J.calles.adulto, J.calles.e0);
+  // huertas hidropónicas del par 01 sobre las cubiertas que ya monta el modelo (escenario C: P1.sup × supF incluye 4,9 ha de techos)
+  const hid = E.ab01 && E.ab01.nH ? Math.max(0, E.ab01.nH * SUP_SIMS.M2_HUERTA - SUP_SIMS.TECHOS_M2 * E.s.supF) / 1e4 : 0;
+  const X = O.x; X.fill(1); O.dHa.fill(0); const ha = (p) => Math.max(0.05, PARCHES[p].ha), sq = (p, d) => { if (p >= 0) X[p] *= Math.sqrt(1 + d / ha(p)); };
+  sq(OB.burro, eco + cb('burro')); sq(OB.vaca, wetX + bar + cb('vaca')); sq(OB.techo, cb('techo')); sq(OB.bosque, bav);
+  if (hid > 0 && OB.cubHa > 0) for (const p of OB.cub) X[p] *= Math.sqrt(1 + hid / OB.cubHa);
+  if (OB.burro >= 0) O.dHa[OB.burro] = eco; if (OB.vaca >= 0) O.dHa[OB.vaca] = wetX; if (OB.bosque >= 0) O.dHa[OB.bosque] = bav;
+  // ruido para la fauna: fase 2 de las calles verdes junto a cada zona verde
+  O.dDb.fill(0); for (const [p, L] of OB.ruido) { let f = 0; for (const [s, fr] of L) f += fr * gArb(años - s / V.AÑO, J.calles.adulto, J.calles.e0); O.dDb[p] = OBRA_SUP.OBRA_DB * f; }
+  E.arbObra = O.arb0 + pqC / P.haParquesModelo; if (E.par !== 4) E.PAR.P3.arboles = Math.min(1, E.arbObra);
+  Object.assign(O, { eco, bordes: cb('burro') + cb('vaca') + cb('techo'), wet, wetX, bar, bav, pqC, cv, hid, años }); }
+/* factor extra para las aves por la fase 2 de las calles verdes (zona de efecto de la vía con Q × 10^(−ΔL/10), la regla de zonaPredio) */
+function obrasAve(E, t) { const O = E.obras; if (!O) return; const X = O.xAve; X.fill(1);
+  const Vg = V.crecimiento(t).V * factorTraf(E, t), mit = Math.pow(10, -MITIGA_DB / 10 * E.traf.mit), RZ = V.TRAFICO.RED_ZONA, Dh = V.TRAFICO.ZONA_HOY * Math.pow(Vg * mit, V.TRAFICO.B_DIST);
+  for (const [p] of OBRAS.ruido) { const e = EXPO.parches[p], d = O.dDb[p]; if (!e || !(d > 0)) continue; const Dn = Dh * Math.pow(Math.pow(10, -d / 10), V.TRAFICO.B_DIST), fh = fZonaP(e[0], RP_M[p], Dh), fn = fZonaP(e[0], RP_M[p], Dn);
+    X[p] = (1 - RZ * fn) / (1 - RZ * fh); } }
+/* corredores de calle verde hechos en la semana t: [p, q, f] (f = madurez de la calle más tardía del camino) */
+const corredoresCV = (E, t) => !E.obras ? [] : OBRAS.pares.filter(r => t >= r[2]).map(([p, q, s]) => [p, q, Math.min(1, (t - s) / (OBRA_SUP.ADULTO_CV * V.AÑO))]);
+
 /* ---------- REGLAS DE GAME OVER: siete, iguales para las 12; cualquiera cumplida 4 semanas seguidas = game over ---------- */
 export const REGLAS = [
   { k: 'fauna', n: 'Fauna', txt: 'quedan menos del 90 % de las especies de fauna presentes al inicio', umbral: 90, unidad: '% de las especies del inicio', semanas: 4,
     fuente: 'Steffen et al. 2015, Planetary boundaries (Science 347, doi 10.1126/science.1259855): límite de integridad de la biosfera = mantener el Biodiversity Intactness Index en 90 % o más (https://www.stockholmresilience.org/research/planetary-boundaries/quantitative-evolution-of-boundaries.html). [SUP] se aplica a la riqueza local de las 23 especies de la red: perder 3 = salir del límite.' },
-  { k: 'habitat', n: 'Hábitat', txt: 'la presencia especie × parche en Kennedy cae 30 % frente al inicio', umbral: 70, unidad: '% de la ocupación del año 1', semanas: 4,
+  { k: 'habitat', n: 'Hábitat', txt: 'la presencia especie × corredor verde en Kennedy cae 30 % frente al inicio', umbral: 70, unidad: '% de la ocupación del año 1', semanas: 4,
     fuente: 'La regla de hábitat de data3d/sim_vida.js (caída de 30 %), aplicada a la ocupación de la metapoblación de Levins en vez de a la riqueza (que ya mide la regla de fauna). Referencia: semana cero. Umbral de prueba del proyecto. [SUP heredado de sim_vida.js]' },
   { k: 'humedal', n: 'Humedales', txt: 'el área funcional de los humedales (área que queda sin rellenar × calidad frente a la basura acumulada en su borde) cae 30 % o más frente a hoy', umbral: 70, unidad: '% del área funcional de hoy', semanas: 4,
     fuente: 'Convención de Ramsar (Colombia la adoptó por la Ley 357 de 1997): mantener las características ecológicas de los humedales y su uso racional, sin pérdida neta (https://www.ramsar.org/about/wise-use-wetlands). Política de Humedales del Distrito Capital (Decreto 624 de 2007, https://www.ambientebogota.gov.co/politica-de-humedales-del-distrito-capital): conservar y recuperar los humedales de Bogotá, incluidos El Burro, La Vaca y Techo. [SUP] umbral 30 %, el mismo de la regla de hábitat; la pérdida sale de la basura arrojada en los bordes (ver BASURA_SUP).' },
@@ -410,13 +474,15 @@ const VALOR = { fauna: (x) => x.fauna / Math.max(1, x.fauna0) * 100, habitat: (x
 const MALO = { fauna: (v) => v < 90, habitat: (v) => v <= 70, abasto: (v) => v < 80, residuos: (v) => v > 100, ruido: (v) => v >= 3, trafico: (v) => v >= 1.3, humedal: (v) => v <= 70 };
 // cerca del game over (aviso previo): 2/3 del camino desde el valor de hoy hasta el umbral
 const CERCA = { fauna: (v) => v < 94, habitat: (v) => v <= 80, abasto: (v) => v < 87, residuos: (v) => v > 85, ruido: (v) => v >= 2, trafico: (v) => v >= 1.2, humedal: (v) => v <= 80 };
-const MOTIVO_GO = { fauna: 'se perdió más del 10 % de las especies de fauna', habitat: 'la ocupación de los parches cayó 30 % o más', abasto: 'Kennedy recibió menos del 80 % de los alimentos',
+const MOTIVO_GO = { fauna: 'se perdió más del 10 % de las especies de fauna', habitat: 'la ocupación de los corredores verdes cayó 30 % o más', abasto: 'Kennedy recibió menos del 80 % de los alimentos',
   residuos: 'los orgánicos pendientes superaron el almacenamiento', ruido: 'el ruido de las calles subió 3 dB o más', trafico: 'el tráfico subió 30 % o más sobre hoy',
   humedal: 'los humedales perdieron 30 % o más de su área funcional por la basura y los rellenos en sus bordes' };
 
 /* ---------- datos ---------- */
 let D = null, RED = null, PRE = null;
 export const URL_DATOS = new URL('./simulaciones_datos.json', import.meta.url).href;
+export const URL_OBRAS = new URL('./propuesta_obras.json', import.meta.url).href;
+let OBRAS = null;
 export async function cargarDatos(cargar) {
   if (D) return D;
   const get = cargar || ((u) => fetch(u).then(r => { if (!r.ok) throw new Error('simulaciones_datos.json ' + r.status); return r.json(); }));
@@ -443,6 +509,8 @@ export async function cargarDatos(cargar) {
   const metroF = (red) => { const f = new Float32Array(NP).fill(1); for (const i of J.metro.cerca) f[i] = 1 - red; return { k: 'metro' + red + '_' + J.metro.radio, f }; };
   const energ = (a) => { let s = 0; for (const v of a) s += Math.pow(10, v / 10); return 10 * Math.log10(s / Math.max(1, a.length)); }; // promedio energético (L_Aeq)
   PRE = { LOC, Lc, Ll, mLc: media(Lc), mLl: media(Ll), eLc: energ(Lc), eLl: energ(Ll), nC: Lc.length, nL: Ll.length, fC, S0, DEST, WZ, POLI: [...POLI], metroF, PAR: J.PAR, metro: J.metro };
+  /* obras de la propuesta (tools/propuesta_obras_datos.mjs); si el archivo no está, las corridas con propuesta siguen sin estas obras */
+  try { OBRAS = obrasPrep(await get(URL_OBRAS)); } catch (e) { OBRAS = null; if (typeof console !== 'undefined') console.warn('propuesta_obras.json:', e && e.message); }
   D = J; return D;
 }
 const listo = () => { if (!D) throw new Error('simulaciones.js: falta await cargarDatos()'); };
@@ -486,6 +554,7 @@ export function crear(id, semilla = 1, valores = {}) {
   E.traf.mit0 = E.traf.mit; E.S0 = null; E.pasoK = -1;
   E.par = P; E.prop = S.propuesta; E.xHb = new Float32Array(NP).fill(1); E.xFrag = new Float32Array(NP).fill(1); pruebaIni(E);
   E.rachasLocales = new Map(); E.rachaSectores = new Uint8Array(ZONAS.length);
+  E.obras = S.propuesta && OBRAS ? { x: new Float32Array(NP).fill(1), xAve: new Float32Array(NP).fill(1), dHa: new Float32Array(NP), dDb: new Float32Array(NP), arb0: E.PAR.P3.arboles } : null; // obras de la propuesta (ver OBRA_SUP)
   return E;
 }
 const bits = (v) => { v = v - ((v >>> 1) & 0x55555555); v = (v & 0x33333333) + ((v >>> 2) & 0x33333333); return (((v + (v >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; };
@@ -573,7 +642,7 @@ function basuraPaso(E, t) {
   for (let k = 0; k < HUM_P.length; k++) { let e = 0; for (const P of b.pts) e += P.u * P.w[k]; b.ha[k] = Math.max(0.2 * b.ha0[k], b.ha[k] - B.HA_T * e);
     const H = b.pts.find(P => P.fuente === 'humedal' && P.hum === k); b.cal[k] = 1 / (1 + B.K_CONT * Math.max(0, H.acum / H.acum0 - 1));
     E.xHb[HUM_P[k]] = Math.sqrt(b.ha[k] / b.ha0[k]) * b.cal[k]; fun += b.ha[k] * b.cal[k]; }
-  b.func = (fun + (o.cora.borde || 0) / 1e4 * (o.cora.mad || 0)) / b.ha0Tot;
+  b.func = (fun + (o.cora.borde || 0) / 1e4 * (o.cora.mad || 0) + (E.obras ? E.obras.wetX + E.obras.bav : 0)) / b.ha0Tot; // obras: La Vaca ampliada y humedal de Bavaria
   const ex = Math.max(0, b.ratas - 1); for (const [p, d] of b.cerca) E.xBas[p] = 1 / (1 + B.AVE_RATA * ex * Math.exp(-d / B.D_EXP));
   // árboles de los parques: tala neta del estado actual (A y D); la propuesta la compensa dentro de Kennedy
   if (!prop && !E.techos) { const a0 = E.arb0 != null ? E.arb0 : (E.arb0 = E.PAR.P3.arboles); E.PAR.P3.arboles = a0 * Math.pow(1 - B.TALA_URB, a); } }
@@ -684,8 +753,8 @@ export const AB01 = {
     { n: '20–24 h', h0: 20, h1: 24, p: 0.151, que: 'papa negra' },
     { n: '4–6 h', h0: 4, h1: 6, p: 0.402, que: 'frutas, plátano, granos y procesados' }],
   MERC_T: 28,           // v5: CAPACIDAD por mercado = 215 puestos × 0,13 t/puesto/día (PDM Kennedy: 215 puestos, 131 ocupados que venden ≈17 t/día; Contraloría de Bogotá 2025, pp. 25 y 33-34) (derivado). v4 usaba 17 t/día (lo que vende hoy, 61 % de su capacidad) como si fuera el tope: por eso las barritas se llenaban
-  MERC_UMAX: 0.8,       // v5 [SUP de diseño]: en operación normal un mercado vende hasta 80 % de su capacidad (quedan puestos libres; la Plaza de Kennedy hoy trabaja al 61 %); lo que pasa de ahí sigue comprándose en Corabastos. Solo en un faltante de Corabastos (2ª vuelta) llega a 100 %
-  MERC_UREG: 0.7,       // v5 [SUP de la propuesta]: hasta 70 % de su capacidad con el acopio regional (ver ab01Paso)
+  MERC_UMAX: 0.7,       // v5.2 (pedido de la autora: «las barras de los mercados nunca pasan del 70 %»): carga máxima de un mercado = 70 % de 28 t/día = 19,6 t/día (la Plaza de Kennedy hoy vende 17 t/día, 61 %), también en un faltante de Corabastos. v5 [SUP de diseño] era 0,8: en operación normal un mercado vende hasta 80 % de su capacidad (quedan puestos libres; la Plaza de Kennedy hoy trabaja al 61 %); lo que pasa de ahí sigue comprándose en Corabastos. Solo en un faltante de Corabastos (2ª vuelta) llega a 100 %
+  MERC_UREG: 0.55,      // v5.2 [SUP de la propuesta]: el acopio regional llena hasta 55 % de la capacidad (antes 70 %): así las barras quedan entre 55 y 70 % según lo que compra Kennedy en cada uno, y no todas pegadas al tope (ver ab01Paso)
   MERC_T_HOY: 17,      // t/día que vende hoy la Plaza Distrital de Kennedy (131 puestos ocupados × 0,13), Contraloría 2025
   MERC_MAX: 50,         // v4: «muchos más» (pedido de la autora). 20 × 17 = 340 t/día ≈ las 19 plazas distritales de Bogotá (≈342 t/día, IPES 2024 en Contraloría 2025)
   MERC_DEF: 44,         // v5: «más mercados» (pedido de la autora): 44 × 28 t/día de capacidad, usados hasta 80 %. v4: 36 × 17 = 612 t/día (1,8 veces las 19 plazas distritales de Bogotá: contradicción declarada en docs/sim01_abastecimiento_v4.md). v3: 12 × 17 ≈ 200 t/día: valor propuesto en el dossier (antes P1.capAcopio = 600 t/día, 1,8 veces todas las plazas de Bogotá)
@@ -765,8 +834,13 @@ export const AB01V3 = {
   P0: 1034838, KG: 0.951, ING: 6460, CAP: 14000,
   PERD: 0.0155,          // t perdidas por t que entra: ≈100 t/día de residuos en Corabastos / 6.460 (DANE 2012 p. 2; SIPSA 2025), docs/fuentes_bodegas_residuos.md §3
   COB_MIN: 0.8, SEMANAS: 4,
-  HUERTA_M2: SUP_SIMS.M2_HUERTA, HUERTA_REND: 6, HUERTA_DEF: 50 // [SUP] 50 m² × 6 kg/m²·año (P1.rend, sim_modelos.js) por huerta
+  HUERTA_M2: SUP_SIMS.M2_HUERTA, HUERTA_REND: 6, HUERTA_DEF: 50, // [SUP] 50 m² × 6 kg/m²·año (P1.rend, sim_modelos.js) por huerta
+  /* v5.2 (pedido de la autora: «las huertas en los techos deben verse instalándose con los años»): por defecto las huertas se instalan solas en
+     las 2.132 cubiertas aptas de data3d/huertas_hidro.js (primero las más altas), en línea recta hasta la semana 754 (año 14,5): ≈147 en el
+     año 1, ≈735 en el año 5, ≈1.470 en el año 10, 2.132 en el 15 [SUP: calendario]. El deslizador las puede fijar en un número. */
+  HUERTA_TECHOS: 2132, HUERTA_SEM_FIN: 754
 };
+export function huertasAuto(sem) { return Math.round(AB01V3.HUERTA_TECHOS * Math.max(0, Math.min(1, sem / AB01V3.HUERTA_SEM_FIN))); }
 AB01V3.DEM0 = AB01V3.P0 * AB01V3.KG / 1000;                            // 984 t/día
 AB01V3.HUERTA_T = AB01V3.HUERTA_M2 * AB01V3.HUERTA_REND / 365 / 1000;  // 0,00082 t/día por huerta
 AB01V3.SECTORES = GOB_BARRIOS.map(b => ({ n: b.n, x: b.x, z: b.z, zonas: b.zonas }));
@@ -777,9 +851,10 @@ function ab01Pob(A, sem) { const g = (w) => Math.pow(1 + A.crece, w / V.AÑO);
   return AB01V3.P0 * g(sem); }
 function ab01Ini(E) {
   const v = E.val, K = AB01V3, nM = E.prop ? Math.max(0, Math.min(AB01.MERC_MAX, Math.round(v.mercados != null ? v.mercados : AB01.MERC_DEF))) : 0;
-  const nH = E.prop ? Math.max(0, Math.round(v.huertasH != null ? v.huertasH : K.HUERTA_DEF)) : 0;
+  /* v5.2: huertas hidropónicas en «auto» (huertasH < 0 o sin valor) = se instalan con los años (HUERTA_AUTO); un número ≥ 0 las fija */
+  const nHf = E.prop && v.huertasH != null && +v.huertasH >= 0 ? Math.round(+v.huertasH) : null, nH = E.prop ? (nHf != null ? nHf : 0) : 0;
   E.ab01 = { dem: (v.demanda != null ? v.demanda : 100) / 100, vol: (v.volumen != null ? v.volumen : 100) / 100, auto: (v.autoconsumo || 0) / 100,
-    topeF: (v.coraTope != null ? v.coraTope : 11) / 100, crece: (v.pobCrece || 0) / 100, nM, nH, ult: null,
+    topeF: (v.coraTope != null ? v.coraTope : 11) / 100, crece: (v.pobCrece || 0) / 100, nM, nH, nHf, ult: null, cap: K.CAP, nQuit: 0,
     pobK: v.pobK != null && v.pobDesde != null ? Math.max(K.P0, +v.pobK) : v.pobK != null && Math.abs(v.pobK - K.P0) > 0.5 ? Math.max(K.P0, +v.pobK) : null,
     pobDesde: v.pobDesde != null ? Math.max(0, Math.round(v.pobDesde)) : null,
     inv: K.INV0, rachaSat: 0, rachaRes: 0, rachaDef: new Uint16Array(K.SECTORES.length),
@@ -790,6 +865,8 @@ function ab01Ini(E) {
 function ab01Paso(E) {
   const A = E.ab01, o = E.o, s = E.s, t = s.t, sem = t + 1, K = AB01, KV = AB01V3, NZ = AB_NZ;
   const g = Math.pow(1 + A.crece, sem / V.AÑO), mes = (K.MES0 + Math.floor((t % V.AÑO) * 12 / V.AÑO)) % 12, est = 1; // v3: sin estacionalidad (la autora da promedios)
+  if (E.prop) { A.nH = A.nHf != null ? A.nHf : huertasAuto(sem); desPaso(A, t); } // v5.2: huertas que se instalan y naves de Corabastos que se quitan con los años
+  const CAPS = A.cap || KV.CAP; // v5.2: capacidad de Corabastos con las naves que quedan (sin propuesta: 14.000 t)
   const pob = ab01Pob(A, sem), demK = pob * KV.KG / 1000 * A.dem, autoT = A.auto * demK;
   for (let z = 0; z < NZ; z++) { AB_NEED[z] = demK * AB_SH[z]; AB_REST[z] = AB_NEED[z] * (1 - A.auto); AB_MK[z] = 0; AB_EX[z] = 0; AB_HU[z] = 0; }
   // 1ª vuelta: compra a pie en los mercados abiertos (cada mercado reparte su capacidad si le piden más)
@@ -802,7 +879,7 @@ function ab01Paso(E) {
   for (const S of act) { const f = pide[S.k] > uMax ? uMax / pide[S.k] : 1;
     for (const [z, w] of S.zonas) { const q = AB_REST[z] * K.CAPTA * Math.min(1, AB_W[z]) * w / AB_W[z] * f; AB_MK[z] += q; A.uso[S.k] += q; } }
   // huertas hidropónicas (con propuesta): su producción se reparte por población y baja lo que falta en cada zona
-  const nHAct = A.nH * Math.min(1, sem / 520), huertaP = nHAct * KV.HUERTA_T; let huertaT = 0, merc1 = 0;
+  const nHAct = A.nHf != null ? A.nH * Math.min(1, sem / 520) : A.nH /* auto: A.nH ya crece con los años; meta fija: progresiva hasta el año 10 */, huertaP = nHAct * KV.HUERTA_T; let huertaT = 0, merc1 = 0;
   for (let z = 0; z < NZ; z++) { merc1 += AB_MK[z]; if (huertaP > 0) { const q = Math.min(Math.max(0, AB_REST[z] - AB_MK[z]), huertaP * AB_SH[z]); AB_HU[z] = q; huertaT += q; } }
   // Corabastos: pedido de Kennedy y de la región; inventario semanal (stock y flujo)
   let RK = 0; for (let z = 0; z < NZ; z++) { AB_R[z] = Math.max(0, AB_REST[z] - AB_MK[z] - AB_HU[z]); RK += AB_R[z]; }
@@ -823,7 +900,10 @@ function ab01Paso(E) {
          que se van a los mercados de barrio y puntos de acopio dejan los accesos de Corabastos sin la subida de la ciudad (el mismo supuesto
          que factorTraf: «los mercados de barrio a pie y el acopio cercano quitan viajes en carro y camión hacia Corabastos»). */
   const años01 = sem / V.AÑO, cCiudad = CONG01.N0 + CONG01.PP * años01, fMerc = A.nM > 0 ? act.length / A.nM : 0;
-  const cC = Math.max(0, (E.prop ? CONG01.N0 : cCiudad) * (ing / KV.ING));
+  /* v5.2: con propuesta el nivel de base baja además hasta −25 % a medida que abren los mercados (× (1 − 0,25 × fracción abierta)): el mismo
+     supuesto de factorTraf y de los colores de las vías de abasto_capas.js («los mercados de barrio a pie y el acopio cercano quitan viajes en
+     carro y camión hacia Corabastos»); antes solo lo usaban el tráfico y el mapa, no la permanencia */
+  const cC = Math.max(0, (E.prop ? CONG01.N0 * (1 - 0.25 * fMerc) : cCiudad) * (ing / KV.ING));
   /* v5.1 · REGLA DEL MODELO (decisión de la autora, ya no es [SUP]): «cuando no hay dónde poner la comida, la mercancía sale más lento y
      Corabastos se llena». La comida sigue llegando y, cuanto más llena está la central, más tarda en salir: cola = 1 + β·[(1 − ρ0) ÷ (1 − ρ) − 1],
      ρ = inventario ÷ 14.000, ρ0 = ρ de 2025 (≈ 0,35; con ρ = ρ0 la cola vale 1 y la permanencia es la de v4), β = KV.COLA_B = 0,5 (forma de
@@ -838,7 +918,7 @@ function ab01Paso(E) {
      quedaba congelado y la barra no podía bajar aunque entrara menos). */
   if (desp > 7 * L) { desp = 7 * L; perd = desp * KV.PERD / (1 - KV.PERD); ing = Math.max(0, (invL - inv0 + desp + perd) / 7); inv = Math.max(0, inv0 + 7 * ing - desp - perd); }
   /* v5: no cabe más de 120 % de 14.000 t (lo que dibuja la barra): los camiones que no caben no descargan esa semana */
-  if (inv > 1.2 * KV.CAP) { inv = 1.2 * KV.CAP; ing = Math.max(0, (inv - inv0 + desp + perd) / 7); }
+  if (inv > 1.2 * CAPS) { inv = 1.2 * CAPS; ing = Math.max(0, (inv - inv0 + desp + perd) / 7); }
   A.inv = inv; A.Tp = Tp; bodPaso(A, inv);
   const lleg = ing, a0 = ing, f = L > 0 ? desp / (7 * L) : 1;
   /* reparto dentro de Kennedy: el faltante total es (1 − f) de lo pedido; cada zona carga una parte del faltante proporcional a
@@ -849,7 +929,7 @@ function ab01Paso(E) {
     while (F(hi) < meta && hi < 1e6) hi *= 2; for (let i = 0; i < 36; i++) { const m = (lo + hi) / 2; if (F(m) < meta) lo = m; else hi = m; }
     for (let z = 0; z < NZ; z++) AB_CO[z] = AB_R[z] * (1 - Math.min(1, hi * AB_U[z])); }
   // 2ª vuelta: lo que Corabastos no alcanzó lo cubren los mercados con capacidad libre en su radio
-  if (f < 0.99999 && act.length) for (const S of act) { let libre = K.MERC_T - A.uso[S.k] - A.reg[S.k]; if (libre <= 1e-6) continue; let falta = 0;
+  if (f < 0.99999 && act.length) for (const S of act) { let libre = K.MERC_T * K.MERC_UMAX - A.uso[S.k] - A.reg[S.k]; /* v5.2: tampoco en un faltante pasa del 70 % */ if (libre <= 1e-6) continue; let falta = 0;
     for (const [z, w] of S.zonas) falta += Math.max(0, AB_R[z] - AB_CO[z] - AB_EX[z]) * w / AB_W[z];
     if (falta <= 1e-9) continue; const fr = Math.min(1, libre / falta);
     for (const [z, w] of S.zonas) { const q = Math.max(0, AB_R[z] - AB_CO[z] - AB_EX[z]) * w / AB_W[z] * fr; AB_EX[z] += q; A.uso[S.k] += q; } }
@@ -865,19 +945,19 @@ function ab01Paso(E) {
     return { n: S.n, x: S.x, z: S.z, dem: d, rec: r, def: Math.max(0, d - r), cob: c }; });
   const vehDia = lleg / K.T_VEH;
   A.ult = { sem, mes, est, g, pob, demK, autoT, mercT, huertaT, nH: nHAct, nHMeta: A.nH, mercCap: act.length * K.MERC_T, nAct: act.length, regT, resto0: KV.RESTO0 * g, coraPedK: RK, coraK, resto, L, S: S_, ing, lleg, a0, tope, f,
-    invIni: inv0, inv, Tp, cC, cCiudad, fMerc, cola, desp: desp / 7, perd: perd / 7, sat: inv / KV.CAP, cap: KV.CAP, carga: inv / KV.CAP, cobK: demK > 0 ? rec / demK : 1, rec, zMin, sectores, secMin, secArg,
+    invIni: inv0, inv, Tp, cC, cCiudad, fMerc, cola, desp: desp / 7, perd: perd / 7, sat: inv / CAPS, cap: CAPS, nQuit: A.nQuit || 0, carga: inv / CAPS, cobK: demK > 0 ? rec / demK : 1, rec, zMin, sectores, secMin, secArg,
     bodMax: A.bodU.max, bodArg: A.bodU.arg, bodGlobal: A.bodU.global, kMax: BOD_KMAX,
     vehDia, tipos: K.TIPOS.map(T => ({ k: T.k, n: T.n, veh_dia: vehDia * T.p, t_dia: lleg * T.p * T.c / K.T_VEH_MEZCLA })),
     franjas: K.FRANJAS.map(F => ({ n: F.n, h0: F.h0, h1: F.h1, p: F.p, t_h: lleg * F.p / (F.h1 - F.h0), veh_h: vehDia * F.p / (F.h1 - F.h0), tope_h: tope * F.p / (F.h1 - F.h0) })) };
   // el resto del modelo (avisos, basura, reglas) lee estas salidas como lee las de sim_vida.js
-  Object.assign(o, { need: demK * 7000, demandaZona: dz, recib: demK > 0 ? rec / demK : 1, zRec, zLoc, zRed, zMin, zArg, nBajo, coraKg: coraK * 7000, localConsumido: autoT * 7000, auto: autoT * 7000, dep: lleg / K.T_DIA });
+  Object.assign(o, { need: demK * 7000, demandaZona: dz, recib: demK > 0 ? rec / demK : 1, zRec, zLoc, zRed, zMin, zArg, nBajo, coraKg: coraK * 7000, localConsumido: (autoT + (E.prop ? huertaT : 0)) * 7000, /* obras: lo que dan las huertas hidropónicas también es comida local consumida */ auto: autoT * 7000, dep: lleg / K.T_DIA });
 }
 function ab01Ind(E) {
   const A = E.ab01, U = A.ult, o = E.o; if (!U) return null; const C = { x: Math.round(CORA_XZ[0]), z: Math.round(CORA_XZ[1]) };
   const mercados = AB_SITIOS.slice(0, A.nM).map(S => ({ n: S.n, x: S.x, z: S.z, tipo: S.tipo, real: S.real, activo: U.sem - 1 >= A.abre[S.k], desde: A.abre[S.k] + 1, cap_t_dia: AB01.MERC_T, t_dia: A.uso[S.k] + A.reg[S.k], kennedy_t_dia: A.uso[S.k], region_t_dia: A.reg[S.k], carga: (A.uso[S.k] + A.reg[S.k]) / AB01.MERC_T }));
   const nodos = [{ n: 'Corabastos', ...C, tipo: 'corabastos', activo: true, t_dia: U.lleg }, ...mercados.map(m => ({ n: m.n, x: m.x, z: m.z, tipo: 'mercado', activo: m.activo, t_dia: m.t_dia }))];
   const rutas = ZONAS.map((Z, z) => [z, AB_CO[z]]).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([z, v]) => ({ de: C, a: { x: Math.round(ZONAS[z][0]), z: Math.round(ZONAS[z][1]) }, t_dia: v }));
-  return { cora: { ...C, tope_t_dia: U.tope, pedido_t_dia: U.L, llegadas_t_dia: U.lleg, despachos_t_dia: U.desp, perdidas_t_dia: U.perd, inventario_t: U.inv, capacidad_t: AB01V3.CAP, oferta_t_dia: U.S, kennedy_t_dia: U.coraK, carga: Math.min(1.5, U.carga), aplica: true },
+  return { cora: { ...C, tope_t_dia: U.tope, pedido_t_dia: U.L, llegadas_t_dia: U.lleg, despachos_t_dia: U.desp, perdidas_t_dia: U.perd, inventario_t: U.inv, capacidad_t: U.cap || AB01V3.CAP, oferta_t_dia: U.S, kennedy_t_dia: U.coraK, carga: Math.min(1.5, U.carga), aplica: true },
     mercados, deficit: Math.max(0, 1 - U.cobK), deficitZonaPeor: Math.max(0, 1 - U.zMin), corte: null, nodos, rutas,
     ab01: { ...U, sectores: U.sectores.map(x => ({ ...x })), tipos: U.tipos.map(x => ({ ...x })), franjas: U.franjas.map(x => ({ ...x })), nM: A.nM, auto: A.auto, dem: A.dem, vol: A.vol, topeF: A.topeF, crece: A.crece,
       rachaSat: A.rachaSat, rachaRes: A.rachaRes, rachaDef: Math.max(0, ...A.rachaDef) },
@@ -925,6 +1005,20 @@ export const CONG01 = { N0: 0.62, PP: 0.033, PP_ALTO: 0.077, T_VEH: 6.21 };
 const EST01_SITIOS = Object.freeze(AB_SITIOS.slice(0, EST01.N).map((S, k) => Object.freeze({ n: 'Estación Circular · ' + S.n, x: S.x, z: S.z, desde: EST01.T0 + k * EST01.CADA, cap_t_dia: EST01.CAP })));
 const BOD_N = BOD01.NAVES.length, BOD_K = BOD01.NAVES.map(n => (n[3] > 0 ? n[2] * n[4] / (n[3] * AB01.T_DIA) : 0)); // ocupación por t/día que llega a Corabastos
 const BOD_KMAX = Math.max(...BOD_K);
+/* v5.2 · DESMONTE GRADUAL DE CORABASTOS (con propuesta; pedido de la autora 2026-11-26: «las bodegas se quitan de a poco con los años»).
+   Las mismas 18 naves de siempre (la mitad de 37, las más cercanas a La Vaca: campo dh de corabastos.json = BOD01.NAVES[i][7]; quitadas01 de
+   abasto_capas.js) se quitan una por una, primero la más cercana a La Vaca, entre la semana 52 (año 1) y la 416 (año 8) [SUP: calendario,
+   ≈2,5 naves por año]. El 3D (propuesta01_3d.js, abasto_capas.js) lee este mismo calendario (AB01_DESMONTE).
+   Efecto en el modelo: la mercancía que queda en Corabastos cabe en menos naves. Capacidad = 14.000 t × (tope de las naves que quedan ÷ tope
+   de las 37) (topes de BOD01: área × densidad DANE 2012); al final 50,7 % (7.100 t). El inventario se reparte entre las naves que quedan. */
+const DES01 = { T0: 52, T1: 416 };
+const DES01_ORDEN = BOD01.NAVES.map((n, i) => [i, n[7]]).sort((a, b) => a[1] - b[1]).slice(0, Math.floor(BOD01.NAVES.length / 2)).map(a => a[0]);
+export const AB01_DESMONTE = DES01_ORDEN.map((i, k) => ({ i, n: BOD01.NAVES[i][0], sem: DES01.T0 + Math.round(k * (DES01.T1 - DES01.T0) / Math.max(1, DES01_ORDEN.length - 1)) }));
+const BOD_TOPE_T = BOD01.NAVES.reduce((a, n) => a + n[3], 0);
+/* naves quitadas hasta la semana t (con propuesta) y capacidad que queda */
+function desPaso(A, t) { const q = A.quit || (A.quit = new Uint8Array(BOD_N)); let rem = 0, n = 0;
+  for (const D of AB01_DESMONTE) { if (t >= D.sem) { q[D.i] = 1; rem += BOD01.NAVES[D.i][3]; n++; } else q[D.i] = 0; }
+  A.nQuit = n; A.cap = AB01V3.CAP * (1 - rem / BOD_TOPE_T); }
 const VACA_P = PARCHES.findIndex(p => p.id === 'vaca');
 /* v3: inventario de 2025 = Σ recibo × días que permanece (≈9.860 t); cada nave guarda su parte del inventario (recibo × permanencia / Σ) */
 const BOD_ST = BOD01.NAVES.map(n => (n[3] > 0 ? n[2] * n[4] : 0)), BOD_STT = BOD_ST.reduce((a, v) => a + v, 0), BOD_W = BOD_ST.map(v => v / BOD_STT);
@@ -939,9 +1033,10 @@ AB01V3.RESTO0 = AB01V3.ING * (1 - AB01V3.PERD) - AB01V3.DEM0;      // t/día que
    Solo para verlas llenarse desigual: el game over de saturación usa el total frente a 14.000 t. */
 function bodPaso(A, inv) {
   const occ = A.bod || (A.bod = new Float32Array(BOD_N)); let max = 0, arg = -1, llenas = 0;
-  for (let i = 0; i < BOD_N; i++) { const N = BOD01.NAVES[i]; if (!(N[3] > 0)) { occ[i] = 0; continue; }
-    const o = inv * BOD_W[i] / N[3]; occ[i] = o; if (o > max) { max = o; arg = i; } if (o >= 1) llenas++; }
-  A.bodU = { max, arg, llenas, global: inv / AB01V3.CAP, cabe: null };
+  const q = A.quit; let wq = 1; if (q) { wq = 0; for (let i = 0; i < BOD_N; i++) if (!q[i]) wq += BOD_W[i]; wq = wq || 1; } // v5.2: el inventario se reparte entre las naves que quedan
+  for (let i = 0; i < BOD_N; i++) { const N = BOD01.NAVES[i]; if (!(N[3] > 0) || (q && q[i])) { occ[i] = 0; continue; }
+    const o = inv * BOD_W[i] / wq / N[3]; occ[i] = o; if (o > max) { max = o; arg = i; } if (o >= 1) llenas++; }
+  A.bodU = { max, arg, llenas, global: inv / (A.cap || AB01V3.CAP), cabe: null };
 }
 function bodInd(A) { const U = A.bodU; if (!U) return null; const N = BOD01.NAVES[U.arg] || [];
   return { max: U.max, global: U.global, llenas: U.llenas, cabe_t_dia: U.cabe, idx: U.arg, nombre: N[0] || '', grupo: BOD01.GRUPO[N[1]] || '', x: N[5], z: N[6], kmax: BOD_KMAX,
@@ -1005,9 +1100,10 @@ function pruebaAntes(E, t) { // antes de V.paso
   if (E.prop && E.par === 2 && s.cierre && s.cierre.on) s.resolPrev = -2;
   E.fOrg = fOrgDe(E, t);
   if (E.frag) { const F = E.frag; E.xFrag.fill(1); if (t >= F.t0 && F.p >= 0) E.xFrag[F.p] = Math.sqrt(Math.max(0, 1 - F.f));
-    if (E.prop) E.PAR.P3.arboles = Math.min(1, F.arb0 + 0.2 * Math.min(1, t / 260)); } } // conexiones vegetales de la propuesta [SUP]
+    if (E.prop) E.PAR.P3.arboles = Math.min(1, Math.max(F.arb0 + 0.2 * Math.min(1, t / 260), E.arbObra || 0)); } } // conexiones vegetales de la propuesta [SUP]; con las obras: la mayor de las dos (son los mismos árboles)
 function pruebaDespues(E) { // después de basuraPaso: hábitat = basura × pérdida del parche
   for (let p = 0; p < NP; p++) E.xH[p] = E.xHb[p] * E.xFrag[p];
+  if (E.obras) for (let p = 0; p < NP; p++) E.xH[p] *= E.obras.x[p]; // obras de la propuesta: √(1 + ΔA/ha) (ver OBRA_SUP)
   if (E.xVaca != null && VACA_P >= 0) E.xH[VACA_P] *= E.xVaca; // par 01: residuos sin recoger degradan La Vaca (RES01, rcPaso)
   if (E.frag) { const s = E.s, occ = s.occ, P = E.prev, F = E.frag, d = []; if (s.t >= F.t0 - 1) for (let i = 0; i < RED.NFA && d.length < 8; i++) for (let p = 0; p < NP && d.length < 8; p++) {
       const k = i * NP + p; if (!occ[k] || P[k]) continue; let b = -1, bd = Infinity; for (let q = 0; q < NP; q++) if (P[i * NP + q]) { const e = Math.hypot(PARCHES[q].x - PARCHES[p].x, PARCHES[q].z - PARCHES[p].z); if (e < bd) { bd = e; b = q; } }
@@ -1108,13 +1204,14 @@ function conectividad(E) { // fracción del área de hábitat en parches NO aisl
   const con = new Uint8Array(NP);
   for (let a = 0; a < hab.length; a++) for (let b = a + 1; b < hab.length; b++) if (DISTP[hab[a]][hab[b]] <= 500) { con[hab[a]] = 1; con[hab[b]] = 1; }
   if (E.frag && E.prop && E.s.t / 156 >= 1) { con[E.frag.p] = 1; for (const q of E.frag.corr) con[q] = 1; }
+  if (E.obras) { const H = new Set(hab); for (const [p, q, f] of corredoresCV(E, E.s.t)) if (f >= 1 && H.has(p) && H.has(q)) { con[p] = 1; con[q] = 1; } } // obras: corredores de calle verde con árboles adultos
   let tot = 0, ok = 0, ais = 0; for (const p of hab) { const a = Math.max(0.05, PARCHES[p].ha); tot += a; if (con[p]) ok += a; else ais++; }
   return { frac: tot > 0 ? ok / tot : 0, aislados: ais, parches: hab.length, con }; }function gini(v, w) { let sw = 0, m = 0; for (let i = 0; i < v.length; i++) { sw += w[i]; m += v[i] * w[i]; } m /= sw || 1; if (m <= 0) return 0; let g = 0;
   for (let i = 0; i < v.length; i++) for (let j = 0; j < v.length; j++) g += w[i] * w[j] * Math.abs(v[i] - v[j]); return g / (2 * sw * sw * m); }
 const media = (a) => { const b = a.filter(v => v != null && isFinite(v)); return b.length ? b.reduce((x, y) => x + y, 0) / b.length : null; };
 function resiliencia(E, x) {
   let C = E.choque; const t = E.s.t;
-  if (!C) { const t0 = E.corte ? E.corte.t0 : E.cie ? E.cie.t0 : E.frag ? E.frag.t0 : null; if (t0 == null) return null; C = E.choque = { t0, tipo: E.corte ? 'corte del suministro' : E.cie ? 'cierre de vía' : 'pérdida de parche', antes: null, sem: null, min: 1 }; }
+  if (!C) { const t0 = E.corte ? E.corte.t0 : E.cie ? E.cie.t0 : E.frag ? E.frag.t0 : null; if (t0 == null) return null; C = E.choque = { t0, tipo: E.corte ? 'corte del suministro' : E.cie ? 'cierre de vía' : 'pérdida de corredor verde', antes: null, sem: null, min: 1 }; }
   const v = E.frag ? E.emaP : x.comidaMin;
   if (t < C.t0) { C.antes = C.antes == null ? v : C.antes * 0.8 + v * 0.2; return { tipo: C.tipo, desde: C.t0, semanas: null, recuperado: null, puntaje: null }; }
   const r = C.antes > 0 ? v / C.antes : 1; C.min = Math.min(C.min, r);
@@ -1143,17 +1240,17 @@ function indEco(E, x) {
   return { indice: media([integridad, biodiversidad, abioticos, limites, gobernanza]), prueba: ECO_PAR[E.par] || null,
     integridad, biodiversidad, abioticos, limites, gobernanza,
     sub: {
-      integridad: { conectividad: { valor: conect, fraccionConectada: K.frac, parchesAislados: K.aislados, parchesHabitat: K.parches, unidad: 'fracción del área de hábitat en parches no aislados (vecino a 500 m o corredor), frente al año 1' },
+      integridad: { conectividad: { valor: conect, fraccionConectada: K.frac, parchesAislados: K.aislados, parchesHabitat: K.parches, unidad: 'fracción del área de hábitat en corredores verdes no aislados (vecino a 500 m o corredor), frente al año 1' },
         nutrientes: { valor: nutr, indiceCircular: x.circular.indice, unidad: 'orgánicos que vuelven como abono / generados (meta 0,5)' },
         agua: { valor: agua, humedalFuncional: x.humedalFuncional, unidad: '% del área funcional de hoy' },
         resiliencia: res ? { valor: res.puntaje, ...res, unidad: 'semanas hasta volver al 90 % de antes del choque' } : null },
       biodiversidad: { riquezaNativa: { valor: riqueza, presentes: nat, inicio: nat0, unidad: 'especies nativas de fauna presentes / al inicio' },
-        especiesClave: { valor: clave, polinizadores: x.poliniz, ref: refV(E, 'poli', x.poliniz), unidad: 'pares especie × parche de polinizadores / año 1' },
+        especiesClave: { valor: clave, polinizadores: x.poliniz, ref: refV(E, 'poli', x.poliniz), unidad: 'pares especie × corredor verde de polinizadores / año 1' },
         depredadoresTope: { valor: tope, presentes: tp, ref: tp0, especies: TOPE.map(i => RED.FAUNA[i].n), unidad: 'fracción presente frente al año 1' },
         plaga: { valor: plaga, ratas: x.ratas, unidad: '1 / índice de ratas' } },
       abioticos: { agua: { valor: aguaA, humedalFuncional: x.humedalFuncional, humedalHa: x.humedalHa, humedalHa0: x.humedalHa0, unidad: '% y ha frente a hoy' },
         suelo: { valor: suelo, arbolesPerdidos: x.arbolesPerdidos, taladoBavaria: tala, unidad: 'árboles que quedan frente a hoy' },
-        ruidoHabitat: { valor: ruidoH, unidad: 'factor de hábitat para aves por la zona de efecto de las vías (1 = como hoy)', fraccionBajo55dB: null, nota: 'el modelo no tiene dB por parche' },
+        ruidoHabitat: { valor: ruidoH, unidad: 'factor de hábitat para aves por la zona de efecto de las vías (1 = como hoy)', fraccionBajo55dB: null, nota: 'el modelo no tiene dB por corredor verde' },
         aire: null, microclima: null },
       limites: { organicos: { valor: lOrg, razon: x.circular.indice / ciR }, humedal: { valor: lHum, cambioHa: x.humedalHa - x.humedalHa0 }, arboles: { valor: lArb, cambio: -x.arbolesPerdidos },
         ocupacion: { valor: lOcu, cambio: E.emaP / Math.max(1, refV(E, 'pares', E.emaP)) - 1 }, unidad: 'razón frente al año 1 / hoy (1 = no regresión)' },
@@ -1212,6 +1309,11 @@ function indVerde(E) {
   const ap = s.cora && s.cora.ap ? s.cora.ap : [];
   for (let i = 0; i < ap.length; i++) { const B = BODEGAS[i], w = t - ap[i] - 26; if (!B || w < 0) continue; const mz = Math.min(1, w / S.MADURA);
     pc.push({ id: 'bodega' + (i + 1), n: 'Borde liberado de La Vaca (bodega ' + (i + 1) + ' de Corabastos)', x: Math.round(B.x), z: Math.round(B.z), r0: 0, r: Math.round(RADIO_HA((B.borde || 0) / 1e4) * Math.sqrt(Math.max(0.05, mz))), tipo: 'liberado', desde: ap[i] + 27, calidad: 0.85 * mz, ocupacion: 0, _p: IB_V, _m: mz }); }
+  /* obras: nodos nuevos. La Vaca ampliada = lo que el predio liberado tiene de más sobre los bordes liberados de sim_vida.js de arriba (mismo terreno: no se cuenta dos veces) */
+  if (E.obras) { const libHa = pc.reduce((a, P) => a + (P.tipo === 'liberado' ? Math.PI * P.r * P.r / 1e4 : 0), 0); E.obras.libHa = libHa; const O = E.obras, J = OBRAS.J, cal = (p) => p >= 0 ? Math.min(1, s.q[p] * E.xH[p]) : 0, nodo = (id, n, x, z, haN, p, tipo, m) => { if (haN > 1e-3) pc.push({ id, n, x: Math.round(x), z: Math.round(z), r0: 0, r: Math.round(RADIO_HA(haN)), tipo, desde: null, calidad: cal(p), ocupacion: 0, _p: p, _m: m }); };
+    nodo('ecoducto', 'Puente de fauna sobre la Av. Ciudad de Cali (Humedal El Burro)', J.ecoducto.x, J.ecoducto.z, O.eco, OBRAS.burro, 'nuevo', O.eco / J.ecoducto.ha);
+    nodo('vacaAmpliada', 'Humedal La Vaca ampliado (predio liberado de Corabastos)', J.vaca.x, J.vaca.z, Math.max(0, O.wet + O.bar - libHa), OBRAS.vaca, 'liberado', 1);
+    nodo('humedalBavaria', 'Humedal artificial de Bavaria (fitodepuración)', J.bavaria.x, J.bavaria.z, O.bav, OBRAS.bosque, 'nuevo', O.bav / J.bavaria.ha); }
   const XQ = s.red.XQ, links = [], corr = E.frag && E.prop ? new Set(E.frag.corr.map(q => E.frag.p * NP + q).concat(E.frag.corr.map(q => q * NP + E.frag.p))) : null, fase = Math.min(1, t / 156);
   for (let a = 0; a < pc.length; a++) for (let b = a + 1; b < pc.length; b++) { const A = pc[a], B = pc[b], d = Math.hypot(A.x - B.x, A.z - B.z); if (d > S.MAX_D || A.r <= 0 || B.r <= 0) continue;
     const pa = A._p, pb = B._p; let sv = 1, via = null, cruzaVia = false;
@@ -1222,7 +1324,12 @@ function indVerde(E) {
     else if (fb < S.F_ROTO) tipo = 'roto';
     else if (E.prop && cruzaVia) tipo = 'paso_fauna';
     else if (E.prop && (A.tipo === 'nuevo' || B.tipo === 'nuevo')) tipo = 'calle_verde';
+    if (A.id === 'ecoducto' || B.id === 'ecoducto') { tipo = 'paso_fauna'; via = 'Av. Ciudad de Cali'; } // obras: el puente une las dos mitades de El Burro
     links.push({ a: A.id, b: B.id, x1: A.x, z1: A.z, x2: B.x, z2: B.z, f, tipo, via, _a: a, _b: b, _d: d }); }
+  if (E.obras) { const ip = new Map(); pc.forEach((P, i) => { if (P.r > 0 && P._p >= 0 && !ip.has(P._p) && PARCHES[P._p].id === P.id) ip.set(P._p, i); });
+    for (const [p, q, m] of corredoresCV(E, t)) { const a = ip.get(p), b = ip.get(q); if (a == null || b == null) continue; const A = pc[a], B = pc[b], f = m * Math.min(1, Math.min(A.calidad, B.calidad) / 0.4);
+      const L = links.find(L => (L._a === a && L._b === b) || (L._a === b && L._b === a));
+      if (L) { if (f > L.f) { L.f = f; L.tipo = 'calle_verde'; } } else links.push({ a: A.id, b: B.id, x1: A.x, z1: A.z, x2: B.x, z2: B.z, f, tipo: 'calle_verde', via: null, _a: a, _b: b, _d: Math.hypot(A.x - B.x, A.z - B.z) }); } }
   links.sort((u, v) => (v.f - u.f) || (u._d - v._d)); const keep = links.slice(0, S.MAX_LINKS);
   const par = pc.map((_, i) => i), raiz = (i) => { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
   for (const L of links) if (L.f >= S.F_CONECTA && L.tipo !== 'roto') par[raiz(L._a)] = raiz(L._b);
@@ -1302,7 +1409,7 @@ function indAvesRuido(E, x) {
   /* par 02 (2026-11-26, docs/sim02_movilidad.md): durante el cierre, los parches a DESVIO_SUP.RADIO o menos de la vía de desvío reciben su tráfico × traficoDesvio
      (la misma zona de los desvíos que usa la red trófica, E.xDes): más ruido ahí y menos bienestar de las aves */
   const C = E.cie, Dv = C && C.fase && DESVIOS[C.via] ? DESVIOS[C.via].desvio.map(id => DESVIOS.vias[id].dist) : null;
-  for (let p = 0; p < NP; p++) { let a = 0; for (let i = 0; i < RED.NFA; i++) if (RED.AVE[i]) a += occ[i * NP + p]; const db = dbParche(E, p, x.trafico * (Dv && Dv.some(d => d[p] <= DESVIO_SUP.RADIO) ? C.traf || 1 : 1), mit); if (a) { const bi = Math.max(0, Math.min(1, (70 - db) / 20)); w += a; b += a * bi; bf += a * bienestarDe(db); en += a * Math.pow(10, db / 10); if (db > 60) ex += a; pp.push({ x: Math.round(PARCHES[p].x), z: Math.round(PARCHES[p].z), db: Math.round(db * 10) / 10, aves: a, n: PARCHES[p].n }); } }
+  for (let p = 0; p < NP; p++) { let a = 0; for (let i = 0; i < RED.NFA; i++) if (RED.AVE[i]) a += occ[i * NP + p]; const db = dbParche(E, p, x.trafico * (Dv && Dv.some(d => d[p] <= DESVIO_SUP.RADIO) ? C.traf || 1 : 1), mit + (E.obras ? E.obras.dDb[p] : 0)); if (a) { const bi = Math.max(0, Math.min(1, (70 - db) / 20)); w += a; b += a * bi; bf += a * bienestarDe(db); en += a * Math.pow(10, db / 10); if (db > 60) ex += a; pp.push({ x: Math.round(PARCHES[p].x), z: Math.round(PARCHES[p].z), db: Math.round(db * 10) / 10, aves: a, n: PARCHES[p].n }); } }
   pp.sort((u, v) => v.aves - u.aves || v.db - u.db);
   /* bienestarFauna (indicador «Bienestar de la fauna», 2026-11-25): Σ aᵖ·B(Lᵖ) / Σ aᵖ, aᵖ = aves (especie × parche) en el parche p, B = BIENESTAR_SUP.
      dbAves = nivel energético al que está expuesta la ocupación de aves. bienestar (curva vieja 50–70 dB) se conserva. */
@@ -1315,7 +1422,7 @@ export const BIENESTAR_SUP = { L0: 50, L1: 75 };
 export const bienestarDe = (L) => Math.max(0, Math.min(1, 1 - (L - BIENESTAR_SUP.L0) / (BIENESTAR_SUP.L1 - BIENESTAR_SUP.L0)));
 function indCiclos(E, x) {
   const S = MUERTES_SUP, s = E.s, Bs = E.bas, tala = s.planArb ? s.planArb / PLAN_BAV.ARB_TOT : 0; let parq = 0; for (const P of PARCHES) if (P.t === 'parque') parq += P.ha;
-  const bos = PI_BOSQUE >= 0 ? PARCHES[PI_BOSQUE].ha * (1 - tala) : 0, copa = parq * E.PAR.P3.arboles + bos, humF = Bs.ha.reduce((a, h, k) => a + h * Bs.cal[k], 0);
+  const bos = PI_BOSQUE >= 0 ? PARCHES[PI_BOSQUE].ha * (1 - tala) : 0, copa = parq * E.PAR.P3.arboles + bos + (E.obras ? E.obras.bordes + E.obras.cv + E.obras.bar : 0), humF = Bs.ha.reduce((a, h, k) => a + h * Bs.cal[k], 0) + (E.obras ? E.obras.wetX + E.obras.bav : 0); /* obras: copa de borde, de calles y de la barrera de La Vaca; humedales nuevos */
   const huertasHa = (x.huertas || 0) * SUP_SIMS.M2_HUERTA / 1e4, casaHa = (E.o.act || 0) * SUP_SIMS.M2_HUERTA / 1e4; /* huertas en equivalentes de 50 m²; las de los hogares no están en ind(s).verde */
   const carbono = copa * S.C_ARBOL + humF * S.C_HUMEDAL + huertasHa * S.C_HUERTA, verdeHa = (x.verde ? x.verde.resumen.haVerde : 0) + casaHa, agua = verdeHa / S.AREA_KENNEDY, nutr = x.circular.indice;
   if (E.ref.listo && !E.cicRef) E.cicRef = { carbono, agua, suelo: verdeHa, nutrientes: nutr };
@@ -1332,7 +1439,7 @@ function indBiodiversidad(E) {
   /* shannonArea (2026-11-25, indicador del tablero): H' con pᵢ = Aᵢ / Σ A, Aᵢ = hectáreas ocupadas por la especie i (Σ de las ha de sus parches).
      El modelo no cuenta individuos: con la misma densidad por especie, los individuos son proporcionales al área ocupada. Contar parches iguala un
      módulo de cubierta de 0,1 ha con un humedal de 18 ha. areaEsp = Aᵢ por id de especie (abeja, colibrí, tingua: especies clave). */
-  const A = new Float64Array(NFA); let At = 0; for (let i = 0; i < NFA; i++) { for (let p = 0; p < NP; p++) if (occ[i * NP + p]) A[i] += PARCHES[p].ha || 0; At += A[i]; }
+  const A = new Float64Array(NFA); let At = 0; for (let i = 0; i < NFA; i++) { for (let p = 0; p < NP; p++) if (occ[i * NP + p]) A[i] += (PARCHES[p].ha || 0) + (E.obras ? E.obras.dHa[p] : 0); At += A[i]; } // obras: área nueva del parche (ecoducto, La Vaca ampliada, humedal de Bavaria)
   let Ha = 0; for (let i = 0; i < NFA; i++) if (A[i] > 0) { const pi = A[i] / At; Ha -= pi * Math.log(pi); }
   const areaEsp = {}; for (let i = 0; i < NFA; i++) areaEsp[RED.FAUNA[i].id] = Math.round(A[i] * 100) / 100;
   const g = {}; for (const [k, L] of Object.entries(GRUPOS_F)) g[k] = { presentes: L.filter(i => n[i] > 0).length, total: L.length };
@@ -1343,11 +1450,12 @@ function indBiodiversidad(E) {
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
   if (E.traf.pob) s.pob *= Math.pow(1 + E.traf.pob, 1 / V.AÑO); // expansión poblacional (en vez de P1.crece, con la tasa del deslizador)
-  mecanismosProp(E, t); ganchoTraf(E, t); pruebaAntes(E, t);
+  mecanismosProp(E, t); obrasPaso(E, t); ganchoTraf(E, t); pruebaAntes(E, t);
   let sv = null;
   if (E.cie) desvios(E, t);
   if (E.plan) zonaPredio(E, t);
-  if (E.pred || E.cie || E.bas) { const X = E.xAve, PX = E.pred ? E.pred.xAve : null; for (let p = 0; p < NP; p++) X[p] = (PX ? PX[p] : 1) * E.xBas[p] * E.xDes[p]; }
+  if (E.obras) obrasAve(E, t);
+  if (E.pred || E.cie || E.bas) { const X = E.xAve, PX = E.pred ? E.pred.xAve : null, OX = E.obras ? E.obras.xAve : null; for (let p = 0; p < NP; p++) X[p] = (PX ? PX[p] : 1) * E.xBas[p] * E.xDes[p] * (OX ? OX[p] : 1); }
   if (E.plan) { if (E.plan.esc !== 1 || E.plan.autos !== PLAN_BAV.AUTOS_HOG) { sv = [PLAN_BAV.VIV_ETAPA, PLAN_BAV.AUTOS_HOG]; PLAN_BAV.VIV_ETAPA = E.plan.viv; PLAN_BAV.AUTOS_HOG = E.plan.autos; } }
   const kgOrg = V.SUP.KG_ORG; if (E.fOrg !== 1) V.SUP.KG_ORG = kgOrg * E.fOrg; // par 03: más orgánicos por persona, solo en esta simulación
   try { E.o = V.paso(s, E.PAR); } finally { V.SUP.KG_ORG = kgOrg; if (sv) { PLAN_BAV.VIV_ETAPA = sv[0]; PLAN_BAV.AUTOS_HOG = sv[1]; } } // las viviendas y autos del deslizador solo para esta simulación
@@ -1368,11 +1476,11 @@ export function paso(E) {
     if (!E.go && E.racha[R.k] >= R.semanas && !(E.ab01 && R.k === 'abasto')) E.go = { /* par 01: el abasto se mide por sector (regla «deficit» abajo) */ regla: R.k, enfoque:R.k==='residuos'?'Circularidad':R.k==='habitat'||R.k==='fauna'||R.k==='humedal'?'Ecocentrismo':R.k==='abasto'?'Comercio ecológico':'Movilidad', sem: s.t + 1, inicio:s.t-R.semanas+2, motivo: MOTIVO_GO[R.k], lugar:'Kennedy', valor: Math.round(v * 1000) / 1000 }; }
   if (E.ab01) { /* par 01 v3: déficit por sector, saturación de Corabastos y residuos sin recoger (REGLAS_AB01), 4 semanas seguidas, iguales con y sin propuesta */
     const A = E.ab01, U = A.ult, KV = AB01V3, rc = E.rc, sem = s.t + 1, n1 = (v) => (Math.round(v * 10) / 10).toLocaleString('es-CO');
-    A.rachaSat = U.inv > KV.CAP ? A.rachaSat + 1 : 0; A.rachaRes = rc.noRec >= RES01.UMBRAL ? A.rachaRes + 1 : 0;
+    A.rachaSat = U.inv > (U.cap || KV.CAP) ? A.rachaSat + 1 : 0; A.rachaRes = rc.noRec >= RES01.UMBRAL ? A.rachaRes + 1 : 0;
     U.sectores.forEach((S, i) => { A.rachaDef[i] = S.cob < KV.COB_MIN ? A.rachaDef[i] + 1 : 0; });
     /* v5: si el mismo día se cumplen la de Corabastos y el déficit, manda Corabastos (el déficit es su consecuencia: la central llena no despacha) */
     if (!E.go && A.rachaSat >= KV.SEMANAS)
-      E.go = { regla: 'saturacion', enfoque: 'Comercio ecológico', sem, inicio: sem - KV.SEMANAS + 1, motivo: `el inventario de Corabastos llegó a ${nf(U.inv)} t, ${n1(U.sat * 100)} % de su límite de abastecimiento (14.000 t, capacidad de referencia), cuatro semanas seguidas (entran ${nf(U.ing)} t/día y salen ${nf(U.desp)})`, lugar: 'Corabastos', x: Math.round(CORA_XZ[0]), z: Math.round(CORA_XZ[1]), valor: Math.round(U.sat * 1000) / 10 };
+      E.go = { regla: 'saturacion', enfoque: 'Comercio ecológico', sem, inicio: sem - KV.SEMANAS + 1, motivo: `el inventario de Corabastos llegó a ${nf(U.inv)} t, ${n1(U.sat * 100)} % de su límite de abastecimiento (${U.cap < KV.CAP - 1 ? nf(U.cap) + ' t: 14.000 t de referencia × las naves que quedan' : '14.000 t, capacidad de referencia'}), cuatro semanas seguidas (entran ${nf(U.ing)} t/día y salen ${nf(U.desp)})`, lugar: 'Corabastos', x: Math.round(CORA_XZ[0]), z: Math.round(CORA_XZ[1]), valor: Math.round(U.sat * 1000) / 10 };
     if (!E.go) { let bi = -1; U.sectores.forEach((S, i) => { if (A.rachaDef[i] >= KV.SEMANAS && (bi < 0 || S.cob < U.sectores[bi].cob)) bi = i; });
       if (bi >= 0) { const S = U.sectores[bi];
         E.go = { regla: 'deficit', enfoque: 'Comercio ecológico', sem, inicio: sem - KV.SEMANAS + 1, motivo: `el ${S.n} recibió ${n1(S.cob * 100)} % de su demanda (${nf(S.rec)} de ${nf(S.dem)} t/día; déficit de ${nf(S.def)} t/día), menos del 80 %, cuatro semanas seguidas`, lugar: S.n, x: S.x, z: S.z, valor: Math.round(S.cob * 1000) / 10 }; } }
@@ -1485,7 +1593,7 @@ export function ind(E) {
     const compra = o.zRec[z] - o.zLoc[z], co = Math.max(0, compra - o.zRed[z]); comercio[z] = compra > 1e-6 ? Math.min(1, o.zRed[z] / compra) : 0; cora[z] = co; }
   /* huertas = hogares que siembran + superficies de la red (B y C: P1.sup montada; B sin módulos de C usa 60 %) y techos, en huertas equivalentes de 50 m² */
   const prop = s.e === 'B' || s.e === 'C', supRed = prop ? E.PAR.P1.sup * s.supF * (s.e === 'B' && !E.mod.huertasC ? 0.6 : 1) : 0;
-  const huertas = o.act + (supRed + (E.techos ? E.techos.m2 * s.supF : 0)) / SUP_SIMS.M2_HUERTA;
+  const huertas = o.act + (supRed + (E.techos ? E.techos.m2 * s.supF : 0)) / SUP_SIMS.M2_HUERTA + (E.obras && E.obras.hid ? E.obras.hid * 1e4 / SUP_SIMS.M2_HUERTA : 0); // obras (par 01): huertas hidropónicas sobre las cubiertas del modelo
   const comidaLocal = Math.min(100, o.pct || 0); // % de la gente de Kennedy que comería solo de las huertas (sim_vida.js: pers / pob)
   const sem = s.t + 1, red = interLocal(s), poliniz = paresPoli(s);
   if (E.emaP == null) E.emaP = c.pares; else E.emaP += (c.pares - E.emaP) / 13;
@@ -1502,7 +1610,7 @@ export function ind(E) {
   const h0 = E.evs.h0 != null ? E.evs.h0 : (E.evs.h0 = Math.max(1, huertas));
   const pobNueva = (s.pob + (o.plan ? o.plan.personas : 0)) / V.POB_K - 1;
   const tala = s.planArb ? s.planArb / PLAN_BAV.ARB_TOT : 0;
-  const Bs = E.bas, humHa = Bs.ha.reduce((a, v) => a + v, 0), humedalHa = humHa + (o.cora.borde || 0) / 1e4 * (o.cora.mad || 0);
+  const Bs = E.bas, humHa = Bs.ha.reduce((a, v) => a + v, 0), humedalHa = humHa + (o.cora.borde || 0) / 1e4 * (o.cora.mad || 0) + (E.obras ? E.obras.wetX + E.obras.bav : 0);
   const arbPerdida = E.arb0 ? 1 - E.PAR.P3.arboles / E.arb0 : 0, humedalFuncional = Bs.func * 100;
   const verde = cl01(tala + arbPerdida / 0.2 + Math.max(0, (0.55 - s.W) / 0.55) + Math.max(0, 1 - E.emaP / Math.max(1, refV(E, 'pares', E.emaP))) / 0.3 + Math.max(0, 1 - Bs.func) / 0.3);
   const presion = cl01(0.2 * cl01(pobNueva / 0.3) + 0.2 * cl01((trafico - 1) / 0.3) + 0.15 * cl01((ruidoDb - E.ruido0) / 3) + 0.2 * verde + 0.25 * cl01(Bs.ratas - 1));
@@ -1522,6 +1630,7 @@ export function ind(E) {
     abasto: E.ab01 ? ab01Ind(E) : indAbasto(E), ...(() => { const R = indEstaciones(E); return { estaciones: R ? R.estaciones : null, recorridos: R ? R.recorridos : null }; })(),
     ...(() => { const F = indFragmento(E); return { fragmento: F ? F.fragmento : null, corredores: F ? F.corredores : null, refugios: F ? F.refugios : null, desplazamientos: F ? F.desplazamientos : null }; })(),
     suelo: indSueloUsos(E), gobernanza: E.gob ? indGobernanza(E) : null, par: E.par, propuesta: !!E.prop,
+    obras: E.obras ? { ecoductoHa: E.obras.eco, bordesCopaHa: E.obras.bordes, callesCopaHa: E.obras.cv, parquesCopaHa: E.obras.pqC, vacaHumedalHa: E.obras.wet, vacaBarreraHa: E.obras.bar, bavariaHa: E.obras.bav, hidroponiaHa: E.obras.hid, corredoresCalle: corredoresCV(E, s.t).filter(c => c[2] >= 1).length, arbolesParques: E.PAR.P3.arboles } : null,
     especulacion: { indice: E.suelo.indice, hogaresRiesgo: Math.round(E.suelo.riesgo), proteccion: E.suelo.prot, zonas: Z_SUELO.map(z => ({ x: Math.round(ZONAS[z][0]), z: Math.round(ZONAS[z][1]), indice: E.suelo.idx[z] })) } };
 }
 function indCierre(E, o) { const C = E.cie, f = C ? C.fase : 0; if (!o.cierre && !f) return null;
@@ -1612,15 +1721,15 @@ function avisos(E, x) {
   // 1 · FAUNA en toda Kennedy: ocupación de los parches frente al inicio (promedio móvil de 13 semanas)
   const dP = RL ? (E.emaP / Math.max(1, E.ref.pares) - 1) * 100 : 0;
   if (dP < 0) { const k = umbral(-dP, [10, 25, 50]); if (k) { const p = parcheCambio(-1), sp = p >= 0 ? espParche(p, -1) : [], nm = ['10', '25', '50'][k - 1];
-    add('fauna-', k, 'especies', `La fauna ocupa ${nm} % menos lugares que en el año 1`, `Las especies ocupan ${nf(E.emaP)} pares especie–parche frente a ${nf(E.ref.pares)} en el año 1.` + (p >= 0 ? ` Donde más se nota es en ${PARCHES[p].n}${sp.length ? ' (se fueron ' + yLista(sp.slice(0, 4).map(i => min1(nombre(i)))) + '; causa principal: ' + motivo(p, sp) + ')' : ''}.` : ''),
+    add('fauna-', k, 'especies', `La fauna ocupa ${nm} % menos lugares que en el año 1`, `Las especies ocupan ${nf(E.emaP)} pares especie–corredor verde frente a ${nf(E.ref.pares)} en el año 1.` + (p >= 0 ? ` Donde más se nota es en ${PARCHES[p].n}${sp.length ? ' (se fueron ' + yLista(sp.slice(0, 4).map(i => min1(nombre(i)))) + '; causa principal: ' + motivo(p, sp) + ')' : ''}.` : ''),
       p >= 0 ? [PARCHES[p].x, PARCHES[p].z] : KEN_XZ, -1, sp.slice(0, 6).map(nombre)); } }
   else { const k = umbral(dP, [10, 25, 50]); if (k) { const p = parcheCambio(1), sp = p >= 0 ? espParche(p, 1) : [], nm = ['10', '25', '50'][k - 1];
-    add('fauna+', k, 'especies', `La fauna ocupa ${nm} % más lugares que en el año 1`, `Las especies ocupan ${nf(E.emaP)} pares especie–parche frente a ${nf(E.ref.pares)} en el año 1.` + (p >= 0 ? ` Donde más llegan es a ${PARCHES[p].n}${sp.length ? ': ' + yLista(sp.slice(0, 4).map(i => min1(nombre(i)))) : ''}.` : ''),
+    add('fauna+', k, 'especies', `La fauna ocupa ${nm} % más lugares que en el año 1`, `Las especies ocupan ${nf(E.emaP)} pares especie–corredor verde frente a ${nf(E.ref.pares)} en el año 1.` + (p >= 0 ? ` Donde más llegan es a ${PARCHES[p].n}${sp.length ? ': ' + yLista(sp.slice(0, 4).map(i => min1(nombre(i)))) : ''}.` : ''),
       p >= 0 ? [PARCHES[p].x, PARCHES[p].z] : KEN_XZ, 1, sp.slice(0, 6).map(nombre)); } }
   // 2 · una especie desaparece de toda Kennedy (calendario: espera turno)
   if (E.ev.length) { const e0 = E.ev[0], ns = E.ev.map(e => min1(e.nombre));
     add('ext-' + E.ev.map(e => e.especie).join('-'), 1, 'especies', E.ev.length > 1 ? `${ns.length} especies desaparecen de Kennedy` : `${e0.nombre} desaparece de Kennedy`,
-      `${yLista(ns).replace(/^./, c => c.toUpperCase())} ya no ${E.ev.length > 1 ? 'están' : 'está'} en ningún parche de Kennedy. El último lugar fue ${(PARCHES.find(p => p.id === e0.parche) || {}).n || e0.parche}; causa: ${e0.motivo}.`,
+      `${yLista(ns).replace(/^./, c => c.toUpperCase())} ya no ${E.ev.length > 1 ? 'están' : 'está'} en ningún corredor verde de Kennedy. El último lugar fue ${(PARCHES.find(p => p.id === e0.parche) || {}).n || e0.parche}; causa: ${e0.motivo}.`,
       [e0.x, e0.z], -1, E.ev.map(e => e.nombre), true); }
   // 3 · una especie deja un humedal o parque grande (≥ 5 ha) que ocupaba, o llega a un parque donde no estaba (persistente: promedio > 0,9)
   if (RL) for (let p = 0; p < NP; p++) { const P = PARCHES[p]; if (P.ha < 2 && !/^mod/.test(P.t)) continue; for (let i = 0; i < NFA; i++) { const k = i * NP + p;
@@ -1629,9 +1738,9 @@ function avisos(E, x) {
   // 4 · polinizadores
   if (RL && E.ref.poli > 0) { const r = x.poliniz / E.ref.poli, k = umbral(r, [1.5, 2]); let pp = 0, pd = 0, pn = 0, pdn = 0; for (let p = 0; p < NP; p++) { let d = 0; for (const i of PRE.POLI) d += E.emaO[i * NP + p] - RO[i * NP + p]; if (d > pd) { pd = d; pp = p; } if (d < pdn) { pdn = d; pn = p; } }
     if (k) add('poli+', k, 'polinizadores', ['Los polinizadores aumentan a la mitad', 'Los polinizadores se duplican'][k - 1],
-      `Abejas, colibríes y cucaracheros ocupan ${nf(x.poliniz)} pares especie–parche (en el año 1 ${nf(E.ref.poli)}), gracias a las huertas y parques con flor; donde más llegan es a ${PARCHES[pp].n}.`, [PARCHES[pp].x, PARCHES[pp].z], 1, PRE.POLI.map(nombre), false, `+${nf(pd, 1)} especies polinizadoras en ${PARCHES[pp].n}`, PARCHES[pp].n);
+      `Abejas, colibríes y cucaracheros ocupan ${nf(x.poliniz)} pares especie–corredor verde (en el año 1 ${nf(E.ref.poli)}), gracias a las huertas y parques con flor; donde más llegan es a ${PARCHES[pp].n}.`, [PARCHES[pp].x, PARCHES[pp].z], 1, PRE.POLI.map(nombre), false, `+${nf(pd, 1)} especies polinizadoras en ${PARCHES[pp].n}`, PARCHES[pp].n);
     const kb = umbral(1 / Math.max(0.01, r), [1 / 0.75, 2]); if (kb) add('poli-', kb, 'polinizadores', kb === 1 ? 'Los polinizadores caen una cuarta parte' : 'Los polinizadores caen a la mitad',
-      `Ocupan ${nf(x.poliniz)} pares especie–parche (en el año 1 ${nf(E.ref.poli)}); donde más se pierden es en ${PARCHES[pn].n} (causa: ${MOTIVOS[s.red.mot[PRE.POLI[0] * NP + pn] || 5]}).`, [PARCHES[pn].x, PARCHES[pn].z], -1, PRE.POLI.map(nombre), false, `${nf(-pdn, 1)} especies polinizadoras menos en ${PARCHES[pn].n}`, PARCHES[pn].n); }
+      `Ocupan ${nf(x.poliniz)} pares especie–corredor verde (en el año 1 ${nf(E.ref.poli)}); donde más se pierden es en ${PARCHES[pn].n} (causa: ${MOTIVOS[s.red.mot[PRE.POLI[0] * NP + pn] || 5]}).`, [PARCHES[pn].x, PARCHES[pn].z], -1, PRE.POLI.map(nombre), false, `${nf(-pdn, 1)} especies polinizadoras menos en ${PARCHES[pn].n}`, PARCHES[pn].n); }
   // 5 · huertas (hitos) y techos montados
   { const h0 = st.h0 || 1, k = umbral(x.huertas / h0, [2, 10]);
     if (k) { let sb = SEC_MAX, mb = -1; if (s.e === 'C') GOB_BARRIOS.forEach(B => { const n = MOD_P.filter(p => s.q[p] > 0 && Math.hypot(PARCHES[p].x - B.x, PARCHES[p].z - B.z) < 1500).length; if (n > mb) { mb = n; sb = B; } });
@@ -1714,7 +1823,7 @@ function avisos(E, x) {
     if (s.t === C.t0) add('corte', 1, 'comida', `Se corta ${nf(C.f * 100)} % del suministro externo de alimentos`, `Durante ${C.dur} semanas Corabastos solo puede traer ${nf(100 - C.f * 100)} % de lo que traía${E.prop ? '; los mercados de barrio, las huertas y el acopio de Bavaria Común intentan cubrir el resto' : ' y no hay otra red'}. Hoy llega ${nf(x.abasto ? (1 - x.abasto.deficit) * 100 : 100)} % de lo que necesita Kennedy.`, CORA_XZ, -1, [], true);
     if (s.t === C.t0 + C.dur) add('corte-fin', 1, 'comida', 'Termina el corte del suministro', `Corabastos vuelve a traer lo de antes; la zona peor servida recibe ${nf(x.comidaMin * 100)} % de lo que necesita${E.prop ? ' (la red tarda en reacomodarse: decide por asambleas)' : ''}.`, CORA_XZ, 1, [], true); }
   if (E.org && s.t === E.org.t0) add('org', 1, 'residuos', `Empiezan a subir los residuos orgánicos (+${nf(E.org.f * 100)} % en un año)`, E.prop ? 'Las Estaciones Circulares de los mercados nodo reciben los orgánicos separados; lo que no cabe se va al relleno.' : 'Todo sigue yendo al relleno Doña Juana con la recolección de siempre.', E.prop ? BAV_XZ : [DJ_XZ[0], DJ_XZ[1]], -1, [], true);
-  if (E.frag && s.t === E.frag.t0) { const P = PARCHES[E.frag.p]; add('frag', 1, 'especies', `Se pierde ${nf(E.frag.f * 100)} % del ${P.n}`, `${nf(P.ha * E.frag.f, 1)} ha rellenadas o fragmentadas: su fauna pierde hábitat${E.prop ? '; las conexiones vegetales, los refugios en las huertas y la restauración le dan a dónde ir' : ' y solo tiene los parches de hoy'}.`, [P.x, P.z], -1, [], true); }
+  if (E.frag && s.t === E.frag.t0) { const P = PARCHES[E.frag.p]; add('frag', 1, 'especies', `Se pierde ${nf(E.frag.f * 100)} % del ${P.n}`, `${nf(P.ha * E.frag.f, 1)} ha rellenadas o fragmentadas: su fauna pierde hábitat${E.prop ? '; las conexiones vegetales, los refugios en las huertas y la restauración le dan a dónde ir' : ' y solo tiene los corredores verdes de hoy'}.`, [P.x, P.z], -1, [], true); }
   if (E.gob) { const G = E.gob, X = x.gobernanza;
     if (G.rondas === 1 && s.t % G.rond === 0) add('gob-1', 1, 'comida', E.prop ? 'Las asambleas reparten los recursos por primera vez' : 'La coordinación central reparte los recursos', E.prop ? `Ocho asambleas (Juntas de Acción Comunal) presentan sus prioridades y la federación reparte ${nf(G.pres * 100)} % de lo que se necesita.` : `Una oficina central reparte ${nf(G.pres * 100)} % de lo que se necesita con una fórmula por población y datos de hace medio año.`, KEN_XZ, 1, [], true);
     const ke = umbral(1 - X.equidad, [0.1, 0.2]); if (ke) { const wb = X.barrios.reduce((a, b) => b.cobertura < a.cobertura ? b : a); add('gob-eq', ke, 'comida', `El reparto se vuelve desigual: ${wb.n} recibe menos`, `La equidad del reparto baja a ${nf(X.equidad * 100)} %: ${wb.n} recibe ${nf(wb.cobertura * 100)} % de lo que necesita.`, [wb.x, wb.z], -1, [], false, `${wb.n} cubre ${nf(wb.cobertura * 100)} % de su necesidad`, wb.n); }
@@ -1722,7 +1831,7 @@ function avisos(E, x) {
   // 9c · cierre gradual: desvíos
   if (E.cie && E.cie.fase >= 1 && x.cierre) { const D = DESVIOS[E.cie.via], nombres = D.desvio.map(id => DESVIOS.vias[id].n);
     let a0 = 0, a1 = 0; const sp = new Set(); for (const id of D.desvio) { const dd = DESVIOS.vias[id].dist; for (let p = 0; p < NP; p++) if (dd[p] <= DESVIO_SUP.RADIO && E.xDes[p] < 0.999) for (let i = 0; i < NFA; i++) if (RED.AVE[i] && s.occ[i * NP + p]) sp.add(nombre(i)); }
-    add('desvio-' + E.cie.t0, 1, 'trafico', `El tráfico se desvía por la ${yLista(nombres)}`, `Con la ${D.n} cerrada del todo, por las vías de desvío pasan ${nf((E.cie.traf - 1) * 100)} % más vehículos (+${nf(x.cierre.ruidoExtraDb, 1)} dB); ${sp.size ? 'las aves de los parches junto a ellas (' + yLista([...sp].slice(0, 4).map(min1)) + ') pierden hasta ' + nf((1 - Math.min(...E.xDes)) * 100) + ' % de la calidad de su hábitat por el ruido.' : 'no hay parches con fauna junto a ellas.'}`,
+    add('desvio-' + E.cie.t0, 1, 'trafico', `El tráfico se desvía por la ${yLista(nombres)}`, `Con la ${D.n} cerrada del todo, por las vías de desvío pasan ${nf((E.cie.traf - 1) * 100)} % más vehículos (+${nf(x.cierre.ruidoExtraDb, 1)} dB); ${sp.size ? 'las aves de los corredores verdes junto a ellas (' + yLista([...sp].slice(0, 4).map(min1)) + ') pierden hasta ' + nf((1 - Math.min(...E.xDes)) * 100) + ' % de la calidad de su hábitat por el ruido.' : 'no hay corredores verdes con fauna junto a ellas.'}`,
       (() => { const dv = ATR.VIAS.find(v => v[0] === nombres[0]); return dv ? [dv[1], dv[2]] : KEN_XZ; })(), -1, [...sp].slice(0, 6), true, `+${nf((E.cie.traf - 1) * 100)} % de vehículos por la ${nombres[0]}`, nombres[0]); void a0; void a1; }
   // 10 · predio (plan parcial o instituto)
   const PR = x.predio; if (PR) { const PD = E.pred, xz = [PR.x, PR.z];
@@ -1738,10 +1847,10 @@ function avisos(E, x) {
     if (dO < 0) { const k = umbral(-dO, [10, 25, 50]); if (k) { const F = PR.especiesFuera, av = F.filter(f => RED.AVE[RED.FI[f.especie]]), nr = F.filter(f => f.causa !== 'nidos').length, nn = F.filter(f => f.causa !== 'ruido').length;
       const tit = av.length && av.length >= F.length / 2 ? 'Las aves dejan el predio de Bavaria' : 'La fauna deja el predio de Bavaria';
       add('pfauna-', k, 'especies', k > 1 ? tit.replace('dejan', 'siguen dejando').replace('deja', 'sigue dejando') : tit,
-        `La ocupación de los parches del predio y junto a él cae ${nf(-dO)} %. ` + (F.length ? `Se van ${yLista(F.slice(0, 4).map(f => min1(f.nombre)))}: ` + [nr ? `el ruido subió ${nf(dr, 1)} dB por los ${nf(PR.vehiculosDia)} vehículos diarios${E.plan && planEn(E, s.t).obra > 0 ? ' y el frente de obra' : ''}` : '', nn ? `se taló ${nf(PR.tala * 100)} % de los árboles del bosque (lugares de anidación)` : ''].filter(Boolean).join(' y ') + '.' : ''),
+        `La ocupación de los corredores verdes del predio y junto a él cae${nf(-dO)} %. ` + (F.length ? `Se van ${yLista(F.slice(0, 4).map(f => min1(f.nombre)))}: ` + [nr ? `el ruido subió ${nf(dr, 1)} dB por los ${nf(PR.vehiculosDia)} vehículos diarios${E.plan && planEn(E, s.t).obra > 0 ? ' y el frente de obra' : ''}` : '', nn ? `se taló ${nf(PR.tala * 100)} % de los árboles del bosque (lugares de anidación)` : ''].filter(Boolean).join(' y ') + '.' : ''),
         xz, -1, F.map(f => f.nombre)); } }
     else { const k = umbral(dO, [25, 50]); if (k) { const sp = []; for (let i = 0; i < NFA; i++) if (PD.ema[i] > E.ref.pred[i] + 0.5) sp.push(i);
-      add('pfauna+', k, 'especies', `Llegan especies a ${E.plan ? 'el predio' : 'la huerta del instituto'}`, `La ocupación de los parches del predio y junto a él sube ${nf(dO)} %${sp.length ? ': ' + yLista(sp.slice(0, 4).map(i => min1(nombre(i)))) : ''}.`, xz, 1, sp.map(nombre)); } } }
+      add('pfauna+', k, 'especies', `Llegan especies a ${E.plan ? 'el predio' : 'la huerta del instituto'}`, `La ocupación de los corredores verdes del predio y junto a él sube${nf(dO)} %${sp.length ? ': ' + yLista(sp.slice(0, 4).map(i => min1(nombre(i)))) : ''}.`, xz, 1, sp.map(nombre)); } } }
 
   // selección: pendientes de calendario + candidatos de umbral; uno por familia (el nivel más alto); enfriamiento por tipo
   for (const c of cand) { const key = c.fam + ':' + c.nivel; if (st.vistos == null) st.vistos = new Set(); if (st.vistos.has(key)) continue; st.vistos.add(key);

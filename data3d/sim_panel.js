@@ -21,7 +21,7 @@ export const LIM = {
   trafico: { n: 'Tráfico', u: '100 % = hoy', v: (I) => I.trafico * 100, lim: 130, cerca: 120, S: 150, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).trafico || 0, txt: 'circulan 30 % más vehículos que hoy' },
   ruido: { n: 'Ruido de las calles', u: 'dB sobre hoy', v: (I) => I.ruidoDb - I.ruidoDb0, lim: 3, cerca: 2, S: 4, f: (v) => (v < 0 ? '−' : '+') + nf(Math.abs(v), 1) + ' dB', r: (I) => (I.rachas || {}).ruido || 0, txt: 'el ruido promedio sube 3 dB' },
   fauna: { n: 'Especies de fauna', u: '% de las del inicio', v: (I) => I.fauna / Math.max(1, I.fauna0) * 100, lim: 90, min: true, cerca: 94, S: 100, f: (v, I) => I ? `${I.fauna} de ${I.fauna0}` : nf(v) + ' %', r: (I) => (I.rachas || {}).fauna || 0, txt: 'quedan menos del 90 % de las especies' },
-  habitat: { n: 'Territorio con fauna', u: '% del inicio', v: (I) => I.pares / Math.max(1, I.pares0) * 100, lim: 70, min: true, cerca: 80, S: 130, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).habitat || 0, txt: 'la ocupación de los parches cae 30 %' },
+  habitat: { n: 'Territorio con fauna', u: '% del inicio', v: (I) => I.pares / Math.max(1, I.pares0) * 100, lim: 70, min: true, cerca: 80, S: 130, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).habitat || 0, txt: 'la ocupación de los corredores verdes cae 30 %' },
   humedal: { n: 'Humedales que funcionan', u: '% del área de hoy', v: (I) => I.humedalFuncional, lim: 70, min: true, cerca: 80, S: 110, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).humedal || 0, txt: 'los humedales pierden 30 % de su área funcional' },
   residuos: { n: 'Orgánicos en las Estaciones', u: '% del almacenamiento', v: (I) => I.residuos * 100, lim: 100, cerca: 85, S: 130, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).residuos || 0, txt: 'los orgánicos pendientes pasan el almacenamiento' } };
 export const malo = (k, v) => (LIM[k].min ? v < LIM[k].lim : v >= LIM[k].lim);
@@ -46,7 +46,7 @@ export const PAR_CFG = {
       { t: '¿Cuántos animales mueren?', s: [{ f: (I) => I.muertes ? I.muertes.total : null, n: 'acumulados' }], fmt: (v) => nf(v), sub: (I) => `Choques, atropellos, ruido y hambre desde el año 1. Por ruido: ${nf(I.muertes && I.muertes.porCausa.ruido)}.` }],
     fx: [['Tráfico desviado', (I) => nf(desvio(I) * 100) + ' %', (I, v) => `1 + «desvío a la Primero de Mayo» ${nf(v.desvioMayo)} % × fase del cierre ${nf(I.cierre ? I.cierre.fase : 0, 2)}${I.propuesta ? ' × 2/3 (tercera ruta por Bavaria Común, supuesto)' : ''}`],
       ['Ruido extra en el desvío', (I) => '+' + nf(10 * Math.log10(desvio(I)), 1) + ' dB', () => '10 × log10(tráfico desviado)'],
-      ['Bienestar de las aves', (I) => nf(I.avesRuido && I.avesRuido.bienestarFauna * 100, 1) + ' %', () => 'Σ aves × B(L) ÷ Σ aves · B = 1 hasta 50 dB y 0 en 75 dB (Shannon et al. 2016; 75 dB supuesto) · los parches a 600 m del desvío reciben su tráfico × tráfico desviado'],
+      ['Bienestar de las aves', (I) => nf(I.avesRuido && I.avesRuido.bienestarFauna * 100, 1) + ' %', () => 'Σ aves × B(L) ÷ Σ aves · B = 1 hasta 50 dB y 0 en 75 dB (Shannon et al. 2016; 75 dB supuesto) · los corredores verdes a 600 m del desvío reciben su tráfico × tráfico desviado'],
       ['Comida en el sector peor', (I) => nf(I.comidaMin * 100, 1) + ' %', () => 'recibido ÷ necesidad del sector · las rutas que pasan por la vía cerrada se alargan (sim_vida.js) · game over bajo 80 % 4 semanas'],
       ['Animales muertos', (I) => nf(I.muertes && I.muertes.total), () => 'Σ choques con vidrio + atropellos + poblaciones locales perdidas por ruido o hambre']] },
   3: { titulo: 'Aumento de los residuos orgánicos',
@@ -61,18 +61,18 @@ export const PAR_CFG = {
       ['Orgánicos en las Estaciones', (I) => nf(I.residuos * 100) + ' %', (I, v) => `pendientes ÷ almacenamiento (3 días de contenedores + 2 semanas de planta) · capacidad ${nf(v['P2.cap'])} kg/semana por Estación · hogares que separan ${nf(v['P2.frac'] * 100)} % · game over > 100 % 4 semanas`],
       ['Humedales que funcionan', (I) => nf(I.humedalFuncional) + ' %', () => 'Σ área sin rellenar × calidad ÷ área de hoy · calidad = 1 ÷ (1 + k × basura acumulada en el borde) · game over < 70 % 4 semanas (Ramsar, Decreto 624 de 2007; 30 % supuesto)'],
       ['Basura sin recoger', (I) => nf(I.basura && I.basura.fraccionSinRecoger * 100, 1) + ' %', (I, v) => `1 − recolección ${nf(v.recoleccion)} % (UAESP 2026), crece con el arrojo clandestino`]] },
-  4: { titulo: 'Pérdida de un parche ecológico',
+  4: { titulo: 'Pérdida de un corredor verde',
     alerta(I, val) { const s = I ? I.sem : 0, F = I && I.fragmento, n = ['El Burro', 'Techo', 'La Vaca', 'Bosque de Bavaria'][Math.max(1, Math.min(4, Math.round(val.parche))) - 1];
       if (s < val.parcheT0) return ['Se perderá parte de ' + n, 'en ' + nf(val.parcheT0 - s) + ' sem']; return ['Se perdió parte de ' + n, '−' + nf(val.parchePerdida) + ' %' + (F ? ' · ' + nf(F.haPerdidas, 1) + ' ha' : '')]; },
-    vivo: [['Especies de fauna', (I) => I.fauna / Math.max(1, I.fauna0) * 100, 100, (v) => nf(v) + ' %'], ['Parches conectados', conect, 100, (v) => nf(v) + ' %'], ['Territorio con fauna', (I) => I.pares / Math.max(1, I.pares0) * 100, 130, (v) => nf(v) + ' %']],
+    vivo: [['Especies de fauna', (I) => I.fauna / Math.max(1, I.fauna0) * 100, 100, (v) => nf(v) + ' %'], ['Corredores verdes conectados', conect, 100, (v) => nf(v) + ' %'], ['Territorio con fauna', (I) => I.pares / Math.max(1, I.pares0) * 100, 130, (v) => nf(v) + ' %']],
     graf: [{ t: '¿Cuántas especies quedan?', s: [{ f: (I) => I.fauna / Math.max(1, I.fauna0) * 100, n: 'especies' }], lim: 90, limTxt: 'game over < 90 %', fmt: (v) => nf(v) + ' %', sub: (I) => `${I.fauna} de las ${I.fauna0} especies de fauna del inicio.` },
-      { t: '¿Cuánto territorio ocupa la fauna?', s: [{ f: (I) => I.pares / Math.max(1, I.pares0) * 100, n: 'ocupación' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Pares especie × parche ocupados frente al inicio: ${nf(I.pares)} de ${nf(I.pares0)}.` },
-      { t: '¿Están conectados los parches?', s: [{ f: conect, n: 'conectados' }], fmt: (v) => nf(v) + ' %', sub: (I) => `Parches del componente más grande con conexiones sanas: ${nf(conect(I))} %.` },
+      { t: '¿Cuánto territorio ocupa la fauna?', s: [{ f: (I) => I.pares / Math.max(1, I.pares0) * 100, n: 'ocupación' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Pares especie × corredor verde ocupados frente al inicio: ${nf(I.pares)} de ${nf(I.pares0)}.` },
+      { t: '¿Están conectados los corredores verdes?', s: [{ f: conect, n: 'conectados' }], fmt: (v) => nf(v) + ' %', sub: (I) => `Corredores verdes del componente más grande con conexiones sanas: ${nf(conect(I))} %.` },
       { t: '¿Aguantan los humedales?', s: [{ f: (I) => I.humedalFuncional, n: 'funcionan' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Área sin rellenar × calidad frente a la basura: ${nf(I.humedalFuncional)} % de hoy.` }],
-    fx: [['Calidad del parche perdido', (I, v) => nf(Math.sqrt(Math.max(0, 1 - v.parchePerdida / 100)) * 100) + ' %', (I, v) => `√(1 − ${nf(v.parchePerdida)} %) desde la semana ${nf(v.parcheT0)} (dependencia con el área de sim_vida.js)`],
+    fx: [['Calidad del corredor verde perdido', (I, v) => nf(Math.sqrt(Math.max(0, 1 - v.parchePerdida / 100)) * 100) + ' %', (I, v) => `√(1 − ${nf(v.parchePerdida)} %) desde la semana ${nf(v.parcheT0)} (dependencia con el área de sim_vida.js)`],
       ['Especies de fauna', (I) => `${I.fauna} de ${I.fauna0}`, () => 'especies presentes ÷ las del inicio · game over < 90 % 4 semanas (Steffen et al. 2015; aplicado a las 23 especies: supuesto)'],
-      ['Territorio con fauna', (I) => nf(I.pares / Math.max(1, I.pares0) * 100) + ' %', () => 'pares especie × parche ocupados ÷ los del inicio (metapoblación de Levins) · game over ≤ 70 % 4 semanas'],
-      ['Parches conectados', (I) => nf(conect(I)) + ' %', () => 'parches del componente más grande con conexiones f ≥ 0,5 ÷ parches'],
+      ['Territorio con fauna', (I) => nf(I.pares / Math.max(1, I.pares0) * 100) + ' %', () => 'pares especie × corredor verde ocupados ÷ los del inicio (metapoblación de Levins) · game over ≤ 70 % 4 semanas'],
+      ['Corredores verdes conectados', (I) => nf(conect(I)) + ' %', () => 'corredores verdes del componente más grande con conexiones f ≥ 0,5 ÷ corredores verdes'],
       ['Árboles en parques', (I) => nf(I.arboles, 2), (I, v) => `deslizador ${nf(v['P3.arboles'], 2)}${I.propuesta ? ' + 0,2 en 5 años (conexiones vegetales de la propuesta, supuesto)' : ' con tala neta del estado actual'}`]] },
   5: { titulo: 'Presión inmobiliaria',
     alerta(I) { return ['Sube el precio del suelo', '+' + nf(I ? (I.especulacion.indice - 1) * 100 : 0, 1) + ' %']; },
@@ -101,7 +101,7 @@ export const PAR_CFG = {
 /* ---------- estilos (mismo vidrio y paleta que la 01) ---------- */
 const CSS = `
 #sp-alerta{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:9px;align-items:center;max-width:calc(100vw - 32px);white-space:nowrap;padding:6px 6px 6px 12px;border-radius:12px;
-  background:linear-gradient(100deg,#304ffe 0%,#7d6bff 52%,#f2694a 100%);border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(30,20,90,.35);color:#fff;overflow:hidden;font:400 11.5px/1.35 var(--ui-sans,Inter,system-ui,sans-serif)}
+  background:linear-gradient(100deg,#304ffe 0%,#3d8fe6 55%,#4fd1c5 100%);border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(20,40,110,.35);text-shadow:0 1px 2px rgba(10,20,60,.45);color:#fff;overflow:hidden;font:400 11.5px/1.35 var(--ui-sans,Inter,system-ui,sans-serif)}
 #sp-alerta[hidden]{display:none}#sp-alerta>svg{width:16px;height:16px;flex:none;animation:spIco 1.1s ease-in-out infinite}
 #sp-alerta span{font:500 12px var(--ui-sans,Inter,sans-serif);overflow:hidden;text-overflow:ellipsis}
 #sp-alerta b{font:600 10px/1 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.85)}

@@ -489,7 +489,7 @@ $('#ley-esq').innerHTML = [['mercado', COL.merc, 'Mercado barrial'], ['asamblea'
 $('#ley-sect').innerHTML = `<span>${pin('mercado', SECT[0])}${MERC.length} mercados barriales (color del sector)</span><span><i style="background:${SECT[2]};clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%)"></i>${ZON.length} zonas surtidas por su mercado</span><span><i style="background:${SECT[4]};border-radius:50%"></i>${ORGS.length} organizaciones comunales (IDPAC)</span><span>${pin('asamblea', SECT[1])}Asamblea del sector → federación</span><span>${pin('corabastos', COL.cora)}Corabastos, un nodo más</span><span>${pin('cluster', COL.bav)}Bavaria Común: forma promotores</span>`;
 // medidores (las tres reglas del simulador)
 const MED = [
-  { k: 'habitat', n: 'Hábitat', r: 'Se cae si las especies en los parches bajan 30 % o más.', umbral: 0.7, riesgo: 0.85, inv: false },
+  { k: 'habitat', n: 'Hábitat', r: 'Se cae si las especies en los corredores verdes bajan 30 % o más.', umbral: 0.7, riesgo: 0.85, inv: false },
   { k: 'abasto', n: 'Abastecimiento', r: 'Se cae si una zona recibe menos del 80 % de lo que necesita.', umbral: 0.8, riesgo: 0.9, inv: false },
   { k: 'residuos', n: 'Residuos', r: 'Se cae si los orgánicos pendientes superan el almacenamiento.', umbral: 1, riesgo: 0.7, inv: true },
 ];

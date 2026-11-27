@@ -24,7 +24,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const ESCD = {
     S1: { A: 'Nada cambia: unas pocas huertas caseras, sin apoyo.', B: 'Bavaria forma promotores y una sola oficina central decide todo.', C: 'Bavaria forma promotores y los barrios, agrupados en clústeres, se turnan las decisiones.' },
     S2: { A: 'Los orgánicos se van en camión al relleno Doña Juana, a 28 km.', B: 'Cada barrio composta en una estación pequeña, cerca de sus huertas.', C: 'Todo se composta en la planta grande de Bavaria Común.' },
-    S3: { A: 'Sin huertas nuevas cerca del humedal.', B: 'Huertas donde haya espacio, sin pensar en las aves.', C: 'Huertas unidas por corredores verdes entre parches de hábitat.' } };
+    S3: { A: 'Sin huertas nuevas cerca del humedal.', B: 'Huertas donde haya espacio, sin pensar en las aves.', C: 'Huertas unidas por corredores verdes entre zonas verdes de hábitat.' } };
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
@@ -224,7 +224,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
           ${slider(P3, 'arboles', 'Densidad de árboles', 0, 1, 0.05, v => fmt(v, 2))}${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, v => fmt(v, 2))}
           ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, v => fmt(v, 3))}
           <div class="chk"><label><input type="checkbox" data-b3="anti" ${P3.anti ? 'checked' : ''}>Medida antitrampa</label></div>
-          <p class="sim-nota">[SUP] Crecimiento logístico de las aves con capacidad de carga según el humedal, los árboles, la conectividad entre parches (mayor en C por los corredores) y las huertas; la trampa ecológica es mortalidad por luz y vidrio en las huertas del borde, que la medida antitrampa reduce al 30 %.</p></div></details>`;
+          <p class="sim-nota">[SUP] Crecimiento logístico de las aves con capacidad de carga según el humedal, los árboles, la conectividad entre zonas verdes (mayor en C por los corredores) y las huertas; la trampa ecológica es mortalidad por luz y vidrio en las huertas del borde, que la medida antitrampa reduce al 30 %.</p></div></details>`;
     }
     cont.innerHTML = sub + resumen() + `<details class="sim-tec"${abiertoTec ? ' open' : ''}><summary>Detalle técnico · gráficas del modelo, escenarios B y C y variables</summary><div class="sim-tec-c">${h}</div></details>`;
     dibujar(); conectar();

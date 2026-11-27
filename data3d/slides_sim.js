@@ -15,7 +15,7 @@ const MODELO = {
   1: 'Cada semana: demanda de frescos de Kennedy = población (1.080.742 en 2026, DANE-SDP) × 0,65 kg/hab/día × «Demanda» × mes del año (patrón DANE-SIPSA 2025); el «Autoconsumo» sale de huertas y no se compra. A Corabastos le pide toda la ciudad y la región (6.460 t/día hoy, DANE-SIPSA 2025); la región manda el «Volumen» y la central recibe como mucho su tope (6.460 × (1 + «Tope»), inferencia SDDE-FAO 2018). Si no alcanza, todos los compradores reciben la misma fracción y en Kennedy pierden más las zonas lejos de Corabastos. Con propuesta, cada mercado (17 t/día, Contraloría 2025) vende a los hogares a 1 km y cubre parte de lo que falta. Las llegadas se reparten por tipo de vehículo (6,21 t por vehículo, SIPSA; mezcla SDM 2020) y por franja horaria (12–20 h, 20–24 h, 4–6 h).',
   2: 'Cierre temporal de la Av. de las Américas (cierre forzado de sim_vida.js + cierre gradual y desvíos). Con propuesta, los pasajes y conexiones de Bavaria Común y los mercados distribuidos suman una tercera ruta de desvío: el tráfico desviado se reparte en tres y no en dos [SUP].',
   3: 'Aumento de los residuos orgánicos: los kg/persona·día suben el porcentaje elegido, en un año desde la semana de inicio. Sin propuesta: relleno Doña Juana (capacidad de referencia). Con propuesta: Estaciones Circulares en los mercados nodo (compost de proximidad).',
-  4: 'Pérdida de una parte de un parche ecológico: la calidad del parche para todas sus especies baja como la raíz del área que queda. Con propuesta: conexiones vegetales (+0,2 de árboles en parques en 5 años), refugios (los módulos de huertas son hábitat) y restauración (recuperación del humedal × 1,5) [SUP: acciones de la propuesta].',
+  4: 'Pérdida de una parte de un corredor verde: la calidad del corredor verde para todas sus especies baja como la raíz del área que queda. Con propuesta: conexiones vegetales (+0,2 de árboles en parques en 5 años), refugios (los módulos de huertas son hábitat) y restauración (recuperación del humedal × 1,5) [SUP: acciones de la propuesta].',
   5: 'Presión inmobiliaria extra sobre los sectores que crecen (a 800 m de las estaciones y a 1 km del predio de Bavaria) y crecimiento de la población. Con propuesta: espacios productivos y comunitarios protegidos (mercados nodo, Bavaria Común) e instrumentos de gestión del suelo (solo actúan en la corrida con propuesta).',
   6: 'Recursos insuficientes para las necesidades de varios sectores (presupuesto en % de la necesidad). Sin propuesta: una coordinación central reparte por población, con la información de hace medio año. Con propuesta: las asambleas locales (una Junta de Acción Comunal por sector, IDPAC) presentan prioridades y una federación con vocerías rotativas reparte según la necesidad reportada.'
 };
@@ -24,7 +24,7 @@ const CADENA = {
   1: ['Demanda de frescos de Kennedy', 'Lo que se le pide a Corabastos', 'Corabastos frente a su tope', 'Mercados y autoconsumo', 'Sector peor abastecido'],
   2: ['Vía cerrada', 'Tráfico en las calles del desvío', 'Comida en la zona peor servida', 'Ruido promedio', 'Interacciones entre especies'],
   3: ['Orgánicos generados', 'Tratados en estaciones / relleno', 'Economía circular', 'Basura sin recoger', 'Humedales que funcionan'],
-  4: ['Parche perdido', 'Corredores y refugios', 'Territorio con fauna', 'Especies de fauna', 'Interacciones entre especies'],
+  4: ['Corredor verde perdido', 'Corredores y refugios', 'Territorio con fauna', 'Especies de fauna', 'Interacciones entre especies'],
   5: ['Precio del suelo', 'Zonas desplazadas / que cambian de uso', 'Hogares en riesgo de desplazamiento', 'Tráfico'],
   6: ['Recursos que alcanzan', 'Equidad entre barrios', 'Decisiones tomadas', 'Equipamientos habilitados']
 };
@@ -44,7 +44,7 @@ const ICO = {
 };
 
 let M = null;
-const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=40').then(m => (M = m));
+const cargar = () => M ? Promise.resolve(M) : import('./simulaciones12.js?v=41').then(m => (M = m));
 /* par 01: diapositivas «Datos» y «Fuentes» con las cifras del dossier (docs/fuentes_abastecimiento.md; simulaciones12.js AB01 y AB01_FUENTES) */
 function slides01() {
   const A = M.AB01, F = M.AB01_FUENTES || []; if (!A) return [];

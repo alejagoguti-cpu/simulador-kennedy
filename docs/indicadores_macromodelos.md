@@ -70,6 +70,58 @@ Constantes en `PROP_SUP` de `simulaciones12.js`. Son obras con calendario, no de
 - **Calles verdes y pacificadas (E5 + calles verdes entre módulos + E9 Manzanas del Cuidado)**: [SUP] 30 % de las calles a 30 km/h y con franjas verdes, construidas de la semana 52 a la 416 (años 2–8), −3 dB cada una (`MITIGA_DB`, EEA 2010). Se combina con el deslizador «mitiga» del par 02: mit = 1 − (1 − deslizador)·(1 − 0,30·fase). Mueve el ruido, el bienestar de la fauna y la colonización de las aves (el factor de tráfico que recibe la red trófica).
 - Ya existían y no se tocaron: mercados de barrio por fases (accesibilidad, cobertura), módulos de huerta (área verde, autonomía, especies clave), Estaciones Circulares (aprovechamiento), protección del suelo (presión), desmonte de Corabastos (bordes liberados).
 
+## Mecanismos de la propuesta (obras del 3D en el modelo, 2026-11-26)
+
+Todo lo que «Kennedy con propuesta» construye en el 3D entra al modelo con los mismos datos y calendarios. Los datos se precalculan en `data3d/propuesta_obras.json` con `node tools/propuesta_obras_datos.mjs` (mismas funciones y archivos que el 3D; marco = mundo del simulador, el de `PARCHES`). El modelo los carga en `cargarDatos` (navegador, node y workers) y los aplica en `obrasPaso` / `obrasAve` de `simulaciones12.js` (`OBRA_SUP`). Solo en las corridas con propuesta (ids pares y 14): las corridas sin propuesta dan resultados idénticos. Si el JSON no carga, la corrida con propuesta sigue sin estas obras.
+
+Regla común (la del modelo, no una paralela): la extinción y la colonización dependen de √área (sim_vida.js) y la pérdida de humedal ya se aplica como √(área/área inicial) sobre el factor de hábitat. Una obra que agrega ΔA ha a un corredor verde de área A usa la misma regla: **xObra = √(1 + ΔA(t)/A)**, que multiplica `E.xH` (todas las especies de ese corredor en la red trófica). Madurez de un árbol: g(dt) = 0 antes de sembrar, e₀ + (1 − e₀)·mín(1, dt/adulto) después; una cohorte sembrada entre a₀ y a₁ años usa el promedio de 5 árboles.
+
+| Obra | Dato (propuesta_obras.json) | Indicador | Fórmula | Calendario | Fuente / [SUP] |
+|---|---|---|---|---|---|
+| 1 · Puente de fauna sobre la Av. Ciudad de Cali (El Burro) | 1,01 ha (tablero 0,90 + taludes 0,11), centro (1.864, −549) | Hábitat y presencia (El Burro), interacciones, Shannon, especies clave, área verde, conectividad | ΔA_Burro += 1,01 × smoothstep(1,3; 3; año); nodo «Puente de fauna» en la red verde unido a El Burro (tipo paso de fauna); área en `biodiversidad.areaEsp` y Shannon por área | obra año 1, cubierta verde años 1,3–3 (ecoducto.js) | ecoducto.js. [SUP] el modelo tiene El Burro como un solo corredor verde: el «enlace entre mitades» se representa como área + nodo y enlace en la red verde; la mortalidad al cruzar ya la baja `PROP_SUP.PASO_RED` (no se cuenta dos veces) |
+| 2 · Árboles de borde de los humedales | 3.770 árboles (3.927 en el archivo × 0,96 que el 3D omite): El Burro 1.719 (copa 8,1 ha), La Vaca 1.175 (4,8 ha), Techo 876 (4,0 ha) | Hábitat (los tres humedales), carbono | ΔA_h += copa_h × g, e₀ = 0,3, adulto 3,5 años; copa también en `ciclos.detalle.copaHa` | siembra años 0,5–4 (ecoducto.js) | [SUP] copa = disco de 6,5 / 5 / 3,6 m según estrato (punto lejano de parches_arboles.js), unión en rejilla de 2 m; [SUP] la copa junto al humedal cuenta como área de hábitat del humedal (el modelo no separa franjas). No se suma al área verde (está en el borde ya verde) |
+| 3 · Calles verdes | 11.953 árboles en 165,7 km de vías principales y secundarias (fase 1: 3.386; fase 2: 8.567); copa adulta 96 ha; 18 pares de zonas verdes unidos por filas de árboles | Conectividad, bienestar de la fauna, carbono | enlace «calle verde» entre p y q con f = madurez de la calle más tardía del camino × mín(1, calidad/0,4); conectividad del marco ecocéntrico cuando f = 1; ruido para la fauna en la zona verde p: ΔL_p = 1 dB × Σ (fracción de árboles de calle a 100 m que son de fase 2) × g; para las aves además la zona de efecto con Q × 10^(−ΔL/10) | fase 1 semanas 52–416 (= `PROP_SUP.MIT`, que ya baja 3 dB), fase 2 416–676, adulto 3,5 años | calles_verdes3d.js. [SUP] brecha 50 m y pares ≤ 2.000 m (alcance del grupo «árbol»): las aves de bosque urbano evitan cruzar claros de decenas de metros y usan calles arboladas como corredores (Tremblay y St. Clair 2009, J. Appl. Ecol. 46: 1314–1322; Fernández-Juricic 2000, Conserv. Biol. 14: 513–521). [SUP] 1 dB por fila de árboles (Van Renterghem et al. 2015, Applied Acoustics 92: 86–101: una fila atenúa del orden de 1 dB o menos). El ruido de las calles (L_Aeq) no cambia por los árboles. La copa de calles no se suma al área verde (está sobre andenes) |
+| 4 · Huertas de parque (KEN_HBAR) | 51 huertas de parque | (ya en el modelo) | Son los mismos 51 módulos «Huertas de parque (n)» de sim_red_datos.js (51 = 51): ya son hábitat, flora nativa, producción y área verde. No se agregan otra vez | modelo: se activan con la superficie montada (3 años, con promotores); 3D: años 0,5–6 | Diferencia de calendario declarada (no se cambió sim_vida.js) |
+| 5 · Huertas hidropónicas en cubiertas | par 01: `huertasAuto(sem)` (2.132 cubiertas × 50 m² hasta la semana 754) | Autonomía, huertas, especies clave (abeja), carbono | excedente sobre las cubiertas que el modelo ya monta: ΔA_cub = máx(0, n × 50 m² − 4,9 ha × supF); xObra de los módulos de cubierta = √(1 + ΔA_cub / 4,8 ha); autonomía = (autoconsumo + producción hidropónica) / demanda | el de huertasAuto | Pares 02–06 y 14: las cubiertas ya están en el modelo (escenario C, `P1.sup × supF`), no se agregan |
+| 6 · La Vaca ampliada en el predio de Corabastos | por franja (año 5): sendero 1,68, barrera de árboles 7,76, pradera húmeda 4,46, juncos 2,57, agua 4,26 ha, repartidas por la semana en que se quita la nave de cada celda (AB01_DESMONTE) | Hábitat (La Vaca), humedales (ha y área funcional), área verde, Shannon, tinguas, carbono | húmedo = Σ_k (pradera + juncos + agua)_k × clamp((año − sem_k/52 − 0,6)/4); barrera = Σ_k barrera_k × g (siembra 0,75–2,25 años después, e₀ 0,35, adulto 3,5); extra = máx(0, húmedo − borde que ya restaura sim_vida.js); ΔA_Vaca = extra + barrera + copa de borde; humedalHa y área funcional += extra; nodo «Humedal La Vaca ampliado» = húmedo + barrera − bordes liberados de sim_vida.js | naves quitadas semanas 52–416; cada celda: 0,6 años de obra y 4 de crecimiento | propuesta01_3d.js (armarCampo, mismas fórmulas y ruido) |
+| 7 · Humedal artificial de Bavaria (fitodepuración) | 1,03 ha en 6 celdas (agua 0,51, vegetación 0,51), huella 2,04 ha, centro (4.076, 195) | Hábitat (Bosque de Bavaria), humedales, área verde, carbono | A(t) = 0,51 × clamp(año − 3) + 0,51 × clamp((año − 3)/3); ΔA_Bosque de Bavaria += A; humedalHa y área funcional += A; nodo «Humedal artificial de Bavaria» | obra años 2–3, agua 3–4, plantas 3–6 | humedal_bavaria3d.js (generarCampo con bavaria_arboles.json). El modelo no tiene un humedal en Bavaria: se suma al corredor verde más cercano (el bosque, a 140 m), así que no da hábitat a las aves acuáticas |
+| 8 · Árboles nuevos de parques | 1.684 árboles nativos en 56 grupos de parques (copa 7,2 ha) + anillo de 70 en el Parque Cayetano Cañizares (0,42 ha); la barrera de La Vaca va en la obra 6 | Calidad de los parques (hábitat de todos los parques), carbono | P3.arboles = 0,4 + copa nueva(t) / 172 ha de parques del modelo; en el par 04 la mayor entre esto y el +0,2 de su prueba (son los mismos árboles) | grupos: siembra años 1–4, adulto 5 años (e₀ 0,2); anillo: 1–2,5, adulto 3,5 | parches_arboles.js calcularParches, propuesta01_3d.js. [SUP] densidad de árboles ≈ fracción de copa |
+
+Efectos que salen solos de la dinámica (no se suman a mano): más hábitat → más ocupación especie × corredor verde → más interacciones locales, Shannon por área, especies clave, riqueza; y también más dispersantes terrestres que cruzan vías → **más atropellos** que la propuesta sin obras (sigue habiendo menos que sin propuesta).
+
+Pendiente (fuera de lo permitido en esta tarea): los corredores de calle verde no cambian la colonización de la red trófica, porque su núcleo de dispersión está en `red_trofica.js` (compartido con las corridas sin propuesta); hoy solo entran en la conectividad.
+
+### Verificación (node, semilla 1, valores por defecto) — sin / con antes de las obras / con ahora
+
+Corridas sin propuesta (1, 3, 5, 7, 9, 11, 13): indicadores idénticos antes y después (JSON comparado). Tabla de Corabastos del par 01 sin cambios (con: 35·34·38·44·58·60·58·58; sin: 35·37·40·43·50·58·120·120, residuos en la semana 285). Game over: iguales en las 12 (el 05 con propuesta sigue terminando por tráfico en la semana 739: ninguna obra cambia el tráfico).
+
+Par 01 (ids 1 / 2):
+
+| Indicador | Año 1 | Año 5 | Año 10 | Año 15 |
+|---|---|---|---|---|
+| Interacciones | 3.158 / 3.910 / 3.910 | 3.280 / 6.354 / 6.394 | 3.101 / 6.313 / 6.448 | 3.023 / 6.349 / 6.618 |
+| Shannon H′ (área) | 2,904 / 2,902 / 2,902 | 2,898 / 2,889 / 2,912 | 2,845 / 2,870 / 2,912 | 2,708 / 2,837 / 2,886 |
+| Especies clave (%) | 100 / 100 / 100 | 99 / 103 / 107 | 101 / 106 / 116 | 96 / 103 / 114 |
+| Área verde (ha) | 215,7 / 217,4 / 217,4 | 214,3 / 236,3 / 240,7 | 212,5 / 245,3 / 260,0 | 211,7 / 246,6 / 264,1 |
+| Conectividad (%) | 28,6 / 21,6 / 21,6 | 28,6 / 76,6 / 77,5 | 28,6 / 80,5 / 81,3 | 28,6 / 80,5 / 81,3 |
+| Atropellos (acum.) | 188 / 188 / 188 | 2.083 / 1.954 / 1.965 | 5.000 / 4.487 / 4.650 | 7.667 / 6.932 / 7.365 |
+| Bienestar de la fauna (%) | 69,5 / 69,4 / 69,4 | 68,6 / 68,7 / 68,9 | 67,4 / 69,3 / 69,4 | 65,7 / 67,6 / 68,0 |
+| Autonomía (%) | 0 / 0 / 0,01 | 0 / 0 / 0,06 | 0 / 0 / 0,12 | 0 / 0 / 0,17 |
+| Área funcional de humedales (%) | 98,0 / 98,5 / 98,5 | 88,1 / 103,1 / 109,5 | 75,3 / 107,9 / 129,6 | 53,1 / 102,4 / 125,1 |
+
+Par 04 (ids 7 / 8):
+
+| Indicador | Año 1 | Año 5 | Año 10 | Año 15 |
+|---|---|---|---|---|
+| Interacciones | 3.158 / 3.917 / 3.917 | 3.267 / 6.296 / 6.407 | 3.174 / 6.411 / 6.433 | 3.103 / 6.312 / 6.556 |
+| Shannon H′ (área) | 2,904 / 2,902 / 2,902 | 2,884 / 2,887 / 2,917 | 2,888 / 2,894 / 2,927 | 2,704 / 2,782 / 2,893 |
+| Especies clave (%) | 100 / 100 / 100 | 99 / 104 / 110 | 102 / 107 / 120 | 97 / 104 / 116 |
+| Área verde (ha) | 215,7 / 217,4 / 217,4 | 205,0 / 225,2 / 231,5 | 203,1 / 234,0 / 250,7 | 202,6 / 235,8 / 254,7 |
+| Conectividad (%) | 28,6 / 21,6 / 21,6 | 28,6 / 78,6 / 79,5 | 28,6 / 79,5 / 80,3 | 28,6 / 79,7 / 80,5 |
+| Atropellos (acum.) | 188 / 188 / 188 | 2.084 / 1.889 / 1.916 | 4.952 / 4.086 / 4.370 | 7.571 / 6.271 / 6.891 |
+| Bienestar de la fauna (%) | 69,6 / 69,5 / 69,5 | 69,1 / 69,3 / 69,3 | 68,2 / 70,1 / 70,2 | 66,9 / 69,0 / 69,1 |
+| Especies de fauna presentes | 23 / 23 / 23 | 23 / 23 / 23 | 23 / 23 / 23 | 21 / 22 / 23 |
+
 ## Verificación en node (semilla 1, valores por defecto) — año 1 (semana 52) → año 15 (semana 780)
 
 | Indicador | 13 Kennedy sin propuesta | 14 Kennedy con propuesta |

@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=9';
-import { iniciarSimUI } from './sim_ui.js?v=130';
+import { iniciarSimUI } from './sim_ui.js?v=135';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -21,7 +21,7 @@ const PARES = [
   { par: 1, n: 'Abastecimiento', prueba: 'La demanda de comida crece y Corabastos tiene un tope' },
   { par: 2, n: 'Movilidad', prueba: 'Se cierra temporalmente una vía estratégica' },
   { par: 3, n: 'Residuos', prueba: 'Aumentan los residuos orgánicos' },
-  { par: 4, n: 'Biodiversidad', prueba: 'Se fragmenta o se pierde un parche ecológico' },
+  { par: 4, n: 'Biodiversidad', prueba: 'Se fragmenta o se pierde un corredor verde' },
   { par: 5, n: 'Población y especulación', prueba: 'Sube la presión inmobiliaria' },
   { par: 6, n: 'Gobernanza', prueba: 'No alcanzan los recursos para todos los barrios' }
 ];
@@ -200,6 +200,7 @@ export function iniciarLimpio({ T3 }) {
   const HI = () => window.KEN_HIDRO, hidroVis = () => { const H = HI(); return !!(H && H.grupo && H.grupo.visible); };
   const CONV = [
     ['Tráfico (de lejos cada vehículo es una píldora)', [[sw.pil('#fff0d2'), 'Carro', hayVeh], [sw.pil('#ffae1f'), 'Moto', hayVeh], [sw.pil('#ff3d6e'), 'Camión de carga', hayVeh], [sw.pil('#7fe3ff'), 'Bicicleta', hayVeh],
+      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h5" stroke="#21c45e" stroke-width="4"/><path d="M6.5 5h5" stroke="#faa80d" stroke-width="4"/><path d="M12 5h5" stroke="#990021" stroke-width="4"/></svg>', () => { const V = window.KEN_VIAS && window.KEN_VIAS.info(); return `Vías: color MEDIDO con los vehículos del mapa. Cada 0,6 s se cuentan los vehículos de cada tramo de vía (≤ 60 m; calles locales solo si tienen vehículos) ÷ km ÷ carriles y se comparan con 28 veh/km/carril (límite E/F del Highway Capacity Manual): verde = fluido (< 16, niveles A–C), amarillo = denso (16–28, D–E), carmesí = trancón (≥ 28, F)${V && V.listo && V.medidos ? ` · ahora ${Math.round(V.verde * 100)} % verde, ${Math.round(V.amarillo * 100)} % amarillo, ${Math.round(V.carmesi * 100)} % carmesí` : ''}`; }, () => !!(window.KEN_VIAS && window.KEN_VIAS.grupo.visible)],
       [sw.pil('#8b5cf6'), 'Carros nuevos del plan parcial Bavaria (sin propuesta)', () => { const P = window.KEN_TRPLAN; return !!(P && P.visible && P.dibujados > 0); }]]],
     ['Infraestructura', [[sw.lin('#ff8a1e'), 'Metro Línea 1 en obra (titila)', () => !!ESC.activo && RELOJ.sem < METRO_SEM_OP], [sw.lin('#fff04a'), 'Metro Línea 1 operando (desde 2028)', () => !!ESC.activo && RELOJ.sem >= METRO_SEM_OP],
       [sw.cil(), 'Medidor de capacidad (verde, ámbar 90 %, rojo sobre el tope)', () => esc3('abasto_cont') && !(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)]]],
@@ -207,13 +208,14 @@ export function iniciarLimpio({ T3 }) {
       [sw.hidro(), () => { const H = HI(); return `Huertas hidropónicas en cubiertas: ${(H.instaladas || 0).toLocaleString('es-CO')} de ${(H.techos || 0).toLocaleString('es-CO')} instaladas (primero las de 15 pisos o más, luego las más altas)`; }, () => hidroVis() && HI().instaladas > 0],
       [sw.resalte(), 'Cubierta recién instalada: se ilumina unos segundos', hidroVis],
       ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M2 6c2-3 4-3 7 0 3-3 5-3 7 0" fill="none" stroke="#d9dccf" stroke-width="1.5" stroke-linecap="round"/></svg>', 'Fauna en 3D (aves, abejas, anfibios): se mueve según el modelo biótico', () => esc3('biotica')]]],
-    /* simulación 01 (data3d/abasto_capas.js): solo lo que está prendido y a la vista */
+    ['Kennedy con propuesta', [
+      [sw.arbol(), () => { const C = window.KEN_CALLES_VERDES, i = C && C.info(); return `Calles verdes: árboles nativos en andenes y separadores de las vías principales e intermedias (${i ? (i.plantados || 0).toLocaleString('es-CO') : 0} sembrados); primero el 30 % de las calles más cerca de parques y humedales (años 2 a 8, como el modelo), luego las demás (años 8 a 13); adultos 3,5 años después`; }, () => !!(window.KEN_CALLES_VERDES && window.KEN_CALLES_VERDES.info().visible !== false && window.KEN_PROP01 && window.KEN_PROP01.info().activo && window.KEN_CALLES_VERDES.info().plantados > 0)],
+      [sw.agua(), () => { const H = window.KEN_HUMEDAL_BAV, a = H && H.area ? H.area() : null; return `Humedal artificial de fitodepuración en Bavaria: celdas poco profundas con juncos, eneas y lenteja de agua que limpian el agua${a ? ` (${String(a.ha.toFixed(1)).replace('.', ',')} ha)` : ''}; llegan aves acuáticas y polinizadores con los años`; }, () => !!(window.KEN_HUMEDAL_BAV && window.KEN_PROP01 && window.KEN_PROP01.info().activo)]]],    /* simulación 01 (data3d/abasto_capas.js): solo lo que está prendido y a la vista */
     ['Simulación 01 · capas', [
       /* v4 (2026-11-26): barra de carga de Corabastos, barritas de mercados, cuadritos de residuos, vías tipo Waze y vehículos morados */
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V5" stroke="#fff" stroke-width="1.2"/><rect x="1" y="1" width="16" height="4" rx="1" fill="#0d1116" stroke="rgba(255,255,255,.4)" stroke-width=".6"/><rect x="1.6" y="1.6" width="7" height="2.8" fill="#4ade80"/><rect x="14" y=".3" width="1.6" height="5.4" fill="#ff3b30"/></svg>', 'Corabastos: inventario frente a su límite de 14.000 t (raya roja)', () => !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)],
-      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V6" stroke="#fff" stroke-width="1"/><rect x="6.5" y="1" width="5" height="10" rx=".8" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="7.2" y="5" width="3.6" height="5.4" fill="#c9f27a"/><rect x="6" y="2.4" width="6" height=".9" fill="#ff3b30"/></svg>', 'Mercado de barrio: barra que se llena desde abajo con su % de uso (de 28 t/día; raya roja = 100 %)', () => esc3('abasto_cont') && !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible) && document.querySelectorAll('.cont-etm').length > 0],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V5" stroke="#fff" stroke-width="1.2"/><rect x="1" y="1" width="16" height="4" rx="1" fill="#0d1116" stroke="rgba(255,255,255,.4)" stroke-width=".6"/><rect x="1.6" y="1.6" width="7" height="2.8" fill="#4ade80"/><rect x="14" y=".3" width="1.6" height="5.4" fill="#ff3b30"/></svg>', 'Corabastos: inventario frente a su límite (raya roja): 14.000 t; con propuesta, la capacidad de las naves que quedan (se quitan 18 de a poco entre los años 1 y 8, primero las más cercanas a La Vaca; el humedal crece donde se quitó cada una)', () => !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible)],
+      ['<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M9 11V6" stroke="#fff" stroke-width="1"/><rect x="6.5" y="1" width="5" height="10" rx=".8" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="7.2" y="5" width="3.6" height="5.4" fill="#c9f27a"/><rect x="6" y="2.4" width="6" height=".9" fill="#ff3b30"/></svg>', 'Mercado de barrio (ícono de puesto con toldo): barra que se llena desde abajo con su % de uso de 28 t/día; trabaja hasta 70 % (Kennedy + acopio regional)', () => esc3('abasto_cont') && !!(window.KEN_AB01C && window.KEN_AB01C.grupo.visible) && document.querySelectorAll('.cont-etm').length > 0],
       ['<svg viewBox="0 0 18 10" aria-hidden="true"><rect x="2" y="2" width="2.6" height="2.6" fill="#d08a3c"/><rect x="7" y="5" width="2.6" height="2.6" fill="#e0703a"/><rect x="12" y="2.5" width="2.6" height="2.6" fill="#ff4d3d"/></svg>', 'Residuos sin recoger: 1 cuadrito = 1 t/día', () => ab01Vis('residuos')],
-      ['<svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h5" stroke="#21c45e" stroke-width="4"/><path d="M6.5 5h5" stroke="#faa80d" stroke-width="4"/><path d="M12 5h5" stroke="#990021" stroke-width="4"/></svg>', () => `Vías por congestión: verde fluido, ámbar, carmesí = trancón (ciudad ${Math.round(((window.KEN_AB01C && window.KEN_AB01C.info().nivel) || 0.62) * 100)} %)`, () => ab01Vis('trafico')],
       [sw.pil('#a21cff'), 'Morados: carros nuevos que crea la propuesta (viajes a los mercados y a Bavaria Común); pocos, escala visual', () => !!(window.KEN_AB01C && window.KEN_AB01C.morados && window.KEN_AB01C.morados() > 0)],
       [sw.pil('#ff3d6e'), 'Camiones que llegan a Corabastos: más cuanto más carga entra; en fila cuando se llena', () => !!(window.KEN_AB01C && window.KEN_AB01C.info && window.KEN_AB01C.info().camiones > 0)],
       ['<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="2" y="1" width="14" height="10" rx="1.5" fill="none" stroke="rgba(220,240,255,.75)"/><rect x="3" y="7" width="12" height="3.2" rx="1" fill="#4ade80"/></svg>', 'Bodegas: ocupación de cada nave', () => ab01Vis('bodegas')],
@@ -443,13 +445,13 @@ export function iniciarLimpio({ T3 }) {
       fragmentShader: 'varying vec2 vU; void main(){ float d = length(vU); float a = (1.0 - smoothstep(0.0, 1.0, d)); gl_FragColor = vec4(vec3(0.95, 0.16, 0.08) * a * a * 0.16, 1.0); }' });
     const halo = new T3.THREE.InstancedMesh(g, m, N); halo.count = 0; halo.frustumCulled = false; halo.renderOrder = 6; halo.name = 'ruido-halos'; T3.scene.add(halo);
     const A = halo.instanceMatrix.array, R = 13, Y = (T3.viaY != null ? T3.viaY : 0.6) + 1.6;
-    RELOJ.alDibujar(() => { const plano = T3.scene.getObjectByName('ruido-carros'); if (!plano || !plano.visible || !ESC.activo) { halo.visible = false; return; } halo.visible = true;
+    let planoRC = null; /* rendimiento: getObjectByName recorría toda la escena (con la malla de Google) en CADA cuadro */ RELOJ.alDibujar(() => { if (!planoRC || !planoRC.parent) planoRC = T3.scene.getObjectByName('ruido-carros'); const plano = planoRC; if (!plano || !plano.visible || !ESC.activo) { halo.visible = false; return; } halo.visible = true;
       let k = 0; for (const grp of T3.scene.children) { if (grp.name !== 'vehiculos' || !grp.visible) continue;
         grp.traverse(o => { if (!o.isInstancedMesh || !o.visible) return; const B = o.instanceMatrix.array; for (let i = 0; i < o.count && k < N; i++) { const s = i * 16; if (B[s] === 0 && B[s + 5] === 0 && B[s + 10] === 0) continue; const d = k * 16;
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=12', './informe.js?v=15', './capas_pares.js?v=1', './lugares.js?v=4', './abasto_contenedor.js?v=12']) import(m).catch(() => {});
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=6', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=14', './informe.js?v=15', './capas_pares.js?v=2', './lugares.js?v=4', './abasto_contenedor.js?v=13']) import(m).catch(() => {});
 
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');

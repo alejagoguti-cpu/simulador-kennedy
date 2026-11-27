@@ -3,24 +3,24 @@ const finite=v=>typeof v==='number'&&Number.isFinite(v);
 const fmt=v=>finite(v)?v.toLocaleString('es-CO',Math.abs(v)>0&&Math.abs(v)<.01?{maximumSignificantDigits:3}:{maximumFractionDigits:3}):'Sin dato';
 const get=(o,p)=>p.split('.').reduce((a,k)=>a?.[k],o?.evaluacion);
 export const INDICADORES=[
-{id:'diversidad',n:'01 · Diversidad por parche',formula:'H′ = −Σ pᵢ ln(pᵢ), pᵢ = nᵢ / Σ nᵢ. Con presencia binaria: Hinc = ln(S).',
- nota:'Se muestra H de incidencia y riqueza por parche. Hinc no estima equidad ni abundancia de individuos. Un parche vacío tiene riqueza 0 y H no definido.',
+{id:'diversidad',n:'01 · Diversidad por corredor verde',formula:'H′ = −Σ pᵢ ln(pᵢ), pᵢ = nᵢ / Σ nᵢ. Con presencia binaria: Hinc = ln(S).',
+ nota:'Se muestra H de incidencia y riqueza por corredor verde. Hinc no estima equidad ni abundancia de individuos. Un corredor verde vacío tiene riqueza 0 y H no definido.',
  fuente:'https://doi.org/10.1002/j.1538-7305.1948.tb01338.x',autor:'Shannon, 1948',
- metrics:[['diversidad.hIncidencia','H de incidencia medio','nats'],['diversidad.riquezaMedia','Riqueza media','especies/parche']]},
-{id:'polinizacion',n:'02 · Polinización',formula:'L = Σ enlaces abeja–planta activos por parche. Se reutiliza el indicador de interacciones existente.',
+ metrics:[['diversidad.hIncidencia','H de incidencia medio','nats'],['diversidad.riquezaMedia','Riqueza media','especies/corredor verde']]},
+{id:'polinizacion',n:'02 · Polinización',formula:'L = Σ enlaces abeja–planta activos por corredor verde. Se reutiliza el indicador de interacciones existente.',
  nota:'Los enlaces indican oportunidades de interacción. No equivalen a flores contadas, visitas observadas ni frutos producidos. La reproducción vegetal queda sin estimar: faltan tasas de visita y éxito reproductivo.',
  fuente:'https://www.ipbes.net/assessment-reports/pollinators',autor:'IPBES, 2016',
- metrics:[['polinizacion.interacciones','Enlaces abeja–planta','enlaces'],['polinizacion.plantas','Tipos de plantas asociados','tipos'],['polinizacion.lugares','Parches con abeja','parches'],['polinizacion.huertas','Huertas del modelo','módulos'],['polinizacion.red','Interacciones bióticas existentes','enlaces']]},
-{id:'parches',n:'03 · Parches ecológicos',formula:'A = Σ aᵢ. División = 1 − Σ(aᵢ/A)². Núcleo circular(d) = Σ π·max(0,rᵢ−d)².',
+ metrics:[['polinizacion.interacciones','Enlaces abeja–planta','enlaces'],['polinizacion.plantas','Tipos de plantas asociados','tipos'],['polinizacion.lugares','Corredores verdes con abeja','corredores verdes'],['polinizacion.huertas','Huertas del modelo','módulos'],['polinizacion.red','Interacciones bióticas existentes','enlaces']]},
+{id:'parches',n:'03 · Corredores verdes',formula:'A = Σ aᵢ. División = 1 − Σ(aᵢ/A)². Núcleo circular(d) = Σ π·max(0,rᵢ−d)².',
  nota:'Superficies aproximadas por los círculos del modelo, sin disolver solapamientos. Núcleo a 10 y 30 m: análisis de sensibilidad, no bordes ecológicos calibrados. Para área núcleo real hacen falta polígonos y profundidad de borde por especie.',
  fuente:'https://fragstats.org/index.php/fragstats-metrics/patch-based-metrics/core-area-metrics/p1-core-area',autor:'FRAGSTATS · área núcleo',
- metrics:[['paisaje.cantidad','Parches activos','parches'],['paisaje.area','Superficie circular','ha'],['paisaje.division','División del hábitat','0–1'],['paisaje.nucleo10','Núcleo · borde de 10 m','ha'],['paisaje.nucleo30','Núcleo · borde de 30 m','ha']]},
+ metrics:[['paisaje.cantidad','Corredores verdes activos','corredores verdes'],['paisaje.area','Superficie circular','ha'],['paisaje.division','División del hábitat','0–1'],['paisaje.nucleo10','Núcleo · borde de 10 m','ha'],['paisaje.nucleo30','Núcleo · borde de 30 m','ha']]},
 {id:'conectividad',n:'04 · Conectividad funcional',formula:'PC = ΣᵢΣⱼ aᵢaⱼp*ᵢⱼ / Aᴸ². p*ᵢⱼ = máximo producto entre rutas; p*ᵢᵢ = 1.',
  nota:'PC del grafo completo del modelo, Aᴸ = 3.859 ha. Los pesos f combinan calidad, madurez y supervivencia vial; son supuestos del simulador, no probabilidades de dispersión calibradas por especie. Las rutas del índice no modifican automáticamente la mortalidad.',
  fuente:'https://doi.org/10.1016/j.landurbplan.2007.03.005',autor:'Saura y Pascual-Hortal, 2007',
  metrics:[['paisaje.pc','PC del modelo','0–1']]},
 {id:'supervivencia',n:'05 · Persistencia y pérdidas',formula:'Persistencia = N₁₁/(N₁₁+N₁₀). Colonización = N₀₁/(N₀₀+N₀₁). Extinción local = N₁₀/(N₁₁+N₁₀).',
- nota:'Transiciones semanales de pares especie–parche con estado conocido. Los choques y atropellos son eventos de dispersantes simulados. Las pérdidas por ruido o hábitat son desapariciones locales: no deben sumarse e interpretarse como animales individuales muertos.',
+ nota:'Transiciones semanales de pares especie–corredor verde con estado conocido. Los choques y atropellos son eventos de dispersantes simulados. Las pérdidas por ruido o hábitat son desapariciones locales: no deben sumarse e interpretarse como animales individuales muertos.',
  fuente:'https://doi.org/10.1890/02-3090',autor:'MacKenzie et al., 2003',
  metrics:[['supervivencia.persistencia','Persistencia semanal','0–1'],['supervivencia.colonizaciones','Colonizaciones esta semana','pares'],['supervivencia.extinciones','Extinciones locales esta semana','pares'],['supervivencia.colisiones','Choques acumulados','eventos simulados'],['supervivencia.atropellos','Atropellos acumulados','eventos simulados'],['supervivencia.perdidasRuido','Pérdidas locales por ruido','eventos'],['supervivencia.perdidasHabitat','Pérdidas locales por hábitat','eventos']]},
 {id:'nutrientes',n:'06 · Ciclo de nutrientes',formula:'Fracción procesada = orgánicos procesados / orgánicos generados. Retorno = Σ flujos de tipo compost. Nutriente retornado = masa de compost × concentración × fracción disponible.',
@@ -44,7 +44,7 @@ export function contenidoEco(I,H,B,prop,selected,open,lazy=false){
  const cards=INDICADORES.filter(d=>!lazy||d.id===selected).map(d=>'<section class="ee-card" data-ind="'+d.id+'" '+(selected===d.id?'':'hidden')+'><button class="ee-select" data-select="'+d.id+'" aria-pressed="'+(selected===d.id)+'">'+d.n+' <span>Ver en Kennedy ↗</span></button>'+
  d.metrics.map(([p,n,u])=>{const now=get(I,p),other=get(B.find(h=>h.sem===I.sem),p);return '<figure><figcaption><span>'+esc(n)+'</span><b>'+fmt(now)+' <small>'+esc(u)+'</small></b></figcaption>'+curvaEco(H,B,p,prop)+'<p class="ee-values">'+(prop?'Con':'Sin')+' propuesta: '+fmt(now)+(B.length?' · '+(prop?'Sin':'Con')+' propuesta: '+fmt(other):' · Comparación calculándose')+'</p></figure>';}).join('')+
  '<details data-detail="'+d.id+'" '+(open.has(d.id)?'open':'')+'><summary>Fórmula, datos y fuente científica</summary><p class="ee-formula">'+esc(d.formula)+'</p><p>'+esc(d.nota)+'</p><a href="'+d.fuente+'" target="_blank" rel="noopener noreferrer">'+esc(d.autor)+'</a></details></section>').join('');
- const species=(I.evaluacion?.especies||[]).map(s=>'<div class="ee-species"><b>'+esc(s.n||s.id)+'</b><span>'+esc(s.id==='abeja'?'Polinización':s.id==='mirla'?'Dispersión de semillas':'Conservación de hábitats')+'</span><p>'+ (s.disponible?fmt(s.ocupados)+' parches · '+fmt(s.colonizaciones)+' colonizaciones · '+fmt(s.extinciones)+' extinciones locales':esc(s.motivo))+'</p></div>').join('');
+ const species=(I.evaluacion?.especies||[]).map(s=>'<div class="ee-species"><b>'+esc(s.n||s.id)+'</b><span>'+esc(s.id==='abeja'?'Polinización':s.id==='mirla'?'Dispersión de semillas':'Conservación de hábitats')+'</span><p>'+ (s.disponible?fmt(s.ocupados)+' corredores verdes · '+fmt(s.colonizaciones)+' colonizaciones · '+fmt(s.extinciones)+' extinciones locales':esc(s.motivo))+'</p></div>').join('');
  const tiles=INDICADORES.map(d=>{
  const [path,label,unit]=d.metrics[0],value=get(I,path);
  const ratio=unit==='0–1'&&finite(value)&&value>=0&&value<=1;
@@ -54,7 +54,7 @@ export function contenidoEco(I,H,B,prop,selected,open,lazy=false){
  return '<header class="ee-intro"><span class="ee-eyebrow">KENNEDY / EVALUACIÓN</span><h5>Indicadores de respuesta</h5><p>Año '+fmt((I.sem||0)/52)+' <span>de 15</span> · '+(prop?'Con propuesta':'Sin propuesta')+'</p></header>'+
  '<div class="ee-tiles">'+tiles+'</div><p class="ee-hint">Selecciona un indicador para explorar sus datos y verlo en el territorio.</p>'+
  '<div class="ee-legend"><span><i class="ee-con"></i>Con propuesta</span><span><i class="ee-sin"></i>Sin propuesta</span></div>'+cards+
- '<details class="ee-causal" data-detail="causal" '+(open.has('causal')?'open':'')+'><summary>Relaciones del sistema</summary><ol class="ee-steps"><li>Huertas → recursos vegetales → interacciones → ocupación de parches</li><li>Hábitat y vías → conectividad del grafo</li><li>Tráfico y edificios → riesgo de atropellos y choques</li><li>Orgánicos → compost → huertas</li></ol><p>Reproducción vegetal, rutas alternativas y nutrientes disponibles: relaciones pendientes de calibrar.</p></details>'+
+ '<details class="ee-causal" data-detail="causal" '+(open.has('causal')?'open':'')+'><summary>Relaciones del sistema</summary><ol class="ee-steps"><li>Huertas → recursos vegetales → interacciones → ocupación de corredores verdes</li><li>Hábitat y vías → conectividad del grafo</li><li>Tráfico y edificios → riesgo de atropellos y choques</li><li>Orgánicos → compost → huertas</li></ol><p>Reproducción vegetal, rutas alternativas y nutrientes disponibles: relaciones pendientes de calibrar.</p></details>'+
  '<details class="ee-focal" data-detail="focal" '+(open.has('focal')?'open':'')+'><summary>Especies focales</summary>'+species+'</details><button class="ee-clear">Cerrar detalle y selección</button>';
 
 }

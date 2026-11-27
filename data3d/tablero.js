@@ -320,7 +320,9 @@ body.tb-abierto #dock{display:none}
 
   /* ---------- lienzos ---------- */
   const lienzo = (id, alto) => { const c = $(id), g = c.getContext('2d'); const o = { c, g, w: 0, h: 0, dpr: 1, alto };
-    o.medir = () => { const w = c.clientWidth || 400, h = typeof alto === 'function' ? alto(w) : alto, dpr = Math.min(2, devicePixelRatio || 1); if (w !== o.w || h !== o.h || dpr !== o.dpr) { o.w = w; o.h = h; o.dpr = dpr; c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px'; } g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    /* rendimiento (2026-11-26): el ancho se lee con ResizeObserver y no con clientWidth en cada cuadro (forzaba un cálculo de diseño de la página) */
+    o.cw = 0; try { new ResizeObserver(en => { for (const e of en) o.cw = Math.round(e.contentRect.width); }).observe(c); } catch (e) { /* sin ResizeObserver: clientWidth */ }
+    o.medir = () => { const w = o.cw || c.clientWidth || 400, h = typeof alto === 'function' ? alto(w) : alto, dpr = Math.min(2, devicePixelRatio || 1); if (w !== o.w || h !== o.h || dpr !== o.dpr) { o.w = w; o.h = h; o.dpr = dpr; c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px'; } g.setTransform(dpr, 0, 0, dpr, 0, 0); };
     return o; };
   const CU = lienzo('tb-cuerda', (w) => Math.min(w, 430)), FL = lienzo('tb-flujo', 150), PU = lienzo('tb-pulso', 9 * 18 + 10);
 
@@ -585,6 +587,6 @@ body.tb-abierto #dock{display:none}
   let nT = 0; tick(); setInterval(() => { pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
   // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Estado actual / Con la propuesta
-  import('./simulaciones.js?v=15').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
+  import('./simulaciones.js?v=16').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

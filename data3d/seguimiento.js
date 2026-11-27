@@ -1,9 +1,9 @@
-import {curvaEco} from './panel_evaluacion.js?v=5';
+import {curvaEco} from './panel_evaluacion.js?v=6';
 const groups=[
  ['Ecocentrismo',[
  ['red','Interacciones bióticas','enlaces','Pares activos según presencia y alcance de la red trófica. La red interactiva existente muestra relaciones posibles. Faltan eventos fechados para estimar visitas, dispersiones o capturas por semana.'],
- ['riqueza','Composición de fauna','especies','S = especies con presencia en al menos un parche. Cada barra cuenta parches ocupados por especie. Para Shannon de individuos faltan abundancias.'],
- ['conectados','Continuidad del hábitat','%','100 × parches del mayor componente / parches activos. El componente usa corredores funcionales del modelo. Los desplazamientos mostrados por la prueba de fragmentación son orígenes inferidos, no trayectorias verificadas.'],
+ ['riqueza','Composición de fauna','especies','S = especies con presencia en al menos un corredor verde. Cada barra cuenta corredores verdes ocupados por especie. Para Shannon de individuos faltan abundancias.'],
+ ['conectados','Continuidad del hábitat','%','100 × corredores verdes del mayor componente / corredores verdes activos. El componente usa corredores funcionales del modelo. Los desplazamientos mostrados por la prueba de fragmentación son orígenes inferidos, no trayectorias verificadas.'],
  ['atropellos','Atropellos','eventos/semana','Conteo semanal de eventos del modelo por especie y vía. La localización corresponde al cruce simulado.'],
  ['verde','Agua y humedal El Burro','ha verdes','Superficie verde del modelo. Balance requerido: cambio de almacenamiento = entradas − salidas. Faltan precipitación, infiltración, evaporación, escorrentía y niveles semanales para cerrar el balance del humedal.']]],
  ['Circularidad de recursos',[
@@ -26,9 +26,9 @@ export function seguimiento(root,I,H,B,prop,T3){
  const marker=(p,label)=>{if(!Number.isFinite(p?.x)||!Number.isFinite(p?.z))return esc(label);points.push(p);return '<button type="button" data-site="'+(points.length-1)+'">'+esc(label)+' ↗</button>'};
  const flows=list=>network(list)+(list||[]).map(f=>'<p>'+marker(f.de,f.de.n||'Origen')+' → '+marker(f.a,f.a.n||'Destino')+' · '+fmt(f.t_dia)+' t/día</p>').join('');
  function graphic(key){
- if(key==='riqueza')return bars(t.especies.map(s=>[s.n,s.valor,'parches']))+'<label>Ubicar especie <select data-spec><option value="">Escoger especie</option>'+t.especies.map((s,i)=>'<option value="'+i+'">'+esc(s.n)+'</option>').join('')+'</select></label><div data-parches></div>';
+ if(key==='riqueza')return bars(t.especies.map(s=>[s.n,s.valor,'corredores verdes']))+'<label>Ubicar especie <select data-spec><option value="">Escoger especie</option>'+t.especies.map((s,i)=>'<option value="'+i+'">'+esc(s.n)+'</option>').join('')+'</select></label><div data-parches></div>';
  if(key==='red')return '<p>Explora las especies en la red biótica del panel derecho.</p>';
- if(key==='conectados')return bars(t.especies.map(s=>[s.n,s.alcanzables,'destinos potenciales']))+'<small>Destinos con hábitat activo y peso de dispersión positivo desde parches ocupados, según grupo de movilidad y supervivencia vial terrestre.</small>'+(I.desplazamientos||[]).map(p=>'<p>'+esc(p.especie)+' · '+marker(p.de,'Origen inferido')+' → '+marker(p.a,'Colonización')+'</p>').join('')+bars([['Hábitat',I.evaluacion.paisaje?.area,'ha'],['Parches activos',I.evaluacion.paisaje?.cantidad,'']]);
+ if(key==='conectados')return bars(t.especies.map(s=>[s.n,s.alcanzables,'destinos potenciales']))+'<small>Destinos con hábitat activo y peso de dispersión positivo desde corredores verdes ocupados, según grupo de movilidad y supervivencia vial terrestre.</small>'+(I.desplazamientos||[]).map(p=>'<p>'+esc(p.especie)+' · '+marker(p.de,'Origen inferido')+' → '+marker(p.a,'Colonización')+'</p>').join('')+bars([['Hábitat',I.evaluacion.paisaje?.area,'ha'],['Corredores verdes activos',I.evaluacion.paisaje?.cantidad,'']]);
  if(key==='atropellos'){
  const eventos=H.flatMap(h=>at(h).eventos||[]),pagina=Math.min(root.pagina||0,Math.max(0,Math.ceil(eventos.length/8)-1));
  const rows=eventos.slice(Math.max(0,eventos.length-(pagina+1)*8),eventos.length-pagina*8).reverse().map(p=>'<p>'+marker(p,p.nombre+' · '+p.via)+' · sem. '+p.sem+' · '+fmt(p.vehDia)+' veh/día</p>') .join('');return (rows||'<p>Sin atropellos registrados.</p>')+(eventos.length>8?'<div class="st-pages"><button data-page="-1" '+(pagina===0?'disabled':'')+'>Más recientes</button><button data-page="1" '+((pagina+1)*8>=eventos.length?'disabled':'')+'>Anteriores</button></div>':'');}

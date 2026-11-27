@@ -7,7 +7,7 @@
    Se respeta lo de index.html: demanda por hora (TRAF.demanda), ningún vehículo encima de otro (TRAF.ocup, 3,3 m) y el cupo de las mallas.
    B y C no se tocan (su tráfico lo calcula el modelo de viajes, data3d/viajes_mercados.js). */
 import { RELOJ } from './reloj.js?v=5';
-import { crecimiento, TRAFICO } from './sim_vida.js?v=8';
+import { crecimiento, TRAFICO } from './sim_vida.js?v=9';
 
 export function instalarCrecimiento({ T3, esA }) {
   const EXTRA = new Map(); // id de la réplica -> objeto del vehículo (variante y color fijos)

@@ -165,8 +165,8 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   // con la propuesta: PARCHES DE ÁRBOLES NATIVOS en parques y alrededor de las huertas de parque (data3d/parches_arboles.js):
   // caucho sabanero, aliso, sauco, chicalá, arrayán y arbustos de flor; cada parche es un hábitat nuevo con su fauna, solo en «proyecto»
   let PAT = [], FAUNA_PARCHE = {}, ESP_PARCHE = {};
-  try { const [PM, HBj] = await Promise.all([import('./parches_arboles.js?v=9'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3')]);
-    PAT = PM.calcularParches(HBj, PQ, lw, movil); FAUNA_PARCHE = PM.FAUNA_PARCHE; ESP_PARCHE = PM.ESPECIES; } catch (e) { console.warn('parches de árboles:', e); }
+  try { const [PM, HBj] = await Promise.all([import('./parches_arboles.js?v=12'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3')]);
+    PAT = PM.calcularParches(HBj, PQ, lw, movil); FAUNA_PARCHE = PM.FAUNA_PARCHE; ESP_PARCHE = PM.ESPECIES; } catch (e) { console.warn('corredores verdes de árboles:', e); }
   const PCH = PAT.map(p => ({ n: p.n, tipo: 'parche', pro: true, poly: p.poly, borde: p.poly.concat([p.poly[0]]), x0: p.x0, x1: p.x1, z0: p.z0, z1: p.z1, cx: p.c[0], cz: p.c[1], ag: {}, k: 1, cnt: FAUNA_PARCHE }));
   for (const h of HUE) h.pro = true; for (const h of EXTRA) if (h.tipo === 'huerta') h.pro = true;
   const HAB = HUM.concat(PAR, HUE, EXTRA, PCH);
@@ -694,13 +694,13 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const OCULTO = new THREE.Matrix4().makeScale(0, 0, 0);
   const VIS_UMBRAL = 220, VIS_TOPE = 12, VIS_TOPE_PISO = 4; // m desde la cámara a partir de los cuales se agranda; tope para los que vuelan / en el piso
   function instancias(dt, alfa = 1) { // dt: tiempo de animación del reloj (aleteo); alfa: interpolación entre el paso anterior y el actual
-    const n = {}; for (const k in MAL) n[k] = 0;
+    const n = {}, na = {}; for (const k in MAL) { n[k] = 0; na[k] = 0; } /* RENDIMIENTO (2026-11-26): solo los animales visibles van a la malla y count = los que hay (antes los escondidos se dibujaban con escala 0: ~3,7 millones de triángulos por cuadro) */
     // TAMAÑO MÍNIMO EN PANTALLA (solo dibujo, el estado no cambia): de lejos los animales se agrandan con la distancia a la cámara
     // (escala = distancia / VIS_UMBRAL, entre 1 y un tope) para que las bandadas se lean desde la vista general
     const cp = T3.camera.position, cpx = cp.x, cpy = cp.y, cpz = cp.z;
     for (const a of AG) {
-      const Mk = MAL[a.e], i = n[a.e]++, e = ESP[a.e];
-      if (!a.vis || !ESTADO.agentes) { Mk.cu.setMatrixAt(i, OCULTO); if (Mk.al) { Mk.al.setMatrixAt(i * 2, OCULTO); Mk.al.setMatrixAt(i * 2 + 1, OCULTO); } continue; }
+      const Mk = MAL[a.e], e = ESP[a.e];
+      if (!a.vis || !ESTADO.agentes) continue; const i = n[a.e]++;
       const vuela = a.st === 'vuelo' || a.st === 'liba' || a.st === 'planea' || a.st === 'picada' || a.st === 'sube' || (a.e === 'colibri') || (a.e === 'abeja' && a.st !== 'colmena');
       const bob = !vuela && a.vel > 0.05 ? Math.abs(Math.sin(a.flap * 0.5)) * 0.04 * Mk.s * (e.ave ? e.ave.len : 0.1) : 0;
       const li = a.x0 !== undefined && Math.abs(a.x - a.x0) + Math.abs(a.z - a.z0) < 80, ix = li ? a.x0 + (a.x - a.x0) * alfa : a.x, iy = li ? a.y0 + (a.y - a.y0) * alfa : a.y, iz = li ? a.z0 + (a.z - a.z0) * alfa : a.z;
@@ -708,17 +708,17 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       e4.set(0, a.rot, vuela ? -a.pitch : 0, 'YXZ'); q4.setFromEuler(e4); v4.set(ix, iy + bob, iz); s4.setScalar(Mk.s * kv);
       m4.compose(v4, q4, s4); Mk.cu.setMatrixAt(i, m4);
       if (Mk.al) {
-        if (!vuela) { Mk.al.setMatrixAt(i * 2, OCULTO); Mk.al.setMatrixAt(i * 2 + 1, OCULTO); }
+        if (!vuela) { /* alas plegadas: no se dibujan */ }
         else {
           const pa = e.ave || e.alas, f = pa.flapF || (e.mov === 'rapaz' ? 3 : 9), planeo = a.st === 'planea' && Math.sin(a.flap * 0.11) > -0.2;
           a.flap += dt * f * 6.283; const ang = planeo ? 0.08 : Math.sin(a.flap) * (a.e === 'colibri' || a.e === 'abeja' ? 0.9 : 0.75);
           const yA = (pa.alto + pa.len * 0.38);
-          for (const s of [1, -1]) { w4.makeTranslation(-pa.len * 0.05, yA, s * pa.len * 0.12); w5.makeRotationX(-s * ang); w4.multiply(w5); w5.makeScale(1, 1, s); w4.multiply(w5); w5.multiplyMatrices(m4, w4); Mk.al.setMatrixAt(i * 2 + (s > 0 ? 0 : 1), w5); }
+          for (const s of [1, -1]) { w4.makeTranslation(-pa.len * 0.05, yA, s * pa.len * 0.12); w5.makeRotationX(-s * ang); w4.multiply(w5); w5.makeScale(1, 1, s); w4.multiply(w5); w5.multiplyMatrices(m4, w4); Mk.al.setMatrixAt(na[a.e]++, w5); }
         }
       } else a.flap += dt * 6;
       if (!vuela) a.flap += dt * (a.vel > 0 ? 6 + a.vel * 4 : 1);
     }
-    for (const k in MAL) { MAL[k].cu.instanceMatrix.needsUpdate = true; if (MAL[k].al) MAL[k].al.instanceMatrix.needsUpdate = true; }
+    for (const k in MAL) { const M = MAL[k]; M.cu.count = n[k]; M.cu.instanceMatrix.needsUpdate = true; if (M.al) { M.al.count = na[k]; M.al.instanceMatrix.needsUpdate = true; } }
   }
 
   /* ---------- siluetas de las convenciones (vista lateral del mismo modelo 3D) ---------- */
@@ -796,10 +796,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     let tot = 0, extra = 0; const suma = {};
     for (const k of Object.keys(MAL)) { const L = POR[k] || [], n = L.filter(a => pro || !deHuerta(a)).length, x = L.filter(deHuerta).length; tot += n; if (pro && x) { extra += x; suma[k] = x; }
       const s = pan.querySelector(`small[data-n="${k}"]`); if (s) s.innerHTML = pro && x ? `${n}<em>+${x}</em>` : String(n); const b = s && s.closest('.bt-e'); if (b) b.classList.toggle('nuevo', pro && x > 0); }
-    const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? `, ${NHUE} huertas y ${PCH.length} parches de árboles nativos` : ''}`;
+    const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? `, ${NHUE} huertas y ${PCH.length} corredores verdes de árboles nativos` : ''}`;
     const bp = pan.querySelector('#bt-pro'); if (bp) { bp.classList.toggle('on', pro);
       const top = Object.entries(suma).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, x]) => `${ESP[k].n.toLowerCase()} +${x}`).join(', ');
-      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas y ${PCH.length} parches de árboles nativos (lotes baldíos, parques de barrio y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
+      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas y ${PCH.length} corredores verdes de árboles nativos (lotes baldíos, parques de barrio y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
   }
   addEventListener('escenario', () => setTimeout(pintarEscenario, 50)); setInterval(pintarEscenario, 1500);
   const ficha = document.createElement('div'); ficha.id = 'bt-ficha';
@@ -998,11 +998,12 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       if ((tOc += dt) >= 1) { tOc = 0; dibujarRed(tiempo, true); TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); }
       return;
     }
-    tOc = 0; dtI += info.dtAnim; nCuadro = (nCuadro + 1) % 2;
+    tOc = 0; dtI += info.dtAnim; nCuadro = (nCuadro + 1) % 6;
     // matrices de los animales cada dos cuadros si la cámara está lejos (a esa distancia no se nota); dtI acumula el tiempo para el aleteo
-    const lejosCam = T3.orbit && T3.camera.position.distanceTo(T3.orbit.target) > 700;
-    if (!lejosCam || nCuadro === 1) { instancias(dtI, info.alfa); dtI = 0; }
-    if (nCuadro === 0) dibujarRed(tiempo); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
+    // calidad media/liviana (data3d/calidad.js): cada 2 / 3 cuadros también de cerca (solo el dibujo; la simulación y su conteo no cambian)
+    const lejosCam = T3.orbit && T3.camera.position.distanceTo(T3.orbit.target) > 700, QC = window.KEN_CALIDAD ? window.KEN_CALIDAD.cfg : null, cada = Math.max(QC ? QC.faunaCada : 1, lejosCam ? 2 : 1);
+    if (cada === 1 || nCuadro % cada === 1) { instancias(dtI, info.alfa); dtI = 0; }
+    if (nCuadro % 2 === 0) dibujarRed(tiempo); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
   });

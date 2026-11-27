@@ -11,7 +11,7 @@ export async function iniciarInem({ THREE, T3, OX, OZ, Y0 = 0.3 }) {
   /* RENDIMIENTO: son ~900 piezas con fachada propia (900 dibujos por cuadro). De lejos el sector se ve diminuto: más allá de 1,2 km de la cámara
      (700 m con tarjeta gráfica integrada) las piezas no se dibujan. Se apaga un grupo interno: la visibilidad de g la siguen manejando los escenarios. */
   const dentro = new THREE.Group(); dentro.name = 'inem-piezas'; while (g.children.length) dentro.add(g.children[0]); g.add(dentro);
-  const caja = new THREE.Box3().setFromObject(g), esf = caja.getBoundingSphere(new THREE.Sphere()), LIM = esf.radius + (T3.gpuDebil ? 700 : 1200);
-  setInterval(() => { const c = T3.camera; if (!c) return; const v = c.position.distanceTo(esf.center) < LIM; if (dentro.visible !== v) dentro.visible = v; }, 400);
+  const caja = new THREE.Box3().setFromObject(g), esf = caja.getBoundingSphere(new THREE.Sphere()), LIM0 = esf.radius; /* + 1.200 m (alto), 850 (medio), 550 (liviano): data3d/calidad.js, en vivo */
+  setInterval(() => { const c = T3.camera; if (!c) return; const v = c.position.distanceTo(esf.center) < LIM0 + (window.KEN_CALIDAD ? window.KEN_CALIDAD.cfg.inem : 1200); if (dentro.visible !== v) dentro.visible = v; }, 400);
   return g;
 }

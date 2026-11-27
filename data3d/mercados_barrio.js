@@ -441,6 +441,13 @@ export async function crearMercados({ T3, cj, sitios = null }) {
 
   return {
     grupo, stats: () => stats, mostrar,
+    /* RENDIMIENTO (2026-11-26): arma la geometría de cada sitio escondida, uno por rato libre, después de «Iniciar»; al prender la propuesta
+       armar() ya solo copia (antes construir() de todos los sitios trababa ~1,4 s el clic de «Kennedy con propuesta») */
+    precalentar() { return new Promise(res => { let i = 0; const ocio = window.requestIdleCallback ? (f) => requestIdleCallback(f, { timeout: 120 }) : (f) => setTimeout(f, 30);
+      const uno = (dl) => { while (i < SIT.length) { const S = SIT[i++]; if (!S.geo) { construir(S); if (!dl || dl.timeRemaining() < 8) break; } } if (i < SIT.length) { ocio(uno); return; }
+        /* y se copian en orden a las mallas acumuladas (sin dibujar nada: drawRange 0), así existen sus mallas y materiales para precompilar */
+        if (!SIT.some(S => S.abierto)) { for (let k = enAcu; k < SIT.length; k++) if (!acuAgregar(SIT[k])) break; acuVer(0); }
+        res(); }; ocio(uno); }); },
     lista: SIT.map(S => ({ get id() { return S.id; }, get n() { return S.n; }, get tipo() { return S.tipo; }, get x() { return S.x; }, get z() { return S.z; }, get a() { return S.a; }, s: S.s, parque: S.parque, get y() { return S.y; }, get abierto() { return S.abierto; }, get puestos() { return S.puestos || 40; } })),
     ver(on) { grupo.visible = !!on; if (on) apoyar(); },
     quitar() { clearInterval(timer); limpiar(); for (const S of SIT) soltar(S); T3.scene.remove(grupo); }

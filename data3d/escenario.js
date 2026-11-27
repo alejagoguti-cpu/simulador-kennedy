@@ -1,4 +1,4 @@
-﻿/* ============ ESCENARIO: ESTADO ACTUAL / CON LA PROPUESTA ============
+/* ============ ESCENARIO: ESTADO ACTUAL / CON LA PROPUESTA ============
    Un solo selector arriba al centro (abajo en celular).
    - Hoy: Kennedy como es.
    - Con la propuesta (en revisión): por ahora SOLO un punto por cada lugar de las 5 estrategias, sin polígonos ni redes:
@@ -125,7 +125,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
   function distritoBavaria(pre = false) {
     const pro = T3.escenario === 'proyecto', on = pro && solo === 'bav';
-    if ((pro || pre) && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=24'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
+    if ((pro || pre) && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=25'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
     if (DIST) { DIST.ver(on); if (DIST.verHuertas) DIST.verHuertas(pro && solo !== 'col'); } // las huertas de enseñanza de Bavaria se ven SIEMPRE con la propuesta, aunque se mire otra estrategia
   }
@@ -154,25 +154,26 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   /* parches de árboles nativos en parques y junto a las huertas de parque (data3d/parches_arboles.js): solo con la propuesta */
   let PARCH = null, pParch = null;
   const parchesArboles = (on, pre = false) => { if (PARCH) { PARCH.ver(on); return; } if ((!on && !pre) || pParch) return pParch;
-    pParch = Promise.all([import('./parches_arboles.js?v=9'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
-      .then(p => { PARCH = p; window.KEN_PARCHES = p; PARCH.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parches de árboles:', e)); };
+    pParch = Promise.all([import('./parches_arboles.js?v=12'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
+      .then(p => { PARCH = p; window.KEN_PARCHES = p; PARCH.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('corredores verdes de árboles:', e)); };
   /* parque humedal de Corabastos: donde se desmontan las bodegas junto al humedal La Vaca (data3d/corabastos_parque.js): solo con la propuesta */
   /* mercados campesinos de barrio en los parques (data3d/mercados_barrio.js): solo con la propuesta */
   let MERC = null, pMerc = null;
   const mercadosBarrio = (on, pre = false) => { if (MERC) { MERC.ver(on); return; } if ((!on && !pre) || pMerc) return pMerc;
-    pMerc = import('./mercados_red.js?v=7').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
+    pMerc = import('./mercados_red.js?v=8').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
   const parqueCorabastos = (on, pre = false) => { if (PCORA) { PCORA.ver(on); return; } if ((!on && !pre) || pPCora) return pPCora;
-    pPCora = import('./corabastos_parque.js?v=9').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
+    pPCora = import('./corabastos_parque.js?v=10').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
   /* RENDIMIENTO: lo pesado de la propuesta (huertas de barrio, parches de árboles, mercados, parque de Corabastos, distrito Bavaria y huertas
      hidropónicas) se armaba la primera vez que se tocaba B o C y congelaba la página 1–3 s justo al hacer click. Ahora se arma escondido,
      uno por uno, en los ratos libres después de la carga (mientras se lee la ayuda); al escoger el escenario solo se prende. */
   {
-    const libre = (ms) => new Promise(r => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 900 }) : r()), ms));
+    const libre = (ms) => new Promise(r => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 300 }) : r()), ms)); /* tope 300 ms (antes 900): con la escena dibujándose casi nunca hay ratos libres y la precarga tardaba más de 40 s */
     const pasos = [
       () => { huertasBarrio(false, true); return pHBar; },
       () => { parchesArboles(false, true); return pParch; },
       () => { mercadosBarrio(false, true); return pMerc; },
+      () => (MERC && MERC.precalentar ? MERC.precalentar() : null), /* la geometría de los 21 sitios, uno por rato libre (antes se armaba al hacer clic) */
       () => { parqueCorabastos(false, true); return pPCora; },
       () => { distritoBavaria(true); return pDist; },
       () => (T3.EST && T3.EST.hidroponia ? T3.EST.hidroponia(T3.escenario !== 'hoy', true) : null)
@@ -182,13 +183,26 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
       for (const o of objs) o.traverse(x => { if (!x.visible) { ocultos.push(x); x.visible = true; } });
       try { r.compileAsync(T3.scene, T3.camera).catch(() => {}); } catch (e) {} for (const x of ocultos) x.visible = false; };
     (async () => {
-      if (document.documentElement.classList.contains('limpio')) return; // vista limpia: no hay escenarios B y C que precargar
-      await libre(2500);
+      /* 2026-11-26: antes se salía con la vista limpia (la de siempre) y TODO esto se armaba al tocar «Kennedy con propuesta» (~9 s de página
+         trabada). Ahora se arma escondido justo después de «Iniciar» (detrás de la portada nadie lo ve y le quitaría ancho de banda a la foto) */
+      while (document.getElementById('urbia-intro')) await new Promise(r => setTimeout(r, 400));
+      await libre(1500);
+      const todos0 = new Set(T3.scene.children), nuevos = [];
       for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
+      /* CALENTAR (2026-11-26): compileAsync no compila los sombreadores de SOMBRA (profundidad) ni los de mallas que aún no existían: al prender la
+         propuesta se compilaban ~12 programas en el primer cuadro (~1,4 s trabado). Se dibuja UNA vez, escondido (en un lienzo de 1×1 y con la
+         sombra), todo lo que armó la precarga prendido y sin descarte por cámara; se restaura en la misma tarea (ningún cuadro lo muestra). */
+      for (const o of T3.scene.children) if (!todos0.has(o)) nuevos.push(o);
+      /* (probado: dibujar pieza por pieza escondiendo el resto dejaba 7 programas sin compilar; un solo dibujo con todo deja 0) */
+      try { const r = T3.renderer, TH = T3.THREE, cambios = [], rt = new TH.WebGLRenderTarget(1, 1), rt0 = r.getRenderTarget(), t0 = performance.now();
+        for (const o of nuevos) o.traverse(x => { cambios.push([x, x.visible, x.frustumCulled]); x.visible = true; x.frustumCulled = false; });
+        const sm = r.shadowMap.needsUpdate; r.shadowMap.needsUpdate = true; r.setRenderTarget(rt); r.render(T3.scene, T3.camera); r.setRenderTarget(rt0); r.shadowMap.needsUpdate = sm || r.shadowMap.enabled;
+        for (const [x, v, fc] of cambios) { x.visible = v; x.frustumCulled = fc; } rt.dispose();
+        console.info('[precarga] calentar sombreadores', Math.round(performance.now() - t0) + ' ms'); } catch (e) { console.warn('precarga (calentar):', e); }
     })();
   }
-  import('./escenarios_sim.js?v=52').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
-  import('./cambio_50.js?v=7').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
+  import('./escenarios_sim.js?v=55').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  import('./cambio_50.js?v=8').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=11').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
   import('./trafico_plan.js?v=6').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio
   import('./metro_l1.js?v=2').then(m => m.iniciarMetro({ T3 })).catch(e => console.warn('Metro de Bogotá, Línea 1:', e)); // viaducto, estaciones 2-6 y trenes de la Línea 1 (proyecto real, en todos los escenarios)

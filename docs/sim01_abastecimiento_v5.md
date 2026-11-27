@@ -1,4 +1,4 @@
-﻿# Simulación 01 Abastecimiento — v5 (correcciones de la autora, 2026-11-26)
+# Simulación 01 Abastecimiento — v5 (correcciones de la autora, 2026-11-26)
 
 ## Vehículos
 - Con propuesta: los camiones/carros morados que antes iban a Corabastos ahora van a los distintos mercados (por eso hay menos trancón alrededor de Corabastos); unos pocos siguen yendo a Corabastos.
@@ -59,7 +59,7 @@ Estructura de la autora sin cambios: inventario final = inicial + ingresos − d
 - Game over: «Déficit alimentario · sector», «Límite de abastecimiento de Corabastos · % de 14.000 t», «Residuos sin recoger · t/día de 296».
 - Botón **ƒx Fórmulas**: todas las variables y las 5 gráficas con los valores de la semana.
 - Gráficas (paleta URBIA, una pregunta cada una, valor rotulado al final): 1 ¿Cuánta gente hay que alimentar? · 2 ¿Alcanza la comida? (demanda coral punteada, disponibles turquesa, franja coral = déficit) · 3 ¿Se acerca Corabastos a su límite? (esta corrida, la otra punteada, límite dorado) · 4 ¿Qué sector recibe menos? · 5 ¿Qué cambia con la propuesta?
-- Alerta arriba con degradé violeta → coral, justo debajo del selector de escenario; la franja de eventos se corre debajo de la alerta.
+- Alerta arriba con degradé (v5.2: violeta URBIA #304ffe → turquesa #4fd1c5; antes violeta → coral), justo debajo del selector de escenario; la franja de eventos se corre debajo de la alerta.
 
 ### Mapa
 - `abasto_capas.js`: pin y barra de Corabastos más pequeños (140 m / 260 m); etiqueta «de su límite de 14.000 t». Vías tipo Waze: la superficie de la vía pintada (verde 0,4 · ámbar 0,7 · carmesí ≥ 1,0), sin rayas blancas; las arterias × 1,12 y las intermedias × 0,92 [SUP visual]; junto a Corabastos manda su congestión (U.cC); con propuesta, a medida que abren los mercados, la subida de la ciudad desde 2025 deja de sumarse (× (1 − fracción abierta)) y el tráfico baja hasta −25 % (supuesto de `factorTraf`): sin propuesta las vías pasan a ámbar y carmesí; con propuesta quedan casi verdes con arterias en ámbar. Camiones rosados que llegan a Corabastos: 20 × ingreso ÷ 6.460 × cola (máx. 60); con cola una parte espera en fila. Morados: carros nuevos de la propuesta a los mercados y a Bavaria Común (pocos). Huertas hidropónicas en cubiertas = deslizador (KEN_HIDRO_FIJA).
@@ -129,3 +129,57 @@ Márgenes con propuesta y valores por defecto: Corabastos máximo 35 % (límite 
 - Las huertas en los techos no se ven: el deslizador «Huertas hidropónicas activas» quedó en 50 de 2.132 cubiertas. Deben verse instalándose con los años.
 - Al lado del % de cada mercado, un ícono de mercado (SVG, no emoji).
 - Ya hecho por el coordinador: vías debajo de los carros (desplazamiento de profundidad mínimo), opacidad 0,65, verde y amarillo bien separados.
+
+## v5.2 Implementación (2026-11-26)
+
+Pedido de la autora (lista «Pendiente v5.2» de arriba) más los pedidos del coordinador del mismo día. Lo que es supuesto va marcado [SUP].
+
+### 1 · Corabastos se desmonta de a poco (modelo y 3D con el mismo calendario)
+- Las mismas 18 naves de siempre (la mitad de 37, las más cercanas a La Vaca: campo `dh` de corabastos.json = `BOD01.NAVES[i][7]`) se quitan **una por una entre la semana 52 (año 1) y la 416 (año 8)**, ≈ 2,5 por año, la más cercana a La Vaca primero [SUP: calendario]. Modelo: `AB01_DESMONTE` / `desPaso` (simulaciones12.js). 3D: `semQuita01` (abasto_capas.js), la misma fórmula 52 + k × 364 ÷ 17.
+- **En el modelo:** la capacidad de Corabastos = 14.000 t × (tope de las naves que quedan ÷ tope de las 37) (topes de BOD01: área × densidad, DANE 2012). Al final 50,7 % → **7.103 t**. El % de la barra y el game over de «Límite de abastecimiento» se miden contra esa capacidad (sin propuesta sigue 14.000 t). El inventario se reparte entre las naves que quedan (sus líquidos suben). La regla de la cola (β = 0,5) sigue midiendo ρ contra las 14.000 t de referencia: si se mide contra la capacidad que queda, con propuesta la cola se dispara y Corabastos se llena en el año 5 (probado: game over semana 264). **Decisión de la autora pendiente:** antes se pidió «el límite no cambia»; ahora cambia con propuesta porque las naves se quitan (con las huertas sigue sin cambiar).
+- **En el 3D (propuesta01_3d.js):** cada celda del terreno liberado guarda la semana de la nave quitada más cercana (con ruido, para que el frente no sea recto). La malla de Google solo se recorta donde ya se quitó la nave; antes se ven la foto y el volumen gris de la nave. El agua, la pradera, los juncos y los árboles crecen en cada celda desde su semana (obra 0,6 años, agua y pradera en 4 años, árboles sembrados en 1,5 años y adultos 3,5 años después) [SUP]. Con la capa Bodegas, las naves de vidrio desaparecen con el mismo calendario (`U.nQuit`).
+
+### 2 · Barras de los mercados ≤ 70 %
+- `MERC_UMAX` 0,8 → **0,7**: un mercado vende a Kennedy hasta 70 % de 28 t/día (19,6 t/día; la Plaza de Kennedy hoy vende 17, 61 %), **también en un faltante de Corabastos** (la 2ª vuelta ya no llega a 100 %).
+- `MERC_UREG` 0,7 → **0,55** [SUP de la propuesta]: el acopio regional llena hasta 55 %; la barra = Kennedy + acopio, así queda entre 55 y 70 % según lo que compra cada barrio (promedio 70 % al abrir la Plaza, 58 % al año 15; máximo 70 %).
+- Ícono de mercado (puesto con toldo, SVG en línea) al lado del % (abasto_contenedor.js).
+
+### 3 · Corabastos con propuesta ≈ 50–60 %
+Dos cambios, los dos ya documentados como supuestos de la propuesta: (a) el desmonte del punto 1 (la misma mercancía en la mitad de las naves) y (b) la congestión de base junto a Corabastos con propuesta baja hasta −25 % a medida que abren los mercados: 0,62 × (1 − 0,25 × fracción abierta), el mismo supuesto de `factorTraf` y de los colores de las vías, que antes no entraba en la permanencia. Sin (b) quedaba en 62–66 %. El acopio regional casi no mueve la barra (escaneo 0–0,7: ±2 puntos).
+
+Tabla (Node, `sel.mjs`; % = inventario ÷ capacidad al final de cada año; sin propuesta = ÷ 14.000):
+
+| Caso | Sin: año 0 · 1 · 3 · 5 · 8 · 10 · 12 · 15 | Sin: primer game over | Con: año 0 · 1 · 3 · 5 · 8 · 10 · 12 · 15 | Con: game over |
+|---|---|---|---|---|
+| **Por defecto** | 35 · 37 · 40 · 43 · 50 · 58 · 120 · 120 (sin cambios) | residuos, semana 285 (Corabastos 552) | **35 · 34 · 38 · 44 · 58 · 60 · 58 · 58** | ninguno (Sostenible) |
+| Población 0 %/año | 35 · 36 · 38 · 41 · 44 · 47 · 51 · 63 | residuos, 294 | 35 · 34 · 37 · 42 · 54 · 55 · 52 · 50 | ninguno |
+| Población 1 %/año | 35 · 37 · 41 · 46 · 62 · 120 · 120 · 120 | residuos, 276 | 35 · 35 · 39 · 46 · 62 · 66 · 65 · 66 | tráfico, 739 (igual que v5.1) |
+| Población 2 %/año | 35 · 38 · 44 · 54 · 120 · … | residuos, 259 | 35 · 35 · 41 · 51 · 73 · 77 · 75 · 73 | tráfico, 517 (igual) |
+| Población 3 %/año | 35 · 39 · 47 · 56 · 120 · … | residuos, 256 | 35 · 36 · 44 · 56 · 74 · 77 · 75 · 73 | tráfico, 385 (igual) |
+| Consumo 120 % | 37 · 39 · 42 · 47 · 57 · 120 · … | residuos, 216 | 37 · 37 · 40 · 46 · 61 · 63 · 61 · 61 | ninguno |
+| Ingreso 90 % | 31 · 30 · 32 · 34 · 38 · 41 · 44 · 51 | residuos, 319 | 30 · 29 · 32 · 37 · 49 · 50 · 49 · 49 | ninguno |
+| Ingreso 110 % | 40 · 45 · 50 · 56 · 120 · … | residuos, 285 | 40 · 42 · 46 · 53 · 69 · 71 · 68 · 68 | ninguno |
+| 20 mercados | (igual a por defecto) | residuos, 285 | 35 · 35 · 39 · 45 · 61 · 64 · 64 · 63 | ninguno |
+| 50 mercados | (igual a por defecto) | residuos, 285 | 35 · 35 · 38 · 43 · 57 · 58 · 57 · 56 | ninguno |
+
+Sin propuesta no cambió nada (sigue primero el game over de residuos en la semana 285, como pidió la autora). Con propuesta la barra sube de 35 % mientras se quitan las naves (años 1–8) y se queda en 56–60 %.
+
+### 4 · Vías que miden los carros (las 6 simulaciones) — `data3d/vias_densidad.js`
+- Se cuentan los vehículos que de verdad se dibujan: los de la grabación SUMO (`T3.TRAF.vis`, ya con la hora del día y el factor de tráfico del modelo `KEN_TRAF_F`) y, en la 01, los camiones que llegan o hacen fila en Corabastos y los morados (abasto_capas.js los registra con `KEN_VIAS.extra`).
+- Todas las vías de net.json (arterias, intermedias y locales) en tramos de ≤ 60 m; cada 0,6 s cada vehículo va al tramo más cercano (rejilla de 30 m, a menos de medio ancho + 4 m). **k = vehículos ÷ (km × carriles)**, carriles = ancho dibujado ÷ 3,5 m (arterias 4, intermedias 3, locales 2; los dos sentidos). Suavizado en el tiempo (4 s) y el color pasa suave de una medición a la otra (sin saltos).
+- **Color = k ÷ 28 veh/km/carril**: 28 ≈ 45 vehículos livianos/milla/carril = límite de los niveles de servicio E/F (capacidad ≈ 2.000 veh/h/carril a ≈ 72 km/h; Highway Capacity Manual, TRB 2016: A ≤ 7, B ≤ 11, C ≤ 16, D ≤ 22, E ≤ 28 veh/km/carril). Verde = A–C (< 16), amarillo = D–E (16–28), carmesí = F (≥ 28), con las bandas bien separadas de antes. Las calles locales solo se pintan si tienen vehículos.
+- Sin titilar: la cinta va 0,28 m sobre el asfalto propio (antes quedaba casi coplanar con el asfalto y las rayas), por debajo de la carrocería de los carros, sin escribir profundidad.
+- Etiqueta junto a Corabastos: densidad medida en las vías a ≤ 900 m (veh/km/carril y nivel de servicio). Convenciones explica cómo se mide.
+- [SUP] los vehículos del mapa son una muestra de la grabación SUMO (hasta 3 copias en hora pico): es la densidad de lo que se ve, no un aforo; motos y camiones cuentan como 1.
+
+### 5 · Huertas en las cubiertas que se instalan con los años
+- «Huertas hidropónicas activas» está en **auto** por defecto: `huertasAuto(sem)` = 2.132 × semana ÷ 754 → ≈ 147 en el año 1, 735 en el 5, 1.470 en el 10, 2.132 en el 15 (primero las más altas, el orden de huertas_hidro.js) [SUP: calendario lineal]. Al moverlo queda fijo; el botón «Auto» lo devuelve. La producción del modelo usa el mismo número que se ve (U.nH → KEN_HIDRO.fraccion), y los enjambres de polinizadores siguen las cubiertas instaladas (propuesta_fauna.js lee KEN_HIDRO.frac).
+
+### 6 · Alerta de arriba
+Degradé violeta URBIA → turquesa (#304ffe → #3d8fe6 → #4fd1c5) en ab01_panel.js y sim_panel.js, con sombra de texto para que el blanco se lea sobre el turquesa.
+
+### 7 · Lo que se agregó con propuesta (pedidos del coordinador)
+- **Calles verdes** (`data3d/calles_verdes3d.js`): ≈ 11.800 árboles nativos (modelos escaneados de parches_arboles.js) en andenes y separadores de 165,7 km de arterias e intermedias; primero el 30 % de la longitud más cerca de parques y humedales entre las semanas 52 y 416 (el mismo 30 % de calles verdes de PROP_SUP en el modelo), luego el resto hasta la semana 676; adultos 3,5 años después [SUP]. Nunca sobre la calzada, cruces (14 m), glorietas, puentes ni agua; menos árboles con KEN_CALIDAD 'liviano'.
+- **Humedal artificial de fitodepuración en Bavaria** (`data3d/humedal_bavaria3d.js`): 6 celdas en serie (sedimentador, eneas, juncos, plantas flotantes, pulimento y laguna de hábitat) con canal en meandro: 1,03 ha de celdas (0,51 agua, 0,51 vegetación) en una huella de 2,04 ha en el parque central CP-01 del plan; obra años 2–3, agua 3–4, plantas 3–6; llegan garzas, tinguas, patos, monjitas, polinizadores y libélulas con los años [SUP: calendario y cantidades]. Agua opaca. Está en la lista de obras (`humedal_bavaria`).
+- **Agua siempre opaca**: el agua de La Vaca de la capa Residuos ya no es un velo transparente: es agua opaca con ondas que se pone café con la degradación D.
+- **Precarga**: la propuesta 3D (campo del humedal en trozos de ≤ 8 ms, juncos, árboles, calles verdes, humedal de Bavaria) se arma escondida apenas se escoge una simulación después de «Iniciar»; al pasar a «con propuesta» solo se prende.

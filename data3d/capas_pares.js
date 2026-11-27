@@ -376,7 +376,7 @@ export function crearCapasPares({ T3, RELOJ } = {}) {
       // parche perdido
       const F = I && I.fragmento; r0 = r0 + (r1 - r0) * m;
       if (F && isFinite(F.x) && isFinite(F.z)) { r1 = Math.max(90, Math.sqrt(Math.max(0, num(F.haPerdidas)) * 1e4 / Math.PI)); disco.position.set(F.x, YV, F.z);
-        E.push({ id: 'frag', x: F.x, z: F.z, y: YV + 150, k: 'Parche perdido', t: F.nombre || F.parche || 'Parche', acc: COL.perdido,
+        E.push({ id: 'frag', x: F.x, z: F.z, y: YV + 150, k: 'Corredor verde perdido', t: F.nombre || F.parche || 'Corredor verde', acc: COL.perdido,
           s: `${fmt(num(F.haPerdidas), num(F.haPerdidas) < 10 ? 1 : 0)} ha perdidas` + (F.desde != null ? ` · desde la semana ${fmt(num(F.desde))}` : '') }); }
       else r1 = 0;
       L.alMezclar(0);

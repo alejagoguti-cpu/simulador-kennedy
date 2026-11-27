@@ -1,4 +1,4 @@
-import { seguimiento } from './seguimiento.js?v=2';
+import { seguimiento } from './seguimiento.js?v=3';
 /* ============ INTERFAZ DE LAS 12 SIMULACIONES (vista limpia) ============
    Corre el modelo semanal de data3d/simulaciones12.js al mismo paso que la barra de años (RELOJ.sem) y muestra:
    · panel de la derecha (vidrio): variables (sliders) de la simulación, indicadores en vivo con su gráfica, picos en el piso y foco;
@@ -6,11 +6,11 @@ import { seguimiento } from './seguimiento.js?v=2';
    · informe final (al año 20 o en el game over): veredicto, tabla inicio → final, gráficas, especies que desaparecieron y por qué,
      comparación con «Hoy» (simulación 1, misma semilla) e imprimir/guardar en PDF.
    Todo lo que se muestra sale del modelo (simulaciones.js); aquí no se calcula ningún dato. (ind().sem va de 1 a 520) */
-import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=5';
+import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6';
 import { RELOJ } from './reloj.js?v=5';
-import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=1';
-import * as AB01P from './ab01_panel.js?v=8'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=1'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
+import * as AB01P from './ab01_panel.js?v=9'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
+import * as SP from './sim_panel.js?v=2'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=40'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=41'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -206,7 +206,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   function preparar(id, opc) {
     if (opc && opc.desde > 1) setTimeout(() => ponerseAlDia(opc.desde), 50);
     setTimeout(() => mostrarInd(), 400);
-    R.sim = id; R.def = defDe(id); R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
+    R.sim = id; R.def = defDe(id);
+    /* v5.2: la propuesta 3D (ya armada escondida) se prende en el mismo clic, en la semana en que va; el modelo se pone al día por lotes detrás */
+    try { const pp = R.def && R.def.par >= 1 && R.def.par <= 6; if (pp && R.def.propuesta && P01) P01.poner({ sem: (opc && opc.desde) || 1 }); else if (pp && !R.def.propuesta && P01) P01.apagar(); } catch (e) { console.warn('propuesta 01:', e); }
+    R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
     reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null);
     setTimeout(apagarSintaxis, 1600); setTimeout(apagarSintaxis, 3200);
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); const ruidoOn = false; /* el ruido solo se prende a mano */ /* con propuesta: sin capa de ruido, la historia es la red verde y el reparto */ if (H && rb && rb.classList.contains('on') !== ruidoOn) rb.click(); pintarHistoria(); focoHistoria(5);
@@ -343,7 +346,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       tAb01 = t; try { SP.actualizar(der, R.hist, FIN, R.ecoBase || R.base, R.def); } catch (e) { console.warn('panel de la simulación:', e); } return; }
     if (!forzar && t - tAb01 < 250) { if (!pAb01) pAb01 = setTimeout(() => { pAb01 = 0; grafAb01(true); }, 260); return; }
     tAb01 = t; try { AB01P.actualizar(der, R.hist, FIN, R.ecoBase || R.base, !!(R.def && R.def.propuesta)); } catch (e) { console.warn('diagrama 01:', e); } }
-  const vfmt = (s, v) => s.opciones ? (s.opciones.find(o => o[0] === +v)?.[1] || '—') : (s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
+  const vfmt = (s, v) => s.opciones ? (s.opciones.find(o => o[0] === +v)?.[1] || '—') : (s.k === 'huertasH' && v < 0 ? 'auto' : s.unidad === '%' ? Math.round(v * (s.max <= 1 ? 100 : 1)) + ' %' : (Math.round(v * 100) / 100).toLocaleString('es-CO') + (s.unidad ? ' ' + s.unidad : ''));
   /* RESULTADOS EN VIVO: una tarjeta por dato con el valor, cuánto cambió desde el año 1 (flecha y color: verde mejora, rojo empeora) y
      su curva con la línea punteada del año 1. Se compara con el año 1 (semana 52) y no con la semana 0: el modelo tarda ~40 semanas en
      asentarse. Se repinta como mucho 4 veces por segundo. */
@@ -381,7 +384,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     OC: ['Juntas, colectivos y organizaciones que cuidan el barrio.', true], CO: ['Colegios, bibliotecas y lugares donde se aprende.', true],
     CCL: ['Dónde se concentra el comercio y la logística (Corabastos).', null], PM: ['Presión de carros y camiones sobre las vías.', false], CV: ['Choque entre vivienda y bodegas o carga.', false] };
   let pInd = null; R.ind = null; /* los picos empiezan apagados: se prenden escogiendo un indicador */ R.alto = 0.2; // picos bajos, pegados al piso y transparentes: se lee la ciudad debajo y dónde está cada cosa
-  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=12').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
+  const indApi = async () => { if (window.KEN_IND) return window.KEN_IND; if (!pInd) pInd = import('./indicadores.js?v=14').then(m => m.crearIndicadores({ THREE: T3.THREE, T3 })); return pInd; };
   async function pintarPicos() {
     const box = document.getElementById('su-picos'); if (!box) return;
     let A; try { A = await indApi(); } catch (e) { box.innerHTML = '<p class="pre">No se pudieron cargar los indicadores.</p>'; return; }
@@ -601,8 +604,15 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     LUG.ver(false); /* vista limpia: sin pines de tiendas (los mercados se ven como volúmenes en el reparto) */ /* tiendas y mercados solo donde son la historia (abastecimiento, movilidad): en las demás tapaban el territorio */ LUG.poner({ propuesta: !!(R.def && R.def.propuesta), sem: I ? I.sem : 0, estaciones: I ? I.estaciones : null });
   }
   let CONT = null, pCont = null, REP = null, pRep = null, CAP01 = null, pCap01 = null, P01 = null, pP01 = null;
+  /* v5.2 (pedido de la autora: pasar a «con propuesta» tardaba): la propuesta 3D se crea y se arma escondida apenas el navegador queda libre
+     (propuesta01_3d.js arma todo en trozos de ≤ 8 ms); al escoger «con propuesta» solo se prende */
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { if (!pP01) pP01 = import('./propuesta01_3d.js?v=12').then(m => { if (!P01) P01 = m.crearPropuesta01({ T3 }); return P01; }).catch(e => console.warn('propuesta 01:', e)); }, { timeout: 4000 });
   function ponerCapaPar(I) { const p01 = !!(I && I.abasto && I.abasto.ab01), parI = I && I.par >= 1 && I.par <= 6, propPar = !!(parI && I.propuesta), semI = I ? I.sem : 0; if (SIN_CAPAS && !p01) I = null; /* par 01: los medidores de capacidad sí se ven (pedido de la autora, 2026-11-25) */
     const c = I ? capaPar() : null;
+    /* v5.2: vías pintadas por la densidad MEDIDA de vehículos (data3d/vias_densidad.js) en las 6 simulaciones; en la 01 la maneja su capa «Tráfico» (abasto_capas.js) */
+    window.KEN_VIAS_PAR = !!(parI && !p01);
+    if (parI && !p01) import('./vias_densidad.js?v=1').then(m => m.crearViasDensidad({ T3 }).ver(true)).catch(e => console.warn('vías:', e));
+    else if (!parI && window.KEN_VIAS) window.KEN_VIAS.ver(false);
     // par 01: medidores de capacidad (data3d/abasto_contenedor.js): Corabastos y, con propuesta, uno por mercado
     /* antes, con propuesta: data3d/reparto.js (volúmenes proporcionales); ahora los mismos medidores muestran el reparto */
     const repartir = false;
@@ -610,18 +620,18 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP) && !prop01; }
     import('./gris01.js?v=1').then(m => m.gris01(T3, parI)).catch(() => {}); /* 2026-11-26: blanco y negro en las 6 simulaciones (antes solo la 01) */ /* v4: blanco y negro en los dos escenarios de la 01 (árboles, agua, fauna y elementos de la simulación en color) */
     /* 2026-11-26: la MISMA propuesta 3D en las 6 «con propuesta» (propuesta01_3d.js solo lee I.sem); en la 01 se le pasa el I completo como siempre */
-    if (propPar) { const IP = prop01 ? I : { sem: semI }; if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=6').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(IP); }
+    if (propPar) { const IP = prop01 ? I : { sem: semI }; if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=12').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(IP); }
     else if (P01) P01.apagar();
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
     /* simulación 01 (2026-11-26): capas Bodegas · Residuos · Tráfico (data3d/abasto_capas.js), una vez por semana simulada */
-    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=6').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
+    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=7').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
       else CAP01.poner(I); }
     else if (CAP01) { CAP01.poner(null); CAP01.ver(false); }
-    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=12').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }
+    if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=13').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }
     if (CONT) CONT.ver(false);
     if (!c) { if (PAR) PAR.quitar(); return; }
-    if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=1').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
+    if (!PAR) { if (!pPar) pPar = import('./capas_pares.js?v=2').then(m => { PAR = m.crearCapasPares({ T3, RELOJ }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(() => null); return; }
     PAR.poner(c, I);
   }
 
@@ -656,7 +666,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
         ['Economía circular', (I) => ((I.circularIdx || 0) * 100).toFixed(1) + ' %'],
         ['Basura sin recoger', (I) => fmt(I.basura ? I.basura.acumulada : 0) + ' t'],
         ['Humedales que funcionan', (I) => Math.round(I.humedalFuncional || 0) + ' %']],
-    4: [['Parche perdido', (I) => I.fragmento ? (I.fragmento.nombre || 'parche') + ' · ' + (I.fragmento.haPerdidas || 0).toFixed(1) + ' ha' : '—'],
+    4: [['Corredor verde perdido', (I) => I.fragmento ? (I.fragmento.nombre || 'corredor verde') +' · ' + (I.fragmento.haPerdidas || 0).toFixed(1) + ' ha' : '—'],
         ['Corredores y refugios', (I) => (I.corredores ? I.corredores.length : 0) + ' corredores · ' + (I.refugios ? I.refugios.length : 0) + ' refugios'],
         ['Territorio con fauna', (I, I1) => sg(pct(I.pares, I1.pares)) + ' %'],
         ['Especies de fauna', (I) => I.fauna + ' de ' + I.fauna0],
@@ -708,10 +718,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const A = I.abeja, Ab = B && B.abeja;
     const VR = I.verde && I.verde.resumen, VB = B && B.verde && B.verde.resumen;
     const redV = VR ? `<div class="su-abeja" style="background:rgba(95,211,138,.07);border-color:rgba(95,211,138,.25);margin-bottom:8px"><b style="color:#8ee6a8">Red verde de Kennedy</b>
-      <div><span>Parches conectados entre sí</span><b>${VR.nConectados} de ${VR.nParches}</b><small>${VB ? "sin: " + VB.nConectados + " de " + VB.nParches : ""}</small></div>
+      <div><span>Corredores verdes conectados entre sí</span><b>${VR.nConectados} de ${VR.nParches}</b><small>${VB ? "sin: " + VB.nConectados + " de " + VB.nParches : ""}</small></div>
       <div><span>Área verde</span><b>${Math.round(VR.haVerde)} ha</b><small>año 1: ${Math.round(VR.haVerde0)} ha${VB ? " · sin: " + Math.round(VB.haVerde) + " ha" : ""}</small></div>
       <div><span>Conectividad</span><b>${Math.round((VR.conectividad || 0) * 100)} %</b><small>${VB ? "sin: " + Math.round((VB.conectividad || 0) * 100) + " %" : ""}</small></div>
-      <p style="opacity:.7">En el mapa: manchas verdes = parches (lima nuevos, tierra→verde liberados), franjas = conexiones que se van construyendo, rojo = conexión rota.</p></div>` : "";
+      <p style="opacity:.7">En el mapa: manchas verdes = corredores verdes (lima nuevos, tierra→verde liberados), franjas = conexiones que se van construyendo, rojo = conexión rota.</p></div>` : "";
     box.innerHTML = `<div class="su-eco-i"><b style="color:${col}">${Math.round((I.eco.indice || 0) * 100)}</b><span>índice ecocéntrico${Eb ? ` · sin propuesta <b>${Math.round((Eb.indice || 0) * 100)}</b>` : ''}</span></div>${radar(I.eco, Eb, col)}
       ${Eb ? '<p class="su-eco-l"><i style="background:' + col + '"></i>con propuesta <i class="pt"></i>sin propuesta (misma semana)</p>' : ''}
       ${false && A ? `<div class="su-abeja"><b>🐝 La abeja (especie clave)</b>
@@ -736,8 +746,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const FICHA = {
     'Corabastos frente a su tope': { por: 'Más del 94 % de lo que se come en Bogotá entra por Corabastos: es un solo punto que, si se llena, deja a Kennedy sin comida.', para: 'Saber en qué año la demanda desborda la central y si la red de mercados de barrio de la propuesta lo evita.', como: 'Toneladas al día que se le piden (población × consumo − lo que producen las huertas y los mercados de la red) ÷ toneladas al día que puede mover. 100 % = tope (supuesto calibrado; el tope no es un dato oficial).', donde: 'En las bodegas de la Central de Abastos (Av. de las Américas con Av. Agoberto Mejía).', pts: pCora },
     'Humedales que funcionan': { por: 'Los humedales El Burro, La Vaca y Techo son el hábitat de aves y anfibios y regulan el agua; la basura del borde los va rellenando.', para: 'Ver si el borde de los humedales se pierde (game over por debajo de 70 %) o se restaura.', como: 'Área que queda × calidad del agua y del borde, frente a hoy (100 % = como están hoy). El área baja con la basura arrojada en el borde; la calidad con la basura acumulada.', donde: 'En los tres humedales de Kennedy (aros azules).', pts: pHum },
-    'Interacciones entre especies': { por: 'Desde lo ecocéntrico importa la relación, no solo cuántas especies hay: una abeja sin flores o un ave sin árbol para anidar ya no cumplen su función.', para: 'Medir si la arquitectura (huertas, conexiones, refugios) multiplica las relaciones o si se rompen.', como: 'Número de pares especie–especie activos (poliniza, come, anida, dispersa) que coinciden en el mismo parche esa semana, según la red de interacciones del modelo.', donde: 'En cada parche verde: humedales, parques, el bosque de Bavaria y las huertas.', pts: pFauna },
-    'Territorio con fauna': { por: 'Si las especies ocupan menos lugares, la fauna se concentra y queda expuesta a una sola amenaza.', para: 'Ver si las especies ganan o pierden lugares donde vivir.', como: 'Pares especie–parche ocupados (cada especie en cada parche donde está presente), promedio móvil de 13 semanas.', donde: 'En los parches verdes de Kennedy.', pts: pFauna },
+    'Interacciones entre especies': { por: 'Desde lo ecocéntrico importa la relación, no solo cuántas especies hay: una abeja sin flores o un ave sin árbol para anidar ya no cumplen su función.', para: 'Medir si la arquitectura (huertas, conexiones, refugios) multiplica las relaciones o si se rompen.', como: 'Número de pares especie–especie activos (poliniza, come, anida, dispersa) que coinciden en el mismo corredor verde esa semana, según la red de interacciones del modelo.', donde: 'En cada corredor verde: humedales, parques, el bosque de Bavaria y las huertas.', pts: pFauna },
+    'Territorio con fauna': { por: 'Si las especies ocupan menos lugares, la fauna se concentra y queda expuesta a una sola amenaza.', para: 'Ver si las especies ganan o pierden lugares donde vivir.', como: 'Pares especie–corredor verde ocupados (cada especie en cada corredor verde donde está presente), promedio móvil de 13 semanas.', donde: 'En los corredores verdes de Kennedy.', pts: pFauna },
     'Comida en la zona peor': { por: 'El promedio esconde a los barrios que se quedan sin comida; la cadena se rompe primero en el lugar más débil.', para: 'Detectar la zona que deja de recibir lo que necesita cuando se cierra una vía o se corta el suministro (límite 80 %).', como: 'Comida que llega ÷ comida que necesita, en cada zona de 500 m; se muestra la zona con el valor más bajo.', donde: 'En la zona de 500 m peor servida (aro azul).', pts: pZonaPeor },
     'Tráfico (100 = hoy)': { por: 'Más carros significa más ruido, más atropellos de fauna y rutas de abastecimiento más lentas.', para: 'Ver si el plan parcial o un cierre de vía congestionan Kennedy (límite 130) y si la propuesta lo baja.', como: 'Vehículos frente a hoy (100 = 2025, congestión TomTom 69,9 %), con el crecimiento de la población, el metro (−% a 800 m del eje) y los viajes nuevos del predio.', donde: 'En todas las calles de Kennedy; más cargado en las entradas del predio de Bavaria y la Av. Boyacá.', pts: pPred },
     'Basura sin recoger (t)': { por: 'La basura acumulada trae ratas, que depredan nidos, y rellena los bordes de los humedales.', para: 'Ver si los orgánicos se tratan cerca (estaciones circulares) o se acumulan.', como: 'Toneladas acumuladas en los puntos de basura: lo que se genera cada día − lo que se recoge (84 %) − lo que se limpia.', donde: 'En los puntos de acumulación: Corabastos, la plaza Las Flores y los bordes de los humedales.', pts: pBasu },
@@ -748,7 +758,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     'Recursos que alcanzan': { por: 'Los recursos nunca alcanzan para todo: importa a dónde van.', para: 'Ver cuánta de la necesidad se cubre en promedio.', como: 'Recursos repartidos ÷ necesidad, promedio de los sectores.', donde: 'En los ocho sectores de Kennedy.', pts: pGob },
     'Decisiones tomadas': { por: 'Decidir en asamblea es más lento pero más ajustado al barrio.', para: 'Medir el costo en tiempo de la gobernanza comunitaria.', como: 'Número acumulado de decisiones de reparto tomadas.', donde: 'En las asambleas de los ocho sectores.', pts: pGob }
   };
-  FICHA['Atropellos de fauna (total)'] = { por: 'Las avenidas cortan el paso entre humedales y parques: ranas, serpientes, lagartijas, curíes y aves bajas mueren al cruzar.', para: 'Ver dónde la vía corta un corredor de fauna y si los pasos de fauna y las conexiones vegetales de la propuesta lo bajan.', como: 'Cada semana cada parche ocupado manda un animal que se dispersa a otro parche; muere con probabilidad 1 − e^(−c·Q) según los vehículos al día (Q) de las vías principales que cruza (Hels y Buchwald). Con la propuesta −30 % por pasos de fauna [supuesto].', donde: 'En el punto exacto donde la avenida (nombre de OpenStreetMap) corta la línea entre los dos parches: marcas rojas ✕ en el mapa.', pts: (I) => { const L = I.atropellos && I.atropellos.lista || [], c = {}; for (const a of L) { const k = a.via || '?'; (c[k] = c[k] || { n: 0, a }).n++; } return Object.values(c).sort((x, y) => y.n - x.n).slice(0, 5).map(({ n, a }) => ({ x: a.x, z: a.z, n: `${a.via} · ${n} atropellos recientes (último: ${a.nombre}) · ${a.causa || ''}` })); } };
+  FICHA['Atropellos de fauna (total)'] = { por: 'Las avenidas cortan el paso entre humedales y parques: ranas, serpientes, lagartijas, curíes y aves bajas mueren al cruzar.', para: 'Ver dónde la vía corta un corredor de fauna y si los pasos de fauna y las conexiones vegetales de la propuesta lo bajan.', como: 'Cada semana cada corredor verde ocupado manda un animal que se dispersa a otro corredor verde; muere con probabilidad 1 − e^(−c·Q) según los vehículos al día (Q) de las vías principales que cruza (Hels y Buchwald). Con la propuesta −30 % por pasos de fauna [supuesto].', donde: 'En el punto exacto donde la avenida (nombre de OpenStreetMap) corta la línea entre los dos corredores verdes: marcas rojas ✕ en el mapa.', pts: (I) => { const L = I.atropellos && I.atropellos.lista || [], c = {}; for (const a of L) { const k = a.via || '?'; (c[k] = c[k] || { n: 0, a }).n++; } return Object.values(c).sort((x, y) => y.n - x.n).slice(0, 5).map(({ n, a }) => ({ x: a.x, z: a.z, n: `${a.via} · ${n} atropellos recientes (último: ${a.nombre}) · ${a.causa || ''}` })); } };
   FICHA['Basura sin recoger'] = FICHA['Basura sin recoger (t)']; FICHA['Comida en la zona peor servida'] = FICHA['Comida en la zona peor']; FICHA['Hogares en riesgo de desplazamiento'] = FICHA['Hogares en riesgo']; FICHA['Precio del suelo'] = FICHA['Precio del suelo (1 = hoy)']; FICHA['Tráfico'] = FICHA['Tráfico (100 = hoy)'];
   const ficha = document.createElement('div'); ficha.id = 'su-ficha'; document.body.appendChild(ficha);
   let gMed = null;
@@ -784,9 +794,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     { k: 'abejas', n: '🐝 Abejas (especie clave)', u: ' lugares', v: I => I.abeja ? I.abeja.parches : null, mejor: 1,
       ver: I => { const L = I.abeja && I.abeja.lugares; if (L && L.length) return { x: L[0].x, z: L[0].z, t: 'Aquí están las abejas', tx: `${I.abeja.parches} lugares ocupados · ${I.abeja.interacciones} flores polinizadas` }; const P = I.verde && I.verde.parches.find(p => p.tipo === 'nuevo'); return P ? { x: P.x, z: P.z, t: 'Huertas donde llegan las abejas', tx: P.n } : null; } },
     { k: 'corredores', n: 'Continuidad de corredores', u: ' %', v: I => I.verde && I.verde.resumen ? I.verde.resumen.conectividad * 100 : null, mejor: 1,
-      ver: I => { const C = I.verde && I.verde.conexiones && I.verde.conexiones[0]; return C ? { x: (C.x1 + C.x2) / 2, z: (C.z1 + C.z2) / 2, t: 'Corredor ecológico', tx: `${I.verde.resumen.nConectados} de ${I.verde.resumen.nParches} parches conectados entre sí` } : null; } },
-    { k: 'parches', n: 'Parches ecológicos nuevos', u: '', v: I => I.verde && I.verde.resumen ? (I.verde.resumen.nNuevos || 0) + (I.verde.resumen.nLiberados || 0) : null, mejor: 1,
-      ver: I => { const P = I.verde && (I.verde.parches.find(p => p.tipo === 'liberado') || I.verde.parches.find(p => p.tipo === 'nuevo')); return P ? { x: P.x, z: P.z, t: P.tipo === 'liberado' ? 'Espacio liberado que se vuelve verde' : 'Parche nuevo', tx: P.n } : null; } },
+      ver: I => { const C = I.verde && I.verde.conexiones && I.verde.conexiones[0]; return C ? { x: (C.x1 + C.x2) / 2, z: (C.z1 + C.z2) / 2, t: 'Corredor ecológico', tx: `${I.verde.resumen.nConectados} de ${I.verde.resumen.nParches} corredores verdes conectados entre sí` } : null; } },
+    { k: 'parches', n: 'Corredores verdes nuevos', u: '', v: I => I.verde && I.verde.resumen ? (I.verde.resumen.nNuevos || 0) + (I.verde.resumen.nLiberados || 0) : null, mejor: 1,
+      ver: I => { const P = I.verde && (I.verde.parches.find(p => p.tipo === 'liberado') || I.verde.parches.find(p => p.tipo === 'nuevo')); return P ? { x: P.x, z: P.z, t: P.tipo === 'liberado' ? 'Espacio liberado que se vuelve verde' : 'Corredor verde nuevo', tx: P.n } : null; } },
     { k: 'muertes', n: 'Muertes de fauna', u: '', v: I => I.muertes ? I.muertes.total : I.atropellos && I.atropellos.total, mejor: -1,
       ver: I => { const m = ultimaMuerte(I); return m ? { x: m.x, z: m.z, t: `Murió: ${m.nombre || m.especie}`, tx: m.detalle || m.causa || '', animal: m.nombre || m.especie } : null; } },
     { k: 'ruido', n: 'Bienestar de las aves (ruido)', u: ' %', v: I => I.avesRuido ? I.avesRuido.bienestar * 100 : null, mejor: 1,
@@ -797,14 +807,14 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     { k: 'biodiv', n: 'Biodiversidad (Shannon)', u: '', v: I => I.biodiversidad ? I.biodiversidad.shannon : (I.eco ? I.eco.biodiversidad * 100 : null), mejor: 1, ver: null }
   ];
   Object.assign(FICHA, {
-    '🐝 Abejas (especie clave)': { por: 'La abeja es especie clave: poliniza las flores de huertas y parques; si ella está, el ciclo de la flora sigue.', para: 'Ver si la propuesta (huertas, techos, corredores) le da más lugares y cómo se expande.', como: 'Parches donde la abeja está presente esa semana (modelo de ocupación) y flores que poliniza.', donde: 'En las huertas, parques y humedales donde aparece.', pts: I => (I.abeja && I.abeja.lugares || []).slice(0, 8).map(p => ({ x: p.x, z: p.z, n: p.n || 'Abejas' })) },
-    'Continuidad de corredores': { por: 'Un parche aislado no sirve: la fauna necesita moverse entre humedales, parques y huertas.', para: 'Medir si la ciudad se reconecta como red ecológica.', como: 'Parches en el grupo conectado más grande (enlaces con supervivencia al cruzar las vías ≥ 0,5) ÷ todos los parches.', donde: 'En las franjas verdes entre parches.', pts: I => (I.verde && I.verde.conexiones || []).slice(0, 6).map(c => ({ x: (c.x1 + c.x2) / 2, z: (c.z1 + c.z2) / 2, n: c.via ? 'cruza ' + c.via : 'corredor' })) },
-    'Parches ecológicos nuevos': { por: 'Para que las aves tengan dónde estar hace falta crear y liberar espacio verde.', para: 'Contar cuánto hábitat nuevo genera la propuesta.', como: 'Módulos de huerta que se activan + bodegas de Corabastos liberadas que se vuelven verde (maduran en 3 años).', donde: 'En las manchas verdes lima (nuevos) y tierra→verde (liberados).', pts: I => (I.verde && I.verde.parches || []).filter(p => p.tipo === 'nuevo' || p.tipo === 'liberado').slice(0, 8).map(p => ({ x: p.x, z: p.z, n: p.n })) },
-    'Muertes de fauna': { por: 'La mayoría de los animales que mueren en la ciudad se estrellan: contra vidrios y fachadas o contra los carros.', para: 'Ver dónde ocurre y qué la causa, y si la propuesta la reduce.', como: 'Animales que cruzan entre parches; mueren con una probabilidad según las fachadas de vidrio y los vehículos al día que cruzan.', donde: 'En el punto exacto de cada muerte (botón Ver: la más reciente).', pts: I => ((I.muertes && I.muertes.lista) || (I.atropellos && I.atropellos.lista) || []).slice(-6).map(m => ({ x: m.x, z: m.z, n: (m.nombre || '') + ' · ' + (m.detalle || m.causa || '') })) },
-    'Bienestar de las aves (ruido)': { por: 'Con mucho ruido las aves no se oyen para cantar, se estresan y se alejan.', para: 'Medir cómo el tráfico afecta el bienestar de las aves.', como: 'Ruido de cada carro sumado en cada parche; bienestar 100 % bajo 50 dB y 0 % a 70 dB.', donde: 'En los parches donde viven las aves (capa de ruido).', pts: I => (I.avesRuido && I.avesRuido.porParche || []).slice(0, 6).map(p => ({ x: p.x, z: p.z, n: Math.round(p.db) + ' dB' })) },
+    '🐝 Abejas (especie clave)': { por: 'La abeja es especie clave: poliniza las flores de huertas y parques; si ella está, el ciclo de la flora sigue.', para: 'Ver si la propuesta (huertas, techos, corredores) le da más lugares y cómo se expande.', como: 'Corredores verdes donde la abeja está presente esa semana (modelo de ocupación) y flores que poliniza.', donde: 'En las huertas, parques y humedales donde aparece.', pts: I => (I.abeja && I.abeja.lugares || []).slice(0, 8).map(p => ({ x: p.x, z: p.z, n: p.n || 'Abejas' })) },
+    'Continuidad de corredores': { por: 'Un corredor verde aislado no sirve: la fauna necesita moverse entre humedales, parques y huertas.', para: 'Medir si la ciudad se reconecta como red ecológica.', como: 'Corredores verdes en el grupo conectado más grande (enlaces con supervivencia al cruzar las vías ≥ 0,5) ÷ todos los corredores verdes.', donde: 'En las franjas verdes entre corredores verdes.', pts: I => (I.verde && I.verde.conexiones || []).slice(0, 6).map(c => ({ x: (c.x1 + c.x2) / 2, z: (c.z1 + c.z2) / 2, n: c.via ? 'cruza ' + c.via : 'corredor' })) },
+    'Corredores verdes nuevos': { por: 'Para que las aves tengan dónde estar hace falta crear y liberar espacio verde.', para: 'Contar cuánto hábitat nuevo genera la propuesta.', como: 'Módulos de huerta que se activan + bodegas de Corabastos liberadas que se vuelven verde (maduran en 3 años).', donde: 'En las manchas verdes lima (nuevos) y tierra→verde (liberados).', pts: I => (I.verde && I.verde.parches || []).filter(p => p.tipo === 'nuevo' || p.tipo === 'liberado').slice(0, 8).map(p => ({ x: p.x, z: p.z, n: p.n })) },
+    'Muertes de fauna': { por: 'La mayoría de los animales que mueren en la ciudad se estrellan: contra vidrios y fachadas o contra los carros.', para: 'Ver dónde ocurre y qué la causa, y si la propuesta la reduce.', como: 'Animales que cruzan entre corredores verdes; mueren con una probabilidad según las fachadas de vidrio y los vehículos al día que cruzan.', donde: 'En el punto exacto de cada muerte (botón Ver: la más reciente).', pts: I => ((I.muertes && I.muertes.lista) || (I.atropellos && I.atropellos.lista) || []).slice(-6).map(m => ({ x: m.x, z: m.z, n: (m.nombre || '') + ' · ' + (m.detalle || m.causa || '') })) },
+    'Bienestar de las aves (ruido)': { por: 'Con mucho ruido las aves no se oyen para cantar, se estresan y se alejan.', para: 'Medir cómo el tráfico afecta el bienestar de las aves.', como: 'Ruido de cada carro sumado en cada corredor verde; bienestar 100 % bajo 50 dB y 0 % a 70 dB.', donde: 'En los corredores verdes donde viven las aves (capa de ruido).', pts: I => (I.avesRuido && I.avesRuido.porParche || []).slice(0, 6).map(p => ({ x: p.x, z: p.z, n: Math.round(p.db) + ' dB' })) },
     'Ciclos biogeoquímicos': { por: 'Un territorio vivo mantiene sus ciclos: el carbono que capturan los árboles, los nutrientes que vuelven al suelo y el agua que se infiltra.', para: 'Ver si la propuesta cierra los ciclos dentro de Kennedy.', como: 'Promedio de carbono capturado, nutrientes devueltos con el compost, agua de lluvia infiltrada y suelo vivo, frente al año 1.', donde: 'En las huertas, parques, humedales y Estaciones Circulares.', pts: I => [] },
     'Residuos sin recoger': FICHA['Basura sin recoger (t)'] || FICHA['Basura sin recoger'],
-    'Biodiversidad (Shannon)': { por: 'No basta contar especies: importa que estén repartidas y cumplan funciones distintas.', para: 'Medir la diversidad de la fauna de Kennedy.', como: 'Índice de Shannon H\' sobre la ocupación de cada especie (más alto = más especies y más repartidas).', donde: 'En todos los parches de Kennedy.', pts: I => [] }
+    'Biodiversidad (Shannon)': { por: 'No basta contar especies: importa que estén repartidas y cumplan funciones distintas.', para: 'Medir la diversidad de la fauna de Kennedy.', como: 'Índice de Shannon H\' sobre la ocupación de cada especie (más alto = más especies y más repartidas).', donde: 'En todos los corredores verdes de Kennedy.', pts: I => [] }
   });
   const tab = document.createElement('div'); tab.id = 'su-tab';
   const styleSeguimiento=document.createElement('style');
@@ -812,7 +822,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   document.head.append(styleSeguimiento);
   const panelEvaluacion = crearPanelEvaluacion({ T3 });
   /* el tablero estadístico en tiempo real vive en la columna derecha, aside#lp-tablero (panel_datos.js + graficas_vivas.js) */
-  import('./panel_indicadores.js?v=10').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
+  import('./panel_indicadores.js?v=12').then(m => m.iniciarPanelIndicadores({ R, getM: () => M, getFIN: () => FIN })).catch(e => console.warn('panel de indicadores:', e)); /* reemplaza a panel_datos.js (tablero viejo por sistemas) */
   /* gráfica de cada indicador (como las de antes): área bajo la curva de esta corrida, la «sin propuesta» punteada, líneas de los años
      5 y 10, punto blanco en el valor de ahora; eje x = los 15 años */
   function chispaT(a, b, col) { const W = 268, H = 64, n = Math.ceil(FIN / 4), all = a.concat(b).filter(v => v != null); if (!all.length) return '';
@@ -841,7 +851,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       + `<polyline points="${P(a)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
       + (ult != null ? `<circle cx="${X(ia)}" cy="${Y(ult)}" r="3" fill="${col}" stroke="#08101a" stroke-width="1.5"/>` : '') + '</svg>';
   }
-  const CORTO = { abejas: 'Abejas', corredores: 'Corredores', parches: 'Parches nuevos', muertes: 'Muertes de fauna', ruido: 'Bienestar de aves', ciclos: 'Ciclos (agua, suelo)', residuos: 'Basura sin recoger', biodiv: 'Biodiversidad' };
+  const CORTO = { abejas: 'Abejas', corredores: 'Corredores', parches: 'Corredores verdes nuevos', muertes: 'Muertes de fauna', ruido: 'Bienestar de aves', ciclos: 'Ciclos (agua, suelo)', residuos: 'Basura sin recoger', biodiv: 'Biodiversidad' };
   const CAUSA_N = { colision: 'se estrellan', atropello: 'atropellos', ruido: 'ruido', hambre_habitat: 'sin hábitat' }, CAUSA_C = { colision: '#ff9d97', atropello: '#f2c680', ruido: '#d4bcf5', hambre_habitat: '#8ad9e5' };
   function pintarTablero() {
     const I = ultimo();
@@ -901,9 +911,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     hist.innerHTML = `<h5>¿Qué está pasando? · ${d.parN || ''}</h5><p>${d.prueba || ''}</p>${otra ? '<div class="cab"><span></span><b>Con propuesta</b><i>Sin propuesta</i></div>' : `<div class="cab"><span></span><b>${d.propuesta ? 'Con propuesta' : 'Sin propuesta'}</b></div>`}<ul>${filas}</ul>`;
     hist.classList.add('on');
   }
+  const CAPA_G = {};
   function aplicarHistoria() {
     const P = R.def && R.def.par, H = HISTORIA[P]; if (!H) return;
-    for (const nm of TODAS) { const g = T3.scene.getObjectByName(nm); if (!g) continue; const si = H.capas.includes(nm) || (nm === 'indicadores' && R.ind); if (!si && g.visible) g.visible = false; }
+    for (const nm of TODAS) { let g = CAPA_G[nm]; if (!g || !g.parent) g = CAPA_G[nm] = T3.scene.getObjectByName(nm); /* rendimiento: referencia guardada (antes un recorrido de toda la escena por capa, 2,5 veces por segundo) */ if (!g) continue; const si = H.capas.includes(nm) || (nm === 'indicadores' && R.ind); if (!si && g.visible) g.visible = false; }
     for (const e of ['bas', 'pares']) { const el = document.getElementById(e + '-etq'); if (el) el.style.display = H.etq.includes(e) ? '' : 'none'; }
   }
   setInterval(() => { if (R.sim && !viendo) aplicarHistoria(); }, 400);
@@ -935,7 +946,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   const centroDe = (nombre) => { const g = T3.scene.getObjectByName(nombre); if (!g || !g.visible) return null; const b = new T3.THREE.Box3().setFromObject(g); if (b.isEmpty()) return null; const c = b.getCenter(new T3.THREE.Vector3()); return [c.x, c.z]; };
   function lugares() {
     const b = (R.def && R.def.base) || 'A', L = [], I = ultimo() || {};
-    { const c = capaPar(); const NOM = { abasto: 'Corabastos y mercados (tope)', residuos: 'Estaciones y residuos', biodiversidad: 'Parche, corredores y refugios', suelo: 'Usos del suelo y presión', gobernanza: 'Barrios, asambleas y recursos' };
+    { const c = capaPar(); const NOM = { abasto: 'Corabastos y mercados (tope)', residuos: 'Estaciones y residuos', biodiversidad: 'Corredores verdes y refugios', suelo: 'Usos del suelo y presión', gobernanza: 'Barrios, asambleas y recursos' };
       if (c) L.push({ n: NOM[c] || c, donde: c === 'abasto' ? 'abasto_cont' : c, alto: true, capa: c === 'abasto' ? ['abasto_cont', 'especies', 'basura', 'degradacion', 'trafico'] : [c], t: (R.def && R.def.parN) || NOM[c], tx: (R.def && R.def.prueba) || '' }); }
     const [cx, cz] = T3.lw ? T3.lw(6330, 2170) : [989, 992];
     L.push({ n: 'Basura en Corabastos', x: cx, z: cz, capa: ['basura'], t: 'Basura alrededor de Corabastos', tx: I.basura ? `${Math.round(I.basura.total_t_dia)} t/día en Kennedy; ${Math.round((I.sinRecoger || 0) * 100)} % no se recoge.` : '' });

@@ -1,4 +1,4 @@
-﻿/* ============ MEDIDORES DE CAPACIDAD DEL ABASTECIMIENTO (par 01 · data3d/simulaciones12.js ind().abasto.ab01) ============
+/* ============ MEDIDORES DE CAPACIDAD DEL ABASTECIMIENTO (par 01 · data3d/simulaciones12.js ind().abasto.ab01) ============
    window.KEN_CONT = { poner(abasto), ver(on), grupo }
    · Corabastos: un tubo de vidrio vertical anclado en el centro de sus bodegas. El llenado sube y baja EN TIEMPO REAL con la hora del
      reloj: en cada franja de ingreso de carga (12–20 h, 20–24 h, 4–6 h; horarios de Corabastos × grupos DANE-SIPSA 2025) llega una parte de
@@ -12,6 +12,8 @@
    Grupo 'abasto_cont' (sim_ui.js lo deja visible en la historia del par 01 y KEN_FOCO lo deja en color). */
 import { RELOJ } from './reloj.js?v=5';
 
+/* v5.2 (pedido de la autora): ícono de mercado al lado del % de cada mercado: puesto con toldo de rayas (SVG en línea, no emoji) */
+const ICO_MERC = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M1.5 6 3 2.5h10L14.5 6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M1.5 6c0 1 .8 1.6 1.6 1.6S4.7 7 4.7 6c0 1 .8 1.6 1.6 1.6S7.9 7 7.9 6c0 1 .8 1.6 1.6 1.6S11.1 7 11.1 6c0 1 .8 1.6 1.6 1.6S14.5 7 14.5 6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.8 8v5.5h10.4V8M6.5 13.5v-3h3v3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
 const ESCALA = 1.25; // el tubo muestra hasta 125 % del tope (el anillo rojo queda al 80 % de la altura)
 export function crearContenedores({ T3 }) {
   if (window.KEN_CONT) return window.KEN_CONT;
@@ -53,7 +55,7 @@ export function crearContenedores({ T3 }) {
   }  const MK = []; // mercados (se crean cuando aparecen)
   const css = 'position:fixed;z-index:6;pointer-events:none;transform:translate(-50%,-100%);padding:6px 10px;border-radius:12px;background:linear-gradient(180deg,rgba(40,44,52,.74),rgba(20,22,28,.86));border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#f2f3f5;font:500 11.5px/1.35 Inter,system-ui,sans-serif;white-space:nowrap;display:none;font-variant-numeric:tabular-nums';
   const et = document.createElement('div'); et.id = 'cont-et'; et.style.cssText = css; document.body.appendChild(et);
-  const etM = []; const etq = (i) => { if (!etM[i]) { const d = document.createElement('div'); d.className = 'cont-etm'; d.style.cssText = css + ';padding:3px 7px;border-radius:8px;font-size:10px;font-weight:500'; document.body.appendChild(d); etM[i] = d; } return etM[i]; };
+  const etM = []; const etq = (i) => { if (!etM[i]) { const d = document.createElement('div'); d.className = 'cont-etm'; d.style.cssText = css + ';padding:3px 7px;border-radius:8px;font-size:10px;font-weight:500;color:#e9f7d4'; document.body.appendChild(d); etM[i] = d; } return etM[i]; };
   let A = null, tPrev = 0, tTxt = 0; const p = new THREE.Vector3();
   const fmt = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (+v).toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d }));
   function franjaDe(U, h) { return (U.franjas || []).find(F => h >= F.h0 && h < F.h1) || null; }
@@ -87,7 +89,7 @@ export function crearContenedores({ T3 }) {
       if (et._t !== txt) { et.innerHTML = txt; et._t = txt; } }
     let j = 0; for (const M of MK) { if (!M.g.visible || !M.m) continue; const el = etq(j++);
       if (!enPantalla(M.m.x, y0() + (M.H + 6) * M.g.scale.y, M.m.z, el)) { el.style.display = 'none'; continue; } /* v5: todos los mercados con su etiqueta */
-      const txt = `${Math.round((M.m.carga || 0) * 100)} %`; /* 01 v3: menos texto en el mapa, solo el porcentaje (el nombre y las t/día en el title) */ el.title = `${M.m.n} · ${fmt(M.m.t_dia, 1)} t/día`; if (el._t !== txt) { el.textContent = txt; el._t = txt; } }
+      const txt = `${Math.round((M.m.carga || 0) * 100)} %`; /* 01 v3: menos texto en el mapa, solo el porcentaje (el nombre y las t/día en el title) */ el.title = `${M.m.n} · ${fmt(M.m.t_dia, 1)} t/día`; if (el._t !== txt) { el.innerHTML = ICO_MERC + '<span>' + txt + '</span>'; el._t = txt; } } /* v5.2: ícono de mercado (puesto con toldo, SVG) al lado del % */
     for (; j < etM.length; j++) etM[j].style.display = 'none';
   });
   /* verCora(false): sin el tubo de Corabastos cuando la capa «Bodegas» de la simulación 01 (abasto_capas.js) muestra la ocupación nave por nave */

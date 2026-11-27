@@ -73,7 +73,7 @@ export function datoEco(k,I,v) {
     else body+='<rect x="'+(x-6)+'" y="'+(y-5)+'" width="'+(12*fraction)+'" height="10" rx="2" fill="'+color+'" opacity=".75"/>';
   }
   if(!count)body=txt(80,30,'Sin registros todavía',9);
-  const u=k==='residuos'?'t':k==='abejas'?'lugares':'parches';
+  const u=k==='residuos'?'t':k==='abejas'?'lugares':'corredores verdes';
   return svg(160,53,num(v)+' '+u+'. Cada símbolo representa hasta '+unit+' '+u,body)+'<p class="eco-nota">1 símbolo ≈ '+num(unit)+' '+u+'</p>';
 }
 export function cintaEco(a,b,v0,mejor,fin) {

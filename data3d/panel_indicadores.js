@@ -26,12 +26,12 @@ const ICO_MAPA_NO ='<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden=
 const ESTR = [
   { id: 'E1', n: 'Bavaria Común', c: '#ef4444', hace: 'En el predio de Bavaria, en lugar del plan parcial: acopio de alimentos, formación de promotores y pasajes. Sin las torres del plan no hay fachadas de vidrio nuevas ni la tala de su bosque, y el suelo queda protegido.', ind: ['presion', 'verde', 'conect'] },
   { id: 'E2', n: 'Tiendas Barriales', c: '#38bdf8', hace: '460 tiendas, fruterías, panaderías y carnicerías existentes (OSM). En el modelo semanal no tienen parámetro propio: reparten lo que llega a la red local.', ind: ['cobertura'] },
-  { id: 'E3', n: 'Corabastos reducido', c: '#fb923c', hace: 'Desmonte de bodegas por fases: cada borde liberado junto a La Vaca se restaura y madura en 3 años (parches «liberados»). A Corabastos se le pide menos porque la red de mercados toma parte de la carga.', ind: ['verde', 'conect', 'cobertura'] },
+  { id: 'E3', n: 'Corabastos reducido', c: '#fb923c', hace: 'Desmonte de bodegas por fases: cada borde liberado junto a La Vaca se restaura y madura en 3 años (corredores verdes «liberados»). A Corabastos se le pide menos porque la red de mercados toma parte de la carga.', ind: ['verde', 'conect', 'cobertura'] },
   { id: 'E4', n: 'Orgánicos y hongos', c: '#a78bfa', hace: 'Estaciones Circulares y distrito biotecnológico: los orgánicos separados se tratan como compost y sustrato que vuelve a las huertas en vez de ir a Doña Juana.', ind: ['aprov', 'saturacion'] },
   { id: 'E5', n: 'Corredor biótico', c: '#34d399', hace: 'Une El Burro, La Vaca y Techo: más árboles en los parques (+0,2 de densidad en 5 años), pasos de fauna con cerramiento en las vías principales (−54 % de atropellos al cruzar, años 2–5) y calles verdes pacificadas (30 % de las calles, −3 dB, años 2–8).', ind: ['conect', 'atrop', 'ruido', 'bienestar', 'shannon', 'clave', 'inter'] },
   { id: 'E6', n: 'Vivienda y actividad', c: '#e879f9', hace: '379 negocios en vivienda (OSM). En el modelo cuenta dentro de los instrumentos de gestión del suelo que frenan parte del alza de arriendos.', ind: ['presion'] },
   { id: 'E7', n: 'Plazas y conjuntos', c: '#facc15', hace: 'Plazas de mercado y conjuntos: los 35 mercados de barrio de la propuesta abren por fases (uno cada pocas semanas) y acercan la compra a pie.', ind: ['acceso', 'cobertura', 'autonomia'] },
-  { id: 'E8', n: 'Red distribuida de producción alimentaria', c: '#84cc16', hace: 'Huertas en lotes baldíos, cubiertas y viviendas: módulos de huerta que se vuelven hábitat (parches nuevos) y producen comida local.', ind: ['autonomia', 'verde', 'clave', 'inter', 'conect'] },
+  { id: 'E8', n: 'Red distribuida de producción alimentaria', c: '#84cc16', hace: 'Huertas en lotes baldíos, cubiertas y viviendas: módulos de huerta que se vuelven hábitat (corredores verdes nuevos) y producen comida local.', ind: ['autonomia', 'verde', 'clave', 'inter', 'conect'] },
   { id: 'E9', n: 'Manzanas del Cuidado', c: '#fb7185', hace: 'Jardines, salones comunales y centros de cuidado: asambleas que reparten recursos por necesidad y calles de la manzana pacificadas (parte del 30 % de calles verdes).', ind: ['ruido', 'bienestar'] }
 ];
 
@@ -43,35 +43,35 @@ const sum = `<munder><mo>∑</mo><mi>i</mi></munder>`;
 const F = {
   shannon: { f: math(`${mi("H'")}${mo('=')}${mo('−')}${sum}${sub(mi('p'), mi('i'))}${mo('⁢')}${mi('ln')}${mo('⁡')}${sub(mi('p'), mi('i'))}${mo(',')}${mspace()}${sub(mi('p'), mi('i'))}${mo('=')}${frac(sub(mi('A'), mi('i')), `${sum}${sub(mi('A'), mi('i'))}`)}`),
     t: [['H′', 'diversidad de Shannon (nats)'], ['pᵢ', 'proporción de la especie i'], ['Aᵢ', 'hectáreas de hábitat que ocupa la especie i (proxy de sus individuos)']],
-    como: 'De la ocupación especie × parche de la red trófica (23 especies de fauna × 71 parches): para cada especie se suman las hectáreas de los parches donde está. El modelo no cuenta individuos; con igual densidad por especie, los individuos son proporcionales al área ocupada (simulaciones12.js, biodiversidad.shannonArea).',
-    fuente: 'Índice de Shannon (NIST, Dictionary of Algorithms and Data Structures). Cambio de fórmula documentado: antes pᵢ = parches ocupados, que iguala una cubierta de 0,1 ha con un humedal de 18 ha.' },
+    como: 'De la ocupación especie × corredor verde de la red trófica (23 especies de fauna × 71 corredores verdes): para cada especie se suman las hectáreas de los corredores verdes donde está. El modelo no cuenta individuos; con igual densidad por especie, los individuos son proporcionales al área ocupada (simulaciones12.js, biodiversidad.shannonArea).',
+    fuente: 'Índice de Shannon (NIST, Dictionary of Algorithms and Data Structures). Cambio de fórmula documentado: antes pᵢ = corredores verdes ocupados, que iguala una cubierta de 0,1 ha con un humedal de 18 ha.' },
   clave: { f: math(`${mi('E')}${mo('=')}${frac(sub(mi('N'), mtxt('actual')), sub(mi('N'), mtxt('inicial')))}${mo('×')}${mn(100)}`),
     t: [['N actual', 'hectáreas ocupadas por la especie esta semana'], ['N inicial', `las del fin del año 1 (semana ${SEM_REF}), cuando el modelo ya se asentó`]],
-    como: 'Una por grupo: abeja de miel, colibrí chillón y tingua moteada, con el área de los parches que ocupan (biodiversidad.areaEsp). El valor grande es el promedio de los tres.',
+    como: 'Una por grupo: abeja de miel, colibrí chillón y tingua moteada, con el área de los corredores verdes que ocupan (biodiversidad.areaEsp). El valor grande es el promedio de los tres.',
     fuente: 'Variación porcentual, adaptación del proyecto.' },
   inter: { f: math(`${mi('I')}${mo('=')}${sum}${sub(mi('interacciones'), mi('i'))}`),
-    t: [['I', 'interacciones locales de la red biótica que ocurren esta semana'], ['interacciones', 'enlaces de la red (visita floral, depredación, dispersión…) cuyos dos extremos están en el mismo parche o a su alcance de dispersión']],
+    t: [['I', 'interacciones locales de la red biótica que ocurren esta semana'], ['interacciones', 'enlaces de la red (visita floral, depredación, dispersión…) cuyos dos extremos están en el mismo corredor verde o a su alcance de dispersión']],
     como: 'Modelo semanal: territorio.red (simulaciones12.js, interLocal). El diagrama de cuerdas muestra en vivo los encuentros que ocurren en el 3D ahora (biotica.js): quién interactúa con quién y de qué tipo.',
     fuente: 'Conteo de eventos, definición operativa del proyecto.' },
   verde: { f: math(`${sub(mi('A'), mi('v'))}${mo('=')}${sub(mi('A'), mn(1))}${mo('+')}${sub(mi('A'), mn(2))}${mo('+')}${mo('⋯')}${mo('+')}${sub(mi('A'), mi('n'))}`),
     t: [['A_v', 'área verde total'], ['Aᵢ', 'superficie de cada zona verde: parques, humedales, bosque, módulos de huerta, bordes liberados y huertas de los hogares']],
-    como: 'territorio.verde = Σ π·r² de los parches verdes (ind(s).verde) + las huertas de los hogares (50 m² cada una). 1 ha = 10.000 m².',
+    como: 'territorio.verde = Σ π·r² de los corredores verdes (ind(s).verde) + las huertas de los hogares (50 m² cada una). 1 ha = 10.000 m².',
     fuente: 'Cálculo geométrico de superficies.' },
-  conect: { f: math(`${mi('C')}${mo('=')}${frac(mtxt('parches conectados'), mtxt('parches totales'))}${mo('×')}${mn(100)}`),
-    t: [['parches conectados', 'los del componente más grande de la red con enlaces de supervivencia ≥ 0,5 (no rotos por las vías)'], ['parches totales', 'todos los parches verdes con área']],
-    como: 'ind(s).verde.resumen: nConectados / nParches. Un enlace vale la supervivencia al cruzar las vías entre los dos parches × la calidad del menor × su madurez. Los pasos de fauna (E5) suben esa supervivencia.',
+  conect: { f: math(`${mi('C')}${mo('=')}${frac(mtxt('corredores verdes conectados'), mtxt('corredores verdes totales'))}${mo('×')}${mn(100)}`),
+    t: [['corredores verdes conectados', 'los del componente más grande de la red con enlaces de supervivencia ≥ 0,5 (no rotos por las vías)'], ['corredores verdes totales', 'todos los corredores verdes con área']],
+    como: 'ind(s).verde.resumen: nConectados / nParches. Un enlace vale la supervivencia al cruzar las vías entre los dos corredores verdes × la calidad del menor × su madurez. Los pasos de fauna (E5) suben esa supervivencia.',
     fuente: 'Indicador simplificado propio, inspirado en métricas de conectividad del paisaje (Saura y Pascual-Hortal 2007, Landscape and Urban Planning 83: 91–103).' },
   atrop: { f: math(`${mi('A')}${mo('=')}${sum}${sub(mi('atropellamientos'), mi('i'))}`),
     t: [['A', 'animales atropellados acumulados desde el año 1']],
-    como: 'Cada parche ocupado por fauna terrestre emite un dispersante por semana; muere al cruzar con probabilidad 1 − e^(−c·Q), Q = vehículos/día de las vías que corta (Hels y Buchwald 2001). Cada vez que la suma llega a 1 se registra un atropello (ind(s).atropellos).',
+    como: 'Cada corredor verde ocupado por fauna terrestre emite un dispersante por semana; muere al cruzar con probabilidad 1 − e^(−c·Q), Q = vehículos/día de las vías que corta (Hels y Buchwald 2001). Cada vez que la suma llega a 1 se registra un atropello (ind(s).atropellos).',
     fuente: 'Conteo de eventos del simulador. Pasos de fauna: Rytwinski et al. 2016, PLoS ONE 11: e0166941 (−54 %).' },
   ruido: { f: math(`${sub(mi('L'), mtxt('Aeq'))}${mo('=')}${mn(10)}${mo('⁢')}${sub(mi('log'), mn(10))}${mo('⁡')}<mrow>${mo('(')}${frac(`${sum}${sup(mn(10), `<mrow>${sub(mi('L'), mi('i'))}${mo('/')}${mn(10)}</mrow>`)}`, mi('n'))}${mo(')')}</mrow>`),
     t: [['Lᵢ', 'nivel en dB(A) de cada celda de vía de 16 m'], ['n', 'número de celdas']],
     como: 'Promedio ENERGÉTICO de las mismas celdas del mapa de ruido (simulaciones12.js, ruidoLAeq): cada grupo de celdas se corre 10·log10(tráfico) dB y −3 dB en las calles pacificadas. Antes el tablero usaba el promedio aritmético (ruidoDb), que subestima las vías fuertes.',
     fuente: 'Nivel sonoro equivalente, FHWA e ISO 1996-1.' },
   bienestar: { f: math(`${mi('B')}${mo('=')}${frac(`${sum}${sub(mi('a'), mi('p'))}${mo('⁢')}${mi('b')}<mrow>${mo('(')}${sub(mi('L'), mi('p'))}${mo(')')}</mrow>`, `${sum}${sub(mi('a'), mi('p'))}`)}${mo('×')}${mn(100)}`) + math(`<mi>b</mi><mrow>${mo('(')}${mi('L')}${mo(')')}</mrow>${mo('=')}${mi('clip')}<mrow>${mo('(')}${mn(1)}${mo('−')}${frac(`${mi('L')}${mo('−')}${mn(50)}`, mn(25))}${mo(')')}</mrow>`),
-    t: [['aₚ', 'aves presentes en el parche p (especie × parche)'], ['Lₚ', 'ruido en el parche p (dB(A)), el de su vía principal más cercana'], ['b(L)', '1 hasta 50 dB(A), baja en línea recta y llega a 0 en 75 dB(A)']],
-    como: 'ind(s).avesRuido.bienestarFauna: pondera por la exposición real (cuántas aves hay en cada parche y cuánto ruido le llega). El modelo solo tiene efecto del ruido en las aves (no en abejas ni anfibios).',
+    t: [['aₚ', 'aves presentes en el corredor verde p (especie × corredor verde)'], ['Lₚ', 'ruido en el corredor verde p (dB(A)), el de su vía principal más cercana'], ['b(L)', '1 hasta 50 dB(A), baja en línea recta y llega a 0 en 75 dB(A)']],
+    como: 'ind(s).avesRuido.bienestarFauna: pondera por la exposición real (cuántas aves hay en cada corredor verde y cuánto ruido le llega). El modelo solo tiene efecto del ruido en las aves (no en abejas ni anfibios).',
     fuente: 'Shannon et al. 2016, «A synthesis of two decades of research documenting the effects of noise on wildlife», Biological Reviews 91: 982–1005: efectos desde ~40 dB(A), 20 % de los estudios bajo 50 dB(A). 75 dB(A) como pérdida total: supuesto (borde de vía principal; Reijnen et al. 1996).' },
   saturacion: { f: math(`${mi('S')}${mo('=')}${frac(mtxt('kg acumulados'), mtxt('capacidad máxima (kg)'))}${mo('×')}${mn(100)}`),
     t: [['kg acumulados', 'orgánicos pendientes de tratar en las Estaciones Circulares'], ['capacidad máxima', 'almacenamiento de las estaciones']],
@@ -111,7 +111,7 @@ function mspace() { return '<mspace width="0.8em"></mspace>'; }
 const PROPM = {
   shannon: 'E5 + E8: los corredores y las huertas suman hábitat; las especies de humedal conservan su área y las generalistas no dominan tanto el área total.',
   clave: 'E8 huertas (flores para abejas y colibríes) y E5 corredor biótico (humedales conectados para la tingua).',
-  inter: 'E8 y E5: más parches con flores y fauna, y conectados, son más relaciones locales.',
+  inter: 'E8 y E5: más corredores verdes con flores y fauna, y conectados, son más relaciones locales.',
   verde: 'E8 módulos de huerta, E3 bordes liberados de Corabastos y E1 sin tala del bosque de Bavaria.',
   conect: 'E5: pasos de fauna (años 2–5) y conexiones vegetales; E8: módulos nuevos que sirven de escalones.',
   atrop: 'E5 pasos de fauna con cerramiento: −54 % de mortalidad al cruzar las vías principales, construidos de la semana 52 a la 260.',
@@ -129,14 +129,14 @@ const PROPM = {
 
 /* ---------- LA PREGUNTA de cada tarjeta (subtítulo en lenguaje llano) y qué mide exactamente ---------- */
 const QA = {
-  inter: { q: '¿Cuántas relaciones entre especies ocurren?', e: 'Polinizar, comer, dispersar semillas… entre especies que comparten parche. Más relaciones = ecosistema más vivo.' },
+  inter: { q: '¿Cuántas relaciones entre especies ocurren?', e: 'Polinizar, comer, dispersar semillas… entre especies que comparten corredor verde. Más relaciones = ecosistema más vivo.' },
   shannon: { q: '¿Qué tan variada y equilibrada es la fauna?', e: 'Junta cuántas especies de fauna hay y qué tan parejo se reparten el hábitat. Más alto = más especies y mejor repartidas; 0 = una sola especie.' },
   clave: { q: '¿Abejas, colibríes y tinguas ganan o pierden hábitat?', e: 'Hectáreas que ocupa cada especie frente al fin del año 1 (= 100 %). La cifra grande es el promedio de las tres.' },
   verde: { q: '¿Cuántas hectáreas verdes tiene Kennedy?', e: 'Parques, humedales, bosque, módulos de huerta, bordes liberados y huertas de los hogares.' },
-  conect: { q: '¿Qué parte de las zonas verdes forma una sola red para la fauna?', e: '% de parches verdes unidos al grupo conectado más grande, sin vías que corten el paso.' },
+  conect: { q: '¿Qué parte de las zonas verdes forma una sola red para la fauna?', e: '% de corredores verdes unidos al grupo conectado más grande, sin vías que corten el paso.' },
   atrop: { q: '¿Cuántos animales mueren atropellados?', e: 'La cifra grande es el total desde el año 1; las columnas, cuántos murieron cada año.' },
   ruido: { q: '¿Cuánto ruido hay en las vías?', e: 'Nivel promedio en dB(A). Las bandas dicen qué le hace ese ruido a la fauna.' },
-  bienestar: { q: '¿Qué tan a salvo del ruido están las aves?', e: '100 % = todas viven bajo 50 dB(A); 0 % = todas sobre 75 dB(A). Pesa más el parche con más aves.' },
+  bienestar: { q: '¿Qué tan a salvo del ruido están las aves?', e: '100 % = todas viven bajo 50 dB(A); 0 % = todas sobre 75 dB(A). Pesa más el corredor verde con más aves.' },
   saturacion: { q: '¿Qué tan llenas están las Estaciones Circulares?', e: 'Orgánicos acumulados sin tratar frente a lo que caben. Sobre 85 % = alerta.' },
   aprov: { q: '¿Qué parte de los orgánicos se vuelve compost?', e: 'Del total de orgánicos que genera Kennedy cada día: cuánto se aprovecha, cuánto va al relleno y cuánto queda sin recoger.' },
   llega: { q: '¿Llega toda la comida que Kennedy necesita?', e: 'Toda la comida de Kennedy (≈1.100 t/día hoy): la que llega frente a la demanda, que sube cada año.' },
@@ -444,11 +444,11 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
       case 'shannon': return [dos('Especies presentes (riqueza)', (I) => I.biodiversidad.riqueza), dos('Σ Aᵢ (ha ocupadas, todas)', (I) => Object.values(I.biodiversidad.areaEsp || {}).reduce((p, q) => p + q, 0), 1), dos('Equitatividad H′/ln S', (I) => { const s = I.biodiversidad.riqueza; return s > 1 ? I.biodiversidad.shannonArea / Math.log(s) : null; }, 3), dos("H′", (I) => I.biodiversidad.shannonArea, 3)];
       case 'clave': return CLAVE.flatMap((e) => [dos(`${e.larga}: N actual (ha)`, (I) => claveArea(I, e.id), 1), dos(`${e.larga}: N inicial (ha)`, (I, C) => claveArea(C.H[Math.min(SEM_REF, C.H.length) - 1], e.id), 1), dos(`${e.larga}: %`, (I, C) => clavePct(I, e.id, C), 0, ' %')]);
       case 'inter': return [dos('I (interacciones locales)', (I) => t(I).red), dos('Interacciones en la semana 0', (I) => I.red0), ['Encuentros en el 3D ahora', n(window.KEN_ENC), '—']];
-      case 'verde': return [dos('A_v (ha)', (I) => t(I).verde, 1), dos('A_v (m²)', (I) => t(I).verde * 1e4), dos('Parches verdes', (I) => I.verde && I.verde.resumen.nParches), dos('Módulos nuevos', (I) => I.verde && I.verde.resumen.nNuevos)];
-      case 'conect': return [dos('Parches conectados', (I) => I.verde && I.verde.resumen.nConectados), dos('Parches totales', (I) => I.verde && I.verde.resumen.nParches), dos('Enlaces rotos', (I) => I.verde && I.verde.resumen.nRotas), dos('C', (I) => t(I).conectados, 1, ' %')];
+      case 'verde': return [dos('A_v (ha)', (I) => t(I).verde, 1), dos('A_v (m²)', (I) => t(I).verde * 1e4), dos('Corredores verdes', (I) => I.verde && I.verde.resumen.nParches), dos('Módulos nuevos', (I) => I.verde && I.verde.resumen.nNuevos)];
+      case 'conect': return [dos('Corredores verdes conectados', (I) => I.verde && I.verde.resumen.nConectados), dos('Corredores verdes totales', (I) => I.verde && I.verde.resumen.nParches), dos('Enlaces rotos', (I) => I.verde && I.verde.resumen.nRotas), dos('C', (I) => t(I).conectados, 1, ' %')];
       case 'atrop': return [dos('A (acumulados)', (I) => I.atropellos.total), dos('Este año', (I) => I.atropellos.porAño[Math.min(14, Math.floor((I.sem - 1) / 52))]), dos('Esta semana', (I) => I.atropellos.semana), dos('Índice (dispersantes muertos/sem.)', (I) => I.atropellosIndice, 1)];
       case 'ruido': return [dos('L_Aeq (energético)', (I) => I.ruidoLAeq, 1, ' dB(A)'), dos('Promedio aritmético (antes)', (I) => I.ruidoDb, 1, ' dB'), dos('L_Aeq del inicio', (I) => I.ruidoLAeq0, 1, ' dB(A)'), dos('Calles pacificadas', (I) => (I.mitiga || 0) * 100, 0, ' %'), dos('Tráfico (1 = hoy)', (I) => I.trafico, 3)];
-      case 'bienestar': return [dos('Σ aₚ (aves × parche)', (I) => (I.avesRuido.porParche || []).reduce((p, q) => p + q.aves, 0) || null), dos('Ruido al que están expuestas', (I) => I.avesRuido.dbAves, 1, ' dB(A)'), dos('Aves en parches > 60 dB', (I) => I.avesRuido.expuestas * 100, 0, ' %'), dos('B', (I) => I.avesRuido.bienestarFauna * 100, 1, ' %')];
+      case 'bienestar': return [dos('Σ aₚ (aves × corredor verde)', (I) => (I.avesRuido.porParche || []).reduce((p, q) => p + q.aves, 0) || null), dos('Ruido al que están expuestas', (I) => I.avesRuido.dbAves, 1, ' dB(A)'), dos('Aves en corredores verdes > 60 dB', (I) => I.avesRuido.expuestas * 100, 0, ' %'), dos('B', (I) => I.avesRuido.bienestarFauna * 100, 1, ' %')];
       case 'saturacion': return [dos('kg acumulados', (I) => hayEstaciones(I) ? t(I).pendientes * 1000 : null), dos('Capacidad máxima (kg)', (I) => hayEstaciones(I) ? t(I).capacidadAlmacen * 1000 : null), dos('Estaciones', (I) => (t(I).estaciones || []).length || null), dos('S', (I) => valor('saturacion', I, null), 1, ' %')];
       case 'aprov': return [dos('kg aprovechados/día', (I) => t(I).tratados * 1000), dos('kg generados/día', (I) => t(I).organicos * 1000), dos('Compost (kg/día)', (I) => t(I).compost * 1000), dos('R', (I) => t(I).aprovechamiento, 2, ' %')];
       case 'llega': return [dos('Demanda de Kennedy (t/día)', (I) => I.comidaK && I.comidaK.dem), dos('Frescos recibidos (t/día)', (I) => I.comidaK && I.comidaK.frescosRec), dos('Otros canales (t/día)', (I) => I.comidaK && I.comidaK.otros), dos('Llega (t/día)', (I) => I.comidaK && I.comidaK.llega), dos('L', (I) => valor('llega', I), 1, ' %')];
@@ -535,7 +535,7 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
       { id: 'O4', n: 'Estaciones Circulares', c: '#a78bfa', t: 'Orgánicos a compost en cada mercado' },
       { id: 'O5', n: 'Huertas hidropónicas', c: '#22d3ee', t: 'Cultivos sobre cubiertas de edificios' },
       { id: 'O6', n: 'Huertas en parques', c: '#84cc16', t: 'Huertas de barrio que abren por años' },
-      { id: 'O7', n: 'Árboles nuevos', c: '#34d399', t: 'Parches nativos en los parques' }
+      { id: 'O7', n: 'Árboles nuevos', c: '#34d399', t: 'Corredores verdes nativos en los parques' }
     ];
     const fila = (id, n, c, t, cod, ch, det) => `<li data-e="${id}" style="--c:${c}"><div class="h"><button type="button" class="ir" aria-label="Ver ${esc(n)} en el mapa"><i></i><span class="t"><b>${cod ? `<small>${cod}</small> ` : ''}${esc(n)}</b><em>${esc(t)}</em></span></button>${det ? `<button type="button" class="info" aria-label="Qué hace en el modelo" aria-expanded="false">${SVG_INFO}</button>` : ''}<button type="button" class="mapa" aria-label="Ver en el mapa" title="Ver en el mapa">${SVG_MAPA}</button></div>${det ? `<p class="det" hidden>${esc(det)}</p>` : ''}${ch ? `<div class="ch">${ch.map((k) => `<button type="button" data-k="${k}">${esc(INDK[k].c)}</button>`).join('')}</div>` : ''}</li>`;
     v.innerHTML = '<div class="pi-estbar"><span>Toca una para verla en el mapa</span><button type="button" class="pi-volver" hidden>' + SVG_VOLVER + 'Volver</button></div>'

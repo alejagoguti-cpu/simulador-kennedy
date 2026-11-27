@@ -22,11 +22,20 @@
      activar(T3, on, semana)  → prende/apaga toda la propuesta en 3D en la semana simulada dada (llamar una vez por semana; la animación es aparte)
      info()                   → estado y ubicaciones: { activo, puente: { x, z, radio, … }, obras: [{ id, n, x, z, radio }], … } (mundo, para el zoom)
      window.KEN_PROP01.puente = { x, z, radio } (y window.KEN_PUENTE_FAUNA): ubicación del ecoducto para la pestaña Estrategias. */
-import { quitadas01 } from './abasto_capas.js?v=4';
-import { crearParches3D, ESPECIES } from './parches_arboles.js?v=11';
+/* v5.2 (docs/sim01_abastecimiento_v5.md, «v5.2 Implementación»):
+   · DESMONTE GRADUAL: las 18 naves se quitan de a poco entre los años 1 y 8 (semQuita01 de abasto_capas.js = AB01_DESMONTE del modelo), la
+     más cercana a La Vaca primero. Cada celda del terreno liberado guarda la semana en que queda libre (la de la nave quitada más cercana); la
+     malla de Google solo se recorta donde ya se quitó la nave (ahí se sigue viendo la foto de Corabastos hasta ese año) y el humedal, la
+     pradera, los juncos y los árboles crecen en cada celda desde su propia semana (obra 0,6 años, agua y pradera en 4 años, árboles sembrados
+     en 1,5 años y adultos 3,5 años después) [SUP: calendario].
+   · PRECARGA: todo se arma escondido en trozos de ≤ 8 ms (requestIdleCallback) apenas se crea (sim_ui.js lo crea después de «Iniciar»):
+     poner() solo prende, cambia uniformes y edades. Incluye las calles verdes (calles_verdes3d.js) y el humedal artificial de Bavaria
+     (humedal_bavaria3d.js). */
+import { quitadas01, semQuita01 } from './abasto_capas.js?v=7';
+import { crearParches3D, ESPECIES } from './parches_arboles.js?v=12';
 import { hoyo01 } from './gris01.js?v=1';
-import { crearEcoducto } from './ecoducto.js?v=1';
-import { crearFauna } from './propuesta_fauna.js?v=1';
+import { crearEcoducto } from './ecoducto.js?v=2';
+import { crearFauna } from './propuesta_fauna.js?v=2';
 
 const AN = { sendero: 5, barrera: 42, pradera: 78, agua: 100, agua1: 170 }; // franjas en metros de D (año 5) y agua del año 1
 const YP = 1.0; // altura del humedal: por encima del recorte de la malla de Google (0,9 m)
@@ -57,25 +66,36 @@ export function crearPropuesta01({ T3 }) {
   const dpoly = (P, x, z) => { let d = 1e9; for (let i = 0; i < P.length; i++) d = Math.min(d, dseg(x, z, P[i], P[(i + 1) % P.length])); return d; };
 
   /* campo D (m, con ruido) en una rejilla de 2 m en coordenadas del mundo; textura R = D, G = dentro del terreno liberado */
-  function armarCampo(C, vaca) {
-    const naves = C.naves || [], q = new Set(quitadas01(naves)), PO = C.poly.map(p => lw(p[0], p[1])), V = vaca ? vaca.map(p => lw(p[0], p[1])) : [];
+  function* armarCampo(C, vaca) {
+    const naves = C.naves || [], qo = quitadas01(naves), q = new Set(qo), PO = C.poly.map(p => lw(p[0], p[1])), V = vaca ? vaca.map(p => lw(p[0], p[1])) : [];
     naves.forEach((n, i) => { const [cx, cz] = lw(n.c[0], n.c[1]), e = lw(n.c[0] + Math.cos(n.a), n.c[1] + Math.sin(n.a)), ux = e[0] - cx, uz = e[1] - cz;
-      (q.has(i) ? S.quitadas : S.quedan).push({ i, cx, cz, th: Math.atan2(-uz, ux), L: n.L, W: n.W }); });
+      if (!q.has(i)) S.quedan.push({ i, cx, cz, th: Math.atan2(-uz, ux), L: n.L, W: n.W }); });
+    /* v5.2: quitadas en su orden (k) con su semana y su rectángulo (para saber qué celda libera cada una) */
+    S.quitadas = qo.map((i, k) => { const n = naves[i], [cx, cz] = lw(n.c[0], n.c[1]), e = lw(n.c[0] + Math.cos(n.a), n.c[1] + Math.sin(n.a)), ux = e[0] - cx, uz = e[1] - cz;
+      return { i, k, sem: semQuita01(k, qo.length), cx, cz, th: Math.atan2(-uz, ux), L: n.L, W: n.W, R: rect(n, 0) }; });
+    yield;
     const H = envolvente(naves.filter((n, i) => !q.has(i)).flatMap(n => rect(n, 8)));
     const segs = PO.map((a, i) => ({ a, b: PO[(i + 1) % PO.length] })).map(s => ({ ...s, vaca: V.length > 2 && dpoly(V, s.a[0], s.a[1]) < 80 && dpoly(V, s.b[0], s.b[1]) < 80 }));
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of PO) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
-    const CEL = 2, M = 6; x0 -= M; z0 -= M; const NX = Math.ceil((x1 + M - x0) / CEL), NZ = Math.ceil((z1 + M - z0) / CEL), dat = new Uint8Array(NX * NZ * 4), Dv = new Float32Array(NX * NZ).fill(-1);
+    const CEL = 2, M = 6; x0 -= M; z0 -= M; const NX = Math.ceil((x1 + M - x0) / CEL), NZ = Math.ceil((z1 + M - z0) / CEL), dat = new Uint8Array(NX * NZ * 4), Dv = new Float32Array(NX * NZ).fill(-1), Tq = new Uint16Array(NX * NZ).fill(65535);
     const Dcalc = (x, z) => { const dr = dpoly(H, x, z); let dc = 1e9, dv = 1e9; for (const s of segs) { const d = dseg(x, z, s.a, s.b); if (s.vaca) dv = Math.min(dv, d); else dc = Math.min(dc, d); }
       return Math.min(dr, dc, dv + 85) + (fbm(x / 70, z / 70) - 0.5) * 24 + (fbm(x / 22 + 40, z / 22) - 0.5) * 10; };
-    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = x0 + (i + 0.5) * CEL, z = z0 + (j + 0.5) * CEL, k = j * NX + i;
-      const ins = dentro(PO, x, z) && !dentro(H, x, z); const D = ins ? Math.max(0, Dcalc(x, z)) : 0; if (ins) Dv[k] = D;
-      dat[k * 4] = Math.min(255, Math.round(D)); dat[k * 4 + 1] = ins ? 255 : 0; dat[k * 4 + 2] = 0; dat[k * 4 + 3] = 255; }
+    /* semana en que la celda queda libre: la de la nave quitada más cercana (distancia a su rectángulo, con ruido para que el frente no sea recto) */
+    const semCel = (x, z) => { let md = 1e9, s = 0; for (const Q of S.quitadas) { const d = dentro(Q.R, x, z) ? 0 : dpoly(Q.R, x, z); if (d < md) { md = d; s = Q.sem; } } return s; };
+    let tc = performance.now();
+    for (let j = 0; j < NZ; j++) { for (let i = 0; i < NX; i++) { const x = x0 + (i + 0.5) * CEL, z = z0 + (j + 0.5) * CEL, k = j * NX + i;
+      const ins = dentro(PO, x, z) && !dentro(H, x, z); const D = ins ? Math.max(0, Dcalc(x, z)) : 0; if (ins) { Dv[k] = D; Tq[k] = semCel(x + (fbm(x / 30, z / 30) - 0.5) * 40, z + (fbm(z / 30 + 9, x / 30) - 0.5) * 40); }
+      dat[k * 4] = Math.min(255, Math.round(D)); dat[k * 4 + 1] = 0; dat[k * 4 + 2] = ins ? Math.min(255, Math.round(Tq[k] / 4)) : 0; dat[k * 4 + 3] = 255; }
+      if (performance.now() - tc > 7) { yield; tc = performance.now(); } }
     const tex = new THREE.DataTexture(dat, NX, NZ, THREE.RGBAFormat); tex.magFilter = tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
     const Dat = (x, z) => { const i = Math.floor((x - x0) / CEL), j = Math.floor((z - z0) / CEL); return i < 0 || j < 0 || i >= NX || j >= NZ ? -1 : Dv[j * NX + i]; };
+    const TqAt = (x, z) => { const i = Math.floor((x - x0) / CEL), j = Math.floor((z - z0) / CEL); return i < 0 || j < 0 || i >= NX || j >= NZ || Dv[j * NX + i] < 0 ? -1 : Tq[j * NX + i]; };
+    /* G = terreno ya liberado en la semana t (recorta la malla de Google y deja ver el humedal); se rehace solo cuando cambia el número de naves quitadas */
+    let gT = -2; const liberar = (t) => { if (t === gT) return; gT = t; for (let k = 0; k < Dv.length; k++) dat[k * 4 + 1] = Dv[k] >= 0 && t >= Tq[k] ? 255 : 0; tex.needsUpdate = true; };
     // áreas de cada franja en el año 5 (ha) para los indicadores
     let a = { sendero: 0, barrera: 0, pradera: 0, juncos: 0, agua: 0 }; for (const D of Dv) { if (D < 0) continue; const c = CEL * CEL / 1e4; if (D < AN.sendero) a.sendero += c; else if (D < AN.barrera) a.barrera += c; else if (D < AN.pradera) a.pradera += c; else if (D < AN.agua) a.juncos += c; else a.agua += c; }
     Object.assign(AREA, a); AREA.total = a.sendero + a.barrera + a.pradera + a.juncos + a.agua;
-    return { tex, PO, H, box: [x0, z0, NX * CEL, NZ * CEL], D: Dat, x0, z0, x1: x0 + NX * CEL, z1: z0 + NZ * CEL };
+    return { tex, PO, H, box: [x0, z0, NX * CEL, NZ * CEL], D: Dat, Tq: TqAt, liberar, x0, z0, x1: x0 + NX * CEL, z1: z0 + NZ * CEL };
   }
 
   /* ---------- texturas pintadas (pradera húmeda y juncos) ---------- */
@@ -93,10 +113,10 @@ export function crearPropuesta01({ T3 }) {
   const nrm = new THREE.TextureLoader().load('data3d/waternormals.jpg'); nrm.wrapS = nrm.wrapT = THREE.RepeatWrapping;
 
   /* ---------- el humedal: un plano con un sombreador que pinta las franjas a partir del campo ---------- */
-  const U = { uF: { value: null }, uBox: { value: new THREE.Vector4() }, uT: { value: 0 }, uWt: { value: 999 }, uJt: { value: 999 }, uG: { value: 0 }, uNrm: { value: nrm }, uPra: { value: texPra }, uJun: { value: texJun }, uSol: { value: new THREE.Vector3(0.55, 0.7, 0.45).normalize() } };
+  const U = { uF: { value: null }, uBox: { value: new THREE.Vector4() }, uT: { value: 0 }, uAnos: { value: 0 }, uJt: { value: 999 }, uNrm: { value: nrm }, uPra: { value: texPra }, uJun: { value: texJun }, uSol: { value: new THREE.Vector3(0.55, 0.7, 0.45).normalize() } };
   const matH = new THREE.ShaderMaterial({ uniforms: U, toneMapped: false,
     vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
-    fragmentShader: `uniform sampler2D uF, uNrm, uPra, uJun; uniform vec4 uBox; uniform float uT, uWt, uJt, uG; uniform vec3 uSol; varying vec3 vW;
+    fragmentShader: `uniform sampler2D uF, uNrm, uPra, uJun; uniform vec4 uBox; uniform float uT, uAnos, uJt; uniform vec3 uSol; varying vec3 vW;
       float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
       float vn(vec2 p){ vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f); return mix(mix(h2(i), h2(i + vec2(1, 0)), u.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), u.x), u.y); }
       vec3 L(vec3 c){ return pow(c, vec3(2.2)); }
@@ -104,6 +124,9 @@ export function crearPropuesta01({ T3 }) {
         vec2 uv = (vW.xz - uBox.xy) * uBox.zw; vec4 f = texture2D(uF, uv);
         if (f.g < 0.3 + 0.4 * h2(floor(vW.xz * 1.5))) discard; // borde del terreno liberado: se deshace en puntos (sin raya recta)
         float d = f.r * 255.0 + (vn(vW.xz * 0.35) - 0.5) * 3.0;
+        /* v5.2: cada celda crece desde la semana en que se quitó su nave (B = semana ÷ 4) */
+        float la = uAnos - f.b * 255.0 * 4.0 / 52.0, gA = clamp((la - 0.6) / 4.0, 0.0, 1.0), uG = clamp((la - 0.4) / 3.2, 0.0, 1.0);
+        float uWt = la < 0.6 ? 999.0 : 170.0 - 70.0 * gA * (2.0 - gA);
         vec3 pra = mix(texture2D(uPra, vW.xz / 7.0).rgb, texture2D(uPra, vW.xz / 29.0 + 0.3).rgb, 0.45);
         vec3 jun = mix(texture2D(uJun, vW.xz / 5.0).rgb, texture2D(uJun, vW.xz / 17.0).rgb, 0.4);
         float nz = vn(vW.xz * 0.08);
@@ -144,11 +167,11 @@ export function crearPropuesta01({ T3 }) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(Cc, 3)); g.computeVertexNormals(); return g; }
   function armarJuncos() { const L = [], R = (() => { let s = 77; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
     for (let x = campo.x0; x < campo.x1; x += 2.3) for (let z = campo.z0; z < campo.z1; z += 2.3) { const px = x + (R() - 0.5) * 2, pz = z + (R() - 0.5) * 2, D = campo.D(px, pz);
-      if (D < AN.pradera - 3 || D > AN.agua + 4) continue; if (R() < 0.25) continue; L.push([px, pz, D]); }
+      if (D < AN.pradera - 3 || D > AN.agua + 4) continue; if (R() < 0.25) continue; L.push([px, pz, D, Math.max(0, campo.Tq(px, pz)) / 52]); }
     const m = new THREE.InstancedMesh(geoJunco(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, side: THREE.DoubleSide }), L.length);
     m.frustumCulled = false; m.castShadow = false; G.add(m); m.userData.L = L; m.count = 0; return m; }
-  function crecerJuncos(g) { if (!junc) return; const L = junc.userData.L; let n = 0;
-    for (const [x, z, D] of L) { const k = hs(x * 0.37, z * 0.71); if (k > g * 1.15) continue; const e = Math.min(1, (g * 1.15 - k) * 3) * (0.75 + 0.5 * hs(z, x)) * (D > AN.agua ? 0.8 : 1);
+  function crecerJuncos(años) { if (!junc) return; const L = junc.userData.L; let n = 0;
+    for (const [x, z, D, tq] of L) { const g = sat((años - tq - 0.4) / 3.2), k = hs(x * 0.37, z * 0.71); /* v5.2: desde que se quitó su nave */ if (k > g * 1.15) continue; const e = Math.min(1, (g * 1.15 - k) * 3) * (0.75 + 0.5 * hs(z, x)) * (D > AN.agua ? 0.8 : 1);
       O.position.set(x, YP, z); O.rotation.set(0, k * 6.283, 0); O.scale.set(e * 1.4, e, e * 1.4); O.updateMatrix(); junc.setMatrixAt(n++, O.matrix); }
     junc.count = n; junc.instanceMatrix.needsUpdate = true; }
 
@@ -158,7 +181,7 @@ export function crearPropuesta01({ T3 }) {
     for (let x = campo.x0; x < campo.x1; x += 4.3) for (let z = campo.z0; z < campo.z1; z += 4.3) { const px = x + (R() - 0.5) * 3.2, pz = z + (R() - 0.5) * 3.2, D = campo.D(px, pz);
       let L = null; if (D >= AN.sendero + 1.5 && D < AN.barrera - 3) { if (R() < 0.08) continue; L = D < 17 ? can : D < 31 ? (R() < 0.3 ? can : med) : arb2; }
       else if (D >= AN.barrera && D < AN.pradera - 10 && R() < 0.06) L = med; // sueltos en la pradera húmeda
-      if (!L) continue; const sp = L[Math.floor(R() * L.length)]; A.push({ x: px, z: pz, sp, h: ESPECIES[sp].alto * (0.8 + R() * 0.35) * (D < 17 ? 1.25 : 1), rot: R() * 6.283 }); } // la primera fila (junto a Corabastos), más alta
+      if (!L) continue; const sp = L[Math.floor(R() * L.length)]; A.push({ tq: Math.max(0, campo.Tq(px, pz)) / 52, x: px, z: pz, sp, h: ESPECIES[sp].alto * (0.8 + R() * 0.35) * (D < 17 ? 1.25 : 1), rot: R() * 6.283 }); } // la primera fila (junto a Corabastos), más alta
     // en parches de ~60 m (nombre y centro para la red; marcas de lejos apagadas)
     const P = {}; for (const t of A) { const k = Math.floor(t.x / 60) + ',' + Math.floor(t.z / 60); (P[k] = P[k] || { n: 'Barrera del humedal La Vaca', c: [t.x, t.z], arboles: [] }).arboles.push(t); }
     /* v5 (pedido de la autora): más árboles nativos en el parque al sur de Corabastos (Parque Cayetano Cañizares, donde abre un mercado de la
@@ -168,36 +191,65 @@ export function crearPropuesta01({ T3 }) {
       PS.arboles.push({ x: 783 + Math.cos(a) * d, z: 1637 + Math.sin(a) * d, sp, h: ESPECIES[sp].alto * (0.8 + R() * 0.35), rot: R() * 6.283 }); }
     return Object.values(P).concat([PS]); }
 
-  Promise.all([cargar('data3d/corabastos.json'), cargar('data3d/water_bodies.json').catch(() => [])]).then(([D, WB]) => {
+  /* v5.2 · PRECARGA en trozos de ≤ 8 ms cuando el navegador está libre: campo, humedal, juncos, árboles, calles verdes y humedal de Bavaria */
+  const ocioso = (f) => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 400 }) : setTimeout(() => f({ timeRemaining: () => 8 }), 16));
+  const correrGen = (gen) => new Promise((res, rej) => { const paso = (dl) => { const t0 = performance.now(), lim = Math.min(8, Math.max(3, dl && dl.timeRemaining ? dl.timeRemaining() : 8));
+      try { while (performance.now() - t0 < lim) { const r = gen.next(); if (r.done) return res(r.value); } } catch (e) { return rej(e); } ocioso(paso); }; ocioso(paso); });
+  const EXTRA = { cv: null, hb: null };
+  const listoP = Promise.all([cargar('data3d/corabastos.json'), cargar('data3d/water_bodies.json').catch(() => [])]).then(async ([D, WB]) => {
     const vaca = (WB || []).filter(w => /vaca/i.test(w.nombre || '')).sort((a, b) => b.pts.length - a.pts.length)[0];
-    campo = armarCampo(D, vaca ? vaca.pts : null);
+    campo = await correrGen(armarCampo(D, vaca ? vaca.pts : null));
     U.uF.value = campo.tex; U.uBox.value.set(campo.box[0], campo.box[1], 1 / campo.box[2], 1 / campo.box[3]);
     hum = new THREE.Mesh(new THREE.PlaneGeometry(campo.box[2], campo.box[3]).rotateX(-Math.PI / 2).translate(campo.box[0] + campo.box[2] / 2, YP, campo.box[1] + campo.box[3] / 2), matH);
     hum.frustumCulled = false; hum.renderOrder = 2; G.add(hum);
-    junc = armarJuncos(); arbP = arbolesHumedal(); AREA.arboles = arbP.reduce((a, p) => a + p.arboles.length, 0); AREA.juncos3d = junc.userData.L.length;
-    listo = true; if (activo) armar();
+    await new Promise(r => ocioso(r)); junc = armarJuncos(); await new Promise(r => ocioso(r)); arbP = arbolesHumedal(); AREA.arboles = arbP.reduce((a, p) => a + p.arboles.length, 0); AREA.juncos3d = junc.userData.L.length;
+    listo = true; ponerNaves(0);
+    await new Promise(r => ocioso(r)); cargarArboles();
+    /* calles verdes y humedal de Bavaria (módulos aparte; si faltan, la propuesta sigue) */
+    import('./calles_verdes3d.js?v=1').then(m => { EXTRA.cv = m.crearCallesVerdes({ T3 }); return EXTRA.cv.preparar(); }).then(() => { if (activo && EXTRA.cv) EXTRA.cv.poner(sem); else if (precT) ocioso(precompilar); }).catch(e => { if (!EXTRA.cv) EXTRA.cv = false; console.warn('calles verdes:', e); });
+    import('./humedal_bavaria3d.js?v=2').then(m => { EXTRA.hb = m.crearHumedalBavaria({ T3 }); return EXTRA.hb.preparar(); }).then(() => { if (activo && EXTRA.hb) EXTRA.hb.poner(sem); else if (precT) ocioso(precompilar); }).catch(e => { if (!EXTRA.hb) EXTRA.hb = false; console.warn('humedal Bavaria:', e); });
+    if (activo) armar();
+    /* v5.2 (medido: al pasar a «con propuesta» ~0,9 s se iban en compilar sombreadores y ~0,4 s en subir buffers la primera vez que se
+       dibujaba): cuando todo está armado, en un momento libre se compilan los materiales (compileAsync, en paralelo si el navegador puede) y
+       se dibuja una vez en un blanco de 1 × 1 px para subir los buffers; después todo vuelve a quedar escondido */
+    const esperar = (p) => Promise.race([p, new Promise(r => setTimeout(r, 20000))]).catch(() => {});
+    await esperar(Promise.all([new Promise(r => { const v = () => (arb && arb !== 'cargando') || !arbP ? r() : setTimeout(v, 300); v(); }),
+      new Promise(r => { const v = () => (EXTRA.cv && EXTRA.cv.info().listo) || EXTRA.cv === false ? r() : setTimeout(v, 300); setTimeout(v, 300); }),
+      new Promise(r => { const v = () => (EXTRA.hb && EXTRA.hb.info().listo) || EXTRA.hb === false ? r() : setTimeout(v, 300); setTimeout(v, 300); })]));
+    await new Promise(r => ocioso(r)); precompilar();
   }).catch(e => console.warn('propuesta 01:', e));
+  let precT = null; function precompilar() { const R = T3.renderer; if (!R || activo) return; precT = Math.round(performance.now());
+    const grupos = [G, arb && arb.grupo, T3.scene.getObjectByName('calles_verdes'), EXTRA.hb && EXTRA.hb.grupo].filter(Boolean), antes = grupos.map(g => g.visible);
+    grupos.forEach(g => { g.visible = true; });
+    try { const fc = [], c0 = [], vi = []; grupos.forEach(g => g.traverse(o => { if (o.frustumCulled) { fc.push(o); o.frustumCulled = false; } /* lo que está fuera de cuadro también sube sus buffers */
+        if (o.isInstancedMesh && o.count === 0 && o.instanceMatrix && o.instanceMatrix.count > 0) { c0.push(o); o.count = 1; } /* aún sin plantas ni árboles: una instancia para compilar y subir */
+        if (!o.visible && (o.isMesh || o.isPoints || o.isLine)) { vi.push(o); o.visible = true; } }));
+      const rt = new THREE.WebGLRenderTarget(1, 1), rt0 = R.getRenderTarget(); R.setRenderTarget(rt); R.render(T3.scene, T3.camera); R.setRenderTarget(rt0); rt.dispose();
+      fc.forEach(o => { o.frustumCulled = true; }); c0.forEach(o => { o.count = 0; }); vi.forEach(o => { o.visible = false; });
+    } catch (e) { console.warn('precompilar propuesta:', e); }
+    grupos.forEach((g, i) => { if (!activo) g.visible = antes[i]; }); }
+  function cargarArboles() { if (arb || !arbP || !arbP.length) return; arb = 'cargando';
+    crearParches3D({ T3, P: arbP, fijo: true }).then(A => { arb = A; A.grupo.name = 'prop01_arboles'; A.grupo.position.y = YP - y0() - 0.05; A.grupo.traverse(o => { if (o.isPoints) o.visible = false; }); A.ver(activo); if (activo) crecer(true); }).catch(e => { arb = null; console.warn('árboles propuesta 01:', e); }); }
 
   const T0 = performance.now(); let raf = 0;
   const animar = () => { raf = activo ? requestAnimationFrame(animar) : 0; U.uT.value = (performance.now() - T0) / 1000; };
-  function armar() {
-    const y = y0(); let k = 0;
-    for (const N of S.quedan) { O.position.set(N.cx, y, N.cz); O.rotation.set(0, N.th, 0); O.scale.set(N.L, 9, N.W); O.updateMatrix(); mNave.setMatrixAt(k++, O.matrix); } mNave.count = k; mNave.instanceMatrix.needsUpdate = true;
-    if (!arb && arbP && arbP.length) { arb = 'cargando'; crearParches3D({ T3, P: arbP, fijo: true }).then(A => { arb = A; A.grupo.name = 'prop01_arboles'; A.grupo.position.y = YP - y0() - 0.05; A.grupo.traverse(o => { if (o.isPoints) o.visible = false; }); A.ver(activo); crecer(true); }).catch(e => { arb = null; console.warn('árboles propuesta 01:', e); }); }
-    hoyo(true); crecer(true);
-  }
+  /* naves en pie: las que quedan + las quitadas que todavía no se quitan (volúmenes grises de 9 m, como siempre) */
+  function ponerNaves(nq) { const y = y0(); let k = 0;
+    for (const N of S.quedan.concat(S.quitadas.slice(nq))) { O.position.set(N.cx, y, N.cz); O.rotation.set(0, N.th, 0); O.scale.set(N.L, 9, N.W); O.updateMatrix(); mNave.setMatrixAt(k++, O.matrix); } mNave.count = k; mNave.instanceMatrix.needsUpdate = true; }
+  function armar() { nqAnt = -1; if (!arb) cargarArboles(); hoyo(true); crecer(true); }
   /* malla de Google recortada en el terreno liberado (index.html: uHoyoOn/uHoyoTex/uHoyoBox); edificios y vías del modelo: data3d/gris01.js */
   function hoyo(on) { const M = T3.maskU; if (!M || !M.uHoyoTex) return; if (on && campo) { M.uHoyoTex.value = campo.tex; M.uHoyoBox.value.set(campo.box[0], campo.box[1], 1 / campo.box[2], 1 / campo.box[3]); M.uHoyoOn.value = 1; } else M.uHoyoOn.value = 0;
     hoyo01(T3, on && campo ? campo.PO : null, campo ? campo.H : null); /* y los edificios y vías del modelo (data3d/gris01.js) */ }
   /* calendario [SUP]: año 0–1 obra; agua D > 170 → 100 m entre los años 1 y 5; pradera y juncos verdean en los años 0,8–4; árboles sembrados en
      los años 1–2,5 (según su clave k), 3,5 años hasta adultos; huertas de parque abren entre los años 0,5 y 6; parches de parques sembrados en los años 1–4 */
-  let ultArb = -1, ultHB = -1, hbAntes = null, parAntes = null;
+  let ultArb = -1, ultHB = -1, hbAntes = null, parAntes = null, ultJun = -1, nqAnt = -1;
   const sat = (v) => Math.max(0, Math.min(1, v));
   function crecer(forzar) {
     const años = sem / 52, ga = sat((años - 1) / 4), gv = sat((años - 0.8) / 3.2);
-    U.uWt.value = años < 1 ? 999 : AN.agua1 + (AN.agua - AN.agua1) * (ga * (2 - ga)); // el agua sube rápido al principio y se asienta
-    U.uJt.value = AN.pradera; U.uG.value = gv; crecerJuncos(gv);
-    const edadArb = (kk) => { const t = años - (1 + kk * 1.5); return t <= 0 ? 0 : Math.min(1, 0.35 + 0.65 * t / 3.5); };
+    /* v5.2: el agua, la pradera, los juncos y los árboles crecen en cada celda desde la semana en que se quitó su nave (uAnos en el sombreador) */
+    U.uAnos.value = años; U.uJt.value = AN.pradera; if (forzar || Math.abs(años - ultJun) > 0.04) { ultJun = años; crecerJuncos(años); }
+    if (campo) { const nq = S.quitadas.filter(Q => sem - 1 >= Q.sem).length; campo.liberar(nq ? S.quitadas[nq - 1].sem : -1); if (nq !== nqAnt) { nqAnt = nq; ponerNaves(nq); } }
+    const edadArb = (kk, t0) => { const t = años - ((t0 && t0.tq != null ? t0.tq + 0.6 : 1) + kk * 1.5); return t <= 0 ? 0 : Math.min(1, 0.35 + 0.65 * t / 3.5); };
     if (arb && arb !== 'cargando' && (forzar || Math.abs(años - ultArb) > 0.07)) { ultArb = años; arb.edad(edadArb); }
     // huertas de parque (efímeras) que se abren con un pulso verde
     const HB = window.KEN_HBAR; if (HB && HB.fraccion) { if (!hbAntes) hbAntes = { vis: HB.grupo.visible }; HB.ver(true); const f = sat((años - 0.5) / 5.5); if (forzar || Math.abs(f - ultHB) > 0.004) { ultHB = f; HB.fraccion(f); } }
@@ -212,8 +264,9 @@ export function crearPropuesta01({ T3 }) {
       const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = false; if (window.KEN_PCORA && window.KEN_PCORA.ver) window.KEN_PCORA.ver(false);
       mNave.visible = !(window.KEN_AB01C && window.KEN_AB01C.estado && window.KEN_AB01C.estado.bodegas);
       if (arb && arb !== 'cargando') arb.ver(true);
+      if (EXTRA.cv) EXTRA.cv.poner(sem); if (EXTRA.hb) EXTRA.hb.poner(sem);
       if (listo) { if (nuevo) armar(); else crecer(false); } },
-    apagar() { if (!activo) return; activo = false; G.visible = false; hoyo(false); ECO.apagar(); FAU.apagar(); if (arb && arb !== 'cargando') arb.ver(false);
+    apagar() { if (!activo) return; activo = false; G.visible = false; hoyo(false); ECO.apagar(); FAU.apagar(); if (arb && arb !== 'cargando') arb.ver(false); if (EXTRA.cv) EXTRA.cv.apagar(); if (EXTRA.hb) EXTRA.hb.apagar();
       const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = true;
       const HB = window.KEN_HBAR; if (HB && hbAntes) { HB.fraccion(1); HB.ver(hbAntes.vis); hbAntes = null; ultHB = -1; }
       const KP = window.KEN_PARCHES; if (KP && parAntes) { KP.edad(null); KP._p01 = null; KP.ver(parAntes.vis); parAntes = null; } },
@@ -222,10 +275,13 @@ export function crearPropuesta01({ T3 }) {
     /* obras de la propuesta con su ubicación en el mundo (zoom de la pestaña Estrategias) */
     obras() { const L = [{ id: 'puente', n: 'Puente de fauna sobre la Av. Ciudad de Cali (Humedal El Burro)', x: ECO.puente.x, z: ECO.puente.z, radio: ECO.puente.radio }];
       if (campo) L.push({ id: 'vaca', n: 'Humedal La Vaca ampliado en el predio de Corabastos', x: campo.box[0] + campo.box[2] / 2, z: campo.box[1] + campo.box[3] / 2, radio: Math.round(Math.max(campo.box[2], campo.box[3]) / 2) });
+      for (const X of [EXTRA.hb, EXTRA.cv]) if (X && X.obra) { try { const o = X.obra(); if (o) L.push(o); } catch (e) { /* módulo aún armándose */ } }
       if (S.quedan.length) { let x = 0, z = 0; for (const N of S.quedan) { x += N.cx; z += N.cz; } L.push({ id: 'corabastos', n: 'Corabastos al 50 %', x: x / S.quedan.length, z: z / S.quedan.length, radio: 260 }); }
       for (const [id, n, lx, ly, r] of [['borde_burro', 'Árboles de borde · Humedal El Burro', 7300, 3450, 420], ['borde_vaca', 'Árboles de borde · Humedal La Vaca', 6000, 1900, 300], ['borde_techo', 'Árboles de borde · Humedal de Techo', 8240, 3920, 300]]) { const [x, z] = T3.lw(lx, ly); L.push({ id, n, x, z, radio: r }); }
       return L; },
-    info() { return { activo, listo, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, uWt: U.uWt.value, uG: U.uG.value,
+    listo: () => listoP, extra: EXTRA,
+    humedalBavaria() { return EXTRA.hb && EXTRA.hb.area ? EXTRA.hb.area() : null; },
+    info() { return { activo, listo, precompilado: precT, nQuitadas: nqAnt, callesVerdes: EXTRA.cv && EXTRA.cv.info ? EXTRA.cv.info() : null, humedalBavaria: EXTRA.hb && EXTRA.hb.info ? EXTRA.hb.info() : null, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, anos: U.uAnos.value,
       huertas: window.KEN_HBAR ? !!window.KEN_HBAR.grupo.visible : null, parches: window.KEN_PARCHES ? { vis: window.KEN_PARCHES.grupo.visible, n: window.KEN_PARCHES.n } : null, hoyo: T3.maskU && T3.maskU.uHoyoOn ? T3.maskU.uHoyoOn.value : null }; }
   };
   return api;

@@ -16,6 +16,7 @@
      cuántas = (1 + nivel), velocidad = 1 / (1 + nivel) (factor de tiempo de viaje de TomTom), color verde → ámbar → rojo con el nivel
      (0,62 + 0,033 × años; I.congestion01). Se actualiza cada semana simulada; se anima en cada cuadro. */
 import { RELOJ } from './reloj.js?v=5';
+import { crearViasDensidad, nivelLOS } from './vias_densidad.js?v=1';
 
 const ALTO = 16;                       // m: altura de la caja de cada nave (las reales tienen 8,5–10,5 m; un poco más para leerse desde lejos)
 const CORA_C = [6150, 2250];           // centro aproximado de Corabastos en el modelo (corabastos.json)
@@ -25,6 +26,10 @@ export const RAMPA = [[0, '#4ade80'], [0.75, '#4ade80'], [0.9, '#fbbf24'], [1, '
 export const CONG_RAMPA = [[0.6, '#4ade80'], [0.85, '#fbbf24'], [1.1, '#ef4444']];
 /* v3 con propuesta: Corabastos se reduce 50 % → se quitan las 18 naves más cercanas a La Vaca (campo dh de corabastos.json), de 37 */
 export const quitadas01 = (naves) => naves.map((n, i) => [i, n.dh]).sort((a, b) => a[1] - b[1]).slice(0, Math.floor(naves.length / 2)).map(a => a[0]);
+/* v5.2: DESMONTE GRADUAL (mismo calendario que AB01_DESMONTE / DES01 de simulaciones12.js): la k-ésima de quitadas01 (en orden, la más cercana a
+   La Vaca primero) se quita en la semana 52 + k × 364 ÷ (n − 1) (años 1 a 8). Quitada en la semana del modelo t (0 = primera) si t ≥ semQuita01(k). */
+export const semQuita01 = (k, n) => 52 + Math.round(k * 364 / Math.max(1, n - 1));
+export const nQuitadas01 = (t, n) => { let c = 0; for (let k = 0; k < n; k++) if (t >= semQuita01(k, n)) c++; return c; };
 export function crearCapas01({ T3 }) {
   if (window.KEN_AB01C) return window.KEN_AB01C;
   const THREE = T3.THREE, lw = T3.lw, cargar = window.cargarJSON || ((u) => fetch(u).then(r => r.json()));
@@ -86,14 +91,14 @@ export function crearCapas01({ T3 }) {
   }).catch(e => console.warn('capa bodegas:', e));
   /* con propuesta: Corabastos se reduce a la mitad; las naves quitadas (las más cercanas a La Vaca, quitadas01) no se dibujan */
   const CERO = new THREE.Matrix4().makeScale(0, 0, 0);
-  function quitarNaves(prop) { if (!B.listo || B.prop === prop) return; B.prop = prop; const q = new Set(prop ? B.quitadas : []); B.qSet = q; B._y = null;
-    for (let i = 0; i < B.n; i++) { const m = q.has(i) ? CERO : B.mVid[i]; B.vid.setMatrixAt(i, m); B.int.setMatrixAt(i, m); }
+  /* v5.2: nQ = naves quitadas hasta esta semana (U.nQuit del modelo: de a poco entre los años 1 y 8), en el orden de quitadas01 */
+  function quitarNaves(nQ) { if (!B.listo || B.prop === nQ) return; B.prop = nQ; const q = new Set(B.quitadas.slice(0, nQ)); B.qSet = q; B._y = null;    for (let i = 0; i < B.n; i++) { const m = q.has(i) ? CERO : B.mVid[i]; B.vid.setMatrixAt(i, m); B.int.setMatrixAt(i, m); }
     for (const i of q) { B.liq.setMatrixAt(i, CERO); B.reb.setMatrixAt(i, CERO); } B.liq.instanceMatrix.needsUpdate = true; /* v4: el líquido de las naves quitadas tampoco se dibuja */
     B.vid.instanceMatrix.needsUpdate = true; B.int.instanceMatrix.needsUpdate = true;
     const L = []; B.linN.forEach(([a, b], i) => { if (!q.has(i)) for (let k = a; k < b; k++) L.push(B.lin[k]); });
     B.bordes.geometry.setAttribute('position', new THREE.Float32BufferAttribute(L, 3)); B.bordes.geometry.computeBoundingSphere(); }
   function ponerBodegas() { const b = I && I.abasto && I.abasto.bodegas; if (!B.listo) return; if (!b) { gB.visible = false; return; } gB.visible = estado.bodegas;
-    quitarNaves(!!I.propuesta); const q = B.prop ? new Set(B.quitadas) : null;
+    const U0 = I.abasto && I.abasto.ab01; quitarNaves(I.propuesta ? (U0 && U0.nQuit != null ? U0.nQuit : nQuitadas01((I.sem || 1) - 1, B.quitadas.length)) : 0); const q = B.prop ? B.qSet : null;
     for (let i = 0; i < B.n; i++) B.meta[i] = q && q.has(i) ? 0 : b.occ[i] || 0; }
   function moverBodegas(dt, ahora) {
     if (!B.listo || !gB.visible) return; const y = y0(), k = 1 - Math.exp(-dt * 3); let nReb = 0, cambio = false;
@@ -113,7 +118,22 @@ export function crearCapas01({ T3 }) {
     // velo del humedal
     const formas = polis.map(pts => { const s = new THREE.Shape(); pts.forEach(([x, z], k) => { const [wx, wz] = lw(x, z); if (k) s.lineTo(wx, -wz); else s.moveTo(wx, -wz); }); return s; });
     const gv = new THREE.ShapeGeometry(formas).rotateX(-Math.PI / 2);
-    const velo = new THREE.Mesh(gv, new THREE.MeshBasicMaterial({ color: 0x5fb8a6, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, toneMapped: false })); velo.renderOrder = 11; velo.position.y = y0() + 0.6;
+    /* v5.2 (regla de la autora: el agua siempre de color de agua y OPACA, nunca translúcida): ya no es un velo transparente; es el agua misma
+       de La Vaca, opaca, con ondas y reflejo del cielo, y su color pasa de agua limpia a agua café con la degradación D */
+    const velo = new THREE.Mesh(gv, new THREE.ShaderMaterial({ side: THREE.DoubleSide, toneMapped: false, transparent: false, depthWrite: true,
+      uniforms: { uD: { value: 0 }, uT: { value: 0 } },
+      vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+      fragmentShader: `uniform float uD, uT; varying vec3 vW;
+        void main(){ vec2 p = vW.xz;
+          float nx = sin(p.x * 0.21 + uT * 1.3) + sin((p.x + p.y) * 0.13 - uT * 0.9), ny = cos(p.y * 0.19 - uT * 1.1) + cos((p.x - p.y) * 0.15 + uT * 0.8);
+          vec3 N = normalize(vec3(nx * 0.06, 1.0, ny * 0.06)), V = normalize(cameraPosition - vW);
+          float fr = pow(1.0 - max(dot(N, V), 0.0), 3.0), sp = pow(max(dot(reflect(-V, N), normalize(vec3(0.5, 0.75, 0.4))), 0.0), 120.0);
+          vec3 limpia = mix(vec3(0.10, 0.26, 0.25), vec3(0.20, 0.36, 0.33), 0.5 + 0.5 * sin((p.x + p.y) * 0.02)), cafe = vec3(0.30, 0.24, 0.14);
+          vec3 c = mix(limpia, cafe, clamp(uD, 0.0, 1.0)); c = mix(c, vec3(0.62, 0.72, 0.78), fr * 0.45) + vec3(1.0, 0.96, 0.88) * sp * 0.8;
+          gl_FragColor = vec4(c, 1.0);
+          #include <colorspace_fragment>
+        }` })); velo.renderOrder = 11; velo.position.y = y0() + 0.6;
+    velo.onBeforeRender = () => { velo.material.uniforms.uT.value = (RELOJ.tAnim || performance.now() / 1000); };
     // árboles del inventario dentro de La Vaca (punto en polígono, con caja previa)
     const bb = polis.map(p => { let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity; for (const [x, z] of p) { a = Math.min(a, x); b = Math.max(b, x); c = Math.min(c, z); d = Math.max(d, z); } return [a, b, c, d]; });
     const dentro = (x, y, pts) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
@@ -150,7 +170,7 @@ export function crearCapas01({ T3 }) {
       M4.compose(V3.set(x, y + h * 0.35, z), Q.identity(), muerto ? S3.set(0.01, 0.01, 0.01) : S3.set(rc, rc * 0.85, rc)); R_.arb.setMatrixAt(i, M4); R_.arb.setColorAt(i, CC.copy(COL_SANO).lerp(COL_SECO, Math.min(1, D * 0.6)));
       M4.compose(V3.set(x, y, z), Q.identity(), muerto ? S3.set(2.4, h * 0.75, 2.4) : S3.set(1.4, h * 0.55, 1.4)); R_.tro.setMatrixAt(i, M4); R_.tro.setColorAt(i, CC.set(muerto ? '#3b2a1e' : '#6b5a48')); } /* v5: el árbol perdido queda como tronco seco oscuro (se ve que falta la copa) */
     R_.arb.instanceMatrix.needsUpdate = true; if (R_.arb.instanceColor) R_.arb.instanceColor.needsUpdate = true; R_.tro.instanceMatrix.needsUpdate = true; if (R_.tro.instanceColor) R_.tro.instanceColor.needsUpdate = true;
-    R_.velo.material.color.copy(COL_AGUA).lerp(COL_CAFE, D); R_.velo.material.opacity = 0.22 + 0.33 * D; R_.velo.position.y = y + 0.6;
+    R_.velo.material.uniforms.uD.value = D; R_.velo.position.y = y + 0.6; /* v5.2: agua opaca que se vuelve café con D */
     // montones: uno por cada 0,1 t/día de aporte por encima de hoy (0,45), radio con el aporte
     const n = Math.max(0, Math.min(R_.borde.length, Math.round((ap - 0.45) / 0.1) + (ap > 0.45 ? 1 : 0))), rad = 6 + 5 * Math.min(2, ap);
     for (let k = 0; k < n; k++) { const [x, z] = R_.borde[k]; M4.compose(V3.set(x, y, z), Q.identity(), S3.set(rad, rad * 0.45, rad)); R_.mont.setMatrixAt(k, M4); }
@@ -236,7 +256,13 @@ export function crearCapas01({ T3 }) {
     const mat = new THREE.ShaderMaterial({ vertexShader: VS_W, fragmentShader: FS_W, uniforms: { uT: { value: 0 }, uNiv: { value: 0.62 }, uNivC: { value: 0.62 }, uH: { value: 0 }, uOp: { value: 0.65 } }, transparent: true, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4, side: THREE.DoubleSide, toneMapped: false }); /* color de la vía más suave (opacidad 0,65) y desplazamiento de profundidad mínimo: queda sobre el asfalto pero DEBAJO de los carros (antes −400 unidades lo ponía encima de todo) */
     const mesh = new THREE.Mesh(g, mat); mesh.position.y = 0.12; mesh.renderOrder = 2; mesh.frustumCulled = false; gT.add(mesh);
     Object.assign(TR, { listo: true, mesh, nAr }); return true; };
-  function ponerTrafico() { const c = I && I.congestion01; if (!TR.listo && !iniTrafico()) return; if (!c) { gT.visible = false; return; } gT.visible = estado.trafico;
+  /* v5.2: las vías ya no se pintan con un nivel general: data3d/vias_densidad.js mide la densidad de vehículos de cada tramo (los carros de la
+     grabación SUMO + los camiones y morados de esta capa) y la compara con 28 veh/km/carril (HCM). Esta capa solo la prende/apaga. */
+  const VIAS = crearViasDensidad({ T3 });
+  VIAS.extra('ab01', () => (MO.listo && MO.VEH && MO.VEH.grupo.visible ? MO.pos : null));
+  function ponerTrafico() { const c = I && I.congestion01; VIAS.ver(!!(c && estado.trafico && raiz.visible)); return;
+    // (v5: nivel general por vía; se deja abajo como referencia, ya no se usa)
+    if (!TR.listo && !iniTrafico()) return; if (!c) { gT.visible = false; return; } gT.visible = estado.trafico;
     const U = I.abasto && I.abasto.ab01; /* v5: con propuesta el tráfico de la ciudad baja hasta −25 % a medida que abren los mercados (supuesto declarado en factorTraf, simulaciones12.js) */
     /* con propuesta [SUP, el mismo de la permanencia en ab01Paso y de factorTraf]: a medida que abren los mercados la subida de la ciudad
        desde 2025 deja de sumarse (× (1 − fracción abierta)) y el tráfico baja hasta −25 % */
@@ -265,7 +291,7 @@ export function crearCapas01({ T3 }) {
       MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 }));
       MO.cam = Array.from({ length: MO.MAXC }, () => ({})); MO.listo = true;
     }).catch(e => console.warn('vehículos de la 01:', e)); }
-  MO.ARB = new Map(); MO.pend = 0;
+  MO.ARB = new Map(); MO.pend = 0; MO.pos = { n: 0, x: new Float32Array(MO.MAX + MO.MAXC), z: new Float32Array(MO.MAX + MO.MAXC) };
   function arbolMo(x, z) { const n = MO.R.cercano(x, z); if (n.i < 0) return null; let T = MO.ARB.get(n.i);
     if (!T) { if (MO.pend === MO.cuadro) return null; MO.pend = MO.cuadro; T = MO.arbol(MO.R, n.i); MO.ARB.set(n.i, T); } return T; }
   function rutaDe(T, x, z) { const R = MO.R, n = R.cercano(x, z); if (!T || n.i < 0 || !isFinite(T.dist[n.i])) return null; const out = [[R.X[n.i], R.Z[n.i]]]; let u = n.i;
@@ -277,11 +303,12 @@ export function crearCapas01({ T3 }) {
   const enRutaMo = (r, s) => { let a = 0, b = r.S.length - 1; while (b - a > 1) { const m = (a + b) >> 1; if (r.S[m] < s) a = m; else b = m; } const f = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]);
     const ex = r.P[b][0] - r.P[a][0], ez = r.P[b][1] - r.P[a][1], l = Math.hypot(ex, ez) || 1; return [r.P[a][0] + ex * f, r.P[a][1] + ez * f, ex / l, ez / l]; };
   const ponerV = (o, tipo, r, s, ida) => { let [x, z, fx, fz] = enRutaMo(r, s); if (!ida) { fx = -fx; fz = -fz; } x -= fz * 1.8; z += fx * 1.8;
-    MO.VEH.poner(o, tipo, x, y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); return [x, z]; };
+    MO.VEH.poner(o, tipo, x, y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz));
+    const P = MO.pos; if (P.n < P.x.length) { P.x[P.n] = x; P.z[P.n] = z; P.n++; } /* v5.2: para medir la densidad de las vías (vias_densidad.js) */ return [x, z]; };
   function moverMorados() {
     const U = I && I.abasto && I.abasto.ab01, C = I && I.abasto && I.abasto.cora, prop = !!(I && I.propuesta);
     const on = !!(U && estado.trafico && raiz.visible); if (on && !MO.listo) iniMorados(); if (!MO.listo) return; MO.VEH.grupo.visible = on; if (!on) { MO.n = 0; MO.nCam = 0; return; }
-    MO.cuadro = (MO.cuadro || 0) + 1; const tA = RELOJ.tAnim || 0; MO.VEH.inicio(); let k = 0, kc = 0;
+    MO.cuadro = (MO.cuadro || 0) + 1; const tA = RELOJ.tAnim || 0; MO.VEH.inicio(); let k = 0, kc = 0; MO.pos.n = 0;
     // morados: carros nuevos de la propuesta (mercados y Bavaria Común)
     const ms = prop && I.abasto.mercados ? I.abasto.mercados.filter(m => m.activo) : [];
     if (prop && ms.length) { const nM = Math.min(MO.MAX - 2, Math.max(2, Math.ceil(ms.length / 2.5))), n = nM + 2;
@@ -307,12 +334,13 @@ export function crearCapas01({ T3 }) {
     const leer = ahora - tTxt > 200; if (leer) tTxt = ahora;
     etB.style.display = 'none'; // la nave más llena ya no lleva tarjeta: el medidor de Corabastos dice el porcentaje
     const U = I.abasto && I.abasto.ab01;
-    if (U && enPantalla(gG.position.x, y0() + GA.H + (GA.A / 2 + 16) * gBar.scale.x, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)) + ' <span style="opacity:.6;font-size:10.5px">de su límite de 14.000 t</span>');
+    if (U && enPantalla(gG.position.x, y0() + GA.H + (GA.A / 2 + 16) * gBar.scale.x, gG.position.z, etG) && leer) txt(etG, chip('Corabastos', nf(U.sat * 100) + ' %', colPc(U.sat)) + ` <span style="opacity:.6;font-size:10.5px">de su límite de ${nf(U.cap || 14000)} t${U.nQuit ? ` · ${U.nQuit} naves quitadas` : ''}</span>`);
     const r = I.residuosK;
     if (r && gR.visible && R_.listo) { if (enPantalla(R_.cx, y0() + 30, R_.cz, etR) && leer) txt(etR, chip('Residuos', nf(r.noRec / r.umbral * 100) + ' %', colPc(r.noRec / r.umbral))); }
     else etR.style.display = 'none';
     const c = I.congestion01;
-    if (c && gT.visible && TR.listo) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); if (enPantalla(x, y0() + 40, z, etT) && leer) { const v = TR.nivelC != null ? TR.nivelC : c.nivel; txt(etT, chip('Congestión junto a Corabastos', nf(v * 100) + ' %', v >= 1 ? '#ff6b8a' : v >= 0.7 ? '#ffd27a' : '#9be8b0')); } }
+    if (c && estado.trafico) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); const k = leer ? VIAS.medir(...lw(CORA_C[0], CORA_C[1]), 900) : null; /* v5.2: densidad medida en las vías a ≤ 900 m de Corabastos */
+      if (enPantalla(x, y0() + 40, z, etT) && leer && k != null) txt(etT, chip('Vías junto a Corabastos', nf(k, 1) + ' veh/km/carril', k >= 28 ? '#ff6b8a' : k >= 16 ? '#ffd27a' : '#9be8b0') + ` <span style="opacity:.6;font-size:10.5px">nivel ${nivelLOS(k)}</span>`); }
     else etT.style.display = 'none';
   });
 
@@ -332,7 +360,7 @@ export function crearCapas01({ T3 }) {
     estado, grupo: raiz,
     poner(x) { I = x || null; raiz.visible = !!I; ponerHidro(); if (!I) return; raiz.traverse(o => { o.castShadow = false; o.receiveShadow = false; }); /* v4: nada de esta capa proyecta sombras (cuadros oscuros sobre el agua) */
       for (const n of ['degradacion_basura', 'degradacion_monticulos']) { const o = T3.scene.getObjectByName(n); if (o) o.castShadow = false; } /* las bolsas de degradacion.js tampoco, mientras corre la 01 */ const U = I.abasto && I.abasto.ab01; gMeta = U ? U.sat : 0; ponerBodegas(); ponerResiduos(); ponerPuntosRes(); ponerTrafico(); },
-    ver(on) { raiz.visible = !!on && !!I; if (!raiz.visible) ETS.forEach(e => { e.style.display = 'none'; }); },
+    ver(on) { raiz.visible = !!on && !!I; if (!raiz.visible) { ETS.forEach(e => { e.style.display = 'none'; }); if (!window.KEN_VIAS_PAR) VIAS.ver(false); } },
     capa(k, on) { if (!(k in estado)) return; estado[k] = !!on; const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; g.visible = !!on; if (on && I) { R_.D = -1; TR.nivel = -1; api.poner(I); } },
     morados() { return MO.n; },
     visible(k) { const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; return !!(raiz.visible && g && g.visible); },

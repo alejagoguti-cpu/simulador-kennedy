@@ -35,14 +35,15 @@ export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* 
   // paleta de copas (como la captura): verde amarillento, oliva, verde medio, verde oscuro, toques amarillo-otoño
   const LUZ = [[0.085, 0.13, 0.04], [0.07, 0.115, 0.035], [0.1, 0.12, 0.04], [0.06, 0.11, 0.04], [0.11, 0.11, 0.03], [0.05, 0.095, 0.045]]; /* más oscuras */
   const SOM = [[0.009, 0.019, 0.009], [0.013, 0.023, 0.009], [0.007, 0.016, 0.011]];
-  let n = 0, ult = { x: 1e9, z: 1e9 };
+  let n = 0, ult = { x: 1e9, z: 1e9 }, CK = new Float64Array(8192);
   function rehacer(cx, cz) {
-    const cand = [];
-    const C2 = cerca * cerca; for (let i = 0; i < N; i++) { if (OC && OC[i] < 1) continue; const dx = X[i] - cx, dz = Z[i] - cz, d2 = dx * dx + dz * dz; if (d2 < R * R && d2 >= C2) cand.push([d2, i]); }
-    cand.sort((a, b) => a[0] - b[0]);
+    const Q = window.KEN_CALIDAD ? window.KEN_CALIDAD.cfg : null, MAXQ = movil ? MAXA : Math.min(MAXA, Q ? Q.splat : MAXA); /* calidad (data3d/calidad.js): menos copas lejanas en medio/liviano */
+    /* rendimiento: claves numéricas en un Float64Array (d2 entero · 2^18 + i) en vez de un par [d2, i] por árbol: mismo orden, sin basura */
+    const C2 = cerca * cerca, SH = 262144; let nc = 0; for (let i = 0; i < N; i++) { if (OC && OC[i] < 1) continue; const dx = X[i] - cx, dz = Z[i] - cz, d2 = dx * dx + dz * dz; if (d2 < R * R && d2 >= C2) { if (nc === CK.length) { const nk = new Float64Array(nc * 2); nk.set(CK); CK = nk; } CK[nc++] = Math.floor(d2) * SH + i; } }
+    const cand = CK.subarray(0, nc).sort();
     n = 0;
-    for (let k = 0; k < cand.length && k < MAXA; k++) {
-      const i = cand[k][1], H = Math.max(6, Hh[i]) * (h(i * 61) < 0.3 ? 1.55 + h(i * 67) * 0.5 : 1.12), /* 30 % de árboles grandes (eucaliptos, urapanes, pinos): 1,5-2 veces más altos */ Rc = H * (0.32 + h(i * 3) * 0.14), base = H * 0.38, alto = H - base;
+    for (let k = 0; k < nc && k < MAXQ; k++) {
+      const i = cand[k] % SH, H = Math.max(6, Hh[i]) * (h(i * 61) < 0.3 ? 1.55 + h(i * 67) * 0.5 : 1.12), /* 30 % de árboles grandes (eucaliptos, urapanes, pinos): 1,5-2 veces más altos */ Rc = H * (0.32 + h(i * 3) * 0.14), base = H * 0.38, alto = H - base;
       const L = LUZ[Math.floor(h(i * 7) * LUZ.length)], Sm = SOM[Math.floor(h(i * 11) * SOM.length)], tv = 0.85 + h(i * 13) * 0.3;
       // 2-4 lóbulos por copa
       const lob = 2 + Math.floor(h(i * 17) * 3), cen = [];
@@ -75,7 +76,8 @@ export function crearArbolesSplat({ THREE, T3, movil = false, cerca = 0 }) { /* 
     update: (cam) => {
       mat.uniforms.uEsc.value = T3.renderer.domElement.height / (2 * Math.tan(cam.fov * Math.PI / 360));
       const c = cerca ? cam.position : (T3.orbit ? T3.orbit.target : cam.position); /* con árboles reales cerca: centrado en la cámara, como real3d.js */
-      if (Math.hypot(c.x - ult.x, c.z - ult.z) > (cerca ? 60 : R * 0.18)) { ult = { x: c.x, z: c.z }; rehacer(c.x, c.z); }
+      const paso = cerca ? (window.KEN_CALIDAD ? window.KEN_CALIDAD.cfg.splatPaso : 60) : R * 0.18; /* medio/liviano: se rehace cada más metros (cada rehecho recorre todos los árboles y sube ~400 mil manchas) */
+      if (Math.hypot(c.x - ult.x, c.z - ult.z) > paso) { ult.x = c.x; ult.z = c.z; rehacer(c.x, c.z); }
     }
   };
   return api;

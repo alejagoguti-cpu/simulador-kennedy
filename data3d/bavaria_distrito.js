@@ -168,6 +168,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const LIB = new Map();
   for (let i = -90; i < 90; i++) for (let j = -90; j < 90; j++) { const u = (i + 0.5) * S, v = (j + 0.5) * S, c = loc(C_CAMPO, u, v);
     if (!dentro(SITIO, c[0], c[1]) || distBorde(SITIO, c[0], c[1]) < 12 || !lejosEdif(c[0], c[1], 20) || arbolCerca(c[0], c[1], 5.6) || enPlanta(c[0], c[1])) continue;
+    if (window.KEN_HUMEDAL_BAV && window.KEN_HUMEDAL_BAV.ocupa && window.KEN_HUMEDAL_BAV.ocupa(c[0], c[1])) continue; /* no dentro del humedal artificial de Bavaria */
     if (PAS.some(P => distPolilinea(P, c[0], c[1]) < 7) || PUNTOS_FAUNA.some(([p, r]) => Math.hypot(p[0] - c[0], p[1] - c[1]) < r + 5)) continue;
     LIB.set(i + '_' + j, { i, j, u, v, c }); }
   const COMP = []; { const vis = new Set(); for (const [k, x] of LIB) { if (vis.has(k)) continue; const pila = [x], L = []; vis.add(k);

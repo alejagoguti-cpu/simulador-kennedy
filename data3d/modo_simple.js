@@ -13,7 +13,7 @@
    El resto de los paneles se esconde (clase html.ms-simple, estilos en data3d/modo_simple.css); «Ver todo» vuelve al modo completo.
    Este módulo solo LEE el modelo (no cambia reglas ni supuestos). El tope de 50 años vive en data3d/tope_anos.js. */
 import { RELOJ as R0 } from './reloj.js?v=5';
-import { ESCENARIOS, REGLAS, MERCADOS, BODEGAS, MOTIVO, diagnostico, crear, paso } from './sim_vida.js?v=8';
+import { ESCENARIOS, REGLAS, MERCADOS, BODEGAS, MOTIVO, diagnostico, crear, paso } from './sim_vida.js?v=9';
 import { ZONAS } from './sim_red_datos.js?v=2';
 import { PAR, SIMST } from './sim_modelos.js?v=7';
 import { TOPE_AÑOS, TOPE_SEM, terminado, añoActual, armarTope } from './tope_anos.js?v=3';
@@ -73,7 +73,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
       <details class="ms-mas"><summary>Más detalles</summary><ul class="ms-frases" data-frases></ul>
         <p class="ms-h">Qué es cada cosa en el mapa</p><ul class="ms-mapa">
         <li><i class="p" style="background:#6fcf6a"></i>Puntos verdes: huertas que ya abrieron.</li>
-        <li><i class="p" style="background:#1f6b38"></i>Puntos verde oscuro: parches de árboles nativos.</li>
+        <li><i class="p" style="background:#1f6b38"></i>Puntos verde oscuro: corredores verdes de árboles nativos.</li>
         <li><i class="p" style="background:#b8875a"></i>Círculos café: compost de los orgánicos.</li>
         <li><i class="p" style="background:#e2a55b"></i>Ícono de tienda: un mercado de barrio (C).</li>
         <li><i class="a" style="border-color:#e15759"></i>Anillo en Corabastos: rojo = casi toda la comida pasa por ahí; verde = ya casi nada.</li>
@@ -139,7 +139,7 @@ export function iniciarModoSimple({ RELOJ = R0, leer, elegir } = {}) {
     else if (e === 'C') L.push(`<b>Año ${a}:</b> ${fmt(o.nodos)} de ${MERC.length} mercados abiertos y ${fmt(o.act)} hogares con huerta.`);
     if (e === 'A' || e === 'D') L.push(o.trafico && o.trafico.V > 1.0005 ? `El tráfico en Kennedy es <b>${fmt((o.trafico.V - 1) * 100)} % mayor</b> que hoy.` : 'El tráfico en Kennedy es como el de hoy.');
     else if (e !== 'D') L.push(`${menos >= 1 ? `Corabastos recibe <b>${menos} % menos camiones</b>` : 'Corabastos sigue recibiendo todos sus camiones'}; ${sv.cora.ap.length} de ${BODEGAS.length} bodegas desmontadas.`);
-    L.push(`<b>${fmt(o.esp)} de ${fmt(o.esp0)}</b> especies presentes en los parches.`);
+    L.push(`<b>${fmt(o.esp)} de ${fmt(o.esp0)}</b> especies presentes en los corredores verdes.`);
     L.push(e === 'A' || e === 'D' ? `Los orgánicos van al relleno: ${fmt(o.relleno / 1000, 1)} t por semana.` : `${fmt(o.pct2)} % de los orgánicos se composta; el resto va al relleno.`);
     if (o.cierre && o.cierre.on) L.splice(1, 0, `Vía <b>${o.cierre.via}</b> cerrada (semana ${o.cierre.sem} de ${o.cierre.dur}).`);
     return L.slice(0, 5);

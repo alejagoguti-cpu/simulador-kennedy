@@ -33,11 +33,11 @@ export function iniciarMejoraTour({ T3 }) {
       hoy: (n) => [fmt(n.hogA), 'hogares con huerta · ' + fmtK(n.perA) + ' personas comen de ellas'], pro: (n) => [fmt(n.hogP), 'hogares con huerta · ' + fmtK(n.perP) + ' personas comen de ellas'],
       mira: 'Cada <b style="color:#9be38f">punto verde</b> es una huerta que se abre en un parque, un lote o un colegio. Mira cómo aparecen año a año, primero cerca de Bavaria.',
       por: 'Cada trimestre Bavaria forma promotores; cada promotor acompaña huertas cerca de su casa, y los vecinos aprenden unos de otros.' },
-    { tag: 'Árboles y fauna', t: 'Parches de árboles nativos: la vida se reparte por todo el barrio', lugar: () => centroParches(), alto: 950, medir: true,
+    { tag: 'Árboles y fauna', t: 'Corredores verdes de árboles nativos: la vida se reparte por todo el barrio', lugar: () => centroParches(), alto: 950, medir: true,
       hoy: () => MED.hoy ? [fmt(MED.hoy.lug), `lugares con relaciones bióticas ocurriendo · ${fmt(MED.hoy.fuera)} % lejos de los humedales`] : ['…', 'midiendo las relaciones que están ocurriendo'],
       pro: () => MED.pro ? [fmt(MED.pro.lug), `lugares con relaciones bióticas ocurriendo · ${fmt(MED.pro.fuera)} % lejos de los humedales`] : ['…', 'se mide cuando el mapa muestra la propuesta'],
-      mira: () => { const K = window.KEN_PARCHES; return `Aparecen ${K ? `<b>${K.parches} parches con ${fmt(K.n)} árboles nativos</b>` : 'parches de árboles nativos'} en los parques y junto a las huertas: <b style="color:#f2c230">caucho sabanero, aliso, sauco, chicalá, arrayán</b> y arbustos de flor (chilco, tíbar, raque, mortiño). Llegan colibríes, copetones y mirlas, y las <b>líneas de colores de las relaciones bióticas</b> aparecen lejos del agua.`; },
-      por: 'Cada especie se escogió porque alimenta o da refugio a muchas especies de fauna (el caucho sabanero a 13, el sauco a 10, el aliso a 8); el sauce no, porque casi solo da sombra. Los parches cercanos funcionan como corredores entre los humedales.' },
+      mira: () => { const K = window.KEN_PARCHES; return `Aparecen ${K ? `<b>${K.parches} corredores verdes con ${fmt(K.n)} árboles nativos</b>` : 'corredores verdes de árboles nativos'} en los parques y junto a las huertas: <b style="color:#f2c230">caucho sabanero, aliso, sauco, chicalá, arrayán</b> y arbustos de flor (chilco, tíbar, raque, mortiño). Llegan colibríes, copetones y mirlas, y las <b>líneas de colores de las relaciones bióticas</b> aparecen lejos del agua.`; },
+      por: 'Cada especie se escogió porque alimenta o da refugio a muchas especies de fauna (el caucho sabanero a 13, el sauco a 10, el aliso a 8); el sauce no, porque casi solo da sombra. Las zonas verdes cercanas funcionan como corredores entre los humedales.' },
     { tag: 'Residuos', t: 'Los residuos orgánicos vuelven a la tierra', lugar: BAVC, alto: 520,
       hoy: (n) => [fmt(n.relA, 0) + ' t', 'por semana se van en camión al relleno Doña Juana (28 km)'], pro: (n) => [fmt(n.abP, 0) + ' t', `de abono al año para las huertas · al relleno ${fmt(n.relP, 0)} t/semana`],
       mira: 'Aparece la planta de compost de Bavaria (círculo café): ahí llegan los orgánicos del barrio y salen abono y hongos.',
@@ -45,7 +45,7 @@ export function iniciarMejoraTour({ T3 }) {
     { tag: 'Humedal', t: 'Más aves en el Humedal El Burro', lugar: () => BURRO, alto: 820,
       hoy: (n) => [fmt(n.avA), `aves en el borde del humedal · ${n.spA} especies`], pro: (n) => [fmt(n.avP), `aves en el borde del humedal · ${n.spP} especies`],
       mira: 'Hay más pájaros volando entre los árboles y las huertas alrededor del humedal.',
-      por: 'Las huertas con corredores verdes unen los parches de árboles: las aves encuentran comida y refugio para moverse.' },
+      por: 'Las huertas con corredores verdes unen las zonas verdes de árboles: las aves encuentran comida y refugio para moverse.' },
     { tag: 'Resumen', t: 'Kennedy en 10 años con la propuesta', lugar: () => [(CORA[0] + BAV[0]) / 2 + (MOV ? 0 : 250), (BURRO[1] + CORA[1]) / 2], alto: 2250, resumen: true,
       mira: 'Pasa de <b>Estado actual</b> a <b>Con la propuesta</b> con los botones de abajo y compara todo el sector.', por: '' }
   ];

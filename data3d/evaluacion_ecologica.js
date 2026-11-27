@@ -22,7 +22,7 @@ export function transiciones(antes,ahora) {
 export function probabilidadConectividad(parches,enlaces,areaPaisaje) {
   if(!(areaPaisaje>0))return null;
   const n=parches.length,ids=new Map(parches.map((p,i)=>[p.id,i]));
-  if(ids.size!==n || parches.some(p=>!Number.isFinite(p.area)||p.area<0))throw Error('Parches inválidos');
+  if(ids.size!==n || parches.some(p=>!Number.isFinite(p.area)||p.area<0))throw Error('Corredores verdes inválidos');
   const P=Array.from({length:n},()=>new Float64Array(n));
   for(let i=0;i<n;i++)P[i][i]=1;
   for(const e of enlaces) {

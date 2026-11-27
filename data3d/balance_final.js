@@ -1,6 +1,6 @@
 const HORIZONTE=780;
 const grupos=[
- {n:'Ecocentrismo',regla:'habitat',local:'Pérdida',principal:'presencia',signo:1,falta:'Abundancias individuales para Shannon y balance hídrico volumétrico.',metricas:{presencia:'Presencia especie × parche (%)',riqueza:'Riqueza de fauna (especies)',red:'Interacciones potenciales (enlaces)',conectados:'Continuidad (%)',verde:'Superficie verde (ha)',atropellos:'Atropellos (eventos/semana)',ruido:'Ruido medio (dB)',incidencia:'Shannon por ocupación de parches (nats)'}},
+ {n:'Ecocentrismo',regla:'habitat',local:'Pérdida',principal:'presencia',signo:1,falta:'Abundancias individuales para Shannon y balance hídrico volumétrico.',metricas:{presencia:'Presencia especie × corredor verde (%)',riqueza:'Riqueza de fauna (especies)',red:'Interacciones potenciales (enlaces)',conectados:'Continuidad (%)',verde:'Superficie verde (ha)',atropellos:'Atropellos (eventos/semana)',ruido:'Ruido medio (dB)',incidencia:'Shannon por ocupación de corredores verdes (nats)'}},
  {n:'Circularidad de recursos',regla:'residuos',local:'Almacenamiento',principal:'saturacion',signo:-1,falta:'Concentraciones de nutrientes del compost.',metricas:{organicos:'Orgánicos generados (t/día)',tratados:'Tratados (t/día)',pendientes:'Pendientes (t)',capacidadAlmacen:'Almacenamiento disponible (t)',saturacion:'Saturación (%)',capTratamiento:'Capacidad de planta (t/día)',aprovechamiento:'Aprovechamiento (%)',compost:'Compost producido (t/día)',retorno:'Retorno a huertas (t/día)'}},
  {n:'Comercio ecológico',regla:'abasto',local:'Cobertura',principal:'cobertura',signo:1,falta:'Recorridos peatonales por origen y mercado para acceso en 15 minutos.',metricas:{produccion:'Producción (t/día)',demanda:'Demanda alimentaria (t/día)',cobertura:'Cobertura (%)',autonomia:'Autonomía directa (%)',acopio:'Excedente acopiado (t/día)',concentracion:'Participación de Corabastos (%)'}}];
 const keys=grupos.flatMap(g=>Object.keys(g.metricas));
@@ -39,7 +39,7 @@ function causas(r){
  const x=ult.at(-1);
  if(g.regla==='abasto')return 'Demanda de '+numero(x.demanda)+' t/día; producción de '+numero(x.produccion)+' t/día. Sectores deficitarios al cierre: '+(r.contexto.sectoresCriticos.join(', ')||'sin desglose')+'. Cobertura: '+secuencia;
  if(g.regla==='residuos')return 'Inventario pendiente: '+numero(x.pendientes)+' t para '+numero(x.capacidadAlmacen)+' t de almacenamiento. Plantas por encima de su capacidad: '+(r.contexto.estaciones.join(', ')||'ninguna identificada')+'. Saturación distrital: '+secuencia;
- return 'Presencia especie × parche frente al inicio: '+secuencia+'. El registro local identifica los hábitats y las especies ausentes.';
+ return 'Presencia especie × corredor verde frente al inicio: '+secuencia+'. El registro local identifica los hábitats y las especies ausentes.';
 }
 function comparar(a,b){
  const w=Math.min(a.sem,b.sem),base=a.serie.find(p=>p.sem===w),prop=b.serie.find(p=>p.sem===w);

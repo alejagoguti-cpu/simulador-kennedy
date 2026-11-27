@@ -19,7 +19,7 @@ import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=7'
 import { RELOJ } from './reloj.js?v=5';
 /* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
    con un solo evento al azar, el cierre de una vía (semilla = SIMST.semilla), y reglas de game over fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
-import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=8';
+import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE, ESCENARIOS, MERCADOS as MERC_SIM, MOTIVO, CIERRE, CAP_RED_TDIA, BODEGAS, ESPECIES as ESP_SIM } from './sim_vida.js?v=9';
 import { instalarCrecimiento, prenderFlujo, textoCrece } from './trafico_crece.js?v=4'; // A: el tráfico crece con los años (réplicas de la grabación SUMO) y se prende el flujo de carros
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -263,7 +263,7 @@ ${slider(P2, 'frac', 'Proporción de residuos que va a compostaje', 0.05, 0.9, 0
 <div class="vida" data-vida aria-live="polite"></div>
 <div class="vctl"><span class="sem">Semilla<button type="button" data-sd="-1" aria-label="Semilla anterior">‹</button><b data-seed>${VIDA.seed}</b><button type="button" data-sd="1" aria-label="Semilla siguiente">›</button></span><button type="button" data-eval>Evaluar 30 corridas</button><button type="button" data-como aria-expanded="false">Cómo funciona</button></div>
 <div class="como" data-como-txt hidden><ol>
-<li>Cada semana el estado nuevo sale solo del estado anterior (hogares con huerta, comida por zona, orgánicos pendientes, especies en los parches). No hay año final.</li>
+<li>Cada semana el estado nuevo sale solo del estado anterior (hogares con huerta, comida por zona, orgánicos pendientes, especies en los corredores verdes). No hay año final.</li>
 <li>El único evento al azar es el <b>cierre de una vía principal</b> (${fmt(CIERRE.pAño * 100)} % por año, ${CIERRE.dur[0]} a ${CIERRE.dur[1]} semanas; se sortea cuál). Su efecto sale de la red vial: las rutas que pasan por ella se alargan. Se puede apagar abajo para comparar.</li>
 <li>El azar sale de una semilla: la misma semilla da siempre la misma historia, y A, B y C viven los mismos cierres.</li>
 <li>Las 3 reglas de game over se fijaron antes de correr, son iguales para A, B y C y cuentan desde la semana 1.</li>
@@ -297,7 +297,7 @@ ${slider(P3, 'arboles', 'Densidad de árboles', 0, 1, 0.05, FMT.arboles, 'calida
 ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz, 'trampas: más extinción de aves de árbol en los módulos')}
 ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec, 'qué tan rápido el humedal recupera integridad')}
 <div class="chk"><label><input type="checkbox" data-anti ${P3.anti ? 'checked' : ''}>Medida antitrampa</label></div>
-<p class="nota">B: la producción está en Bavaria. C: módulos en cubiertas, colegios y parques (algunos junto al humedal), con corredores entre parches.</p></details>
+<p class="nota">B: la producción está en Bavaria. C: módulos en cubiertas, colegios y parques (algunos junto al humedal), con corredores entre zonas verdes.</p></details>
 <button type="button" class="ir" data-tab>Ver todas las gráficas en el tablero</button></div>`;
   document.body.appendChild(el);
   const $ = (s) => el.querySelector(s);
@@ -315,7 +315,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     huertas: { n: 'las huertas que se abren desde Bavaria', ir: () => { capaFlujo(false); volar([3500, 300], 1500, 0.7); } },
     trafico: { n: 'el tráfico de la Av. Ciudad de Cali y Corabastos (capa de flujo de carros)', ir: () => { capaFlujo(true); volar(CORA, 1500, 0.6); } },
     compost: { n: 'el camino de los residuos orgánicos', ir: () => { capaFlujo(false); const e = esc(); volar(e === 'B' ? BAVC() : (EST[0] || BAV), e === 'B' ? 500 : 700, 0.6); } },
-    parches: { n: 'los parches de árboles nativos', ir: () => { capaFlujo(false); const P = (T3.bio && T3.bio.PARCHES) || []; const c = P.length ? [P.reduce((s, p) => s + p.cx, 0) / P.length, P.reduce((s, p) => s + p.cz, 0) / P.length] : [3000, 300]; volar(c, 1300, 0.6); } },
+    parches: { n: 'los corredores verdes de árboles nativos', ir: () => { capaFlujo(false); const P = (T3.bio && T3.bio.PARCHES) || []; const c = P.length ? [P.reduce((s, p) => s + p.cx, 0) / P.length, P.reduce((s, p) => s + p.cz, 0) / P.length] : [3000, 300]; volar(c, 1300, 0.6); } },
     humedal: { n: 'las aves y el estado del Humedal El Burro', ir: () => { capaFlujo(false); volar(BURRO, 750, 0.6); } },
     cora: { n: 'las bodegas de Corabastos junto al humedal La Vaca que se desmontan y el borde restaurado', ir: () => { capaFlujo(false); const PC = window.KEN_PCORA; volar(PC && PC.centro ? PC.centro : [900, 1150], 520, 0.6); } },
     vaca: { n: 'el Humedal La Vaca, que crece y gana árboles año a año', ir: () => { capaFlujo(false); if (VACA) VACA.ver(); else volar([760, 1160], 650, 0.6); } }
@@ -394,7 +394,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
       <button type="button" data-ir="trafico"><i class="sw b" style="height:${(4 + 6 * kTr).toFixed(0)}px;background:${cTr}"></i><span>Franja sobre la <b>Av. Ciudad de Cali</b>: tráfico <b>${nivelTr(kTr)}</b> · ${e === 'A' ? '100 % (hoy)' : `${pctTr} % del de hoy`}</span></button>
       ${e === 'A' && o.trafico ? (() => { const T = textoCrece(t); return `<button type="button" data-ir="trafico"><i class="sw b" style="height:6px;background:#e15759"></i><span>${T.linea}${CRECE.st.activo ? ` · ${fmt(CRECE.st.n)} vehículos de más en la calle ahora` : ''}<small style="display:block;color:#8d969b;margin-top:2px">${T.fuente}</small></span></button>`; })() : ''}
       <button type="button" data-ir="huertas"><i class="sw p" style="background:#6fcf6a"></i><span>${e === 'A' ? '<b>Sin huertas nuevas</b>: solo las que ya hay en casas' : `Puntos verdes: <b>${nH != null ? fmt(nH) : '…'} huertas abiertas</b> · ${fmt(o.act)} hogares`}</span></button>
-      ${e === 'A' ? '' : (() => { const KP = window.KEN_PARCHES; return `<button type="button" data-ir="parches"><i class="sw p" style="background:#1f6b38"></i><span>Puntos verde oscuro: <b>${KP ? KP.parches + ' parches de árboles nativos' : 'parches de árboles nativos'}</b>${KP ? ` · ${fmt(KP.n)} árboles (caucho sabanero, aliso, sauco, chicalá…)` : ''}</span></button>`; })()}
+      ${e === 'A' ? '' : (() => { const KP = window.KEN_PARCHES; return `<button type="button" data-ir="parches"><i class="sw p" style="background:#1f6b38"></i><span>Puntos verde oscuro: <b>${KP ? KP.parches + ' corredores verdes de árboles nativos' : 'corredores verdes de árboles nativos'}</b>${KP ? ` · ${fmt(KP.n)} árboles (caucho sabanero, aliso, sauco, chicalá…)` : ''}</span></button>`; })()}
       <button type="button" data-ir="compost"><i class="sw p" style="background:${e === 'A' ? '#9aa1a6' : '#b8875a'}"></i><span>${e === 'A' ? `<b>Sin compostaje</b>: ${fmt(o.relleno / 1000, 1)} t/semana van en camión a Doña Juana` : e === 'C' ? `Círculos café: <b>estaciones de compost en los nodos</b> · ${fmt(o.pct2, 1)} % de los orgánicos se trata` : `Círculo café: <b>1 planta de compost</b> en Bavaria · ${fmt(o.pct2, 1)} % de los orgánicos se trata`}</span></button>
       ${VACA && VACA.ESTADO.on ? (() => { const V = VACA.ESTADO; return `<button type="button" data-ir="vaca"><i class="sw p" style="background:#8fd18a"></i><span><b>Humedal La Vaca se recupera</b>: +${fmt(V.ha, 1)} ha de humedal · ${fmt(V.arboles)} árboles nativos (${fmt(V.grandes)} grandes) · ${V.especies} especies de aves</span></button>`; })() : ''}
       <button type="button" data-ir="humedal"><i class="sw p" style="background:#7fb3d5"></i><span>Pájaros en el humedal El Burro: <b>${fmt(o.aves)} aves</b>${e === 'A' ? '' : ` (${o.aves >= oA.aves ? '+' : '−'}${fmt(Math.abs(o.aves - oA.aves))} frente a hoy)`}</span></button>`; }
@@ -408,7 +408,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
       ['Dependencia de Corabastos', fmt(dep * 100) + ' %', `de la comida que llega${d(dep * 100, oA.dep * 100, true, (v) => fmt(v) + ' pts')}`],
       ['Orgánicos pendientes de tratamiento', fmt(o.pend / 1000) + ' t', `almacenamiento ${fmt(o.alm / 1000)} t · ${fmt(o.pct2, 1)} % se composta`],
       ['Corabastos libera espacio', e === 'A' ? 'no' : fmt(o.cora.m2) + ' m²', e === 'A' ? 'en A Corabastos sigue igual' : `Corabastos libera ${fmt(o.cora.m2)} m² · ${o.cora.desm} de ${o.cora.total} bodegas desmontadas · borde recuperado ${fmt(o.cora.borde)} m²${o.cora.desm > o.cora.rest ? ` (${o.cora.desm - o.cora.rest} en obra)` : ''}${o.cora.rest ? ` · madurez ${fmt(o.cora.mad * 100)} %` : ''} · carga que ya no pasa por Corabastos ${fmt(o.cora.lib * 100, 1)} %`],
-      ['Especies presentes en los parches', `${o.esp} de ${o.esp0}`, `integridad del humedal ${fmt(hum * 100)} %${o.trafico ? ` · tráfico ${o.trafico.V > 1.0005 ? '+' + fmt((o.trafico.V - 1) * 100) + ' %' : 'como hoy'}: fauna que no vuela en ${fmt(o.trafico.ocTer)} parches (semana 1: ${fmt(o.trafico.ocTer0)})` : ''}`],
+      ['Especies presentes en los corredores verdes', `${o.esp} de ${o.esp0}`, `integridad del humedal ${fmt(hum * 100)} %${o.trafico ? ` · tráfico ${o.trafico.V > 1.0005 ? '+' + fmt((o.trafico.V - 1) * 100) + ' %' : 'como hoy'}: fauna que no vuela en ${fmt(o.trafico.ocTer)} corredores verdes (semana 1: ${fmt(o.trafico.ocTer0)})` : ''}`],
       ['Hogares con huerta', fmt(o.act), `huertas abiertas en el mapa${ab ? `: ${ab.abiertas} de ${ab.total}` : ''}${d(o.act, oA.act, false, fmt)}`]
     ].map(([n, v, s2], i) => `<li><span>${n}</span><strong>${v}</strong><small>${s2}</small><button type="button" data-ir="${['trafico', 'trafico', 'compost', 'cora', 'humedal', 'huertas'][i]}">Ver en el mapa →</button></li>`).join('');
     el.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
@@ -428,16 +428,16 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     const T = textoCrece(t), pc = (x) => Math.abs(x) < 5e-4 ? 'igual que hoy' : (x >= 0 ? '+' : '−') + fmt(Math.abs(x) * 100, Math.abs(x) < 0.01 ? 1 : 0) + ' %', fr = (T3.bio && T3.bio.ESTADO && T3.bio.ESTADO.espFrac) || {};
     d.innerHTML = `<h4>TRÁFICO Y FAUNA<span>${e} · año ${T.G.años + 1}</span></h4>
       <p>${T.linea} · vehículos en total <b>${pc(tr.V - 1)}</b></p>
-      <details><summary>Cómo afecta: ruido y atropellos</summary><p>Ruido: la zona donde bajan las aves junto a las vías principales pasa de 300 a <b>${fmt(tr.D)} m</b>; calidad de los parches para las aves <b>${pc(tr.mq - 1)}</b>.</p>
-      <p>Atropellos al cruzar: pasar entre dos parches por una vía principal sale <b>${pc(tr.xq - 1)}</b> frente a hoy. Fauna que no vuela en <b>${fmt(tr.ocTer)}</b> parches (semana 1: ${fmt(tr.ocTer0)}).</p></details>
+      <details><summary>Cómo afecta: ruido y atropellos</summary><p>Ruido: la zona donde bajan las aves junto a las vías principales pasa de 300 a <b>${fmt(tr.D)} m</b>; calidad de los corredores verdes para las aves <b>${pc(tr.mq - 1)}</b>.</p>
+      <p>Atropellos al cruzar: pasar entre dos corredores verdes por una vía principal sale <b>${pc(tr.xq - 1)}</b> frente a hoy. Fauna que no vuela en <b>${fmt(tr.ocTer)}</b> corredores verdes (semana 1: ${fmt(tr.ocTer0)}).</p></details>
       <div class="tr-esp">${Object.keys(NOM_TER).map(k => { const f = fr[k] != null ? fr[k] : 1; return `<div title="${NOM_TER[k]}">${NOM_TER[k].split(' ')[0]} <b>${fmt(f * 100)} %</b><i style="width:${Math.round(f * 100)}%"></i></div>`; }).join('')}</div>
-      <details><summary>Fuentes y supuestos</summary><small>Individuos visibles de cada especie = parches ocupados ÷ semana 1. Fuentes: SDH 2025, OAB-RDA, Reijnen y Foppen 1997, J. Avian Biol. 2025, Hels y Buchwald 2001. [SUP] zona de efecto hoy 300 m; la tasa reciente del parque se mantiene. Mismas reglas en A, B y C.</small></details>`;
+      <details><summary>Fuentes y supuestos</summary><small>Individuos visibles de cada especie = corredores verdes ocupados ÷ semana 1. Fuentes: SDH 2025, OAB-RDA, Reijnen y Foppen 1997, J. Avian Biol. 2025, Hels y Buchwald 2001. [SUP] zona de efecto hoy 300 m; la tasa reciente del parque se mantiene. Mismas reglas en A, B y C.</small></details>`;
   }
 
   /* ---------------- estado de la corrida: reglas de game over, comparación A vs B (y C) y panel de C ---------------- */
   const VT = { habitat: (v) => fmt(v) + ' especies', abasto: (v) => fmt(v) + ' % en la zona peor', residuos: (v) => fmt(v) + ' % del almacenamiento' };
   const UT = { habitat: '−30 % de especies', abasto: '80 % en alguna zona', residuos: '100 % del almacenamiento' };
-  const QUE = { habitat: 'se pierden especies en los parches', abasto: 'falta comida en una zona', residuos: 'los orgánicos se acumulan en la calle' };
+  const QUE = { habitat: 'se pierden especies en los corredores verdes', abasto: 'falta comida en una zona', residuos: 'los orgánicos se acumulan en la calle' };
   const LETRA = { A: 'A · ' + NE.A, B: 'B · ' + NE.B, C: 'C · ' + NE.C };
   const añoDe = (w) => fmt(Math.floor(w / AÑO) + 1);
   const VC = { habitat: (v) => fmt(v) + ' especies', abasto: (v) => 'zona peor ' + fmt(v) + ' %', residuos: (v) => fmt(v) + ' % del alm.' }; // versión corta para la tabla A vs B
@@ -575,11 +575,11 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
   RELOJ.alDibujar(cuadro);
   aplicar();
   // MODO SIMPLE (por defecto, data3d/modo_simple.js): tarjeta de escenario + «Año X de 50» y panel «¿Qué está pasando?»; el resto de los paneles se esconde hasta «Ver todo»
-  import('./modo_simple.js?v=8').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
+  import('./modo_simple.js?v=9').then(m => m.iniciarModoSimple({ leer: () => VIDA.S ? { S: VIDA.S, e: esc(), t: Math.max(0, Math.floor(SIMST.t)) } : null, elegir: (k) => el.querySelector(`.seg button[data-e="${k}"]`)?.click() }))
     .catch(er => { console.warn('modo simple:', er); document.documentElement.classList.remove('ms-simple'); });
   setTimeout(() => { if (!document.documentElement.classList.contains('ms-simple') && !document.documentElement.classList.contains('limpio')) import('./guia.js?v=3').then(m => m.abrirGuia(false)).catch(() => {}); }, 2500); // la primera vez: cómo se usa (en modo simple no: los pasos señalan paneles escondidos)
-  import('./mejora_tour.js?v=11').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=17').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./mejora_tour.js?v=12').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./capas_escenario.js?v=20').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
   return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, get esc() { return esc(); }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }

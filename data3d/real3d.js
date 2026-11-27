@@ -442,7 +442,7 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
   const porte = (i) => { const v = VARIEDADES[VAR[i]], s = esc(i) * (KEN_A ? 0.82 + hash(i * 23 + 7) * 0.36 : 1) * OC[i], w = KEN_A ? 0.88 + hash(i * 29 + 3) * 0.26 : 1; d.scale.set(s * v.sx * w, s * v.sy, s * v.sx * (2 - w)); if (KEN_A) { d.rotation.x = (hash(i * 31 + 1) - 0.5) * 0.09; d.rotation.z = (hash(i * 37 + 5) - 0.5) * 0.09; } if (OC[i] < 1) d.rotation.z += (1 - OC[i]) * 1.35 * (hash(i * 41 + 9) < 0.5 ? 1 : -1); /* talado: cae hacia un lado mientras se encoge */ };
   for (let i = 0; i < N; i++) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); FM.set(d.matrix.elements, i * 16); const tv = 0.88 + hash(i * 19) * 0.24, h = VARIEDADES[VAR[i]].h, g = (h[0] + h[1] + h[2]) / 3; const ok_ = KA ? 0.74 * 1.08 : 0.6; FC[i * 3] = tv * ok_ * (0.3 * h[0] + 0.7 * g) + (KA ? 0.05 : 0); FC[i * 3 + 1] = tv * ok_ * 0.98 * (0.3 * h[1] + 0.7 * g) + (KA ? 0.045 : 0); FC[i * 3 + 2] = tv * ok_ * (0.3 * h[2] + 0.7 * g) + (KA ? 0.05 : 0); } /* Kennedy: siluetas lejanas con el mismo color que el árbol de cerca */ // lejos: las siluetas no reciben luz (material básico), se oscurecen y apagan para igualar a los cercanos
   const pintar = (lista, partes, k, i, tv) => { const h = VARIEDADES[VAR[i]].h, j = 0.96 + hash(i) * 0.08; lista.forEach((m, pi) => { if (partes[pi] && partes[pi].hoja) { const g = (h[0] + h[1] + h[2]) / 3; { const ad = KA ? 0.45 : 1; col.setRGB(tv * 1.14 * (0.3 * h[0] + 0.7 * g) + 0.07 * ad, tv * 1.04 * j * (0.3 * h[1] + 0.7 * g) + 0.06 * ad, tv * 1.1 * (0.3 * h[2] + 0.7 * g) + 0.07 * ad); } } else col.setRGB(tv * 0.92, tv * 0.88, tv * 0.84); if (OSC !== 1) col.multiplyScalar(OSC); m.setMatrixAt(k, d.matrix); m.setColorAt(k, col); }); };
-  const ult = { x: 1e9, z: 1e9, t: 0 }, cand = [];
+  const ult = { x: 1e9, z: 1e9, t: 0 }; let candK = new Float64Array(4096); const asignado = new Uint8Array(N); /* rendimiento: sin arreglos nuevos por recálculo */
   const api = { ...api0, N, ribera, enParques, deCalle, especies: especies.map(e => e.base + ':' + e.niveles.L0.reduce((a, p) => a + (p.geo.index ? p.geo.index.count : p.geo.attributes.position.count) / 3, 0) + '/' + e.niveles.L1.reduce((a, p) => a + (p.geo.index ? p.geo.index.count : p.geo.attributes.position.count) / 3, 0)) };
   api.pos = { X, Z, Hh, OC }; // posiciones y alturas de los árboles (el modo pájaro pone los nidos en las copas)
   api.update = (cam, force) => {
@@ -455,19 +455,25 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
     if (!force && !zoom && ((dx * dx + dz * dz < U * U && giro < 0.3 && (api.quieto || now - ult.t < 1500)) || now - ult.t < (api.minMs || 0))) return; /* también al girar más de 17° */
     const movio = dx * dx + dz * dz >= U * U || zoom;
     ult.x = cam.position.x; ult.z = cam.position.z; ult.t = now; ult.vy = vy; ult.extra = extra;
-    const E0 = R0 > extra ? (R0 - extra) ** 2 : -1, E1 = R1 > extra ? (R1 - extra) ** 2 : -1; /* radios efectivos (al cuadrado) */
+    /* NIVEL DE CALIDAD (data3d/calidad.js, en vivo): medio/liviano achican los radios de árboles escaneados y sus cupos; alto = como siempre */
+    const QC = window.KEN_CALIDAD ? window.KEN_CALIDAD.cfg : null, fR = QC ? QC.arbR : 1, fC = QC ? QC.arbCap : 1, R0q = R0 * fR, R1q = R1 * fR;
+    const E0 = R0q > extra ? (R0q - extra) ** 2 : -1, E1 = R1q > extra ? (R1q - extra) ** 2 : -1; /* radios efectivos (al cuadrado) */
+    const C0 = (s) => fC === 1 ? CAP0S[s] : Math.max(1, Math.round(CAP0S[s] * fC)), C1 = (s) => fC === 1 ? CAP1S[s] : Math.max(1, Math.round(CAP1S[s] * fC));
     const CV = cam.cam, DV = cam.dir; /* árboles 3D solo hacia donde mira la cámara (±100°); detrás quedan las siluetas */
     const enVista = (i) => { if (!CV || !DV) return true; const ex = X[i] - CV.x, ez = Z[i] - CV.z, L = Math.hypot(ex, ez); return L < 60 || (ex * DV.x + ez * DV.z) / L > -0.17; };
-    cand.length = 0;
-    for (let i = 0; i < N; i++) { if (OC[i] <= 0.01) continue; const ex = X[i] - ult.x, ez = Z[i] - ult.z, d2 = ex * ex + ez * ez; if (d2 < R2 * R2) cand.push([i, d2]); }
-    cand.sort((a, b) => a[1] - b[1]);
-    const n0 = lod.map(() => 0), n1 = lod.map(() => 0), n2 = especies.map(() => 0), asignado = new Uint8Array(N);
+    /* RENDIMIENTO (2026-11-26): solo entran los árboles a menos del radio de los modelos 3D (E1): los demás nunca se asignaban (USAR_BAJOS = false)
+       y antes se armaba y ordenaba un par [i, d2] por CADA árbol a menos de 2,2 km (~90 mil) en cada recálculo. Clave = d2 entero · 2^18 + i en un
+       Float64Array (orden numérico nativo, sin objetos): el mismo orden por distancia. */
+    let nc = 0; const LIM = E1 > 0 ? E1 : 0, SH = 262144;
+    if (LIM > 0) for (let i = 0; i < N; i++) { if (OC[i] <= 0.01) continue; const ex = X[i] - ult.x, ez = Z[i] - ult.z, d2 = ex * ex + ez * ez; if (d2 < LIM) { if (nc === candK.length) { const nk = new Float64Array(nc * 2); nk.set(candK); candK = nk; } candK[nc++] = Math.floor(d2) * SH + i; } }
+    const ord = candK.subarray(0, nc).sort();
+    const n0 = lod.map(() => 0), n1 = lod.map(() => 0), n2 = especies.map(() => 0); asignado.fill(0);
     let tot2 = 0;
-    for (const [i, d2] of cand) {
+    for (let c = 0; c < nc; c++) { const kk = ord[c], i = kk % SH, d2 = Math.floor(kk / SH);
       const s = SP[i], sc = esc(i), tv = 0.82 + hash(i * 19) * 0.34;
       if (!enVista(i)) continue;
-      if (d2 < E0 && n0[s] < CAP0S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n0[s]++; pintar(lod[s].L0, especies[s].niveles.L0, k, i, tv); asignado[i] = 1; }
-      else if (d2 < E1 && n1[s] < CAP1S[s]) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n1[s]++; pintar(lod[s].L1, especies[s].niveles.L1, k, i, tv); asignado[i] = 1; }
+      if (d2 < E0 && n0[s] < C0(s)) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n0[s]++; pintar(lod[s].L0, especies[s].niveles.L0, k, i, tv); asignado[i] = 1; }
+      else if (d2 < E1 && n1[s] < C1(s)) { d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); porte(i); d.updateMatrix(); const k = n1[s]++; pintar(lod[s].L1, especies[s].niveles.L1, k, i, tv); asignado[i] = 1; }
       else if (USAR_BAJOS && tot2 < CAP2) { // arbol 3D de bajos poligonos con el mismo alto y ancho de copa que tendria el modelo real
         const e = especies[s], w = e.ancho * sc, h = e.alto * sc, ti = TINTE_BAJO[s], hv = 0.96 + hash(i) * 0.08;
         d.position.set(X[i], 0, Z[i]); d.rotation.set(0, ROT[i], 0); d.scale.set(w, h, w); d.updateMatrix(); col.setRGB(tv * ti[0] * 0.86, tv * hv * ti[1] * 1.0, tv * 0.94 * ti[2] * 0.86);
@@ -490,6 +496,7 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
   api.update({ position: new THREE.Vector3(1e8, 0, 1e8) }, true);
   // tala del plan parcial (escenario D): plan.poner(idx, f) deja el árbol idx de data3d/bavaria_arboles.json con la escala f (1 en pie, 0 talado); repintar() rehace los cercanos
   api.plan = { n: SLOT_PLAN.size, poner(idx, f) { const k = SLOT_PLAN.get(idx); if (k != null) OC[k] = f; return k != null; }, repintar() { if (ult.cam) api.update(ult.cam, true); } };
+  api.repintar = () => { if (ult.cam) api.update(ult.cam, true); }; /* cambio de nivel de calidad (data3d/calidad.js) */
   // árboles semitransparentes (vista de simulación: deja ver las calles y los agentes debajo de las copas)
   api.ver = (on) => { api.visible = on; for (const l of lod) for (const m of [...l.L0, ...l.L1]) m.visible = on; for (const m of [...lejos, ...techos, ...bajos]) m.visible = on; };
   // tinte de todo el arbolado (modo Visión: copas oscuras azul verdoso con brillo propio); null restaura

@@ -38,7 +38,7 @@ export const GRUPOS_N = {
   lombriz: { hab: { mod: 1, cub: 0.6, parque: 0.8, bosque: 0.8, humedal: 0.4 }, D: 300, c: 0.03, e: 0.003 }    // lombriz: suelo de huertas y compost (llega con la tierra), parques
 };
 // motivo de cada extinción local (s.red.mot): 0 = sigue o nunca estuvo
-export const MOTIVOS = ['', 'sin recursos de la red', 'tráfico y ruido', 'tala', 'humedal degradado', 'azar demográfico (parche pequeño o de baja calidad)', 'el parche dejó de ser hábitat'];
+export const MOTIVOS = ['', 'sin recursos de la red', 'tráfico y ruido', 'tala', 'humedal degradado', 'azar demográfico (corredor verde pequeño o de baja calidad)', 'el corredor verde dejó de ser hábitat'];
 const NUEVAS = [['rata', 'urbana'], ['caracol', 'molusco'], ['abeja', 'poliniz'], ['lombriz', 'lombriz']];
 
 /* ---------- 1 · datos compactos (desde los archivos pesados) ---------- */
