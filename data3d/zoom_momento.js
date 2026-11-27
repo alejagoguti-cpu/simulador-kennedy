@@ -1,44 +1,38 @@
-/* ============ ZOOM DEL MOMENTO (columna derecha, siempre activo; pedido de la autora 2026-11-27) ============
-   Recuadro arriba a la derecha que AMPLÍA la escena real alrededor del lugar de lo que está pasando ahora; cada 12 s pasa al siguiente momento.
-   «Seguir» lleva la cámara principal a ese lugar.
-   · Momentos: los publica la capa de cada simulación en window.KEN_MOM = [{ t, s, x, z }] (mov02_capa.js, res03_capa.js, capas456.js); si no hay,
-     lugares fijos de Kennedy. Si el lugar queda fuera del cuadro de la cámara, se pasa al siguiente que sí se vea.
-   · Dibujo LIVIANO (QA 2026-11-27: volver a dibujar la escena para el zoom dejaba el mapa en blanco o ahogaba la carga): justo después del render
-     principal (T3.trasRender, index.html) se copia y se amplía ×3 el pedazo del lienzo alrededor del lugar a un lienzo 2D del recuadro, 5 veces por
-     segundo. No se dibuja la escena otra vez ni se lee la tarjeta de video. Arranca cuando la interfaz de simulaciones está lista. */
-import { crearPanelMomento } from './momento_muerte.js?v=5';
+/* ============ ZOOM DEL MOMENTO (columna derecha, siempre activo; pedidos de la autora 2026-11-27) ============
+   «Ultra realista, no poly»: el recuadro muestra la ESCENA REAL del simulador (terreno fotográfico de Google, edificios, carros, árboles, montones,
+   aves) vista con una segunda cámara de cerca y en ángulo sobre el lugar de cada momento. Pasa al siguiente cada 8 s; «Seguir» lleva allá la cámara principal.
+   · Momentos (mínimo 6 por escenario, distintos sin y con propuesta): avisos de la franja (muertes en su lugar real) + window.KEN_MOM (capa de la
+     simulación) + window.KEN_MOM_PROP (mercados que abren, Corabastos con la propuesta: propuesta_flujos.js).
+   · Dibujo: como mucho cada 350 ms se dibuja la escena en una textura propia (WebGLRenderTarget 448×240) y se copia a un lienzo 2D.
+     No toca el lienzo principal. Si un dibujo tarda más de 60 ms, espera más entre dibujos. Arranca cuando la interfaz está lista (limpio.js). */
 export function crearZoom({ T3 }) {
   if (window.KEN_ZOOM) return window.KEN_ZOOM;
-  const THREE = T3.THREE, v = new THREE.Vector3();
+  const THREE = T3.THREE, cam = new THREE.PerspectiveCamera(42, 448 / 240, 2, 9000);
   const FIJOS = [{ t: 'Corabastos', s: 'central de abastos', x: 1054.7, z: 995.9 }, { t: 'Bavaria', s: 'predio y bosque', x: 3977.7, z: 219.3 },
-    { t: 'Humedal El Burro', s: 'humedal', x: 2096, z: -109 }, { t: 'Humedal La Vaca', s: 'humedal', x: 760, z: 1160 }, { t: 'Av. de las Américas', s: 'arteria', x: 2300, z: 700 }];
+    { t: 'Humedal El Burro', s: 'humedal', x: 2096, z: -109 }, { t: 'Humedal La Vaca', s: 'humedal', x: 760, z: 1160 }, { t: 'Av. de las Américas', s: 'arteria', x: 2300, z: 700 }, { t: 'Humedal de Techo', s: 'humedal', x: 2997, z: -606 }];
   const box = document.createElement('section'); box.id = 'lp-zoom'; box.setAttribute('aria-label', 'Zoom del momento');
-  box.innerHTML = '<header><div><small>Zoom del momento</small><b data-z="t">—</b></div><button type="button" data-z="seguir">Seguir</button></header><div class="lz-vista" data-z="v"><video muted playsinline autoplay></video><canvas></canvas><span data-z="s"></span><i data-z="n"></i></div>';
+  box.innerHTML = '<header><div><small>Zoom del momento</small><b data-z="t">—</b></div><button type="button" data-z="seguir">Seguir</button></header><div class="lz-vista" data-z="v"><canvas></canvas><span data-z="s"></span><i data-z="n"></i></div>';
   document.body.appendChild(box);
-  const vista = box.querySelector('[data-z="v"]'), cv = vista.querySelector('canvas'), ctx = cv.getContext('2d'), vid = vista.querySelector('video'); cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none'; vid.style.cssText = 'position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none';
-  /* el mapa en vivo: transmisión del lienzo 3D (captureStream, la copia la hace la tarjeta de video) ampliada ×3 con CSS sobre el lugar */
-  try { vid.srcObject = T3.renderer.domElement.captureStream(12); vid.play().catch(() => {}); } catch (e) { console.warn('zoom: sin transmisión', e); }
-  let k = 0, actual = FIJOS[0], tCambio = performance.now(), tDib = 0;
-  /* orden: avisos del feed (muertes con su reconstrucción y demás momentos), luego los de la capa de la simulación, luego lugares fijos */
-  const lista = () => { const F = (window.KEN_MOM_FEED || []).slice(0, 6), Cp = Array.isArray(window.KEN_MOM) ? window.KEN_MOM : []; const L = F.length || Cp.length ? [...F, ...Cp] : FIJOS; return L.filter(m => isFinite(m.x) && isFinite(m.z)); };
-  let PM = null;
-  const enPantalla = (m) => { v.set(m.x, (T3.sueloY || 0.3) + 5, m.z).project(T3.camera); return v.z < 1 && Math.abs(v.x) < 0.92 && Math.abs(v.y) < 0.92 ? { x: (v.x + 1) / 2, y: (1 - v.y) / 2 } : null; };
+  const vista = box.querySelector('[data-z="v"]'), cv = vista.querySelector('canvas'), ctx = cv.getContext('2d'); cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+  const W = 448, H = 240; cv.width = W; cv.height = H; const rt = new THREE.WebGLRenderTarget(W, H, { depthBuffer: true }); rt.texture.colorSpace = THREE.SRGBColorSpace;
+  const buf = new Uint8Array(W * H * 4), img = ctx.createImageData(W, H);
+  let k = -1, actual = FIJOS[0], tCambio = performance.now(), tDib = 0, espera = 350, ang = 0;
+  const lista = () => { const F = (window.KEN_MOM_FEED || []).slice(0, 4), C = Array.isArray(window.KEN_MOM) ? window.KEN_MOM : [], P = Array.isArray(window.KEN_MOM_PROP) ? window.KEN_MOM_PROP : [];
+    const L = [...F, ...C, ...P].filter(m => m && isFinite(m.x) && isFinite(m.z)); return L.length ? L : FIJOS; };
   function pintar() { const L = lista(); box.querySelector('[data-z="t"]').textContent = actual.t; box.querySelector('[data-z="s"]').textContent = actual.s || ''; box.querySelector('[data-z="n"]').textContent = (k % Math.max(1, L.length) + 1) + ' / ' + L.length; }
-  function siguiente() { const L = lista(); let j = -1; for (let i = 1; i <= L.length; i++) { const q = (k + i) % L.length; if (L[q].muerte || enPantalla(L[q])) { j = q; break; } } k = j >= 0 ? j : (k + 1) % L.length; actual = L[k]; pintar();
-    const esc = !actual.muerte && window.KEN_ESCENA && window.KEN_ESCENA.escena ? window.KEN_ESCENA : null; actual.vivo = !actual.muerte && !esc; /* sin escena: el mapa en vivo */
-    if (actual.muerte || esc) { if (!PM) PM = crearPanelMomento(T3, vista); const sp = box.querySelector('[data-z="s"]'); PM.mostrar(actual.muerte || esc, (f) => { if (sp.textContent !== f) sp.textContent = f; }); vid.style.visibility = 'hidden'; } else if (PM) PM.ocultar(); }
-  box.querySelector('[data-z="seguir"]').onclick = () => { if (!T3.camera || !T3.orbit) return; const P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), C1 = new THREE.Vector3(actual.x, 0, actual.z), P1 = actual.muerte ? new THREE.Vector3(actual.x + 45, (T3.sueloY || 0.3) + 110, actual.z + 150) : new THREE.Vector3(actual.x + 120, 380, actual.z + 430), t0 = performance.now(); tCambio = performance.now() + 25000; /* encuadra de cerca y se queda en este momento 30 s */
+  function siguiente() { const L = lista(); k = (k + 1) % L.length; actual = L[k]; ang = (k * 1.7) % (Math.PI * 2); pintar(); tDib = 0; }
+  box.querySelector('[data-z="seguir"]').onclick = () => { if (!T3.camera || !T3.orbit) return; const d = actual.d || 260, P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), C1 = new THREE.Vector3(actual.x, 0, actual.z),
+      P1 = new THREE.Vector3(actual.x + Math.cos(ang) * d * 1.2, (T3.sueloY || 0.3) + d * 0.8, actual.z + Math.sin(ang) * d * 1.2), t0 = performance.now(); tCambio = performance.now() + 25000; /* se queda 30 s en este momento */
     T3.anim = null; (function paso() { const u = Math.min(1, (performance.now() - t0) / 1100), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; T3.camera.position.lerpVectors(P0, P1, e); T3.orbit.target.lerpVectors(C0, C1, e); T3.orbit.update(); if (u < 1) requestAnimationFrame(paso); })(); };
   siguiente();
   T3.trasRender = () => {
-    const now = performance.now(); if (now - tCambio > 12000) { tCambio = now; siguiente(); } /* 12 s por momento: la reconstrucción se ve completa */
-    if (now - tDib < 200 || box.offsetParent === null) return; tDib = now;
-    const src = T3.renderer && T3.renderer.domElement; if (!src) return; const R = vista.getBoundingClientRect(); if (R.width < 20) return;
-    const w = Math.round(R.width), h = Math.round(R.height); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } ctx.clearRect(0, 0, w, h);
-    if (!actual.vivo) { ctx.clearRect(0, 0, w, h); return; } /* la reconstrucción la dibuja su propio renderer */
-    const p = enPantalla(actual); if (!p) { vid.style.visibility = 'hidden'; ctx.fillStyle = 'rgba(10,12,16,.85)'; ctx.fillRect(0, 0, w, h); return; } vid.style.visibility = 'visible';
-    const Z = 3, VW = w * Z, VH = VW * (src.clientHeight / Math.max(1, src.clientWidth)); vid.style.width = VW + 'px'; vid.style.height = VH + 'px';
-    const tx = Math.max(w - VW, Math.min(0, w / 2 - p.x * VW)), ty = Math.max(h - VH, Math.min(0, h / 2 - p.y * VH)); vid.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
-    const cx = tx + p.x * VW, cy = ty + p.y * VH; ctx.strokeStyle = '#c9f27a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.stroke(); };
+    const now = performance.now(); if (now - tCambio > 8000) { tCambio = now; siguiente(); }
+    if (now - tDib < espera || box.offsetParent === null || document.getElementById('urbia-intro')) return; tDib = now;
+    const r = T3.renderer; if (!r) return; ang += 0.04;
+    const Y = (T3.sueloY || 0.3), d = actual.d || 230; cam.position.set(actual.x + Math.cos(ang) * d, Y + d * 0.62, actual.z + Math.sin(ang) * d); cam.lookAt(actual.x, Y + 6, actual.z); cam.updateMatrixWorld(); cam.layers.mask = T3.camera.layers.mask;
+    const prev = r.getRenderTarget(), ac = r.autoClear, t0 = performance.now(); r.autoClear = true;
+    try { r.setRenderTarget(rt); r.clear(); r.render(T3.scene, cam); r.readRenderTargetPixels(rt, 0, 0, W, H, buf); } catch (e) { /* un cuadro sin zoom */ }
+    r.setRenderTarget(prev); r.autoClear = ac; const ms = performance.now() - t0; espera = ms > 60 ? Math.min(1500, espera * 1.5) : Math.max(350, espera * 0.9); /* si pesa, dibuja menos seguido */
+    for (let y = 0; y < H; y++) img.data.set(buf.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); ctx.putImageData(img, 0, 0); };
   return window.KEN_ZOOM = { siguiente, get actual() { return actual; } };
 }

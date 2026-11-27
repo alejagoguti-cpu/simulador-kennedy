@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=9';
-import { iniciarSimUI } from './sim_ui.js?v=164';
+import { iniciarSimUI } from './sim_ui.js?v=165';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -221,7 +221,7 @@ export function iniciarLimpio({ T3 }) {
     html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-ico{color:var(--ui-acc,#c9f27a)}
     html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
   }`; document.head.appendChild(st); }
-  import('./zoom_momento.js?v=6').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
+  import('./zoom_momento.js?v=7').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
   escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.hidden = true; document.body.appendChild(der); /* se conserva vacío (otros módulos lo buscan), escondido */
