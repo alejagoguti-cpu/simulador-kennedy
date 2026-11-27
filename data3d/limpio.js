@@ -286,12 +286,12 @@ export function iniciarLimpio({ T3 }) {
     seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
       /* ACORDEÓN: la simulación se aplica y sus variables se abren justo debajo de la fila; las diapositivas solo con su botón */
       if (ESC.activo === id) { escoger(base, true); SL.cerrar(); abrirRecorridoDePar(null); } else { escoger(id, true); abrirRecorridoDePar(+b.dataset.p, escE === 'con', id); }
-      refrescarSeis(); setTimeout(refrescarSeis, 150); setTimeout(() => volarVista(), 650); /* después de cancelar el vuelo del panel escondido (300 y 600 ms) */ });
+      refrescarSeis(); setTimeout(refrescarSeis, 150); setTimeout(() => volarVista(1100, ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : 0), 650); /* encuadra el lugar de la simulación; después de cancelar el vuelo del panel escondido (300 y 600 ms) */ });
     seis.querySelectorAll('.lp-ver').forEach(b => b.onclick = () => SL.abrir(+b.dataset.p, escE === 'con', b));
     refrescarSeis(); }
   escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
     const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? idDe(par) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */
-    pintarSeis(); abrirRecorridoDePar(par, escE === 'con', par ? idDe(par) : null); if (par && SL.abierto) SL.abrir(par, escE === 'con'); setTimeout(() => volarVista(), 650); });
+    pintarSeis(); abrirRecorridoDePar(par, escE === 'con', par ? idDe(par) : null); if (par && SL.abierto) SL.abrir(par, escE === 'con'); setTimeout(() => volarVista(1100, par || 0), 650); });
   /* orden del panel izquierdo: un observador (no un intervalo que pelea) pone cada bloque en su sitio cuando giro_sim.js o sim_ui.js agregan nodos */
   /* Panel izquierdo angosto, de arriba abajo: «Simulaciones» (#lp-seis) → Variables (plegable) + «Ver informe» (#su-der) → «Capas del mapa»
      (plegable). El reloj grande se esconde (la hora va en la barra de años). Los datos van al tablero de la derecha (#lp-tablero). */
@@ -432,9 +432,11 @@ export function iniciarLimpio({ T3 }) {
   /* VOLVER A LA VISTA PRINCIPAL (pedido de la autora, 2026-11-27): al escoger un escenario o una simulación la cámara vuelve, en un vuelo corto, a
      esta misma vista; el botón «Vista principal» (siempre visible) la trae de vuelta después de acercarse a algo. Solo tras un clic de la persona
      (camara_quieta.js deja mover la cámara 2,5 s después de una acción). */
-  function volarVista(ms = 1100) { if (!T3.camera || !T3.orbit) return; T3.anim = null; T3.llegada = null; if (T3.siguiendo) T3.siguiendo = false;
+  /* encuadre de cada simulación (donde pasa lo que se mueve): centro c y desfase d de la cámara, en el mundo */
+  const VISTA_PAR = { 2: { c: [1900, 0, 700], d: [200, 1500, 1500] }, 3: { c: [1500, 0, 800], d: [250, 1300, 1400] }, 4: { c: [1950, 0, 250], d: [200, 1250, 1350] }, 5: { c: [3977, 0, 219], d: [150, 700, 850] } };
+  function volarVista(ms = 1100, par = 0) { const VV = VISTA_PAR[par] || VISTA; if (!T3.camera || !T3.orbit) return; T3.anim = null; T3.llegada = null; if (T3.siguiendo) T3.siguiendo = false;
     if (window.KEN_OJO && window.KEN_OJO.cerrar) try { window.KEN_OJO.cerrar(); } catch (e) { /* */ }
-    const V3 = T3.THREE.Vector3, P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), P1 = new V3(VISTA.c[0] + VISTA.d[0], VISTA.d[1], VISTA.c[2] + VISTA.d[2]), C1 = new V3(VISTA.c[0], VISTA.c[1], VISTA.c[2]), t0 = performance.now();
+    const V3 = T3.THREE.Vector3, P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), P1 = new V3(VV.c[0] + VV.d[0], VV.d[1], VV.c[2] + VV.d[2]), C1 = new V3(VV.c[0], VV.c[1], VV.c[2]), t0 = performance.now();
     (function paso() { const u = Math.min(1, (performance.now() - t0) / ms), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
       T3.camera.position.lerpVectors(P0, P1, e); T3.orbit.target.lerpVectors(C0, C1, e); T3.orbit.update(); if (u < 1) requestAnimationFrame(paso); })(); }
   window.KEN_VISTA = volarVista;
