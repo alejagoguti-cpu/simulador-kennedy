@@ -210,6 +210,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     /* v5.2: la propuesta 3D (ya armada escondida) se prende en el mismo clic, en la semana en que va; el modelo se pone al día por lotes detrás */
     try { const pp = R.def && R.def.par >= 1 && R.def.par <= 6; if (pp && R.def.propuesta && P01) P01.poner({ sem: (opc && opc.desde) || 1 }); else if (pp && !R.def.propuesta && P01) P01.apagar(); } catch (e) { console.warn('propuesta 01:', e); }
     R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
+    import('./propuesta_flujos.js?v=1').then(m => m.crearFlujosPropuesta({ T3, RELOJ }).poner(R.def && R.def.par, R.def && R.def.propuesta)).catch(e => console.warn('flujos:', e)); /* con propuesta: menos viajes a Corabastos y rutas a los mercados */
     reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null); if (!(R.def && R.def.par >= 2 && R.def.par <= 6)) { ponerMov(null); ponerCierre(null); } else if (!(opc && opc.desde > 1)) setTimeout(recalcularAqui, 500); /* 02: vista previa desde el primer momento */
     setTimeout(apagarSintaxis, 1600); setTimeout(apagarSintaxis, 3200);
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); const ruidoOn = false; /* el ruido solo se prende a mano */ /* con propuesta: sin capa de ruido, la historia es la red verde y el reparto */ if (H && rb && rb.classList.contains('on') !== ruidoOn) rb.click(); pintarHistoria(); focoHistoria(5);
@@ -580,7 +581,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let RES = null, pRes = null, S456 = null, pS456 = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02 y la 03: la semana del cierre o de la interrupción */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     { const p = R.def && R.def.par, d = p >= 4 && p <= 6 && I ? I['s0' + p] : null; /* 04–06 (data3d/capas456.js) */
-      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=7').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
+      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=8').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
     { const r3 = R.def && R.def.par === 3 && I && I.res03 && I.res03.fase > 0 ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
       if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=6').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
     if (!m) { if (MOV) MOV.quitar(); return; }

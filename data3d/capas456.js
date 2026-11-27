@@ -148,8 +148,7 @@ export function crearS456({ T3, RELOJ }) {
       const fr = (s - r.L[a]) / Math.max(1e-6, r.L[c] - r.L[a]), fx = r.P[c][0] - r.P[a][0], fz = r.P[c][1] - r.P[a][1], l = Math.hypot(fx, fz) || 1, x = r.P[a][0] + fx * fr - fz / l * 1.8, z = r.P[a][1] + fz * fr + fx / l * 1.8;
       VE.VEH.poner(VE.objs[k++], 'carro', x, Y() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx / l, fz / l)); }
     VE.VEH.fin(); return;
-    if (!S.curvas) return; const n = Math.min(200, S.nPul || 0), C = S.curvas; S.pul.count = n;
-    for (let i = 0; i < n; i++) { const c = C[i % C.length], u = (t * S.vel + i * 0.37) % 1, p = c.getPoint(u); m4.makeTranslation(p.x, p.y, p.z); S.pul.setMatrixAt(i, m4); } S.pul.instanceMatrix.needsUpdate = true; }
+  }
 
   RELOJ.alDibujar(() => { if (!G.visible || !par) return; const t = performance.now() / 1000; if (par === 4 && SUB[4]) cuadro04(t); if (par === 6 && SUB[6]) cuadro06(t); });
   let armando = {};
