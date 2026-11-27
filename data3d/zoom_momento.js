@@ -74,7 +74,7 @@ export function crearZoom({ T3 }) {
       if (ASY.gl) { const gl = ASY.gl; gl.bindBuffer(gl.PIXEL_PACK_BUFFER, ASY.pbo); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, 0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); ASY.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); gl.flush(); }
       else { r.readRenderTargetPixels(rt, 0, 0, W, H, buf); leido = true; } } catch (e) { /* un cuadro sin zoom */ }
     PIL.forEach((o, i) => { o.visible = pv[i]; });
-    r.setRenderTarget(prev); r.autoClear = ac; const ms = performance.now() - t0; espera = ms > 60 ? Math.min(1500, espera * 1.5) : Math.max(350, espera * 0.9); /* si pesa, dibuja menos seguido */
+    r.setRenderTarget(prev); r.autoClear = ac; const ms = performance.now() - t0; espera = ms > 60 ? Math.min(1500, espera * 1.5) : Math.max(700, espera * 0.9); /* si pesa, dibuja menos seguido · RENDIMIENTO 2026-11-27: mínimo 700 ms (antes 350): cada dibujo del recuadro es la escena entera otra vez (~2.600 llamadas); en un choque sigue cada 110 ms */
     if (leido) copiar(); };
   function copiar() { for (let y = 0; y < H; y++) img.data.set(buf.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); ctx.putImageData(img, 0, 0); }
   /* ir(f): salta al primer momento que cumpla f (pruebas y enlaces); devuelve si lo encontró */

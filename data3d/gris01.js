@@ -44,9 +44,11 @@ export function hoyo01(T3, P, H) {
   inem(T3);
 }
 /* el modelo INEM carga tarde (25 MB): si aún no está, se reintenta mientras el recorte siga prendido */
-let inemT = 0;
+let inemT = 0, inemT3 = null;
 function inem(T3) { if (!T3.inem) { if (!inemT) inemT = setTimeout(() => { inemT = 0; if (HOYO.on.value) inem(T3); }, 2000); return; }
-  T3.inem.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => parchar(m, false)); }); }
+  inemT3 = T3; T3.inem.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => parchar(m, false)); }); }
+/* data3d/inem.js junta las piezas en pocas mallas después de cargar (rendimiento): cada malla nueva avisa y, si el recorte ya se aplicó, se parcha también */
+if (typeof window !== 'undefined') window.KEN_INEM_LISTO = () => { if (inemT3) inem(inemT3); };
 function materiales(T3) { const L = []; if (T3.matEdif) L.push(T3.matEdif); if (T3.matTecho) L.push(...Object.values(T3.matTecho)); if (T3.suelo) for (const k of ['via', 'acera', 'piso']) if (T3.suelo[k]) L.push(T3.suelo[k]);
   for (const m of T3.viasMallas || []) if (m && m.material) L.push(...(Array.isArray(m.material) ? m.material : [m.material])); return L.filter(m => m && m.isMaterial); }
 let ON = false;

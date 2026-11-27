@@ -33,7 +33,7 @@
      (humedal_bavaria3d.js). */
 import { quitadas01, semQuita01 } from './abasto_capas.js?v=12';
 import { crearParches3D, ESPECIES } from './parches_arboles.js?v=12';
-import { hoyo01 } from './gris01.js?v=2';
+import { hoyo01 } from './gris01.js?v=3';
 import { crearEcoducto } from './ecoducto.js?v=2';
 import { crearFauna } from './propuesta_fauna.js?v=3';
 
