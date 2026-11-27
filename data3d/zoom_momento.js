@@ -27,7 +27,7 @@ export function crearZoom({ T3 }) {
   siguiente();
   T3.trasRender = () => {
     const now = performance.now(); if (now - tCambio > 8000) { tCambio = now; siguiente(); }
-    if (now - tDib < espera || box.offsetParent === null || document.getElementById('urbia-intro')) return; tDib = now;
+    if (now - tDib < espera || !box.getClientRects().length || document.getElementById('urbia-intro')) return; tDib = now; /* (offsetParent es null en elementos fijos: no sirve para saber si se ve) */
     const r = T3.renderer; if (!r) return; ang += 0.04;
     const Y = (T3.sueloY || 0.3), d = actual.d || 230; cam.position.set(actual.x + Math.cos(ang) * d, Y + d * 0.62, actual.z + Math.sin(ang) * d); cam.lookAt(actual.x, Y + 6, actual.z); cam.updateMatrixWorld(); cam.layers.mask = T3.camera.layers.mask;
     const prev = r.getRenderTarget(), ac = r.autoClear, t0 = performance.now(); r.autoClear = true;
