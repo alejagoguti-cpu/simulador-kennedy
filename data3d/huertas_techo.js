@@ -83,23 +83,39 @@ export function crearHuertasTecho(THREE, T3, opt = {}) {
   /* rendimiento: armar las terrazas cuesta ~10 s de hilo principal y casi nunca se ven (con la propuesta las reemplaza la hidroponía).
      agregar() solo cuenta y guarda la lista; la geometría se arma, igual que antes y en el mismo orden, en el primer cuadro en que el grupo
      está visible (antes de dibujarlo: actualizar() y el dibujo del reloj corren antes del render). */
-  const PEND = [];
-  const armarPendientes = () => { if (!PEND.length || !grupo.visible || !grupo.parent) return; const L = PEND.splice(0); for (const lista of L) armar(lista); };
+  /* RENDIMIENTO (2026-11-27): antes todas las terrazas se armaban en UN cuadro al hacerse visible el grupo: la página quedaba congelada ~10 s justo
+     después de «Iniciar». Ahora se arman terraza por terraza, como mucho 6 ms por cuadro (mismo orden y mismo resultado); se cierra una malla por
+     material cada 120 terrazas (y al final). Las matas se escriben directo en arreglos (sin clonar ni preparar una geometría por planta). */
+  const PEND = []; let B = null, nLote = 0, cx0 = 0, cz0 = 0, cy0 = 0;
+  const nuevoLote = () => { B = { piso: [], cultivo: [], seto: [], partes: [], plantas: [], vidrio: [] }; nLote = 0; MP.pos.length = MP.nor.length = MP.col.length = 0; };
+  const MP = { pos: [], nor: [], col: [] }; /* matas de la terraza en curso */
+  const MATA_P = MATA.attributes.position.array, MATA_N = MATA.attributes.normal.array;
+  const addMata = (r, hh, x, y, z, c) => { const P = MP.pos, N = MP.nor, C = MP.col;
+    for (let i = 0; i < MATA_P.length; i += 3) { P.push(MATA_P[i] * r + x, MATA_P[i + 1] * hh + y, MATA_P[i + 2] * r + z);
+      const nx = MATA_N[i] / r, ny = MATA_N[i + 1] / hh, nz = MATA_N[i + 2] / r, l = Math.hypot(nx, ny, nz) || 1; N.push(nx / l, ny / l, nz / l); C.push(c[0], c[1], c[2]); } }; /* = mata(r, hh).translate(x, y, z): normales con la matriz normal del escalado */
+  const cerrarPlantas = () => {
+    if (MP.pos.length) { const g = new THREE.BufferGeometry(), n = MP.pos.length / 3; g.setAttribute('position', new THREE.Float32BufferAttribute(MP.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(MP.nor, 3)); g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(MP.col, 3)); B.plantas.push(g); MP.pos.length = MP.nor.length = MP.col.length = 0; }
+    if (!B.plantas.length) return; const m = new THREE.Mesh(mergeGeometries(B.plantas), M.plantas); m.castShadow = false; m.receiveShadow = !LIV; m.visible = false; grupo.add(m); cercanas.push({ m, x: cx0, y: cy0, z: cz0 }); B.plantas = []; };
+  const cerrarLote = () => { if (!B) return; cerrarPlantas();
+    for (const [mat, L] of Object.entries(B)) { if (!L.length || mat === 'plantas') continue;
+      const m = new THREE.Mesh(mergeGeometries(L), M[mat]); m.castShadow = !LIV && mat !== 'piso' && mat !== 'vidrio' && mat !== 'cultivo'; m.receiveShadow = !LIV && mat !== 'vidrio';
+      if (mat === 'vidrio') m.renderOrder = 2; grupo.add(m); }
+    B = null; };
+  const armarPendientes = () => { if (!PEND.length || !grupo.visible || !grupo.parent) return; const t0 = performance.now();
+    while (PEND.length && performance.now() - t0 < 6) { if (!B) nuevoLote(); armarTerraza(PEND.shift()); if (++nLote >= 120) cerrarLote(); }
+    if (!PEND.length) cerrarLote(); };
   if (window.KEN_RELOJ && window.KEN_RELOJ.alDibujar) window.KEN_RELOJ.alDibujar(armarPendientes);
   const actualizar0 = api.actualizar; api.actualizar = (cam) => { armarPendientes(); actualizar0(cam); };
   api.agregar = (lista) => {
     for (const R of lista) { const W = R.W, n = W.length; if (n < 3) continue; let area = 0; for (let i = 0; i < n; i++) { const a = W[i], b = W[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; } if (Math.abs(area) / 2 < 60) continue; api.n++; }
-    T3.counts.huertasTecho = api.n; PEND.push(lista); };
-  const armar = (lista) => {
-    const B = { piso: [], cultivo: [], seto: [], partes: [], plantas: [], vidrio: [] };
-    const add = (mat, g, col) => B[mat].push(preparar(g, col));
-    let cx0 = 0, cz0 = 0, cy0 = 0;
-    const cerrarPlantas = () => { const m = new THREE.Mesh(mergeGeometries(B.plantas), M.plantas); m.castShadow = false; m.receiveShadow = !LIV; m.visible = false; grupo.add(m); cercanas.push({ m, x: cx0, y: cy0, z: cz0 }); B.plantas = []; };
-    for (const R of lista) {
-      const W = R.W, y = R.y, n = W.length; if (n < 3) continue;
-      if (B.plantas.length) cerrarPlantas();
+    T3.counts.huertasTecho = api.n; PEND.push(...lista); };
+  const add = (mat, g, col) => B[mat].push(preparar(g, col));
+  const armarTerraza = (R) => {
+    {
+      const W = R.W, y = R.y, n = W.length; if (n < 3) return;
+      if (B.plantas.length || MP.pos.length) cerrarPlantas();
       let area = 0; for (let i = 0; i < n; i++) { const a = W[i], b = W[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
-      const sgn = area > 0 ? 1 : -1; area = Math.abs(area) / 2; if (area < 60) continue;
+      const sgn = area > 0 ? 1 : -1; area = Math.abs(area) / 2; if (area < 60) return;
       cx0 = W.reduce((s, q) => s + q[0], 0) / n; cz0 = W.reduce((s, q) => s + q[1], 0) / n; cy0 = y;
       const semilla = Math.abs(Math.round(W[0][0] * 13 + W[0][1] * 7)); sem = 1 + (semilla % 2147483646);
       // piso de grava (triangulado por el contorno real)
@@ -178,20 +194,11 @@ export function crearHuertasTecho(THREE, T3, opt = {}) {
           for (let f = 0; f < filas; f++) for (let s = -CL / 2 + cada / 2 + 0.1; s < CL / 2 - 0.1; s += cada) {
             const p = aMundo(uc + s + (rnd() - 0.5) * 0.08, vc + (f - (filas - 1) / 2) * (CA - 0.3) / filas + (rnd() - 0.5) * 0.06), r = P[1] * (0.8 + rnd() * 0.4), hh = r * P[2];
             const k = 0.85 + rnd() * 0.3, c = P[0];
-            const g = mata(r, hh).translate(p[0], y + HB + 0.05 + hh * 0.7, p[1]);
-            add('plantas', g, [c[0] * k, c[1] * k, c[2] * k]);
+            addMata(r, hh, p[0], y + HB + 0.05 + hh * 0.7, p[1], [c[0] * k, c[1] * k, c[2] * k]);
             if (tipo === 3 && rnd() < 0.5) add('plantas', new THREE.IcosahedronGeometry(0.06, 0).translate(p[0] + (rnd() - 0.5) * r, y + HB + 0.05 + hh * (0.6 + rnd() * 0.6), p[1] + (rnd() - 0.5) * r), [0.75, 0.08, 0.05]); // tomates
           }
         }
       }
-    }
-    if (B.plantas.length) cerrarPlantas();
-    for (const [mat, L] of Object.entries(B)) {
-      if (!L.length) continue;
-      const m = new THREE.Mesh(mergeGeometries(L), M[mat]);
-      m.castShadow = !LIV && mat !== 'piso' && mat !== 'vidrio' && mat !== 'cultivo'; m.receiveShadow = !LIV && mat !== 'vidrio';
-      if (mat === 'vidrio') m.renderOrder = 2;
-      grupo.add(m);
     }
   };
   return api;

@@ -2242,7 +2242,7 @@ const HUERTA_H = 16.5; // más de 5 pisos (pisos de 3 m)
 let pHuertas = null;
 function agregarHuertasTecho(L) {
   if (!L.length) return;
-  if (!pHuertas) pHuertas = import('./data3d/huertas_techo.js?v=2').then(m => (T3.huertas = m.crearHuertasTecho(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('huertas en terrazas:', e); return null; });
+  if (!pHuertas) pHuertas = import('./data3d/huertas_techo.js?v=3').then(m => (T3.huertas = m.crearHuertasTecho(T3.THREE, T3, { liviano: LIVIANO }))).catch(e => { console.warn('huertas en terrazas:', e); return null; });
   pHuertas.then(H => { if (H) { H.agregar(L); if (H.grupo && (T3.escenario !== 'proyecto' || T3.conHidro)) H.grupo.visible = false; } }); // huertas en terrazas: solo con la propuesta (y las reemplaza la hidroponía)
 }
 function treeTexture(THREE, variant) {
