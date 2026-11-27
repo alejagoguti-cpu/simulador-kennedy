@@ -441,7 +441,7 @@ export function iniciarLimpio({ T3 }) {
   function alternar() {
     if (!ESC.activo) return; if (!RELOJ.arrancado) RELOJ.arrancar(true); /* el reloj arranca con el play aunque la portada se haya cerrado sin «Iniciar» (si no, el play no avanzaba) */
     /* la cámara no se mueve sola: la vista oblicua ya está puesta desde el inicio (VISTA) */
-    if (RELOJ.pausaSem) { if (RELOJ.sem >= FIN_SEM) reiniciar(); RELOJ.detenerSemEn = FIN_SEM; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); RELOJ.presupuestoMs = 10; RELOJ.ponerVel(VEL_DIA[vel]); }
+    if (RELOJ.pausaSem) { const U = window.KEN_SIMUI && window.KEN_SIMUI.R; if (RELOJ.sem >= FIN_SEM || (U && (U.go || U.fin))) reiniciar(); /* tras un game over o el año 15, play vuelve a correr desde el año 1 (antes el reloj seguía pero la simulación quedaba trabada) */ RELOJ.detenerSemEn = FIN_SEM; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); RELOJ.presupuestoMs = 10; RELOJ.ponerVel(VEL_DIA[vel]); }
     else { RELOJ.pausarAños(true); RELOJ.presupuestoMs = 6; RELOJ.ponerVel(1); }
   }
   function reiniciar() { if (RELOJ.saltando) return; RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); RELOJ.ponerVel(1); dispatchEvent(new Event('lp-reinicio')); }
