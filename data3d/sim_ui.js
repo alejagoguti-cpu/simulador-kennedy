@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=11'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=12'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -306,6 +306,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       if (I.sem % 4 === 0 || R.hist.length === 1) { pintarHistoria(); pintarGraficas(); pintarTablero(); ponerVerde(I); }
       // más carros (los mismos de la grabación SUMO) a medida que el modelo sube el tráfico y Corabastos se llena: el flujo se pone rojo
       window.KEN_TRAF_F = Math.max(0.6, 1 + ((I.trafico || 1) - 1) * 2.5 + (I.abasto && I.abasto.cora ? 1.2 * Math.max(0, I.abasto.cora.carga - 0.8) : 0)); /* 02 (2026-11-26): el cierre ya no suma carros: los MISMOS vehículos de la grabación que usaban la vía cerrada se desvían (data3d/ruido_cierre.js) */
+      if (R.def && R.def.par >= 2 && R.def.par <= 6 && I.sem > 1 && (I.sem - 1) % 52 === 0) { try { SP.cambioAno(R.def.par, R.hist[R.hist.length - 53] || R.hist[0], I); } catch (e) { /* */ } } /* cada año (12 s): aviso de lo que cambió */
       const g = M.gameOver(R.s); if (g) { gameOver(g); return; }
       if (I.sem % 13 === 0 || (R.hist.length === 1 && !R.previa)) refrescarPicos(); // cada trimestre: los picos se recalculan con lo que ya pasó // cada medio año: los picos se recalculan con lo que ya pasó
     }
@@ -1031,7 +1032,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=23');
+    try { const { abrirInforme2 } = await import('./informe.js?v=24');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];
