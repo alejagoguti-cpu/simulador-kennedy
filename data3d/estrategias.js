@@ -60,7 +60,7 @@ export async function iniciarEstrategias({ THREE, T3, lw, Y0 = 2.0, dentro = nul
     /* determinismo: la lista de cubiertas incluye los techos altos y de las torres, que llegan a medida que cargan los edificios; se espera a que
        estén todos (T3.edifCompletos) para que la lista, y con ella la simulación de polinizadores, no dependa del tiempo de carga (tope 120 s) */
     const listos = () => new Promise(r => { const t0 = Date.now(); const mira = () => (T3.edifCompletos || Date.now() - t0 > 120000) ? r() : setTimeout(mira, 500); mira(); });
-    if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=29'), listos(), fetch('data3d/escenario01_construcciones.geojson?v=2').then(r => { if (!r.ok) throw new Error(`Catastro HTTP ${r.status}`); return r.json(); })]).then(([m, , catastro]) => {
+    if (!HIDRO_P) HIDRO_P = Promise.all([import('./huertas_hidro.js?v=30'), listos(), fetch('data3d/escenario01_construcciones.geojson?v=2').then(r => { if (!r.ok) throw new Error(`Catastro HTTP ${r.status}`); return r.json(); })]).then(([m, , catastro]) => {
       /* ORDEN DE INSTALACIÓN (la lista que recibe huertas_hidro.js se instala en este orden, según avance el modelo semanal):
          1) cubiertas que coinciden espacialmente con una construcción oficial de exactamente 15 pisos (Catastro);
          2) las demás cubiertas de antes (E8 «Huertas en cubiertas de vivienda en altura», torres con balcones y techos altos),

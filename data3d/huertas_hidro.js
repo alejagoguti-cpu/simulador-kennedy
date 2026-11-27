@@ -398,17 +398,17 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   /* RESALTE DE CADA CUBIERTA QUE SE INSTALA: una caja de luz abierta (cuatro paredes con degradado, sin techo ni piso) del tamaño del
      rectángulo de la cubierta, que sube y se desvanece en DUR_R s de animación, más el anillo de data3d/resaltes.js. Una sola InstancedMesh
      de MAX_R ranuras que se reusan en ronda; cada ranura guarda su instante de inicio (t0). Si no hay ninguna encendida, no se dibuja. */
-  const MAX_R = movil ? 160 : 512, DUR_R = 4.5, uR = { uT: { value: 0 } }, t0R = new Float32Array(MAX_R).fill(-1e4);
+  const MAX_R = movil ? 160 : 512, DUR_R = 9.0, /* más largo: la autora pidió que se resalten bien al ponerse */ uR = { uT: { value: 0 } }, t0R = new Float32Array(MAX_R).fill(-1e4);
   const gR = (() => { const L = []; for (const [x, z, ry] of [[0, 0.5, 0], [0, -0.5, 0], [0.5, 0, Math.PI / 2], [-0.5, 0, Math.PI / 2]]) L.push(new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0).rotateY(ry).translate(x, 0, z));
     const g = mergeGeometries(L.map(q => q.toNonIndexed())); g.setAttribute('t0', new THREE.InstancedBufferAttribute(t0R, 1)); return g; })();
   const mR = new THREE.ShaderMaterial({ uniforms: uR, transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     vertexShader: 'attribute float t0; uniform float uT; varying float vE; varying float vY; void main(){ vE = (uT - t0) / ' + DUR_R.toFixed(1) + '; vY = position.y; vec3 p = position; p.y *= 0.25 + 0.75 * smoothstep(0.0, 0.35, vE); gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(p, 1.0); }',
-    fragmentShader: 'varying float vE; varying float vY; void main(){ if (vE < 0.0 || vE >= 1.0) discard; float a = (1.0 - vY) * (1.0 - vY) * (1.0 - smoothstep(0.55, 1.0, vE)) + smoothstep(0.06, 0.0, vY) * (1.0 - vE); gl_FragColor = vec4(vec3(0.81, 1.0, 0.37) * a * 0.9, 1.0); }' });
+    fragmentShader: 'varying float vE; varying float vY; void main(){ if (vE < 0.0 || vE >= 1.0) discard; float a = (1.0 - vY) * (1.0 - vY) * (1.0 - smoothstep(0.55, 1.0, vE)) + smoothstep(0.06, 0.0, vY) * (1.0 - vE); gl_FragColor = vec4(vec3(0.81, 1.0, 0.37) * a * 1.7, 1.0); }' });
   const imR = new THREE.InstancedMesh(gR, mR, MAX_R); imR.count = MAX_R; imR.frustumCulled = false; imR.renderOrder = 15; imR.visible = false; imR.name = 'cubiertas-resalte'; T3.scene.add(imR);
   { const O = new THREE.Object3D(); O.scale.set(0, 0, 0); O.updateMatrix(); for (let i = 0; i < MAX_R; i++) imR.setMatrixAt(i, O.matrix); }
   let kR = 0, tUltR = -1e4; const oR = new THREE.Object3D();
   RELOJ.alDibujar((info) => { uR.uT.value = info.tAnim; imR.visible = grupo.visible && info.tAnim - tUltR < DUR_R + 0.5; });
-  const resaltar = (ti) => { const r = RECT.get(ti); if (!r) return; const i = kR++ % MAX_R, alto = Math.max(8, Math.min(18, Math.max(r[4], r[5]) * 0.35));
+  const resaltar = (ti) => { const r = RECT.get(ti); if (!r) return; const i = kR++ % MAX_R, alto = Math.max(14, Math.min(30, Math.max(r[4], r[5]) * 0.55));
     oR.position.set(r[0], r[1] - 0.6, r[2]); oR.rotation.set(0, r[3], 0); oR.scale.set(r[4] + 1.2, alto, r[5] + 1.2); oR.updateMatrix(); imR.setMatrixAt(i, oR.matrix);
     t0R[i] = uR.uT.value; tUltR = uR.uT.value; };
   T3.hidroAgentes = AG; T3.hidroMesh = MESH; // para depurar
@@ -422,7 +422,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
       const a = Math.min(ORDL.length, Math.floor(f * ORDL.length + 1e-9)); if (a === nAbiertas) return; nAbiertas = a; // ORDL[i][1] = (i + 1) / n: abiertas = las primeras a
       if (f > antes && grupo.visible) { const nuevas = []; for (let i = a - 1; i >= 0 && ORDL[i][1] > antes && nuevas.length < 60; i--) nuevas.push(ORDL[i][0]);
         if (nuevas.length) { for (const ti of nuevas) resaltar(ti); imR.instanceMatrix.needsUpdate = true; gR.attributes.t0.needsUpdate = true;
-          import('./resaltes.js?v=4').then(m => { const R2 = m.resaltes(T3); for (const ti of nuevas.slice(0, 24)) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {}); } }
+          import('./resaltes.js?v=4').then(m => { const R2 = m.resaltes(T3); for (const ti of nuevas.slice(0, 64)) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 34); } }).catch(() => {}); } }
       sucioFrac = true; if (grupo.visible && performance.now() - tFrac > 330) { tFrac = performance.now(); sucioFrac = false; ultimo = null; recalcular(); } }, // tope ~3 veces/s; el resto lo hace el tick de cuadro()
     get frac() { return frac; },
     get instaladas() { return frac >= 1 ? ORDL.length : nAbiertas; }, // cubiertas con huerta ya instaladas (de techos)

@@ -177,7 +177,7 @@
 #urbia-start:is(:hover,:focus-visible){outline:2px solid var(--ui-acc,#d4ecb0);outline-offset:4px}
 </style>
 <section id="urbia-intro" aria-labelledby="urbia-intro-title">
-<iframe src="data3d/urbia-escena.html?v=5" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
+<iframe src="data3d/urbia-escena.html?v=6" title="Animación original de URBIA" sandbox="allow-scripts" tabindex="-1"></iframe>
 <div class="zoom-intro" aria-label="Zoom de portada"><button type="button" data-zoom="out" aria-label="Alejar">−</button><button type="button" data-zoom="in" aria-label="Acercar">+</button></div><div class="ui-center"><p style="margin:0 0 6px;color:#f4f3ef;font:600 13px/1.4 system-ui;letter-spacing:.04em;text-shadow:0 1px 8px #000">Simulador 3D de Kennedy</p><h1 id="urbia-intro-title">Modelamiento dinámico</h1><p class="intro-creditos">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo</p><button id="urbia-start" type="button" disabled>Preparando Kennedy…</button><small id="estado-maqueta" role="status"></small></div>
 </section>
 <script>
@@ -3824,7 +3824,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=45'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=56'), import('./data3d/estrategias.js?v=46'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
