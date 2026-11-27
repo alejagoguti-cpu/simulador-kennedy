@@ -47,7 +47,7 @@ const equip = (I) => (I.gobernanza ? I.gobernanza.barrios.reduce((a, b) => a + b
 const conect = (I) => (I.verde && I.verde.resumen && I.verde.resumen.nParches ? I.verde.resumen.nConectados / I.verde.resumen.nParches * 100 : null);
 export const PAR_CFG = {
   2: { titulo: 'Movilidad y cierre vial',
-    alerta(I, val) { const m = I && I.mov02, via = m && m.vias[m.via] ? m.vias[m.via].n : OPC_VIA[val.viaCierre] || 'la vía', t0 = val.cierreT0 != null ? val.cierreT0 : 4, d = val.cierreDur != null ? val.cierreDur : 260, s = I ? I.sem : 0;
+    alerta(I, val) { const m = I && I.mov02, via = m && m.vias[m.via] ? m.vias[m.via].n : OPC_VIA[val.viaCierre] || 'la vía', t0 = val.cierreT0 != null ? val.cierreT0 : 105, d = val.cierreDur != null ? val.cierreDur : 260, s = I ? I.sem : 0;
       if (s < t0) return ['Se cerrará la ' + via, 'en ' + nf(t0 - s) + ' sem · ' + nf(val.cierrePct) + ' %'];
       if (s < t0 + d) return ['Cerrada la ' + via + ' al ' + nf((m ? m.c : 0) * 100) + ' %', m ? '+' + nf(m.D) + ' veh/h desviados' : ''];
       return ['Vía reabierta', 'cerró ' + nf(d) + ' sem']; },

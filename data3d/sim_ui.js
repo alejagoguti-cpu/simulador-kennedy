@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=14'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=15'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
