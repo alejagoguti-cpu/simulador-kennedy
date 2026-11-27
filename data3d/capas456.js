@@ -111,11 +111,11 @@ export function crearS456({ T3, RELOJ }) {
     const arco = (A, B, h) => { const M = new THREE.Vector3((A[0] + B[0]) / 2, Y() + h, (A[1] + B[1]) / 2); return new THREE.QuadraticBezierCurve3(new THREE.Vector3(A[0], Y() + 30, A[1]), M, new THREE.Vector3(B[0], Y() + 30, B[1])); };
     const estrella = J.map(p => arco(ALC, p, 180)), red = []; for (let i = 0; i < J.length; i++) { red.push(arco(J[i], BAV, 220)); red.push(arco(J[i], J[(i + 1) % J.length], 120)); }
     const tubos = (L, col, r) => L.map(c => { const m = new THREE.Mesh(new THREE.TubeGeometry(c, 40, r, 6, false), basic(col, 0.7, { depthWrite: false })); m.renderOrder = 9; g.add(m); return m; });
-    const tE = tubos(estrella, 0x64748b, 3), tR = tubos(red, 0x38bdf8, 3.5); tR.forEach((m, i) => { if (i % 2) m.material.color.set(0x34d399); });
+    const tE = tubos(estrella, 0x64748b, 7), tR = tubos(red, 0x38bdf8, 8); tR.forEach((m, i) => { if (i % 2) m.material.color.set(0x34d399); });
     const nodo = (p, col, r, h) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 24), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.4 })); m.position.set(p[0], Y() + h / 2, p[1]); g.add(m); return m; };
     const nA = nodo(ALC, 0x94a3b8, 40, 30), nB = nodo(BAV, 0x10b981, 50, 30);
     const gBal = new THREE.CylinderGeometry(1, 1, 1, 20).translate(0, 0.5, 0), bal = J.map(p => { const m = new THREE.Mesh(gBal, new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.6, transparent: true, opacity: 0.9 })); m.position.set(p[0], Y(), p[1]); g.add(m); return m; });
-    const pul = new THREE.InstancedMesh(new THREE.SphereGeometry(9, 12, 8), basic(0xe0f2fe), 200); pul.count = 0; pul.frustumCulled = false; pul.renderOrder = 12; g.add(pul);
+    const pul = new THREE.InstancedMesh(new THREE.SphereGeometry(16, 12, 8), basic(0xe0f2fe), 200); pul.count = 0; pul.frustumCulled = false; pul.renderOrder = 12; g.add(pul);
     const rot = d.barrios.map((b, i) => rotulo(g, J[i][0], J[i][1], 260)), rA = rotulo(g, ALC[0], ALC[1], 120), rB = rotulo(g, BAV[0], BAV[1], 120);
     pintar(rA, 'ALCALDÍA LOCAL DE KENNEDY', '#334155'); pintar(rB, 'BAVARIA COMÚN · PARLAMENTO CÍVICO', '#047857');
     return { g, tE, tR, estrella, red, bal, pul, rot, nA, nB }; }

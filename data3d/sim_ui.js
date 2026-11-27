@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=8'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=9'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=49'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=50'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -577,7 +577,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let RES = null, pRes = null, S456 = null, pS456 = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02 y la 03: la semana del cierre o de la interrupción */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     { const p = R.def && R.def.par, d = p >= 4 && p <= 6 && I ? I['s0' + p] : null; /* 04–06 (data3d/capas456.js) */
-      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=2').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
+      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=3').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
     { const r3 = R.def && R.def.par === 3 && I && I.res03 && I.res03.fase > 0 ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
       if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=2').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
     if (!m) { if (MOV) MOV.quitar(); return; }
@@ -595,9 +595,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
         const r = Q.a.red02({ via, c, dem: o.dem, prop: o.prop, perm: o.prop ? v.permeab / 100 : 0, rodeo: Q.rod[via] || 1 });
         I2 = { ...L, mov02: { ...o, via, c, perm: r.perm, D: Math.round(r.D), tt: r.tt, sat: r.sat, dbRes: r.dbRes, sobre: r.sobre, g: r.ab.g, kProp: r.kProp, vias: r.vias }, cierre: { ...(L.cierre || {}), viaId: via, via, c, fase } }; }
       if (par === 3 && L.res03) { const o = L.res03, r = Q.b.interrupcion({ orgDia: o.orgDia || 486, frac: Q.frac, horas: v.resHoras, prop: o.prop, cap: o.prop ? v.capRed / 100 : 0, cierreCora: !!v.cierreCora }); I2 = { ...L, res03: { ...o, ...r, fase: 1 } }; }
-      if (par === 4 && L.s04) { const o = L.s04, r = Q.m4.aves04({ flujo: v.flujoAves / 100, impl: o.prop ? v.implFauna / 100 : 0, barreras: !!v.barrerasFauna, prop: o.prop, trafico: L.trafico || 1 }); I2 = { ...L, s04: { ...o, ...r, flujo: v.flujoAves / 100, impl: o.prop ? v.implFauna / 100 : 0, barreras: o.prop && !!v.barrerasFauna } }; }
+      if (par === 4 && L.s04) { const o = L.s04, r = Q.m4.aves04({ flujo: v.flujoAves / 100, impl: o.prop ? v.implFauna / 100 : 0, barreras: !!v.barrerasFauna, prop: o.prop, trafico: L.trafico || 1 }); let pob = 1; for (let w = 0; w < Math.min(8, Math.max(1, (L.sem || 1) - (o.t0 || 4) + 1)); w++) pob = pob * (1 - r.muerteSem) + Q.m4.S04.RECUP * (1 - pob); I2 = { ...L, s04: { ...o, ...r, pob, flujo: v.flujoAves / 100, impl: o.prop ? v.implFauna / 100 : 0, barreras: o.prop && !!v.barrerasFauna } }; }
       if (par === 5 && L.s05) { const o = L.s05, r = Q.m4.suelo05({ años: ((L.sem || 1) - 1) / 52, presion: v.presionPlan / 100, reuso: v.reusoNaves / 100, blindaje: !!v.blindaje, prop: o.prop, VIV_ETAPA: Q.pb.VIV_ETAPA, ARB_ETAPA: Q.pb.ARB_ETAPA }); I2 = { ...L, s05: { ...o, ...r, presion: v.presionPlan / 100, reuso: o.prop ? v.reusoNaves / 100 : 0, blindaje: !!v.blindaje } }; }
-      if (par === 6 && L.s06) { const o = L.s06; I2 = { ...L, s06: { ...o, pres: v.presupuesto / 100, part: o.prop ? v.participacion / 100 : 0, prio: v.prioridadFondos } }; } /* 06: la red y los pulsos cambian al momento; las semanas sin recursos, al soltar (modelo completo) */
+      if (par === 6 && L.s06) { const o = L.s06, pres = v.presupuesto / 100, part = o.prop ? v.participacion / 100 : 0, rond = o.prop ? Math.round(13 - 11 * part) : 13, k = pres / Math.max(0.01, o.pres), barrios = o.barrios.map(b => ({ ...b, cov: Math.min(1, b.cov * k) })), crit = barrios.some(b => b.cov < 0.5);
+        I2 = { ...L, s06: { ...o, pres, part, prio: v.prioridadFondos, barrios: barrios.map(b => ({ ...b, urg: b.cov < 0.5 ? Math.max(0, rond - 1) : 0 })), urgMax: crit ? Math.max(0, rond - 1) : 0 } }; } /* estimación al deslizar: cobertura ∝ recursos y espera = semanas entre rondas − 1; al soltar, el modelo completo */ /* 06: la red y los pulsos cambian al momento; las semanas sin recursos, al soltar (modelo completo) */
       if (I2 && I2['s0' + par] && S456) S456.poner(par, I2['s0' + par]);
       if (!I2) return; if (I2.mov02 && MOV) MOV.poner(I2.mov02); if (I2.mov02) ponerCierre(I2.cierre, true); if (I2.res03 && RES) RES.poner(I2.res03);
       try { SP.actualizar(der, [...H0.slice(0, Math.max(0, H0.indexOf(L))), I2], FIN, null, R.def); } catch (e) { /* */ } }).catch(() => {}); }
@@ -642,7 +643,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* v5.3: el sector con cobertura < 80 % se resalta en el mapa (sector_deficit.js), en todas las simulaciones */
   let SECDEF = null, pSecDef = null;
   function secDef(I) { try { if (SECDEF) return SECDEF.poner(I); if (!pSecDef && M && M.ZONAS_XZ) pSecDef = import('./sector_deficit.js?v=1').then(m => { SECDEF = m.crearSectorDeficit({ T3, ZONAS_XZ: M.ZONAS_XZ }); const L = ultimo(); if (L) SECDEF.poner(L); }).catch(e => console.warn('sector con déficit:', e)); } catch (e) { console.warn('sector con déficit:', e); } }
-  function ponerCapaPar(I) { secDef(I); const p01 =!!(I && I.abasto && I.abasto.ab01), parI = I && I.par >= 1 && I.par <= 6, propPar = !!(parI && I.propuesta), semI = I ? I.sem : 0; if (SIN_CAPAS && !p01) I = null; /* par 01: los medidores de capacidad sí se ven (pedido de la autora, 2026-11-25) */
+  function ponerCapaPar(I) { if (R.def && R.def.par >= 3) { if (SECDEF) SECDEF.ver(false); } else secDef(I); /* la cuadrícula de zonas con déficit de comida solo en 01 y 02 */ const p01 =!!(I && I.abasto && I.abasto.ab01), parI = I && I.par >= 1 && I.par <= 6, propPar = !!(parI && I.propuesta), semI = I ? I.sem : 0; if (SIN_CAPAS && !p01) I = null; /* par 01: los medidores de capacidad sí se ven (pedido de la autora, 2026-11-25) */
     const c = I ? capaPar() : null;
     /* v5.2: vías pintadas por la densidad MEDIDA de vehículos (data3d/vias_densidad.js) en las 6 simulaciones; en la 01 la maneja su capa «Tráfico» (abasto_capas.js) */
     window.KEN_VIAS_PAR = !!(parI && !p01);
@@ -1026,7 +1027,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=20');
+    try { const { abrirInforme2 } = await import('./informe.js?v=21');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];
