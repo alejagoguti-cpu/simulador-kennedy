@@ -82,7 +82,12 @@ export async function crearParqueCorabastos({ T3, lw, cj }) {
   const corab = () => T3.scene.getObjectByName('corabastos');
   let on = false, nDesm = Q.length, nRest = Q.length, mad = 1; // sin llamada del modelo: todas (comportamiento anterior con la propuesta)
   const planAbierto = () => { const p = document.getElementById('cp-pan'); return !!(p && p.classList.contains('on')); };
+  /* 2026-11-27 (la autora: «en Corabastos no se entiende cuándo se abre el humedal»): en las simulaciones con propuesta el humedal La Vaca ampliado
+     lo dibuja SOLO data3d/propuesta01_3d.js (naves que se quitan una a una y la malla de Google recortada). Este borde por bodegas iba con otro
+     calendario (sim_vida.js) y se encimaba: mientras esa propuesta está prendida, este se apaga. */
+  const prop01 = () => !!(window.KEN_PROP01 && window.KEN_PROP01.grupo && window.KEN_PROP01.grupo.visible);
   function aplicarVis() {
+    if (on && prop01()) { grupo.visible = false; PARQUES.forEach(P => { if (P.parches) P.parches.ver(false); }); return; } grupo.visible = on;
     const co = corab(), bq = co && co.userData.bodegasQ;
     if (co && co.userData.quitadas) co.userData.quitadas.visible = !planAbierto(); // el plan de E3 muestra sus propias formas
     PARQUES.forEach((P, i) => { const desm = on && i < nDesm, res = on && i < nRest; if (bq && bq[i]) bq[i].visible = !desm;

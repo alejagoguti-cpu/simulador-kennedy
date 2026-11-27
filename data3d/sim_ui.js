@@ -644,7 +644,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let CONT = null, pCont = null, REP = null, pRep = null, CAP01 = null, pCap01 = null, P01 = null, pP01 = null;
   /* v5.2 (pedido de la autora: pasar a «con propuesta» tardaba): la propuesta 3D se crea y se arma escondida apenas el navegador queda libre
      (propuesta01_3d.js arma todo en trozos de ≤ 8 ms); al escoger «con propuesta» solo se prende */
-  (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { if (!pP01) pP01 = import('./propuesta01_3d.js?v=16').then(m => { if (!P01) P01 = m.crearPropuesta01({ T3 }); return P01; }).catch(e => console.warn('propuesta 01:', e)); }, { timeout: 4000 });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { if (!pP01) pP01 = import('./propuesta01_3d.js?v=17').then(m => { if (!P01) P01 = m.crearPropuesta01({ T3 }); return P01; }).catch(e => console.warn('propuesta 01:', e)); }, { timeout: 4000 });
   /* v5.3: el sector con cobertura < 80 % se resalta en el mapa (sector_deficit.js), en todas las simulaciones */
   let SECDEF = null, pSecDef = null;
   function secDef(I) { try { if (SECDEF) return SECDEF.poner(I); if (!pSecDef && M && M.ZONAS_XZ) pSecDef = import('./sector_deficit.js?v=1').then(m => { SECDEF = m.crearSectorDeficit({ T3, ZONAS_XZ: M.ZONAS_XZ }); const L = ultimo(); if (L) SECDEF.poner(L); }).catch(e => console.warn('sector con déficit:', e)); } catch (e) { console.warn('sector con déficit:', e); } }
@@ -659,9 +659,9 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const repartir = false;
     const prop01 = !!(p01 && I && I.propuesta); /* v3: la 01 con propuesta (data3d/propuesta01_3d.js): Corabastos al 50 %, La Vaca más grande, árboles y blanco y negro */
     { const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = !(repartir && REP) && !prop01; }
-    import('./gris01.js?v=1').then(m => m.gris01(T3, parI)).catch(() => {}); /* 2026-11-26: blanco y negro en las 6 simulaciones (antes solo la 01) */ /* v4: blanco y negro en los dos escenarios de la 01 (árboles, agua, fauna y elementos de la simulación en color) */
+    import('./gris01.js?v=2').then(m => m.gris01(T3, parI)).catch(() => {}); /* 2026-11-26: blanco y negro en las 6 simulaciones (antes solo la 01) */ /* v4: blanco y negro en los dos escenarios de la 01 (árboles, agua, fauna y elementos de la simulación en color) */
     /* 2026-11-26: la MISMA propuesta 3D en las 6 «con propuesta» (propuesta01_3d.js solo lee I.sem); en la 01 se le pasa el I completo como siempre */
-    if (propPar) { const IP = prop01 ? I : { sem: semI }; if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=16').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(IP); }
+    if (propPar) { const IP = prop01 ? I : { sem: semI }; if (!P01) { if (!pP01) pP01 = import('./propuesta01_3d.js?v=17').then(m => { P01 = m.crearPropuesta01({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('propuesta 01:', e)); } else P01.poner(IP); }
     else if (P01) P01.apagar();
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);

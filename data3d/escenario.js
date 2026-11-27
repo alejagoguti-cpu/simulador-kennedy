@@ -163,7 +163,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     pMerc = import('./mercados_red.js?v=8').then(m => m.crearRedMercados({ T3, cj })) /* red de mercados: 12 de barrio y 9 plazoletas en parques grandes que abren año a año */.then(mm => { MERC = mm; window.KEN_MERC = mm; if (mm) mm.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('mercados de barrio:', e)); };
   let PCORA = null, pPCora = null;
   const parqueCorabastos = (on, pre = false) => { if (PCORA) { PCORA.ver(on); return; } if ((!on && !pre) || pPCora) return pPCora;
-    pPCora = import('./corabastos_parque.js?v=10').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
+    pPCora = import('./corabastos_parque.js?v=11').then(m => m.crearParqueCorabastos({ T3, lw, cj })).then(p => { PCORA = p; window.KEN_PCORA = p; if (p) p.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parque Corabastos:', e)); };
   /* RENDIMIENTO: lo pesado de la propuesta (huertas de barrio, parches de árboles, mercados, parque de Corabastos, distrito Bavaria y huertas
      hidropónicas) se armaba la primera vez que se tocaba B o C y congelaba la página 1–3 s justo al hacer click. Ahora se arma escondido,
      uno por uno, en los ratos libres después de la carga (mientras se lee la ayuda); al escoger el escenario solo se prende. */

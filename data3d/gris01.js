@@ -16,11 +16,13 @@ const GLSL_HOYO = `varying vec3 vWH01; uniform float uHoyo01; uniform vec2 uHP01
 bool dentroP01(vec2 p) { bool c = false; for (int i = 0; i < ${NP - 1}; i++) { if (i >= uHPn01 - 1) break; vec2 a = uHP01[i], b = uHP01[i + 1]; if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; }
 bool dentroH01(vec2 p) { bool c = false; for (int i = 0; i < ${NH - 1}; i++) { if (i >= uHHn01 - 1) break; vec2 a = uHH01[i], b = uHH01[i + 1]; if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; }
 `;
-function parchar(m) {
+/* conGris = false: solo el recorte del terreno liberado, sin blanco y negro (modelo oficial del sector INEM, data3d/inem.js: su caja cubre la mitad
+   oriental de Corabastos y sus bodegas quedaban como techos blancos flotando sobre el humedal; pedido de la autora 2026-11-27) */
+function parchar(m, conGris = true) {
   if (!m || m.userData._gris01 || m.isRawShaderMaterial || m.glslVersion === '300 es') return;
   m.userData._gris01 = true; const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey;
   m.onBeforeCompile = function (sh, r) { if (prev) prev.call(this, sh, r); sh.uniforms.uGris01 = GR; let fs = sh.fragmentShader, k = fs.lastIndexOf('}'); if (k < 0) return;
-    const gris = '\n  { float l = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114)); gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(l), uGris01); }\n';
+    const gris = conGris ? '\n  { float l = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114)); gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(l), uGris01); }\n' : '\n';
     const fm = fs.indexOf('void main()');
     if (fm >= 0 && sh.vertexShader.includes('#include <project_vertex>')) {
       Object.assign(sh.uniforms, { uHoyo01: HOYO.on, uHP01: HOYO.P, uHPn01: HOYO.nP, uHH01: HOYO.H, uHHn01: HOYO.nH });
@@ -29,7 +31,7 @@ function parchar(m) {
       sh.fragmentShader = 'uniform float uGris01;\n' + fs.slice(0, fm) + GLSL_HOYO + fs.slice(fm, ab) + '\n  if (uHoyo01 > 0.5 && dentroP01(vWH01.xz) && !dentroH01(vWH01.xz)) discard;\n' + fs.slice(ab, k) + gris + fs.slice(k);
       return; }
     sh.fragmentShader = 'uniform float uGris01;\n' + fs.slice(0, k) + gris + fs.slice(k); };
-  m.customProgramCacheKey = function () { return (prevKey ? prevKey.call(this) : '') + '|gris01'; };
+  m.customProgramCacheKey = function () { return (prevKey ? prevKey.call(this) : '') + (conGris ? '|gris01' : '|hoyo01'); };
   m.needsUpdate = true;
 }
 /* propuesta01_3d.js: hoyo(P, H) con los polígonos en el mundo (x, z); hoyo(null) lo apaga */
@@ -38,14 +40,19 @@ export function hoyo01(T3, P, H) {
   P = P.concat([P[0]]); H = H.concat([H[0]]); // cerrados: el último vértice repite el primero (índices constantes en GLSL)
   P.slice(0, NP).forEach((p, i) => { HOYO.P.value[i].x = p[0]; HOYO.P.value[i].y = p[1]; }); HOYO.nP.value = Math.min(NP, P.length);
   H.slice(0, NH).forEach((p, i) => { HOYO.H.value[i].x = p[0]; HOYO.H.value[i].y = p[1]; }); HOYO.nH.value = Math.min(NH, H.length);
-  HOYO.on.value = 1; materiales(T3).forEach(parchar);
+  HOYO.on.value = 1; materiales(T3).forEach(m => parchar(m));
+  inem(T3);
 }
+/* el modelo INEM carga tarde (25 MB): si aún no está, se reintenta mientras el recorte siga prendido */
+let inemT = 0;
+function inem(T3) { if (!T3.inem) { if (!inemT) inemT = setTimeout(() => { inemT = 0; if (HOYO.on.value) inem(T3); }, 2000); return; }
+  T3.inem.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => parchar(m, false)); }); }
 function materiales(T3) { const L = []; if (T3.matEdif) L.push(T3.matEdif); if (T3.matTecho) L.push(...Object.values(T3.matTecho)); if (T3.suelo) for (const k of ['via', 'acera', 'piso']) if (T3.suelo[k]) L.push(T3.suelo[k]);
   for (const m of T3.viasMallas || []) if (m && m.material) L.push(...(Array.isArray(m.material) ? m.material : [m.material])); return L.filter(m => m && m.isMaterial); }
 let ON = false;
 export function gris01(T3, on) {
   on = !!on; if (on === ON || !T3) return; ON = on;
-  if (on) materiales(T3).forEach(parchar);
+  if (on) materiales(T3).forEach(m => parchar(m));
   GR.value = on ? 1 : 0;
   if (T3.maskU && T3.maskU.uGrisV) T3.maskU.uGrisV.value = on ? 1 : 0;
 }

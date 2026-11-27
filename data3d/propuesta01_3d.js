@@ -33,7 +33,7 @@
      (humedal_bavaria3d.js). */
 import { quitadas01, semQuita01 } from './abasto_capas.js?v=12';
 import { crearParches3D, ESPECIES } from './parches_arboles.js?v=12';
-import { hoyo01 } from './gris01.js?v=1';
+import { hoyo01 } from './gris01.js?v=2';
 import { crearEcoducto } from './ecoducto.js?v=2';
 import { crearFauna } from './propuesta_fauna.js?v=3';
 
@@ -236,10 +236,27 @@ export function crearPropuesta01({ T3 }) {
     crearParches3D({ T3, P: arbP, fijo: true }).then(A => { arb = A; A.grupo.name = 'prop01_arboles'; A.grupo.position.y = YP - y0() - 0.05; A.grupo.traverse(o => { if (o.isPoints) o.visible = false; }); A.ver(activo); if (activo) crecer(true); }).catch(e => { arb = null; console.warn('árboles propuesta 01:', e); }); }
 
   const T0 = performance.now(); let raf = 0;
-  const animar = () => { raf = activo ? requestAnimationFrame(animar) : 0; U.uT.value = (performance.now() - T0) / 1000; };
+  const animar = () => { raf = activo ? requestAnimationFrame(animar) : 0; U.uT.value = (performance.now() - T0) / 1000;
+    if (DES.length) dibNaves(nqDib); if (contorno.visible) mObraL.opacity = 0.55 + 0.4 * Math.abs(Math.sin(U.uT.value * 2.4)); };
   /* naves en pie: las que quedan + las quitadas que todavía no se quitan (volúmenes grises de 9 m, como siempre) */
-  function ponerNaves(nq) { const y = y0(); let k = 0;
-    for (const N of S.quedan.concat(S.quitadas.slice(nq))) { O.position.set(N.cx, y, N.cz); O.rotation.set(0, N.th, 0); O.scale.set(N.L, 9, N.W); O.updateMatrix(); mNave.setMatrixAt(k++, O.matrix); } mNave.count = k; mNave.instanceMatrix.needsUpdate = true; }
+  /* DESMONTE VISIBLE (2026-11-27, la autora: «en Corabastos no se entiende cuándo se está abriendo el humedal, como que no se corta»): la nave que
+     se quita no desaparece de golpe: se hunde en ~2,4 s; y mientras dura su obra (0,6 años, la misma «obra» del sombreador del humedal) su huella
+     queda marcada con un contorno ámbar que late: ahí se está abriendo el humedal. Después el contorno se apaga y crece el humedal. */
+  const DES = [], OBRA_SEM = 0.6 * 52, mObraL = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+  const contorno = new THREE.Mesh(new THREE.BufferGeometry(), mObraL); contorno.frustumCulled = false; contorno.renderOrder = 4; contorno.visible = false; G.add(contorno);
+  let obraClave = '';
+  function ponerContorno() { const L = S.quitadas.filter(Q => sem - 1 >= Q.sem && sem - 1 - Q.sem < OBRA_SEM), clave = L.map(Q => Q.k).join(','); if (clave === obraClave) return; obraClave = clave;
+    const P = [], A = 2.6, y = YP + 0.25; for (const Q of L) for (let i = 0; i < 4; i++) { const a = Q.R[i], b = Q.R[(i + 1) % 4], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l * A / 2, nz = dx / l * A / 2;
+      const ax = a[0] - dx / l * A / 2, az = a[1] - dz / l * A / 2, bx = b[0] + dx / l * A / 2, bz = b[1] + dz / l * A / 2; /* las esquinas se cierran */
+      P.push(ax - nx, y, az - nz, bx - nx, y, bz - nz, bx + nx, y, bz + nz, ax - nx, y, az - nz, bx + nx, y, bz + nz, ax + nx, y, az + nz); }
+    contorno.geometry.dispose(); contorno.geometry = new THREE.BufferGeometry(); contorno.geometry.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); contorno.visible = P.length > 0; }
+  function dibNaves(nq) { const y = y0(), ahora = performance.now(); let k = 0;
+    for (const N of S.quedan.concat(S.quitadas.slice(nq))) { O.position.set(N.cx, y, N.cz); O.rotation.set(0, N.th, 0); O.scale.set(N.L, 9, N.W); O.updateMatrix(); mNave.setMatrixAt(k++, O.matrix); }
+    for (let i = DES.length - 1; i >= 0; i--) { const d = DES[i], e = Math.min(1, (ahora - d.t0) / 2400); if (e >= 1) { DES.splice(i, 1); continue; } const h = 9 * (1 - e * e * (3 - 2 * e)); const N = d.N;
+      O.position.set(N.cx, y, N.cz); O.rotation.set(0, N.th, 0); O.scale.set(N.L, Math.max(0.05, h), N.W); O.updateMatrix(); mNave.setMatrixAt(k++, O.matrix); }
+    mNave.count = k; mNave.instanceMatrix.needsUpdate = true; }
+  let nqDib = 0;
+  function ponerNaves(nq, animar) { if (animar && nq > nqDib) for (let i = nqDib; i < nq; i++) if (S.quitadas[i]) DES.push({ N: S.quitadas[i], t0: performance.now() }); if (!animar) DES.length = 0; nqDib = nq; dibNaves(nq); }
   function armar() { nqAnt = -1; if (!arb) cargarArboles(); hoyo(true); crecer(true); }
   /* malla de Google recortada en el terreno liberado (index.html: uHoyoOn/uHoyoTex/uHoyoBox); edificios y vías del modelo: data3d/gris01.js */
   function hoyo(on) { const M = T3.maskU; if (!M || !M.uHoyoTex) return; if (on && campo) { M.uHoyoTex.value = campo.tex; M.uHoyoBox.value.set(campo.box[0], campo.box[1], 1 / campo.box[2], 1 / campo.box[3]); M.uHoyoOn.value = 1; } else M.uHoyoOn.value = 0;
@@ -252,7 +269,7 @@ export function crearPropuesta01({ T3 }) {
     const años = sem / 52, ga = sat((años - 1) / 4), gv = sat((años - 0.8) / 3.2);
     /* v5.2: el agua, la pradera, los juncos y los árboles crecen en cada celda desde la semana en que se quitó su nave (uAnos en el sombreador) */
     U.uAnos.value = años; U.uJt.value = AN.pradera; if (forzar || Math.abs(años - ultJun) > 0.04) { ultJun = años; crecerJuncos(años); }
-    if (campo) { const nq = S.quitadas.filter(Q => sem - 1 >= Q.sem).length; campo.liberar(nq ? S.quitadas[nq - 1].sem : -1); if (nq !== nqAnt) { nqAnt = nq; ponerNaves(nq); } }
+    if (campo) { const nq = S.quitadas.filter(Q => sem - 1 >= Q.sem).length; campo.liberar(nq ? S.quitadas[nq - 1].sem : -1); if (nq !== nqAnt) { const animar = nqAnt >= 0 && nq === nqAnt + 1; /* solo al avanzar semana a semana: al saltar o al entrar, sin hundimiento */ nqAnt = nq; ponerNaves(nq, animar); } ponerContorno(); }
     const edadArb = (kk, t0) => { const t = años - ((t0 && t0.tq != null ? t0.tq + 0.6 : 1) + kk * 1.5); return t <= 0 ? 0 : Math.min(1, 0.35 + 0.65 * t / 3.5); };
     if (arb && arb !== 'cargando' && (forzar || Math.abs(años - ultArb) > 0.07)) { ultArb = años; arb.edad(edadArb); }
     // huertas de parque (efímeras) que se abren con un pulso verde
@@ -287,7 +304,7 @@ export function crearPropuesta01({ T3 }) {
     listo: () => listoP, extra: EXTRA,
     bavariaRed() { return EXTRA.bs && EXTRA.bs.info ? EXTRA.bs.info() : null; },
     humedalBavaria() { return EXTRA.hb && EXTRA.hb.area ? EXTRA.hb.area() : null; },
-    info() { return { activo, listo, precompilado: precT, nQuitadas: nqAnt, callesVerdes: EXTRA.cv && EXTRA.cv.info ? EXTRA.cv.info() : null, humedalBavaria: EXTRA.hb && EXTRA.hb.info ? EXTRA.hb.info() : null, bavariaRed: EXTRA.bs && EXTRA.bs.info ? EXTRA.bs.info() : null, lineas: EXTRA.ln && EXTRA.ln.info ? EXTRA.ln.info() : null, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, anos: U.uAnos.value,
+    info() { return { activo, listo, precompilado: precT, nQuitadas: nqAnt, enObra: obraClave, hundiendo: DES.length, callesVerdes: EXTRA.cv && EXTRA.cv.info ? EXTRA.cv.info() : null, humedalBavaria: EXTRA.hb && EXTRA.hb.info ? EXTRA.hb.info() : null, bavariaRed: EXTRA.bs && EXTRA.bs.info ? EXTRA.bs.info() : null, lineas: EXTRA.ln && EXTRA.ln.info ? EXTRA.ln.info() : null, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, anos: U.uAnos.value,
       huertas: window.KEN_HBAR ? !!window.KEN_HBAR.grupo.visible : null, parches: window.KEN_PARCHES ? { vis: window.KEN_PARCHES.grupo.visible, n: window.KEN_PARCHES.n } : null, hoyo: T3.maskU && T3.maskU.uHoyoOn ? T3.maskU.uHoyoOn.value : null }; }
   };
   return api;
