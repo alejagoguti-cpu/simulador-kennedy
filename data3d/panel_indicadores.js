@@ -170,7 +170,7 @@ const CSS = `
 .pi-tab:hover,.pi-tab[aria-selected=true]{color:var(--pi-ink)}
 .pi-tab[aria-selected=true]::after{content:'';position:absolute;left:18%;right:18%;bottom:0;height:2px;border-radius:2px;background:var(--ui-acc,#c9f27a)}
 .pi-tab:focus-visible{outline:1px solid var(--pi-v2);outline-offset:-3px;border-radius:6px}
-.pi-nav{display:flex;gap:4px;margin:0 calc(-1 * var(--pi-pad));padding:7px var(--pi-pad);overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.06)}
+.pi-nav{display:flex;flex-wrap:wrap;gap:4px;margin:0 calc(-1 * var(--pi-pad));padding:7px var(--pi-pad);overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.06)}
 .pi-nav[hidden]{display:none}
 .pi-nav button{all:unset;box-sizing:border-box;flex:1 0 auto;display:inline-flex;justify-content:center;align-items:baseline;gap:5px;padding:5px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.12);font:500 10.5px/1 var(--ui-sans,'Inter',sans-serif);color:var(--ui-tx2,#c9cfc4);cursor:pointer}
 .pi-nav button i{font:400 9px/1 var(--ui-mono,'JetBrains Mono',monospace);font-style:normal;color:var(--ui-tx3,#a5ae9f)}
@@ -344,7 +344,7 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
   function esqueleto() {
     wrap.innerHTML = `<header class="pi-hd"><div class="pi-l1"><span class="pi-tit">Tablero</span><span class="pi-sem"></span><button type="button" class="pi-pleg" aria-controls="lp-tablero" aria-expanded="true" aria-label="Plegar el tablero" title="Plegar el tablero (deja libre el mapa)">${ICO_PLEG}</button></div><p class="pi-esc"></p><p class="pi-go" hidden></p>`
       + `<div class="pi-tabs" role="tablist" aria-label="Contenido del tablero">${VISTAS.map(([id, n]) => `<button type="button" role="tab" class="pi-tab" id="pi-t-${id}" data-v="${id}" aria-selected="${id === vista}" tabindex="${id === vista ? 0 : -1}">${n}</button>`).join('')}</div>`
-      + `<nav class="pi-nav" aria-label="Macromodelos">${MACROS.map((m, i) => `<button type="button" data-m="${m.id}"><i>0${i + 1}</i>${m.c}</button>`).join('')}</nav></header>`
+      + `<nav class="pi-nav" aria-label="Macromodelos"><span style="flex-basis:100%;width:100%;font:600 10px/1.2 var(--ui-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-tx3,#a5ae9f);margin:2px 0 4px">Macromodelos</span>${MACROS.map((m, i) => `<button type="button" data-m="${m.id}"><i>0${i + 1}</i>${m.c}</button>`).join('')}</nav></header>`
       + `<div class="pi-v" role="tabpanel" id="pi-v-ind" aria-labelledby="pi-t-ind"${vista === 'ind' ? '' : ' hidden'}><div class="pi-ley"><span>${llave('lin', ARTE.con)}Con propuesta</span><span>${llave('pun', ARTE.sin)}Sin propuesta</span></div><p class="pi-vacio" hidden></p><div class="pi-macs"></div></div>`
       + `<div class="pi-v" role="tabpanel" id="pi-v-est" aria-labelledby="pi-t-est"${vista === 'est' ? '' : ' hidden'}></div>`
       ;
