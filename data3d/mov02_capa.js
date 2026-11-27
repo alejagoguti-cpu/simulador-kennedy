@@ -152,7 +152,7 @@ export function crearMov02({ T3, RELOJ }) {
     BARRIOS.forEach((b, i) => { const v = m.vias.locales; pintarRot('b' + i, v && m.via ? `${N_BARRIO[i].toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); });
     for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const ur = ms.r.material.uniforms;
       colorDb(v.db, ur.uC.value); ur.uA.value = Math.max(0.15, Math.min(1, (v.db - 45) / 35)); ms.r.visible = ruidoOn; }
-    const prop = !!m.prop, pm = m.perm || 0;
+    const prop = !!m.prop, pm = (m.perm || 0) * Math.min(1, Math.max(0.08, (RELOJ.sem || 1) / 156)); /* 2026-11-27: los pasajes se construyen en 3 años (cambia con el tiempo) */
     if (mallas.pasajes) { mallas.pasajes.visible = prop && pm > 0.001; mallas.pasajes.material.uniforms.uA.value = 0.15 + 0.85 * pm; }
     if (peat.im) peat.im.visible = prop && pm > 0.001;
     if (mallas.bosque) { mallas.bosque.visible = prop; mallas.bosque.material.opacity = 0.14 + 0.14 * pm + (ruidoOn ? 0.08 : 0); }

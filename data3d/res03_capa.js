@@ -72,8 +72,8 @@ export function crearRes03({ T3, RELOJ }) {
     for (const v of viajes) { const r = ruta(v.d[0], v.d[1], v.o[0], v.o[1]); if (!r) continue; for (let j = 0; j < v.n && k < VE.MAX; j++) { const s0 = ((t * 9 / r.L) + j / v.n + v.f) % 1, [x, z, fx, fz] = enRuta(r, s0 * r.L);
         VE.VEH.poner(VE.objs[k], 'camion', x - fz * 1.8, Y() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z + fx * 1.8, Math.atan2(fx, fz)); VE.pos.x[k] = x; VE.pos.z[k] = z; VE.pos.n++; k++; } }
     VE.VEH.fin(); }
-  function aplicar() { if (!G) return; const r = R, vis = !!(r && r.fase > 0 && r.nodos); G.visible = vis; if (!vis) { viajes = []; return; }
-    const dec = r.fase; // la semana siguiente lo acumulado va bajando (se recoge)
+  function aplicar() { if (!G) return; const r = R, vis = !!(r && r.nodos && (r.fase > 0 || r.prop)); G.visible = vis; if (!vis) { viajes = []; return; } /* con propuesta la red opera todo el año: estaciones encendidas y camiones; los montones solo en la interrupción */
+    const dec = r.fase || 0; // la semana siguiente lo acumulado va bajando (se recoge); fuera de la interrupción, nada en la calle
     const porK = Object.fromEntries(r.nodos.map(q => [q.k, q]));
     for (const n of NODOS03) { const o = N[n.k], q = porK[n.k]; if (!o || !q) continue; const t = q.calle * dec, h = q.edad;
       if (o.montones) { colorEdad(h, o.mat.color); const s = t > 0.5 ? Math.sqrt(t) : 0; o.montones.forEach(m => { m.visible = s > 0; const k = m.userData.k; m.scale.set((10 + 2.6 * s) * k, (5 + 1.1 * s) * k, (10 + 2.6 * s) * k); /* escala visual declarada: se lee desde la vista de pájaro */ }); if (o.mancha) { const rm = s > 0 ? (16 + 3.6 * s) : 0; o.mancha.visible = s > 0; o.mancha.scale.set(rm, 1, rm * 0.8); o.mancha.material.opacity = 0.3 + 0.4 * Math.min(1, h / 48); } o.montones.forEach(m => { });
@@ -97,7 +97,7 @@ export function crearRes03({ T3, RELOJ }) {
         else { let b = null, bd = Infinity; for (const s of est) { const d = Math.hypot(pos(s)[0] - o[0], pos(s)[1] - o[1]); if (d < bd) { bd = d; b = s; } } viajes.push({ o, d: pos(b), n: Math.max(1, Math.min(8, Math.round(th / 1.5))), f: 0.07 }); } } }
   }
   const api = {
-    async poner(r) { R = r || null; if (!R || !(R.fase > 0)) { if (G) G.visible = false; viajes = []; return; } if (!armado) armado = armar(); await armado; aplicar(); },
+    async poner(r) { R = r || null; if (!R || !(R.fase > 0 || (R.prop && R.nodos))) { if (G) G.visible = false; viajes = []; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     riesgo(on) { riesgoOn = !!on; aplicar(); return riesgoOn; },
     get riesgoOn() { return riesgoOn; },
     quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('res03'); window.KEN_ESCENA = null; }

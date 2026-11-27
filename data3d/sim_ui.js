@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=10'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=11'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -581,11 +581,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let RES = null, pRes = null, S456 = null, pS456 = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02 y la 03: la semana del cierre o de la interrupción */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     { const p = R.def && R.def.par, d = p >= 4 && p <= 6 && I ? I['s0' + p] : null; /* 04–06 (data3d/capas456.js) */
-      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=10').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
-    { const r3 = R.def && R.def.par === 3 && I && I.res03 && I.res03.fase > 0 ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
-      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=8').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
+      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=11').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
+    { const r3 = R.def && R.def.par === 3 && I && I.res03 && (I.res03.fase > 0 || (I.res03.prop && I.res03.nodos)) ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
+      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=9').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
     if (!m) { if (MOV) MOV.quitar(); return; }
-    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=11').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
+    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=12').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
     MOV.poner(m); }
   /* vista previa (año 1, antes de darle play): el territorio muestra la semana en que la vía ya está cerrada del todo con estos valores */
   const semanaVista = (H) => H.find(h => (h.mov02 && h.mov02.fase >= 1) || (h.res03 && h.res03.fase >= 1) || (h.s04 && h.s04.fase >= 1)) || (R.def && (R.def.par === 5 || R.def.par === 6) ? H[Math.min(H.length - 1, R.def.par === 5 ? 259 : 25)] : null) || H[H.length - 1]; /* 05: año 5 del plan; 06: medio año de rondas */
@@ -1031,7 +1031,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=22');
+    try { const { abrirInforme2 } = await import('./informe.js?v=23');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];

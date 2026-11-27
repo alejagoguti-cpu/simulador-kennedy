@@ -61,7 +61,7 @@ export function crearS456({ T3, RELOJ }) {
     const rot = Object.entries(H).map(([k, [x, z]]) => ({ k, R: rotulo(g, x, z, 140) }));
     return { g, bordes, tb, ta, cor, paso, mPaso, mPila, mArb, mTr, anillos, aves, marcas, rot, bajas, altas, N, pares };
   }
-  function poner04(d) { const S = SUB[4]; const prop = d.prop, imp = d.impl || 0, act = d.fase > 0;
+  function poner04(d) { const S = SUB[4]; const prop = d.prop, imp = (d.impl || 0) * Math.min(1, Math.max(0.1, (RELOJ.sem || 1) / 208)) /* paso de fauna y corredores: 4 años de obra */, act = d.fase > 0;
     S.tb.forEach(m => { m.visible = false; return; /* sin arcos: las aves muestran la ruta */ m.material.opacity = prop ? 0.2 * (1 - imp) + 0.05 : 0.6; });
     S.ta.forEach(m => { m.visible = false; return; m.material.opacity = 0.25 + 0.5 * imp; });
     S.cor.forEach(m => { m.visible = prop && imp > 0.01; m.scale.z = 10 + 60 * imp; m.material.opacity = 0.2 + 0.3 * imp; });
@@ -106,7 +106,7 @@ export function crearS456({ T3, RELOJ }) {
     // tala: los árboles más cercanos a las torres hasta el número del modelo
     let k = 0; if (!prop && d.arbPerdidos > 0) { const lista = S.arb.filter(a => d.blindaje ? !a.bos : true); const step = Math.max(1, Math.floor(lista.length / Math.max(1, d.arbPerdidos))); for (let i = 0; i < lista.length && k < d.arbPerdidos; i += step) { const a = lista[i]; m4.makeScale(5, 1, 5).setPosition(a.w[0], Y() + 0.6, a.w[1]); S.tala.setMatrixAt(k++, m4); } }
     S.tala.count = k; S.tala.instanceMatrix.needsUpdate = true;
-    S.halo.visible = prop || d.blindaje; const nn = Math.round(S.naves.length * (prop ? d.reuso : 0)); S.naves.forEach((o, i) => { o.m.visible = i < nn; o.h.visible = !o.m.visible && !prop ? true : !o.m.visible; });
+    S.halo.visible = prop || d.blindaje; const nn = Math.round(S.naves.length * (prop ? d.reuso * Math.min(1, Math.max(0.1, (RELOJ.sem || 1) / 260)) : 0)); /* las naves se reactivan en 5 años */ S.naves.forEach((o, i) => { o.m.visible = i < nn; o.h.visible = !o.m.visible && !prop ? true : !o.m.visible; });
     S.banc.visible = prop; S.calor.material.opacity = Math.min(0.55, 0.08 + 0.22 * d.calor); S.calor.material.color.set(d.calor > 1 ? 0xef4444 : 0xf97316);
     pintar(S.R1, `BOSQUE ${Math.round(d.ecoRest * 100)} % · SUELO PRODUCTIVO ${d.sueloProd.toFixed(1)} ha`, d.ecoRest < 0.8 || d.sueloProd < 12 ? '#b91c1c' : '#047857');
     pintar(S.R2, prop ? `NAVES REUTILIZADAS ${Math.round(d.naves).toLocaleString('es-CO')} m² · +${d.calor.toFixed(1)} °C` : `${d.viv.toLocaleString('es-CO')} VIVIENDAS · +${d.calor.toFixed(1)} °C`, prop ? '#0e7490' : '#475569'); }
