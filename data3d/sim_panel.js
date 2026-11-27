@@ -23,6 +23,12 @@ export const LIM = {
   fauna: { n: 'Especies de fauna', u: '% de las del inicio', v: (I) => I.fauna / Math.max(1, I.fauna0) * 100, lim: 90, min: true, cerca: 94, S: 100, f: (v, I) => I ? `${I.fauna} de ${I.fauna0}` : nf(v) + ' %', r: (I) => (I.rachas || {}).fauna || 0, txt: 'quedan menos del 90 % de las especies' },
   habitat: { n: 'Territorio con fauna', u: '% del inicio', v: (I) => I.pares / Math.max(1, I.pares0) * 100, lim: 70, min: true, cerca: 80, S: 130, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).habitat || 0, txt: 'la ocupación de los corredores verdes cae 30 %' },
   humedal: { n: 'Humedales que funcionan', u: '% del área de hoy', v: (I) => I.humedalFuncional, lim: 70, min: true, cerca: 80, S: 110, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).humedal || 0, txt: 'los humedales pierden 30 % de su área funcional' },
+  tasa04: { n: 'Cruces que chocan', u: '% de los cruces', v: (I) => I.s04 && I.s04.fase ? I.s04.p * 100 : 0, lim: 20, cerca: 12, S: 40, f: (v) => nf(v, 1) + ' %', r: () => 0, txt: 'más del 20 % de los cruces de fauna chocan', sem: 1 },
+  pob04: { n: 'Aves que quedan', u: '% de la población', v: (I) => I.s04 ? I.s04.pob * 100 : 100, lim: 70, min: true, cerca: 80, S: 100, f: (v) => nf(v) + ' %', r: (I) => I.s04 ? I.s04.racha : 0, txt: 'la especie pierde más del 30 % de su población' },
+  bosque05: { n: 'Bosque y rondas', u: '% de los árboles', v: (I) => I.s05 ? I.s05.ecoRest * 100 : 100, lim: 80, min: true, cerca: 88, S: 100, f: (v) => nf(v, 1) + ' %', r: () => 0, txt: 'se pierde más del 20 % del bosque', sem: 1 },
+  suelo05: { n: 'Suelo productivo', u: 'ha', v: (I) => I.s05 ? I.s05.sueloProd : 27.85, lim: 12, min: true, cerca: 15, S: 30, f: (v) => nf(v, 1) + ' ha', r: () => 0, txt: 'el suelo para huertas baja de 12 ha', sem: 1 },
+  urg06: { n: 'Semanas sin recursos', u: 'semanas', v: (I) => I.s06 ? I.s06.urgMax : 0, lim: 5, cerca: 3, S: 8, f: (v) => nf(v) + ' sem', r: () => 0, txt: 'un sector crítico pasa más de 4 semanas sin recursos', sem: 1 },
+  sost06: { n: 'Sostenibilidad', u: '%', v: (I) => I.s06 && I.s06.sost != null ? I.s06.sost * 100 : 100, lim: 40, min: true, cerca: 50, S: 100, f: (v) => nf(v) + ' %', r: () => 0, txt: 'el índice de sostenibilidad baja de 40 %', sem: 1 },
   acum03: { n: 'Corabastos + María Paz', u: 't sin recoger', v: (I) => I.res03 && I.res03.fase > 0 ? I.res03.acum : 0, lim: 4500, cerca: 3000, S: 5000, f: (v) => nf(v) + ' t', r: () => 0, txt: 'Corabastos y María Paz acumulan más de 4.500 t', sem: 1 },
   edad03: { n: 'Horas sin tratar', u: 'horas', v: (I) => I.res03 && I.res03.fase > 0 ? I.res03.eMax : 0, lim: 48, cerca: 24, S: 72, f: (v) => nf(v) + ' h', r: () => 0, txt: 'algún sector pasa 48 h con orgánicos sin tratar', sem: 1 },
   arterias: { n: 'Arterias sobre 140 %', u: 'de 3 alternas', v: (I) => I.mov02 ? I.mov02.sobre : null, lim: 3, cerca: 2, S: 3, f: (v) => nf(v) + ' de 3', r: (I) => I.mov02 ? I.mov02.rachas.arterias : 0, txt: 'más de 2 arterias pasan el 140 % de su capacidad', sem: 1 },
@@ -32,7 +38,7 @@ export const LIM = {
 export const malo = (k, v) => (LIM[k].min ? v < LIM[k].lim : v >= LIM[k].lim);
 const cercaDe = (k, v) => (LIM[k].min ? v < LIM[k].cerca : v >= LIM[k].cerca);
 /* límites que mueve cada prueba (las 7 reglas siguen activas en todas: si cae otra, se agrega su fila) */
-export const PAR_LIM = { 2: ['arterias', 'tiempo', 'abastoMov', 'trafico'], 3: ['acum03', 'edad03', 'humedal'], 4: ['fauna', 'habitat', 'humedal'], 5: ['trafico', 'humedal', 'ruido'], 6: ['humedal', 'abasto', 'habitat'] };
+export const PAR_LIM = { 2: ['arterias', 'tiempo', 'abastoMov', 'trafico'], 3: ['acum03', 'edad03', 'humedal'], 4: ['tasa04', 'pob04', 'humedal'], 5: ['bosque05', 'suelo05', 'humedal'], 6: ['urg06', 'sost06', 'humedal'] };
 
 /* ---------- lo propio de cada simulación ---------- */
 const OPC_VIA = { 1: 'Av. de las Américas', 2: 'Av. Boyacá', 3: 'Calle 38 Sur' };
@@ -41,7 +47,7 @@ const equip = (I) => (I.gobernanza ? I.gobernanza.barrios.reduce((a, b) => a + b
 const conect = (I) => (I.verde && I.verde.resumen && I.verde.resumen.nParches ? I.verde.resumen.nConectados / I.verde.resumen.nParches * 100 : null);
 export const PAR_CFG = {
   2: { titulo: 'Movilidad y cierre vial',
-    alerta(I, val) { const m = I && I.mov02, via = m && m.vias[m.via] ? m.vias[m.via].n : OPC_VIA[val.viaCierre] || 'la vía', t0 = val.cierreT0, d = val.cierreDur, s = I ? I.sem : 0;
+    alerta(I, val) { const m = I && I.mov02, via = m && m.vias[m.via] ? m.vias[m.via].n : OPC_VIA[val.viaCierre] || 'la vía', t0 = val.cierreT0 != null ? val.cierreT0 : 4, d = val.cierreDur != null ? val.cierreDur : 260, s = I ? I.sem : 0;
       if (s < t0) return ['Se cerrará la ' + via, 'en ' + nf(t0 - s) + ' sem · ' + nf(val.cierrePct) + ' %'];
       if (s < t0 + d) return ['Cerrada la ' + via + ' al ' + nf((m ? m.c : 0) * 100) + ' %', m ? '+' + nf(m.D) + ' veh/h desviados' : ''];
       return ['Vía reabierta', 'cerró ' + nf(d) + ' sem']; },
@@ -59,7 +65,7 @@ export const PAR_CFG = {
       ['Abastecimiento', (I) => nf(I.mov02 && I.mov02.abMin * 100, 1) + ' % zona peor', () => 'local + mercados + Corabastos × g · g = mín(1, 1 / (r × k)), r = tiempo por km, k = 1 − 0,45 × permeabilidad con propuesta (dato de la autora) · flota sin holgura (supuesto)'],
       ['Ruido residencial', (I) => nf(I.mov02 && I.mov02.dbRes, 1) + ' dB(A)', () => 'L = L de la autora + 10·log10(flujo ÷ flujo base) por vía; promedio energético de las 5 vías (pesos iguales, supuesto)']] },
   3: { titulo: 'Interrupción de la recolección',
-    alerta(I, val) { const s = I ? I.sem : 0, r = I && I.res03; if (s < val.resT0) return ['Se interrumpirá la recolección', 'en ' + nf(val.resT0 - s) + ' sem · ' + nf(val.resHoras) + ' h'];
+    alerta(I, val) { const s = I ? I.sem : 0, r = I && I.res03; if (s < (val.resT0 || 4)) return ['Se interrumpirá la recolección', 'en ' + nf((val.resT0 || 4) - s) + ' sem · ' + nf(val.resHoras) + ' h'];
       if (r && r.fase > 0) return ['Sin recolección ' + nf(r.horas) + ' h', nf(r.totCalle) + ' t en la calle']; return ['Recolección normal', 'se interrumpió ' + nf(val.resHoras) + ' h']; },
     vivo: [['Residuos acumulados en la calle', (I) => I.res03 && I.res03.fase > 0 ? I.res03.totCalle : 0, 4500, (v) => nf(v) + ' t'],
       ['Tiempo máximo sin tratar', (I) => I.res03 && I.res03.fase > 0 ? I.res03.eMax : 0, 72, (v) => nf(v) + ' h'],
@@ -73,42 +79,38 @@ export const PAR_CFG = {
       ['Capacidad de la red', (I, v) => I.propuesta ? nf(v.capRed) + ' %' : 'no hay red', () => '5 Estaciones × 250 t/día + Bavaria 1.500 t/día (datos de la autora) × capacidad · cada nodo a su Estación más cercana, el resto a Bavaria'],
       ['Tiempo sin tratar', (I) => nf(I.res03 && I.res03.eMax) + ' h', () => 'sin tratamiento: horas desde el inicio · con tratamiento: lo que espera ÷ lo que se trata por hora (cola)'],
       ['Resiliencia sanitaria', (I) => nf(I.res03 && I.res03.resil) + ' %', () => '100 × (1 − la mayor fracción usada de los dos límites: 4.500 t y 48 h) (definición declarada)']] },
-  4: { titulo: 'Pérdida de un corredor verde',
-    alerta(I, val) { const s = I ? I.sem : 0, F = I && I.fragmento, n = ['El Burro', 'Techo', 'La Vaca', 'Bosque de Bavaria'][Math.max(1, Math.min(4, Math.round(val.parche))) - 1];
-      if (s < val.parcheT0) return ['Se perderá parte de ' + n, 'en ' + nf(val.parcheT0 - s) + ' sem']; return ['Se perdió parte de ' + n, '−' + nf(val.parchePerdida) + ' %' + (F ? ' · ' + nf(F.haPerdidas, 1) + ' ha' : '')]; },
-    vivo: [['Especies de fauna', (I) => I.fauna / Math.max(1, I.fauna0) * 100, 100, (v) => nf(v) + ' %'], ['Corredores verdes conectados', conect, 100, (v) => nf(v) + ' %'], ['Territorio con fauna', (I) => I.pares / Math.max(1, I.pares0) * 100, 130, (v) => nf(v) + ' %']],
-    graf: [{ t: '¿Cuántas especies quedan?', s: [{ f: (I) => I.fauna / Math.max(1, I.fauna0) * 100, n: 'especies' }], lim: 90, limTxt: 'game over < 90 %', fmt: (v) => nf(v) + ' %', sub: (I) => `${I.fauna} de las ${I.fauna0} especies de fauna del inicio.` },
-      { t: '¿Cuánto territorio ocupa la fauna?', s: [{ f: (I) => I.pares / Math.max(1, I.pares0) * 100, n: 'ocupación' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Pares especie × corredor verde ocupados frente al inicio: ${nf(I.pares)} de ${nf(I.pares0)}.` },
-      { t: '¿Están conectados los corredores verdes?', s: [{ f: conect, n: 'conectados' }], fmt: (v) => nf(v) + ' %', sub: (I) => `Corredores verdes del componente más grande con conexiones sanas: ${nf(conect(I))} %.` },
-      { t: '¿Aguantan los humedales?', s: [{ f: (I) => I.humedalFuncional, n: 'funcionan' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Área sin rellenar × calidad frente a la basura: ${nf(I.humedalFuncional)} % de hoy.` }],
-    fx: [['Calidad del corredor verde perdido', (I, v) => nf(Math.sqrt(Math.max(0, 1 - v.parchePerdida / 100)) * 100) + ' %', (I, v) => `√(1 − ${nf(v.parchePerdida)} %) desde la semana ${nf(v.parcheT0)} (dependencia con el área de sim_vida.js)`],
-      ['Especies de fauna', (I) => `${I.fauna} de ${I.fauna0}`, () => 'especies presentes ÷ las del inicio · game over < 90 % 4 semanas (Steffen et al. 2015; aplicado a las 23 especies: supuesto)'],
-      ['Territorio con fauna', (I) => nf(I.pares / Math.max(1, I.pares0) * 100) + ' %', () => 'pares especie × corredor verde ocupados ÷ los del inicio (metapoblación de Levins) · game over ≤ 70 % 4 semanas'],
-      ['Corredores verdes conectados', (I) => nf(conect(I)) + ' %', () => 'corredores verdes del componente más grande con conexiones f ≥ 0,5 ÷ corredores verdes'],
-      ['Árboles en parques', (I) => nf(I.arboles, 2), (I, v) => `deslizador ${nf(v['P3.arboles'], 2)}${I.propuesta ? ' + 0,2 en 5 años (conexiones vegetales de la propuesta, supuesto)' : ' con tala neta del estado actual'}`]] },
-  5: { titulo: 'Presión inmobiliaria',
-    alerta(I) { return ['Sube el precio del suelo', '+' + nf(I ? (I.especulacion.indice - 1) * 100 : 0, 1) + ' %']; },
-    vivo: [['Precio del suelo', (I) => (I.especulacion.indice - 1) * 100, 60, (v) => '+' + nf(v, 1) + ' %'], ['Hogares en riesgo', (I) => I.especulacion.hogaresRiesgo, 60000, (v) => nf(v)], ['Tráfico', (I) => I.trafico * 100, 150, (v) => nf(v) + ' %']],
-    graf: [{ t: '¿Cuánto sube el suelo?', s: [{ f: (I) => (I.especulacion.indice - 1) * 100, n: 'alza' }], fmt: (v) => '+' + nf(v, 1) + ' %', sub: (I) => `Alza promedio junto al metro y al predio de Bavaria: ×${nf(I.especulacion.indice, 2)}.` },
-      { t: '¿Cuántos hogares están en riesgo?', s: [{ f: (I) => I.especulacion.hogaresRiesgo, n: 'hogares' }], fmt: (v) => nf(v), sub: (I) => `Hogares arrendatarios que no podrían pagar el alza: ${nf(I.especulacion.hogaresRiesgo)}.` },
-      { t: '¿Cuánto tráfico hay?', s: [{ f: (I) => I.trafico * 100, n: 'tráfico' }], lim: 130, limTxt: 'game over > 130 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Más gente, más carros: ${nf(I.trafico * 100)} % del tráfico de hoy.` },
-      { t: '¿Aguantan los humedales?', s: [{ f: (I) => I.humedalFuncional, n: 'funcionan' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `La población que crece deja más basura en sus bordes: ${nf(I.humedalFuncional)} % de hoy.` }],
-    fx: [['Precio del suelo', (I) => '×' + nf(I.especulacion.indice, 3), (I, v) => `1 + (13 % × metro + 25 % × plan parcial + ${nf(v.presionSuelo, 1)} %/año × años) × (1 − 0,5 × protección ${nf(I.especulacion.proteccion * 100)} %)`],
-      ['Hogares en riesgo', (I) => nf(I.especulacion.hogaresRiesgo), () => 'Σ hogares × 55,1 % en arriendo (Encuesta Multipropósito 2025) × mín(1, alza) × (1 − protección)'],
-      ['Tráfico', (I) => nf(I.trafico * 100) + ' %', (I, v) => `carros ${nf(v.trafCrece, 1)} %/año × población (${nf(v.pobCrece, 1)} %/año) · metro −10 % junto al corredor · game over ≥ 130 % 4 semanas (meta del Plan de Movilidad 2023: 1 ÷ 0,77)`],
-      ['Humedales que funcionan', (I) => nf(I.humedalFuncional) + ' %', () => 'área sin rellenar × calidad frente a la basura del borde · game over < 70 % 4 semanas']] },
-  6: { titulo: 'Recursos insuficientes',
-    alerta(I, val) { const G = I && I.gobernanza; return ['Los recursos no alcanzan', G ? 'cubren ' + nf(G.coberturaMedia * 100) + ' %' : nf(val.presupuesto) + ' % de lo que se pide']; },
-    vivo: [['Necesidad cubierta', (I) => I.gobernanza ? I.gobernanza.coberturaMedia * 100 : null, 100, (v) => nf(v) + ' %'], ['Equidad del reparto', (I) => I.gobernanza ? I.gobernanza.equidad * 100 : null, 100, (v) => nf(v) + ' %'], ['Equipamientos abiertos', equip, 200, (v) => nf(v)]],
-    graf: [{ t: '¿Alcanzan los recursos?', s: [{ f: (I) => I.gobernanza ? I.gobernanza.coberturaMedia * 100 : null, n: 'cubierto' }], fmt: (v) => nf(v) + ' %', sub: (I) => `Parte de la necesidad de los 8 sectores que se atiende en cada ronda.` },
-      { t: '¿Se reparte con equidad?', s: [{ f: (I) => I.gobernanza ? I.gobernanza.equidad * 100 : null, n: 'equidad' }], fmt: (v) => nf(v) + ' %', sub: (I) => `1 − Gini de la cobertura de los sectores (100 % = todos igual).` },
-      { t: '¿Cuántos equipamientos se abren?', s: [{ f: equip, n: 'equipamientos' }], fmt: (v) => nf(v), sub: (I) => `Huertas, Estaciones Circulares, parques y salones que habilitan los recursos acumulados.` },
-      { t: '¿Aguantan los humedales?', s: [{ f: (I) => I.humedalFuncional, n: 'funcionan' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Área sin rellenar × calidad frente a la basura: ${nf(I.humedalFuncional)} % de hoy.` }],
-    fx: [['Recursos de cada ronda', (I, v) => nf(v.presupuesto) + ' %', (I, v) => `presupuesto × necesidad total, cada ${nf(v.decisionCada)} semanas`],
-      ['Reparto', (I) => I.propuesta ? 'asambleas' : 'central', (I, v) => I.propuesta ? `cada asamblea reporta su necesidad actual; calidad × (1 − 0,3 × rotación ${nf(v['P1.rotacion'])} ÷ 52); piso 40 % de lo proporcional a la población (supuestos)` : 'mitad por población, mitad por la necesidad de hace 26 semanas (supuesto)'],
-      ['Necesidad cubierta', (I) => nf(I.gobernanza && I.gobernanza.coberturaMedia * 100) + ' %', () => 'Σ mín(1, asignado ÷ necesidad) × población ÷ población'],
-      ['Equidad', (I) => nf(I.gobernanza && I.gobernanza.equidad * 100) + ' %', () => '1 − Gini de la cobertura de los sectores, ponderado por población'],
-      ['Equipamientos', (I) => nf(equip(I)), () => 'uno cada 40 unidades acumuladas en un sector; cada uno baja 5 % su necesidad (supuesto)']] } };
+  4: { titulo: 'Biodiversidad y atropellamientos',
+    alerta(I) { const d = I && I.s04; if (!d || !d.fase) return d && I.sem >= d.t0 ? ['Pasó la oleada migratoria', 'aves ' + nf(d.pob * 100) + ' %'] : ['Llegará la oleada migratoria', d ? 'en ' + nf(d.t0 - (I ? I.sem : 0)) + ' sem' : '']; return ['Oleada migratoria · +' + nf(d.flujo * 100) + ' % aves', nf(d.p * 100, 1) + ' % de los cruces chocan']; },
+    vivo: [['Cruces que terminan en choque', (I) => I.s04 ? I.s04.p * 100 : null, 40, (v) => nf(v, 1) + ' %'], ['Diversidad de aves (Shannon H\')', (I) => I.s04 ? I.s04.shannon : null, 3.5, (v) => nf(v, 2)],
+      ['Población de aves que cruza', (I) => I.s04 ? I.s04.pob * 100 : null, 100, (v) => nf(v) + ' %'], ['Conectividad del paisaje', (I) => I.s04 && I.s04.conect != null ? I.s04.conect * 100 : null, 100, (v) => nf(v) + ' %']],
+    graf: [{ t: '¿Cuántos cruces chocan?', s: [{ f: (I) => I.s04 && I.s04.fase ? I.s04.p * 100 : 0, n: 'choques' }], lim: 20, limTxt: 'game over 20 %', fmt: (v) => nf(v, 1) + ' %', sub: (I) => I.s04 ? `Vuelo a ras ${nf(I.s04.bajo * 100)} % × llega un carro en 4 s ${nf(I.s04.pCruce * 100)} % × fuera del paso ${nf((1 - I.s04.fuera) * 100)} %.` : '' },
+      { t: '¿Cuántas aves quedan?', s: [{ f: (I) => I.s04 ? I.s04.pob * 100 : null, n: 'población' }], lim: 70, limTxt: 'game over < 70 % · 4 sem', fmt: (v) => nf(v) + ' %', sub: () => 'Población de la especie que cruza entre los humedales frente a su inicio.' },
+      { t: '¿Qué tan diversa es la fauna?', s: [{ f: (I) => I.s04 ? I.s04.shannon : null, n: "H'" }], fmt: (v) => nf(v, 2), sub: () => "Índice de Shannon de las aves del modelo (ocupación real por especie)." },
+      { t: '¿Aguantan los humedales?', s: [{ f: (I) => I.humedalFuncional, n: 'funcionan' }], lim: 70, limTxt: 'game over < 70 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Área funcional de los humedales: ${nf(I.humedalFuncional)} % de hoy.` }],
+    fx: [['Choque por cruce', (I) => nf(I.s04 && I.s04.p * 100, 1) + ' %', () => '25 % a ras (supuesto) × (1 − e^(−Q·4 s)), Q = 4.264 veh/h × tráfico (SUMO/Waze de la autora) × (1 − implementación del paso)'],
+      ['Población', (I) => nf(I.s04 && I.s04.pob * 100) + ' %', () => 'cada semana de oleada cruza 30 % × (1 + flujo) y muere la fracción que choca; recupera 2 %/semana (supuestos)'],
+      ["Shannon H'", (I) => nf(I.s04 && I.s04.shannon, 2), () => '−Σ p·ln p sobre los lugares que ocupa cada especie de ave en el modelo']] },
+  5: { titulo: 'Población y especulación en Bavaria',
+    alerta(I) { const d = I && I.s05; if (!d) return ['Plan parcial Bavaria', '']; return [d.prop ? 'Bavaria Común · bosque intacto' : 'Avanza el plan parcial', nf(d.viv) + ' viviendas']; },
+    vivo: [['Superficie ecológica que queda', (I) => I.s05 ? I.s05.ecoRest * 100 : null, 100, (v) => nf(v, 1) + ' %'], ['Suelo productivo activo', (I) => I.s05 ? I.s05.sueloProd : null, 30, (v) => nf(v, 1) + ' ha'],
+      ['Patrimonio industrial reutilizado', (I) => I.s05 ? I.s05.naves : null, 121436, (v) => nf(v) + ' m²'], ['Isla de calor', (I) => I.s05 ? I.s05.calor : null, 2, (v) => '+' + nf(v, 1) + ' °C']],
+    graf: [{ t: '¿Cuánto bosque queda?', s: [{ f: (I) => I.s05 ? I.s05.ecoRest * 100 : null, n: 'bosque y rondas' }], lim: 80, limTxt: 'game over < 80 %', fmt: (v) => nf(v) + ' %', sub: (I) => I.s05 ? `Árboles talados: ${nf(I.s05.arbPerdidos)} de 3.250 (plan parcial, Alcaldía 2023).` : '' },
+      { t: '¿Hay suelo para huertas?', s: [{ f: (I) => I.s05 ? I.s05.sueloProd : null, n: 'ha' }], lim: 12, limTxt: 'game over < 12 ha', fmt: (v) => nf(v, 1) + ' ha', sub: () => 'Suelo libre del predio (27,85 ha) menos las torres del plan (25 ha) según lo construido.' },
+      { t: '¿Cuánto se construye?', s: [{ f: (I) => I.s05 ? I.s05.viv : null, n: 'viviendas' }], fmt: (v) => nf(v), sub: () => '14.000 viviendas por etapas (Alcaldía 2023) × presión.' },
+      { t: '¿Cuánto calor?', s: [{ f: (I) => I.s05 ? I.s05.calor : null, n: '°C' }], fmt: (v) => '+' + nf(v, 1) + ' °C', sub: () => '+2 °C × fracción impermeable del predio (supuesto declarado).' }],
+    fx: [['Viviendas', (I) => nf(I.s05 && I.s05.viv), (I, v) => '14.000 × etapas del plan hasta el año × presión ' + nf(v.presionPlan) + ' %'],
+      ['Bosque que queda', (I) => nf(I.s05 && I.s05.ecoRest * 100, 1) + ' %', () => '1 − árboles talados ÷ 3.250 (sin blindaje, todos los del plan; con blindaje, solo los sueltos; con propuesta, 0)'],
+      ['Suelo productivo', (I) => nf(I.s05 && I.s05.sueloProd, 1) + ' ha', () => '27,85 ha libres − 25 ha de torres × avance (con propuesta, protegido)']] },
+  6: { titulo: 'Gobernanza policéntrica',
+    alerta(I) { const d = I && I.s06; if (!d) return ['Gobernanza', '']; return [d.prop ? 'Federación de Juntas · decide cada ' + nf(Math.round(13 - 11 * d.part)) + ' sem' : 'Reparto central cada 13 semanas', d.urgMax ? d.urgMax + ' sem sin recursos' : 'sin urgencias']; },
+    vivo: [['Tiempo máximo sin atender', (I) => I.s06 ? I.s06.urgMax : null, 8, (v) => nf(v) + ' sem'], ['Equidad del reparto (1 − Gini)', (I) => I.s06 ? I.s06.equidad * 100 : null, 100, (v) => nf(v) + ' %'],
+      ['Índice de sostenibilidad', (I) => I.s06 && I.s06.sost != null ? I.s06.sost * 100 : null, 100, (v) => nf(v) + ' %'], ['Recursos frente a la necesidad', (I) => I.s06 ? I.s06.pres * 100 : null, 100, (v) => nf(v) + ' %']],
+    graf: [{ t: '¿Cuánto esperan los sectores?', s: [{ f: (I) => I.s06 ? I.s06.urgMax : null, n: 'semanas' }], lim: 4, limTxt: 'game over > 4 sem', fmt: (v) => nf(v) + ' sem', sub: (I) => I.s06 ? I.s06.barrios.map(b => b.n.replace('Sector ', '') + ' ' + nf(b.cov * 100) + ' %').join(' · ') : '' },
+      { t: '¿Es justo el reparto?', s: [{ f: (I) => I.s06 ? I.s06.equidad * 100 : null, n: 'equidad' }], fmt: (v) => nf(v) + ' %', sub: () => '1 − Gini de la cobertura de los 8 sectores.' },
+      { t: '¿Es sostenible el territorio?', s: [{ f: (I) => I.s06 && I.s06.sost != null ? I.s06.sost * 100 : null, n: 'índice' }], lim: 40, limTxt: 'game over < 40 %', fmt: (v) => nf(v) + ' %', sub: () => 'Índice ecológico del modelo (evaluacion_ecologica.js).' }],
+    fx: [['Semanas sin recursos', (I) => nf(I.s06 && I.s06.urgMax), () => 'semanas que un sector con menos del 50 % cubierto pasa sin asignación; central cada 13 semanas, Federación cada 13 − 11 × participación'],
+      ['Reparto', (I, v) => nf(v.participacion) + ' % asambleas', () => 'participación × reparto por la necesidad de hoy + (1 − participación) × reparto central (población + necesidad de hace medio año)']] }
+};
 
 /* ---------- estilos (mismo vidrio y paleta que la 01) ---------- */
 const CSS = `
@@ -168,7 +170,7 @@ addEventListener('resize', () => feedBajo());
 let GO = null, PAR = null, VAL = {}, VISTA = 0;
 export function quitar() { const a = document.getElementById('sp-alerta'); if (a) { a.remove(); const f = document.getElementById('su-feed'); if (f && !document.getElementById('ab-alerta')) f.style.top = ''; }
   const p = document.getElementById('sp-fxp'); if (p) p.remove(); GO = null; PAR = null; }
-const GO_N = { acum03: 'Residuos acumulados', edad03: 'Orgánicos sin tratar', arterias: 'Arterias saturadas', tiempo: 'Tiempo de viaje', abastoMov: 'Abastecimiento', abasto: 'Abastecimiento', trafico: 'Tráfico', ruido: 'Ruido', fauna: 'Fauna', habitat: 'Hábitat', humedal: 'Humedales', residuos: 'Residuos' };
+const GO_N = { tasa04: 'Atropellamientos', pob04: 'Población de aves', bosque05: 'Bosque talado', suelo05: 'Suelo productivo', urg06: 'Urgencia desatendida', sost06: 'Sostenibilidad', acum03: 'Residuos acumulados', edad03: 'Orgánicos sin tratar', arterias: 'Arterias saturadas', tiempo: 'Tiempo de viaje', abastoMov: 'Abastecimiento', abasto: 'Abastecimiento', trafico: 'Tráfico', ruido: 'Ruido', fauna: 'Fauna', habitat: 'Hábitat', humedal: 'Humedales', residuos: 'Residuos' };
 export function gameOver(g) { GO = g || null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO);
   if (GO) { const L = LIM[GO.regla], v = GO.valor != null ? (GO.regla === 'trafico' ? GO.valor * 100 : GO.valor) : null;
     a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${año(GO.sem)}</b><span>${GO_N[GO.regla] || GO.regla}${GO.lugar && GO.lugar !== 'Kennedy' ? ' · ' + GO.lugar : ''}</span><strong>${L && v != null ? L.f(v) : ''}</strong><span class="go4">${L && L.sem === 1 ? 'en una semana' : '4 semanas seguidas'}</span>`; }
