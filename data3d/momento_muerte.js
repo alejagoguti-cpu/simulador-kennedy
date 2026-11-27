@@ -235,6 +235,22 @@ export async function abrirMomento(o) {
   if (ren.compileAsync) { const yo = o; try { await ren.compileAsync(escena, cam); } catch (e) { /* se compilan al dibujar */ } if (abierto !== yo) return; }
   tPrev = performance.now(); tRen = 0; raf = requestAnimationFrame(cuadro);
 }
+/* PANEL FIJO (2026-11-27, «Zoom del momento» de la columna derecha): la misma reconstrucción dentro de un contenedor, sin marca ni vuelo.
+   crearPanelMomento(T3, contenedor) → { mostrar({ causa, detalle, nombre }), ocultar() }. Un WebGLRenderer pequeño propio, ~24 cuadros/s mientras se ve. */
+export function crearPanelMomento(T3p, cont) {
+  THREE = T3p.THREE; const c = document.createElement('canvas'); c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block'; cont.prepend(c);
+  const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, alpha: false, powerPreference: 'low-power' }); r.setPixelRatio(Math.min(2, devicePixelRatio || 1)); r.outputColorSpace = THREE.SRGBColorSpace;
+  const cm = new THREE.PerspectiveCamera(38, 1.6, 0.1, 200); let sc = null, d = null, t = 0, tp = 0, rf = 0;
+  const limpiar = () => { if (sc) sc.traverse(m => { if (m.isMesh) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } }); sc = null; d = null; };
+  function cuadroP(now) { rf = requestAnimationFrame(cuadroP); if (!d || cont.offsetParent === null) return; if (now - tp < 40) return; const dt = Math.min(0.1, (now - tp) / 1000); tp = now;
+    const w = Math.max(10, cont.clientWidth), h = Math.max(10, cont.clientHeight); if (c.width !== Math.round(w * r.getPixelRatio())) { r.setSize(w, h, false); cm.aspect = w / h; cm.updateProjectionMatrix(); }
+    t += dt; if (t > d.dur + 0.8) t = 0; d.paso(Math.min(t, d.dur), cm); cm.lookAt(cm.userData.t); r.render(sc, cm); }
+  return { mostrar(o) { THREE = T3p.THREE; limpiar(); const causa = o.causa || 'desaparicion', via = (String(o.detalle || '').match(/en la ([^,]+)/) || [])[1] || '';
+      d = causa === 'atropello' ? escenaAtropello(o.nombre, via) : causa === 'colision' ? escenaColision(o.nombre, o.detalle) : escenaAbandono(o.nombre, causa);
+      sc = new THREE.Scene(); sc.background = new THREE.Color(0x232a2d); sc.fog = new THREE.Fog(0x232a2d, 34, 80); sc.add(new THREE.HemisphereLight(0xdfe8ef, 0x45473c, 1.25)); const so = new THREE.DirectionalLight(0xfff3e2, 2.1); so.position.set(8, 16, 9); sc.add(so); sc.add(d.g);
+      cm.position.set(...d.cam.p); cm.userData.t = new THREE.Vector3(...d.cam.t); t = d.tClave * 0.4; c.style.display = 'block'; if (!rf) rf = requestAnimationFrame(cuadroP); },
+    ocultar() { c.style.display = 'none'; limpiar(); } };
+}
 export function cerrarMomento() {
   if (raf) cancelAnimationFrame(raf); raf = 0; abierto = null; if (capa) capa.hidden = true;
   if (escena) { escena.traverse(m => { if (m.isMesh) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); if (!m.geometry.userData.compartida && m.geometry.type !== 'BufferGeometry') m.geometry.dispose(); } }); escena = null; dio = null; }

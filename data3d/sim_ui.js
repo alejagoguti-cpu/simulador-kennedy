@@ -521,6 +521,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   }
   function mostrarAviso(ev) {
     const f = FEED.agregar(ev);
+    try { const L = window.KEN_MOM_FEED || (window.KEN_MOM_FEED = []), muerto = esMuerto(ev), sl = ev.sem != null ? `A${String(Math.floor((ev.sem - 1) / 52) + 1).padStart(2, '0')} · S${String(((ev.sem - 1) % 52) + 1).padStart(2, '0')}` : '';
+      if (ev.x != null) { L.unshift({ t: ev.titulo, s: [sl, ev.lugar].filter(Boolean).join(' · '), x: ev.x, z: ev.z, muerte: muerto ? { causa: causaDe(ev), detalle: ev.detalle || ev.texto || '', nombre: (ev.especies && ev.especies[0]) || '' } : null }); if (L.length > 10) L.length = 10; } } catch (e) { /* zoom sin este aviso */ } /* «Zoom del momento» (zoom_momento.js) */
     if (ev.auto) setTimeout(() => { if (!viendo) verEvento(ev, f); }, 250); // muerte de un animal: se muestra sola
     return f;
   }
