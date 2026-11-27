@@ -43,7 +43,7 @@ export const POLI_HUMEDAL_BAV = [[9444, 2890], [9468, 2890], [9490, 2912], [9522
 const SEM = [[9440, 3045], [9425, 3005], [9395, 2950], [9368, 2930], [9322, 2945], [9490, 2972]]; // semillas de las 6 celdas, en el orden del flujo
 const CAUCE = [[[9430, 3066], [9440, 3045], [9425, 3005], [9405, 2975], [9395, 2950], [9368, 2930], [9322, 2945], [9298, 2948]], // entrada (nave) → 1 → 2 → 3 → 4 → 5 → salida
   [[9395, 2950], [9420, 2920], [9458, 2912], [9490, 2972], [9500, 3005]]]; // ramal de la celda 3 a la 6 (rebose hacia el humedal de hábitat)
-const TIPOS = ['Sedimentador', 'Humedal de eneas', 'Humedal de juncos', 'Celda de plantas flotantes', 'Laguna de pulimento', 'Laguna de hábitat (espejo de agua con orla de eneas y juncos)'];
+const TIPOS = ['Sedimentador', 'Humedal de eneas', 'Humedal de juncos', 'Celda de lenteja de agua (Lemna minor)', 'Laguna de pulimento', 'Laguna de hábitat (espejo de agua con orla de eneas y juncos)'];
 const NS = SEM.length, BANCO = 5, BERMA = 4, YP = 1.0; // orilla desde el borde (sendero ~3 m + pradera), ancho de los diques, altura del plano
 const sat = (v) => Math.max(0, Math.min(1, v));
 
@@ -188,7 +188,7 @@ export function crearHumedalBavaria({ T3 }) {
         float len = step(1.0 - cov, vn(vW.xz * 0.32 + 3.0) * 0.75 + vn(vW.xz * 1.7) * 0.25);
         vec3 lent = L(vec3(0.55, 0.68, 0.18)) * (0.8 + 0.4 * h2(floor(vW.xz * 9.0)));
         vec2 g = vW.xz / 0.75, id = floor(g), fr2 = fract(g) - 0.5 - (vec2(h2(id), h2(id + 3.1)) - 0.5) * 0.5;
-        float ros = (1.0 - smoothstep(0.16, 0.3, length(fr2))) * step(1.0 - cov * 0.9, vn(vW.xz * 0.21 + 9.0)) * step(2.5, k) * step(k, 3.5);
+        float ros = 0.0 * (1.0 - smoothstep(0.16, 0.3, length(fr2))); // SIN buchón (decisión de la autora): solo lenteja de agua en la celda de flotantes
         vec3 buch = L(vec3(0.20, 0.42, 0.16)) * (0.75 + 0.5 * h2(id)) + vec3(0.9) * pow(max(dot(reflect(-V, vec3(0.0, 1.0, 0.0)), uSol), 0.0), 40.0) * 0.25;
         w = mix(w, lent, len * 0.92); w = mix(w, buch, ros);
         c = mix(c, w, a);
@@ -216,10 +216,19 @@ export function crearHumedalBavaria({ T3 }) {
       P.push(bx - px, 0, bz - pz, bx + px, 0, bz + pz, tx, h, tz); C.push(0.2, 0.28, 0.13, 0.2, 0.28, 0.13, ...(b % 3 ? [0.36, 0.48, 0.28] : [0.42, 0.52, 0.34]));
       if (b % 3 === 1) { const hx = bx + (tx - bx) * 0.9, hz = bz + (tz - bz) * 0.9, y = h * 0.9, e = 0.05; P.push(hx - e, y, hz, hx + e, y + 0.02, hz, hx, y + 0.12, hz + e * 0.5); C.push(0.42, 0.28, 0.14, 0.42, 0.28, 0.14, 0.5, 0.36, 0.2); } } // panículas
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals(); return g; }
+  /* junco blando (Juncus effusus: macolla que arquea) y cipérea (Cyperus: tallos con sombrilla de hojas) — más variedad dentro del humedal */
+  function geoJuncus() { const P = [], C = []; for (let b = 0; b < 18; b++) { const a = b / 18 * 6.283 + (b % 3) * 0.5, r = 0.05 + (b % 4) * 0.04, h = 0.9 + ((b * 29) % 10) / 10 * 0.7, inc = 0.2 + ((b * 7) % 5) / 5 * 0.3, w = 0.022;
+      const bx = Math.cos(a) * r, bz = Math.sin(a) * r, tx = bx + Math.cos(a) * h * inc, tz = bz + Math.sin(a) * h * inc, px = -Math.sin(a) * w, pz = Math.cos(a) * w;
+      P.push(bx - px, 0, bz - pz, bx + px, 0, bz + pz, tx, h, tz); C.push(0.16, 0.3, 0.14, 0.16, 0.3, 0.14, 0.3 + (b % 3) * 0.04, 0.5, 0.26); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals(); return g; }
+  function geoCyperus() { const P = [], C = []; for (let s = 0; s < 6; s++) { const a0 = s * 1.05, bx = Math.cos(a0) * 0.12, bz = Math.sin(a0) * 0.12, h = 1.3 + (s % 3) * 0.35, w = 0.02;
+      P.push(bx - w, 0, bz, bx + w, 0, bz, bx, h, bz); C.push(0.2, 0.36, 0.16, 0.2, 0.36, 0.16, 0.34, 0.54, 0.22);
+      for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283 + s, lx = bx + Math.cos(a) * 0.6, lz = bz + Math.sin(a) * 0.6, px = -Math.sin(a) * 0.014, pz = Math.cos(a) * 0.014; P.push(bx - px, h, bz - pz, bx + px, h, bz + pz, lx, h - 0.34, lz); C.push(0.3, 0.5, 0.2, 0.3, 0.5, 0.2, 0.42, 0.6, 0.26); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals(); return g; }
   const matPl = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0, side: THREE.DoubleSide });
-  let imEnea = null, imJunco = null, LE = null, LJ = null, ultG = -1;
+  let imEnea = null, imJunco = null, imJc = null, imCy = null, LE = null, LJ = null, LJc = null, LCy = null, ultG = -1;
   function* armarPlantas() { // listas [x, z, clave, escala] en rejilla de 1,7 m con jitter, según la celda y W
-    const E = [], J = [], R = (() => { let s = 91; return () => (s = (s * 16807) % 2147483647) / 2147483647; })(), paso = MOV ? 2.2 : 1.7;
+    const E = [], J = [], Jc = [], Cy = [], R = (() => { let s = 91; return () => (s = (s * 16807) % 2147483647) / 2147483647; })(), paso = MOV ? 2.2 : 1.7;
     for (let x = campo.x0; x < campo.x0 + campo.W; x += paso) { for (let z = campo.z0; z < campo.z0 + campo.H; z += paso) {
       const px = x + (R() - 0.5) * paso, pz = z + (R() - 0.5) * paso, q = campo.en(px, pz); if (q < 0) continue; const W = campo.Wv[q], k = campo.Kv[q], dc = campo.Cv[q]; if (W < -1.2) continue;
       const r = R(); let L = null;
@@ -227,13 +236,15 @@ export function crearHumedalBavaria({ T3 }) {
       else if (k === 2 && W > 0.2 && dc > 2.4 && r < 0.82) L = J;                    // celda de juncos
       else if (k === 5 && W > -1.2 && W < 4.5 && dc > 2.2 && r < 0.6) L = r < 0.3 ? E : J;  // hábitat: orla ancha mixta, espejo de agua al centro
       else if (W > -1.2 && W < 2.2 && dc > 2.0 && r < (k === 0 ? 0.22 : k === 3 ? 0.3 : 0.5)) L = r < 0.25 ? E : J; // orlas de las demás
+      if (L === J) { const q = hs(px * 1.91, pz * 0.53); if (q < 0.22) L = Cy; else if (q < 0.42) L = Jc; } // los «juncos» se reparten entre Schoenoplectus, Juncus effusus y Cyperus
       if (L) L.push(px, pz, hs(px * 0.37, pz * 0.71), 0.75 + 0.5 * hs(pz, px)); }
       yield; }
-    LE = new Float32Array(E); LJ = new Float32Array(J);
+    LE = new Float32Array(E); LJ = new Float32Array(J); LJc = new Float32Array(Jc); LCy = new Float32Array(Cy);
     imEnea = new THREE.InstancedMesh(geoEnea(), matPl, LE.length / 4); imJunco = new THREE.InstancedMesh(geoJunco(), matPl, LJ.length / 4);
-    for (const m of [imEnea, imJunco]) { m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; G.add(m); } }
+    imJc = new THREE.InstancedMesh(geoJuncus(), matPl, Math.max(1, LJc.length / 4)); imCy = new THREE.InstancedMesh(geoCyperus(), matPl, Math.max(1, LCy.length / 4));
+    for (const m of [imEnea, imJunco, imJc, imCy]) { m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; G.add(m); } }
   function crecerPlantas(g) { if (!imEnea || Math.abs(g - ultG) < 0.01) return; ultG = g;
-    for (const [m, L] of [[imEnea, LE], [imJunco, LJ]]) { let n = 0;
+    for (const [m, L] of [[imEnea, LE], [imJunco, LJ], [imJc, LJc], [imCy, LCy]]) { let n = 0;
       for (let i = 0; i < L.length; i += 4) { const k = L[i + 2]; if (k > g * 1.15) continue; const e = Math.min(1, (g * 1.15 - k) * 3) * L[i + 3];
         O.position.set(L[i], YP - 0.05, L[i + 1]); O.rotation.set(0, k * 6.283, 0); O.scale.set(e * 1.3, e, e * 1.3); O.updateMatrix(); m.setMatrixAt(n++, O.matrix); }
       m.count = n; m.instanceMatrix.needsUpdate = true; } }
@@ -413,9 +424,13 @@ export function crearHumedalBavaria({ T3 }) {
     obra() { return { id: 'humedal_bavaria', n: 'Humedal artificial de fitodepuración · Bavaria', x: CX, z: CZ, radio: RADIO }; },
     /* ¿el punto (mundo) cae en la huella del humedal? (para que otras capas, p. ej. las huertas del distrito, no se monten encima) */
     ocupa(x, z) { return dentro(PW0, x, z); },
+    años: () => años,
+    /* aves dibujadas ahora ([{ sp, x, y, z }], mundo) y plantas altas (eneas y juncos que ya crecieron, [x, z]): para las líneas de interacción (data3d/propuesta_lineas.js) */
+    posiciones() { const out = []; if (!visible || !G.visible) return out; for (const k in AV) { const m = AV[k], e = m.instanceMatrix.array; for (let i = 0; i < m.count; i++) { const o = i * 16; if (Math.hypot(e[o], e[o + 1], e[o + 2]) < 1) continue; out.push({ sp: k, x: e[o + 12], y: e[o + 13], z: e[o + 14] }); } } return out; },
+    plantasAltas(n) { const out = []; if (!LE || !LJ) return out; const g = ultG; for (const [L, h] of [[LE, 1.9], [LJ, 1.5]]) for (let i = 0; i < L.length && out.length < n; i += 4 * 9) { const e = Math.min(1, (g * 1.15 - L[i + 2]) * 3); if (e > 0.5) out.push([L[i], h * e, L[i + 1]]); } return out; },
     info() { let aves = 0; for (const k in nAv) aves += nAv[k];
       return { listo, visible: visible && G.visible, años: Math.round(años * 100) / 100, aves, porEspecie: { ...nAv }, polinizadores: nPol, libelulas: nLib,
-        plantas: { eneas: imEnea ? imEnea.count : 0, juncos: imJunco ? imJunco.count : 0, eneasMax: LE ? LE.length / 4 : 0, juncosMax: LJ ? LJ.length / 4 : 0 },
+        plantas: { eneas: imEnea ? imEnea.count : 0, juncos: imJunco ? imJunco.count : 0, juncus: imJc ? imJc.count : 0, cyperus: imCy ? imCy.count : 0, eneasMax: LE ? LE.length / 4 : 0, juncosMax: LJ ? LJ.length / 4 : 0, juncusMax: LJc ? LJc.length / 4 : 0, cyperusMax: LCy ? LCy.length / 4 : 0 },
         uObra: U.uObra.value, uAgua: U.uAgua.value, uVeg: U.uVeg.value, area: { ...AREA }, obra: api.obra(), mascaraG: campo && campo.tex ? 'campo.tex: G > 0,5 = celdas de agua' : null,
         tex: campo ? campo.tex : null, box: campo ? [campo.x0, campo.z0, campo.W, campo.H] : null }; }
   };

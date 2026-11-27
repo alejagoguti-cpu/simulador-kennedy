@@ -148,7 +148,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   if (VERDES.length) {
     const geos = [];
     for (const [W, y, ti] of VERDES) { try {
-      const g = new THREE.ShapeGeometry(new THREE.Shape(W.map(p => new THREE.Vector2(p[0], -p[1])))); g.rotateX(-Math.PI / 2); g.translate(0, y + 0.06, 0);
+      const g = new THREE.ShapeGeometry(new THREE.Shape(W.map(p => new THREE.Vector2(p[0], -p[1])))); g.rotateX(-Math.PI / 2); g.translate(0, y + 0.2, 0); /* v5.3 sin parpadeo: antes 0,06 m sobre la losa peleaba la profundidad con el techo del edificio; ahora 0,2 m + desplazamiento de polígono */
       const pos = g.attributes.position, uv = new Float32Array(pos.count * 2), o = new Float32Array(pos.count).fill(ORD.get(ti) ?? 0);
       for (let i = 0; i < pos.count; i++) { uv[i * 2] = pos.getX(i) / 4; uv[i * 2 + 1] = pos.getZ(i) / 4; }
       g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setAttribute('aOrd', new THREE.BufferAttribute(o, 1)); if (g.index) geos.push(g.toNonIndexed()); else geos.push(g);
@@ -156,7 +156,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     if (geos.length) {
       const gV = mergeGeometries(geos.map(g => { for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'aOrd'].includes(k)) g.deleteAttribute(k); return g; })); gV.computeVertexNormals();
       const tex = new THREE.TextureLoader().load('data3d/textures/pasto_color.jpg'); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANIS;
-      const mV = new THREE.MeshStandardMaterial({ map: tex, color: 0xe4f7b0, emissive: 0x4f7a22, emissiveMap: tex, emissiveIntensity: 0.9, roughness: 0.95, metalness: 0, /* verde vivo que se lee desde lejos y a la sombra */ polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      const mV = new THREE.MeshStandardMaterial({ map: tex, color: 0xe4f7b0, emissive: 0x4f7a22, emissiveMap: tex, emissiveIntensity: 0.9, roughness: 0.95, metalness: 0, /* verde vivo que se lee desde lejos y a la sombra */ polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 });
       mV.onBeforeCompile = (sh) => { sh.uniforms.uFrac = uFrac;
         sh.vertexShader = 'attribute float aOrd;\nvarying float vOrd;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOrd = aOrd;');
         sh.fragmentShader = 'uniform float uFrac;\nvarying float vOrd;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vOrd > uFrac) discard;'); };

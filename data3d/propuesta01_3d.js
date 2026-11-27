@@ -31,11 +31,11 @@
    · PRECARGA: todo se arma escondido en trozos de ≤ 8 ms (requestIdleCallback) apenas se crea (sim_ui.js lo crea después de «Iniciar»):
      poner() solo prende, cambia uniformes y edades. Incluye las calles verdes (calles_verdes3d.js) y el humedal artificial de Bavaria
      (humedal_bavaria3d.js). */
-import { quitadas01, semQuita01 } from './abasto_capas.js?v=7';
+import { quitadas01, semQuita01 } from './abasto_capas.js?v=9';
 import { crearParches3D, ESPECIES } from './parches_arboles.js?v=12';
 import { hoyo01 } from './gris01.js?v=1';
 import { crearEcoducto } from './ecoducto.js?v=2';
-import { crearFauna } from './propuesta_fauna.js?v=2';
+import { crearFauna } from './propuesta_fauna.js?v=3';
 
 const AN = { sendero: 5, barrera: 42, pradera: 78, agua: 100, agua1: 170 }; // franjas en metros de D (año 5) y agua del año 1
 const YP = 1.0; // altura del humedal: por encima del recorte de la malla de Google (0,9 m)
@@ -195,7 +195,7 @@ export function crearPropuesta01({ T3 }) {
   const ocioso = (f) => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 400 }) : setTimeout(() => f({ timeRemaining: () => 8 }), 16));
   const correrGen = (gen) => new Promise((res, rej) => { const paso = (dl) => { const t0 = performance.now(), lim = Math.min(8, Math.max(3, dl && dl.timeRemaining ? dl.timeRemaining() : 8));
       try { while (performance.now() - t0 < lim) { const r = gen.next(); if (r.done) return res(r.value); } } catch (e) { return rej(e); } ocioso(paso); }; ocioso(paso); });
-  const EXTRA = { cv: null, hb: null };
+  const EXTRA = { cv: null, hb: null, bs: null, ln: null };
   const listoP = Promise.all([cargar('data3d/corabastos.json'), cargar('data3d/water_bodies.json').catch(() => [])]).then(async ([D, WB]) => {
     const vaca = (WB || []).filter(w => /vaca/i.test(w.nombre || '')).sort((a, b) => b.pts.length - a.pts.length)[0];
     campo = await correrGen(armarCampo(D, vaca ? vaca.pts : null));
@@ -207,7 +207,10 @@ export function crearPropuesta01({ T3 }) {
     await new Promise(r => ocioso(r)); cargarArboles();
     /* calles verdes y humedal de Bavaria (módulos aparte; si faltan, la propuesta sigue) */
     import('./calles_verdes3d.js?v=1').then(m => { EXTRA.cv = m.crearCallesVerdes({ T3 }); return EXTRA.cv.preparar(); }).then(() => { if (activo && EXTRA.cv) EXTRA.cv.poner(sem); else if (precT) ocioso(precompilar); }).catch(e => { if (!EXTRA.cv) EXTRA.cv = false; console.warn('calles verdes:', e); });
-    import('./humedal_bavaria3d.js?v=2').then(m => { EXTRA.hb = m.crearHumedalBavaria({ T3 }); return EXTRA.hb.preparar(); }).then(() => { if (activo && EXTRA.hb) EXTRA.hb.poner(sem); else if (precT) ocioso(precompilar); }).catch(e => { if (!EXTRA.hb) EXTRA.hb = false; console.warn('humedal Bavaria:', e); });
+    import('./humedal_bavaria3d.js?v=3').then(m => { EXTRA.hb = m.crearHumedalBavaria({ T3 }); return EXTRA.hb.preparar(); }).then(() => { if (activo && EXTRA.hb) EXTRA.hb.poner(sem); else if (precT) ocioso(precompilar); }).catch(e => { if (!EXTRA.hb) EXTRA.hb = false; console.warn('humedal Bavaria:', e); });
+    /* SUDS y ciclorrutas de Bavaria (data3d/bavaria_suds.js) y líneas de interacción de la fauna que trae la propuesta (data3d/propuesta_lineas.js) */
+    import('./bavaria_suds.js?v=2').then(m => { EXTRA.bs = m.crearBavariaRed({ T3 }); return EXTRA.bs.preparar(); }).then(() => { if (activo && EXTRA.bs) EXTRA.bs.poner(sem); else if (precT) ocioso(precompilar); }).catch(e => { if (!EXTRA.bs) EXTRA.bs = false; console.warn('SUDS y ciclorrutas de Bavaria:', e); });
+    import('./propuesta_lineas.js?v=1').then(m => { EXTRA.ln = m.crearLineas({ T3, eco: ECO, fauna: FAU, hb: () => EXTRA.hb }); if (activo) EXTRA.ln.poner(sem); }).catch(e => { EXTRA.ln = false; console.warn('líneas de la fauna de la propuesta:', e); });
     if (activo) armar();
     /* v5.2 (medido: al pasar a «con propuesta» ~0,9 s se iban en compilar sombreadores y ~0,4 s en subir buffers la primera vez que se
        dibujaba): cuando todo está armado, en un momento libre se compilan los materiales (compileAsync, en paralelo si el navegador puede) y
@@ -215,11 +218,12 @@ export function crearPropuesta01({ T3 }) {
     const esperar = (p) => Promise.race([p, new Promise(r => setTimeout(r, 20000))]).catch(() => {});
     await esperar(Promise.all([new Promise(r => { const v = () => (arb && arb !== 'cargando') || !arbP ? r() : setTimeout(v, 300); v(); }),
       new Promise(r => { const v = () => (EXTRA.cv && EXTRA.cv.info().listo) || EXTRA.cv === false ? r() : setTimeout(v, 300); setTimeout(v, 300); }),
-      new Promise(r => { const v = () => (EXTRA.hb && EXTRA.hb.info().listo) || EXTRA.hb === false ? r() : setTimeout(v, 300); setTimeout(v, 300); })]));
+      new Promise(r => { const v = () => (EXTRA.hb && EXTRA.hb.info().listo) || EXTRA.hb === false ? r() : setTimeout(v, 300); setTimeout(v, 300); }),
+      new Promise(r => { const v = () => (EXTRA.bs && EXTRA.bs.info().listo) || EXTRA.bs === false ? r() : setTimeout(v, 300); setTimeout(v, 300); })]));
     await new Promise(r => ocioso(r)); precompilar();
   }).catch(e => console.warn('propuesta 01:', e));
   let precT = null; function precompilar() { const R = T3.renderer; if (!R || activo) return; precT = Math.round(performance.now());
-    const grupos = [G, arb && arb.grupo, T3.scene.getObjectByName('calles_verdes'), EXTRA.hb && EXTRA.hb.grupo].filter(Boolean), antes = grupos.map(g => g.visible);
+    const grupos = [G, arb && arb.grupo, T3.scene.getObjectByName('calles_verdes'), EXTRA.hb && EXTRA.hb.grupo, EXTRA.bs && EXTRA.bs.grupo].filter(Boolean), antes = grupos.map(g => g.visible);
     grupos.forEach(g => { g.visible = true; });
     try { const fc = [], c0 = [], vi = []; grupos.forEach(g => g.traverse(o => { if (o.frustumCulled) { fc.push(o); o.frustumCulled = false; } /* lo que está fuera de cuadro también sube sus buffers */
         if (o.isInstancedMesh && o.count === 0 && o.instanceMatrix && o.instanceMatrix.count > 0) { c0.push(o); o.count = 1; } /* aún sin plantas ni árboles: una instancia para compilar y subir */
@@ -264,9 +268,9 @@ export function crearPropuesta01({ T3 }) {
       const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = false; if (window.KEN_PCORA && window.KEN_PCORA.ver) window.KEN_PCORA.ver(false);
       mNave.visible = !(window.KEN_AB01C && window.KEN_AB01C.estado && window.KEN_AB01C.estado.bodegas);
       if (arb && arb !== 'cargando') arb.ver(true);
-      if (EXTRA.cv) EXTRA.cv.poner(sem); if (EXTRA.hb) EXTRA.hb.poner(sem);
+      if (EXTRA.cv) EXTRA.cv.poner(sem); if (EXTRA.hb) EXTRA.hb.poner(sem); if (EXTRA.bs) EXTRA.bs.poner(sem); if (EXTRA.ln) EXTRA.ln.poner(sem);
       if (listo) { if (nuevo) armar(); else crecer(false); } },
-    apagar() { if (!activo) return; activo = false; G.visible = false; hoyo(false); ECO.apagar(); FAU.apagar(); if (arb && arb !== 'cargando') arb.ver(false); if (EXTRA.cv) EXTRA.cv.apagar(); if (EXTRA.hb) EXTRA.hb.apagar();
+    apagar() { if (!activo) return; activo = false; G.visible = false; hoyo(false); ECO.apagar(); FAU.apagar(); if (arb && arb !== 'cargando') arb.ver(false); if (EXTRA.cv) EXTRA.cv.apagar(); if (EXTRA.hb) EXTRA.hb.apagar(); if (EXTRA.bs) EXTRA.bs.apagar(); if (EXTRA.ln) EXTRA.ln.apagar();
       const og = T3.scene.getObjectByName('corabastos'); if (og) og.visible = true;
       const HB = window.KEN_HBAR; if (HB && hbAntes) { HB.fraccion(1); HB.ver(hbAntes.vis); hbAntes = null; ultHB = -1; }
       const KP = window.KEN_PARCHES; if (KP && parAntes) { KP.edad(null); KP._p01 = null; KP.ver(parAntes.vis); parAntes = null; } },
@@ -276,12 +280,14 @@ export function crearPropuesta01({ T3 }) {
     obras() { const L = [{ id: 'puente', n: 'Puente de fauna sobre la Av. Ciudad de Cali (Humedal El Burro)', x: ECO.puente.x, z: ECO.puente.z, radio: ECO.puente.radio }];
       if (campo) L.push({ id: 'vaca', n: 'Humedal La Vaca ampliado en el predio de Corabastos', x: campo.box[0] + campo.box[2] / 2, z: campo.box[1] + campo.box[3] / 2, radio: Math.round(Math.max(campo.box[2], campo.box[3]) / 2) });
       for (const X of [EXTRA.hb, EXTRA.cv]) if (X && X.obra) { try { const o = X.obra(); if (o) L.push(o); } catch (e) { /* módulo aún armándose */ } }
+      if (EXTRA.bs && EXTRA.bs.obras) { try { L.push(...EXTRA.bs.obras()); } catch (e) { /* aún armándose */ } }
       if (S.quedan.length) { let x = 0, z = 0; for (const N of S.quedan) { x += N.cx; z += N.cz; } L.push({ id: 'corabastos', n: 'Corabastos al 50 %', x: x / S.quedan.length, z: z / S.quedan.length, radio: 260 }); }
       for (const [id, n, lx, ly, r] of [['borde_burro', 'Árboles de borde · Humedal El Burro', 7300, 3450, 420], ['borde_vaca', 'Árboles de borde · Humedal La Vaca', 6000, 1900, 300], ['borde_techo', 'Árboles de borde · Humedal de Techo', 8240, 3920, 300]]) { const [x, z] = T3.lw(lx, ly); L.push({ id, n, x, z, radio: r }); }
       return L; },
     listo: () => listoP, extra: EXTRA,
+    bavariaRed() { return EXTRA.bs && EXTRA.bs.info ? EXTRA.bs.info() : null; },
     humedalBavaria() { return EXTRA.hb && EXTRA.hb.area ? EXTRA.hb.area() : null; },
-    info() { return { activo, listo, precompilado: precT, nQuitadas: nqAnt, callesVerdes: EXTRA.cv && EXTRA.cv.info ? EXTRA.cv.info() : null, humedalBavaria: EXTRA.hb && EXTRA.hb.info ? EXTRA.hb.info() : null, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, anos: U.uAnos.value,
+    info() { return { activo, listo, precompilado: precT, nQuitadas: nqAnt, callesVerdes: EXTRA.cv && EXTRA.cv.info ? EXTRA.cv.info() : null, humedalBavaria: EXTRA.hb && EXTRA.hb.info ? EXTRA.hb.info() : null, bavariaRed: EXTRA.bs && EXTRA.bs.info ? EXTRA.bs.info() : null, lineas: EXTRA.ln && EXTRA.ln.info ? EXTRA.ln.info() : null, puente: ECO.puente, obras: api.obras(), ecoducto: ECO.info(), fauna: FAU.info(), quedan: S.quedan.length, quitadas: S.quitadas.length, areas: { ...AREA }, arbolesBarrera: arbP ? arbP.reduce((a, p) => a + p.arboles.length, 0) : 0, juncos: junc ? junc.count : 0, anos: U.uAnos.value,
       huertas: window.KEN_HBAR ? !!window.KEN_HBAR.grupo.visible : null, parches: window.KEN_PARCHES ? { vis: window.KEN_PARCHES.grupo.visible, n: window.KEN_PARCHES.n } : null, hoyo: T3.maskU && T3.maskU.uHoyoOn ? T3.maskU.uHoyoOn.value : null }; }
   };
   return api;

@@ -183,3 +183,26 @@ Degradé violeta URBIA → turquesa (#304ffe → #3d8fe6 → #4fd1c5) en ab01_pa
 - **Humedal artificial de fitodepuración en Bavaria** (`data3d/humedal_bavaria3d.js`): 6 celdas en serie (sedimentador, eneas, juncos, plantas flotantes, pulimento y laguna de hábitat) con canal en meandro: 1,03 ha de celdas (0,51 agua, 0,51 vegetación) en una huella de 2,04 ha en el parque central CP-01 del plan; obra años 2–3, agua 3–4, plantas 3–6; llegan garzas, tinguas, patos, monjitas, polinizadores y libélulas con los años [SUP: calendario y cantidades]. Agua opaca. Está en la lista de obras (`humedal_bavaria`).
 - **Agua siempre opaca**: el agua de La Vaca de la capa Residuos ya no es un velo transparente: es agua opaca con ondas que se pone café con la degradación D.
 - **Precarga**: la propuesta 3D (campo del humedal en trozos de ≤ 8 ms, juncos, árboles, calles verdes, humedal de Bavaria) se arma escondida apenas se escoge una simulación después de «Iniciar»; al pasar a «con propuesta» solo se prende.
+## v5.3 (2026-11-26) · Trancón visible, sector con déficit, mismo momento, memoria
+
+### Vías rojas con muchos carros (`vias_densidad.js`)
+- Causa: la grabación SUMO es una muestra (~3.000 vehículos en 989 km) y el conteo por tramo de 60 m es ruido (1 carro = 4–16 veh/km/carril).
+- **Ventana de 150 m:** cada tramo mide los carros de los tramos del mismo tipo de vía a ≤ 150 m ÷ (km × carriles de esa ventana). Sigue siendo conteo real de vehículos (más carros → más rojo).
+- **Factor de calibración F = 2,4 [SUP declarado]** (real ÷ muestra): el vehículo medio de la muestra vive en 12 veh/km/carril (medido, `KEN_VIAS.kVeh`); TomTom 2025 da velocidad = 1 ÷ 1,699 = 59 % de la libre, menor que el 76 % que el HCM da en capacidad (28 veh/km/carril), o sea que el vehículo medio de Bogotá está al menos en el límite E/F: F = 28 ÷ 12 ≈ 2,3, redondeado a 2,4. Umbrales HCM sin cambios (verde < 16, amarillo 16–28, carmesí ≥ 28).
+- **Trancón junto a Corabastos (abasto_capas.js):** los camiones que esperan en fila ya dependen de la permanencia del modelo (U.Tp ÷ 0,76 d: congestión junto a Corabastos × cola, ley de Little): 24 × ingreso ÷ 6.460 × permanencia camiones (máx. 90), los que esperan = (1 − 1/permanencia), a 8 m uno de otro en 6 accesos [escala visual declarada]. Sin propuesta la congestión de base sube cada año; con propuesta baja hasta −25 % con los mercados. Etiqueta: «Arterias junto a Corabastos: X % en rojo · Y % en amarillo». Medido (semana ~200–227): arterias e intermedias a ≤ 1,2 km de Corabastos en carmesí 33 % sin propuesta vs 27 % con; la diferencia crece con los años (más permanencia).
+- Memoria de la capa: `medir()` se calcula una vez por medición (antes por cuadro).
+
+### Límite de Corabastos con propuesta
+Ya cambia (14.000 t × tope de las naves que quedan, hasta 7.103 t) y la barra/game over se miden contra él; con propuesta la barra queda en 58–60 % (tabla v5.2). Ahora se muestra en el panel izquierdo (nota del deslizador, fila de game over, ƒx, gráfica 3 y 4) y en la barra («de su límite de N t»). **No se midió la cola contra la capacidad vigente:** probado, con propuesta Corabastos se llena en la semana 281 (los mecanismos declarados —acopio regional, −25 % de congestión— reducen la entrada < 10 %, no el ~34 % que haría falta); se mantiene ρ = inventario ÷ 14.000 t como en v5.2. Decisión de la autora pendiente si quiere otra regla.
+
+### Sector con déficit en el mapa (`sector_deficit.js`, todas las simulaciones)
+Cobertura < 80 %: contorno coral + relleno suave pulsante + etiqueta «Sector · % de su demanda · n/4 sem»; geometría = zonas de 500 m (ZONAS_XZ) del sector (01: los 8 sectores con `zonas` agregadas a `ab01.sectores`; 06: `gobernanza.barrios`; 02–05: zonas con valor < 80 %). Clic en la fila «Déficit alimentario» / «Comida en el sector peor» del game over: la cámara va al sector.
+
+### Mismo momento al cambiar sin/con
+Verificado: al cambiar el interruptor se conserva la semana (205 → 227 corriendo, sin volver al año 1; `escoger(..., true)` + `ponerseAlDia`). Sin cambios de código.
+
+### Huertas en cubiertas
+La cubierta verde sube de 0,06 a 0,2 m sobre la losa y el desplazamiento de polígono pasa a (−3, −6) para quitar el parpadeo.
+
+### Memoria
+Medido con GC forzado cada 20 s (7 puntos, semana 121 → 649): el heap retenido queda estable en ≈ 2,1 GB (+ ~15 MB por minuto del historial); geometrías y texturas de WebGL constantes (2.964 / 2.041). El «crecimiento» visto (3,5–4,4 GB) es basura entre recolecciones (≈ 120 MB/s de asignaciones). Se recortó: llave de `viajes_mercados.js` (un arreglo por vehículo y cuadro), listas de `TRAF.ocup` y de `api.contar` en index.html (destructuring por vehículo), `KEN_VIAS.medir`. Quedan como mayores fuentes `updateTraffic`, `Math.hypot`, `getParameters` de three y la fauna (biotica.js, de otro frente). La pérdida de contexto WebGL es memoria de GPU (≈ 2.000 texturas, 3.000 geometrías), no una fuga de JS; no se tocó.

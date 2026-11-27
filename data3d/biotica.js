@@ -162,6 +162,9 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (pts.length >= 3) { const P = pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
       for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); } for (const p of P.slice().reverse()) { while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
       const h = habitat('Parque humedal de Corabastos', lo.slice(0, -1).concat(hi.slice(0, -1)), { garza: 3, tingua: 4, pato: 4, monjita: 3, copeton: 6, mirla: 4, colibri: 4, torcaza: 3, cucarachero: 3, abeja: 8, rana: 8, lagartija: 3, caracol: 4 }); h.pro = true; EXTRA.push(h); } }
+  /* CON LA PROPUESTA: humedal artificial de fitodepuración de Bavaria (data3d/humedal_bavaria3d.js): sus aves, ranas, caracoles y polinizadores son agentes
+     de la red (con sus líneas de interacción) y llegan con el agua y las plantas, entre los años 3 y 7 (cada uno con su sorteo fijo) [SUP: cantidades] */
+  try { const HBm = await import('./humedal_bavaria3d.js?v=3'); const h = habitat('Humedal de fitodepuración · Bavaria', HBm.POLI_HUMEDAL_BAV, { garza: 3, garzaNoc: 2, tingua: 6, pato: 5, focha: 4, monjita: 6, rana: 10, caracol: 5, lagartija: 2, colibri: 5, abeja: 10, cucarachero: 3, copeton: 4, mirla: 2 }); h.pro = true; h.humBav = true; EXTRA.push(h); } catch (e) { console.warn('fauna del humedal de Bavaria:', e); }
   // con la propuesta: PARCHES DE ÁRBOLES NATIVOS en parques y alrededor de las huertas de parque (data3d/parches_arboles.js):
   // caucho sabanero, aliso, sauco, chicalá, arrayán y arbustos de flor; cada parche es un hábitat nuevo con su fauna, solo en «proyecto»
   let PAT = [], FAUNA_PARCHE = {}, ESP_PARCHE = {};
@@ -964,6 +967,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
 
   /* ---------- paso del reloj universal (lógica: siempre, se vea o no la red) ---------- */
   let tUI = 0, tPot = 0, nCuadro = 0, tOc = 0, dtI = 0, tR = 0;
+  const humAn = () => (window.KEN_HUMEDAL_BAV && window.KEN_HUMEDAL_BAV.años ? window.KEN_HUMEDAL_BAV.años() : 0); // años simulados con el humedal de Bavaria (lo fija propuesta01_3d.js cada semana)
   function paso(dt, t) {
     tPaso = t;
     if (t % 60 === 0) actualizarAC(); // actividad por especie: cada minuto simulado
@@ -975,7 +979,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
       a.x0 = a.x; a.y0 = a.y; a.z0 = a.z; // posición al empezar el paso (el dibujo interpola)
       if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
-      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a.h.ord != null ? a.h.ord : (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id)))) > (ESTADO.proFrac ?? 1)) { /* la fauna llega a cada huerta cuando esa huerta se abre (h.ord vs proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a.h.humBav ? !(humAn() >= 3 + 4 * (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id)))) : (a.h.ord != null ? a.h.ord : (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id)))) > (ESTADO.proFrac ?? 1))) { /* la fauna llega a cada huerta cuando esa huerta se abre (h.ord vs proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
       // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden (sorteo fijo por id)
       if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = RELOJ.azarDe('bio-fauna', a.id)), fuera = r > ESTADO.fauna;
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }

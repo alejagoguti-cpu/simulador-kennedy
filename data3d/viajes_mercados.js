@@ -240,11 +240,11 @@ export async function crearViajesMercados({ T3, cj }) {
   /* llave rápida (alivio_cali.js llama quita() por cada vehículo en cada cuadro): solo se arma la firma completa si cambió la semana,
      el escenario, los sliders de Corabastos, la semana de sim_vida o hubo un aviso de cambio (sliders de SIM-01, «cora-cambio») */
   let gen = 0; addEventListener('cora-cambio', () => gen++); addEventListener('sim-cambio', () => gen++);
-  const Kq = []; const llave = () => { const CS = T3.coraCS || {}, V = window.KEN_ESIM && window.KEN_ESIM.vida, S = V && V.S, e = SIMST.esc;
+  const Kq = [], Kn = new Array(11); /* v5.3 memoria: la llave se arma en una lista fija (antes un arreglo nuevo por vehículo y cuadro) */ const llave = () => { const CS = T3.coraCS || {}, V = window.KEN_ESIM && window.KEN_ESIM.vida, S = V && V.S, e = SIMST.esc;
     const B = T3.bio && T3.bio.ESTADO;
-    return [RELOJ.sem, gen, e, CS.cora, CS.merc, CS.huer, S && S[e] ? S[e].t : -1, S && S.A ? S.A.t : -1, PARSIM.P1 && PARSIM.P1.regional, T3.escenario, B ? B.proFrac : -1]; };
+    Kn[0] = RELOJ.sem; Kn[1] = gen; Kn[2] = e; Kn[3] = CS.cora; Kn[4] = CS.merc; Kn[5] = CS.huer; Kn[6] = S && S[e] ? S[e].t : -1; Kn[7] = S && S.A ? S.A.t : -1; Kn[8] = PARSIM.P1 && PARSIM.P1.regional; Kn[9] = T3.escenario; Kn[10] = B ? B.proFrac : -1; return Kn; };
   function asegurar() {
-    const q = llave(); if (EST && q.every((v, i) => v === Kq[i])) return EST; q.forEach((v, i) => { Kq[i] = v; });
+    const q = llave(); if (EST) { let igual = true; for (let i = 0; i < 11; i++) if (q[i] !== Kq[i]) { igual = false; break; } if (igual) return EST; } for (let i = 0; i < 11; i++) Kq[i] = q[i];
     const I = entradas(); if (EST && EST.firma === I.firma) return EST;
     // [SUP] el acopio de Bavaria arranca con el 30 % de su capacidad y crece con las compras directas a la región (sim_vida: reg)
     const destinos = [dCora, Object.assign({}, dBav, { cap: PAR.CAP_BAV * (0.3 + 0.7 * Math.min(1, I.reg / PAR.REG_REF)) })].concat(I.ab.map(m => ({ id: m.id, n: m.n, tipo: m.tipo === 'plazoleta' ? 'plazoleta' : 'barrio', x: m.x, z: m.z, cap: capDe(m), arbol: arbolDe(m.x, m.z) })));

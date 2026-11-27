@@ -1,4 +1,4 @@
-﻿/* ============ TABLERO DE INDICADORES (columna derecha, aside#lp-tablero) ============
+/* ============ TABLERO DE INDICADORES (columna derecha, aside#lp-tablero) ============
    Caja con tres vistas: «Indicadores» (los tres macromodelos de la tabla de la autora, docs/indicadores_macromodelos.md) · «Estrategias» (las 9 de la
    propuesta) · «Variables» (los deslizadores de sim_ui.js, #su-der, que limpio.js mueve aquí).
    Datos: R.hist (corrida actual, un I por semana) y R.ecoBase (la otra mitad del par, misma semilla). Los valores salen de indicadores_macro.js
@@ -13,6 +13,7 @@
    UNA gráfica (Tendencia de 15 años, graficas_vivas.js). El diagrama de cuerdas de las interacciones no cambia. */
 import { esc, num, año, tip, Tendencia } from './graficas_vivas.js?v=4';
 import { ARTE, llave, contar, ponerTip } from './graficas_arte.js?v=3';
+import { crearFichas } from './fichas_obras.js?v=2';
 import { T, IND, INDK, MACROS, CLAVE, valor, clavePct, claveArea, acceso, ACCESO_SUP, ACCESO_R, hayEstaciones, SEM_REF } from './indicadores_macro.js?v=2';
 
 const PASO = 2; // series de 15 años muestreadas cada 2 semanas
@@ -308,6 +309,7 @@ const tri = (s) => `<svg viewBox="0 0 10 10" width="9" height="9" aria-hidden="t
 const sig = (x, d) => { const r = +Math.abs(x).toFixed(d); return (r === 0 ? '±' : x > 0 ? '+' : '−') + num(Math.abs(x), d); };
 
 export function iniciarPanelIndicadores({ R, getM, getFIN }) {
+  const FI = crearFichas(); // fichas «qué hizo» de cada obra (data3d/fichas_obras.js)
   if (!document.getElementById('pi-css')) { const st = document.createElement('style'); st.id = 'pi-css'; st.textContent = CSS; document.head.appendChild(st); }
   ponerTip((html, x, y) => (html == null ? tip().ocultar() : tip().mostrar(html, x, y)));
   let root = null, wrap = null, hd = null, vista = 'ind', simHecho, H0 = null, nHecho = -1, nBase = -1, ultimo = 0, sucio = true, pendiente = false, espera0 = performance.now(), goHecho = null;
@@ -526,18 +528,23 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
     const CORTO = { E1: 'Acopio y promotores en vez de torres', E2: 'Tiendas existentes reparten a la red local', E3: 'Bodegas se desmontan y el borde se restaura', E4: 'Compost y sustrato vuelven a las huertas', E5: 'Árboles, pasos de fauna y calles verdes', E6: 'Negocios en vivienda frenan el alza de arriendos', E7: 'Mercados de barrio abren por fases', E8: 'Huertas en baldíos, cubiertas y viviendas', E9: 'Cuidado y calles pacificadas por manzana' };
     const SVG_MAPA = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="currentColor"/><path d="M8 1.5V4M8 12v2.5M1.5 8H4M12 8h2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
     const SVG_INFO = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 7.2v4M8 4.7v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    const SVG_FX = '<svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\"><path d=\"M3.5 6 8 10.5 12.5 6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>';
     const SVG_VOLVER = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M6.5 3 2.5 7l4 4M3 7h6.5a4 4 0 0 1 0 8H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     /* obras de la propuesta (lo construido en «con propuesta»): cada una se ubica al hacer clic (ver ubicarObra) */
     const OBRAS = [
       { id: 'O1', n: 'Corabastos al 50 % y La Vaca', c: '#fb923c', t: 'Bodegas fuera; humedal con ecotono y árboles' },
       { id: 'O2', n: 'Puente de fauna', c: '#f97316', t: 'Ecoducto sobre la vía entre los humedales' },
+      { id: 'O8', n: 'Árboles en vías', c: '#34d399', t: 'Calles verdes que unen parques' },
+      { id: 'O9', n: 'Árboles en bordes de humedales', c: '#10b981', t: 'Copa y hábitat en El Burro, La Vaca y Techo' },
       { id: 'O3', n: 'Mercados barriales', c: '#facc15', t: 'Mercados de barrio que abren por fases' },
       { id: 'O4', n: 'Estaciones Circulares', c: '#a78bfa', t: 'Orgánicos a compost en cada mercado' },
       { id: 'O5', n: 'Huertas hidropónicas', c: '#22d3ee', t: 'Cultivos sobre cubiertas de edificios' },
       { id: 'O6', n: 'Huertas en parques', c: '#84cc16', t: 'Huertas de barrio que abren por años' },
-      { id: 'O7', n: 'Árboles nuevos', c: '#34d399', t: 'Corredores verdes nativos en los parques' }
+      { id: 'O10', n: 'Humedal y SUDS de Bavaria', c: '#4fd1c5', t: 'Lluvia por biofiltros a un humedal de 6 celdas' },
+      { id: 'O11', n: 'Ciclorrutas de Bavaria', c: '#c9f27a', t: 'Carril en bici dentro del plan parcial' },
+      { id: 'O7', n: 'Árboles nuevos en parques', c: '#34d399', t: 'Corredores verdes nativos en los parques' }
     ];
-    const fila = (id, n, c, t, cod, ch, det) => `<li data-e="${id}" style="--c:${c}"><div class="h"><button type="button" class="ir" aria-label="Ver ${esc(n)} en el mapa"><i></i><span class="t"><b>${cod ? `<small>${cod}</small> ` : ''}${esc(n)}</b><em>${esc(t)}</em></span></button>${det ? `<button type="button" class="info" aria-label="Qué hace en el modelo" aria-expanded="false">${SVG_INFO}</button>` : ''}<button type="button" class="mapa" aria-label="Ver en el mapa" title="Ver en el mapa">${SVG_MAPA}</button></div>${det ? `<p class="det" hidden>${esc(det)}</p>` : ''}${ch ? `<div class="ch">${ch.map((k) => `<button type="button" data-k="${k}">${esc(INDK[k].c)}</button>`).join('')}</div>` : ''}</li>`;
+    const fila = (id, n, c, t, cod, ch, det) => `<li data-e="${id}" style="--c:${c}"><div class="h"><button type="button" class="ir" aria-label="Ver ${esc(n)} en el mapa"><i></i><span class="t"><b>${cod ? `<small>${cod}</small> ` : ''}${esc(n)}</b><em>${esc(t)}</em></span></button>${det ? `<button type="button" class="info" aria-label="Qué hace en el modelo" aria-expanded="false">${SVG_INFO}</button>` : ''}<button type="button" class="mapa" aria-label="Ver en el mapa" title="Ver en el mapa">${SVG_MAPA}</button>${FI.tiene(id) ? `<button type="button" class="fx" aria-expanded="false" aria-label="Ver qué hizo (ficha)" title="Ficha: qué hizo">${SVG_FX}</button>` : ""}</div>${FI.tiene(id) ? FI.esqueleto(id) : ""}${det ? `<p class="det" hidden>${esc(det)}</p>` : ''}${ch ? `<div class="ch">${ch.map((k) => `<button type="button" data-k="${k}">${esc(INDK[k].c)}</button>`).join('')}</div>` : ''}</li>`;
     v.innerHTML = '<div class="pi-estbar"><span>Toca una para verla en el mapa</span><button type="button" class="pi-volver" hidden>' + SVG_VOLVER + 'Volver</button></div>'
       + '<h4 class="pi-sec">Estrategias</h4><ul class="pi-est">' + ESTR.map((e) => fila(e.id, e.n, e.c, CORTO[e.id], e.id, e.ind, e.hace)).join('') + '</ul>'
       + '<h4 class="pi-sec">Obras de la propuesta</h4><ul class="pi-est">' + OBRAS.map((o) => fila(o.id, o.n, o.c, o.t, '', null, '')).join('') + '</ul>'
@@ -577,6 +584,8 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
         return { w: [q.x, q.z], ext: id === 'O3' ? 1200 : 300 }; }
       if (id === 'O6') return deGrupo(window.KEN_HBAR && window.KEN_HBAR.grupo);
       if (id === 'O7') return deGrupo(window.KEN_PARCHES && window.KEN_PARCHES.grupo);
+      if (id === 'O8' || id === 'O9' || id === 'O10' || id === 'O11') { const P = window.KEN_PROP01, L = (P && P.obras ? P.obras() : []), pk = { O9: (o) => o.id === 'borde_burro', O10: (o) => o.id === 'humedal_bavaria', O11: (o) => o.id === 'ciclo_bavaria', O8: (o) => /calle/i.test(o.id + ' ' + o.n) }[id], o = L.find(pk);
+        return o ? { w: [o.x, o.z], ext: id === 'O11' ? 900 : id === 'O8' ? 1200 : Math.max(200, o.radio * 2) } : null; }
       if (id === 'O2') { const P = window.KEN_PROP01, i = P && P.info ? P.info() : null, s = (P && P.puente) || (i && i.puente) || window.KEN_PUENTE_FAUNA || null;
         if (!s) return null; const x = s.x != null ? s.x : s.pos && s.pos[0], z = s.z != null ? s.z : s.pos && s.pos[2] != null ? s.pos[2] : s.pos && s.pos[1];
         return isFinite(x) && isFinite(z) ? { w: [x, z], ext: 200 } : null; }
@@ -602,6 +611,7 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
     volverBtn.addEventListener('click', volver);
     v.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || b === volverBtn) return; const li = b.closest('li'); if (!li) return;
       if (b.dataset.k) { elegir('ind'); const C = cards.get(b.dataset.k); if (C) { C.el.scrollIntoView({ block: 'start' }); C.el.classList.remove('pi-flash'); void C.el.offsetWidth; C.el.classList.add('pi-flash'); } return; }
+      if (b.classList.contains('fx')) { const fi = li.querySelector('.fi'); fi.hidden = !fi.hidden; b.setAttribute('aria-expanded', String(!fi.hidden)); if (!fi.hidden) { try { FI.actualizar(fi, fi.dataset.f, ctxDe()); } catch (err) { console.warn(err); } } return; }
       if (b.classList.contains('info')) { const d = li.querySelector('.det'); d.hidden = !d.hidden; b.setAttribute('aria-expanded', String(!d.hidden)); return; }
       verEnMapa(li.dataset.e); });
   }
@@ -622,6 +632,7 @@ export function iniciarPanelIndicadores({ R, getM, getFIN }) {
     vac.hidden = true; macs.style.display = '';
     if (H !== H0) CACHE.clear();
     const c = ctxDe(); encabezado(c); nHecho = H.length; H0 = H; nBase = (R.ecoBase || R.base || []).length; goHecho = R.go;
+    if (vista === 'est') wrap.querySelectorAll('.fi:not([hidden])').forEach((el) => FI.actualizar(el, el.dataset.f, c));
     if (vista !== 'ind') return null;
     return { c, cola: [...cards.values()].filter((C) => C.vis), i: 0 };
   }

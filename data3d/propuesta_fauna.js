@@ -76,14 +76,15 @@ export function crearFauna({ T3, eco }) {
         #include <colorspace_fragment>
       }` });
   const enj = new THREE.Mesh(geo, matA); enj.frustumCulled = false; enj.name = 'polinizadores'; G.add(enj);
-  let nEnj = 0, nTechos = 0, ultC = new THREE.Vector3(1e9, 0, 0), ultFrac = -1;
+  let nEnj = 0, nTechos = 0, ultC = new THREE.Vector3(1e9, 0, 0), ultFrac = -1; const CEN = []; // centros de los enjambres dibujados (para las líneas de interacción: data3d/propuesta_lineas.js)
   const hsh = (a) => { const h = Math.sin(a * 91.345) * 43758.5453; return h - Math.floor(h); };
   function ponerEnjambres(forzar) {
     const H = window.KEN_HIDRO, c = T3.orbit ? T3.orbit.target : T3.camera.position; const frac = H && H.grupo && H.grupo.visible ? (H.frac != null ? H.frac : 0) : 0;
     if (!forzar && c.distanceTo(ultC) < 40 && Math.abs(frac - ultFrac) < 0.002) return; ultC.copy(c); ultFrac = frac;
     const CAPQ = Math.round(MAXA * ({ medio: 0.7, liviano: 0.4 }[window.KEN_CALIDAD && window.KEN_CALIDAD.nivel] || 1)); /* calidad (data3d/calidad.js): menos insectos dibujados en medio/liviano */
     let n = 0; const R2 = 650 * 650, porTecho = Math.round(26 + 40 * sat((H && H.instaladas || 0) / 300)); // más huertas instaladas → más polinizadores por cubierta
-    const meter = (x, y, z, k, dispersa) => { for (let i = 0; i < k && n < CAPQ; i++, n++) { const h = hsh(x * 0.37 + z * 0.11 + i * 1.618);
+    CEN.length = 0;
+    const meter = (x, y, z, k, dispersa) => { CEN.push([x, y + 1.4, z]); for (let i = 0; i < k && n < CAPQ; i++, n++) { const h = hsh(x * 0.37 + z * 0.11 + i * 1.618);
       aC[n * 3] = x + (hsh(h + 1) - 0.5) * dispersa; aC[n * 3 + 1] = y + 0.6 + hsh(h + 2) * 1.6; aC[n * 3 + 2] = z + (hsh(h + 3) - 0.5) * dispersa;
       const mar = hsh(h + 4) < 0.14; aF[n * 4] = h * 60; aF[n * 4 + 1] = (mar ? 2.2 : 1.1) + hsh(h + 5) * 2.2; aF[n * 4 + 2] = (mar ? 0.25 : 0.55) + hsh(h + 6) * 0.5; aF[n * 4 + 3] = mar ? 1 : 0; } };
     nTechos = 0;
@@ -101,6 +102,9 @@ export function crearFauna({ T3, eco }) {
     grupo: G,
     poner(sem) { años = (sem || 0) / 52; const nuevo = !activo; activo = true; G.visible = true; ponerBuhos(); ponerEnjambres(true); if (nuevo && !raf) cuadro(); },
     apagar() { activo = false; G.visible = false; },
+    /* para las líneas de interacción: búhos posados ([x, y, z] en la copa, mundo) y centros de enjambre de polinizadores */
+    buhos() { const out = []; if (!activo || !perchas) return out; const f = Math.min(1, 0.3 + 0.7 * Math.max(0, años - 2) / 3.5); for (let i = 0; i < nBuhos; i++) { const t = perchas[i].t; out.push([t.x, Y0 + (t.y || 0) + t.h * f * 0.93, t.z]); } return out; },
+    enjambres() { return activo ? CEN : []; },
     info() { return { activo, buhos: nBuhos, perchas: perchas ? perchas.length : 0, polinizadores: nEnj, cubiertasConEnjambre: nTechos, hidroFrac: window.KEN_HIDRO ? window.KEN_HIDRO.frac : null }; }
   };
 }

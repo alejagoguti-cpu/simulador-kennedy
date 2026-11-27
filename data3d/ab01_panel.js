@@ -133,7 +133,7 @@ function enlazar(der, { R, recalcular }) {
   const iP = der.querySelector('input[data-k="pobK"]'), iD = der.querySelector('input[data-k="demT"]'), iC = der.querySelector('input[data-k="demanda"]'), iV = der.querySelector('input[data-k="volumen"]');
   const arr = (on) => { der._abArrastra = on; };
   if (iV) { const box = iV.closest('.su-sl'); box.classList.add('ab-auto');
-    if (!box.querySelector('.ab-lim')) box.insertAdjacentHTML('beforeend', '<p class="ab-lim">Se mueve solo con la comida que se pide. Límite de Corabastos: <b>14.000 t</b> de inventario (capacidad de referencia, no cambia con las huertas ni con los mercados). Con propuesta baja con las naves que se quitan (años 1 a 8): al final 7.103 t.</p>');
+    if (!box.querySelector('.ab-lim')) box.insertAdjacentHTML('beforeend', '<p class="ab-lim">Se mueve solo con la comida que se pide. Límite de Corabastos: <b data-ab="lim">14.000 t</b> de inventario (capacidad de referencia). Con propuesta cambia: 14.000 t × la parte de las naves que quedan, y baja a medida que se quitan (años 1 a 8) hasta 7.103 t.</p>');
     const etqV = (pos) => { const b = der.querySelector('[data-v="volumen"]'); if (b) b.textContent = nf(pos * ING0 / 100) + ' t/día'; iV.style.setProperty('--p', Math.max(0, Math.min(100, (pos - iV.min) / (iV.max - iV.min) * 100)) + '%'); };
     der._abEtqV = etqV;
     iV.addEventListener('pointerdown', () => { der._abArrV = true; }); iV.addEventListener('blur', () => { der._abArrV = false; });
@@ -197,7 +197,7 @@ function pintarFx(der) { const p = document.getElementById('ab-fxp'); if (!p || 
       + `</dl><h4>Gráficas</h4><dl>`
       + f('1 · Población y demanda', nf(U.pob / 1e6, 3) + ' M', 'población de la semana; la demanda es población × 0,951 kg')
       + f('2 · Demanda frente a alimentos disponibles', nf(U.rec) + ' t/día', `disponibles = hogares + mercados + huertas + lo que despacha Corabastos a Kennedy; la franja coral es el déficit (demanda − disponibles)`)
-      + f('3 · Corabastos frente a su límite', nf(U.sat * 100) + ' %', 'inventario ÷ 14.000 t, esta corrida y la otra mitad del par (punteada)')
+      + f('3 · Corabastos frente a su límite', nf(U.sat * 100) + ' %', `inventario ÷ su límite (${i(nf(U.cap || 14000) + ' t')}; con propuesta, 14.000 t × las naves que quedan), esta corrida y la otra mitad del par (punteada)`)
       + f('4 · Sectores', nf(U.secMin * 100, 1) + ' %', 'cobertura de cada uno de los 8 sectores = recibido ÷ demanda; raya = 80 %')
       + f('5 · Con frente a sin', '', 'los mismos indicadores en la misma semana de las dos corridas (mismos valores de las variables)') + '</dl>'; }
   if (p._h !== h) { const foco = document.activeElement && p.contains(document.activeElement); p.innerHTML = h; p._h = h; p.querySelector('.x').onclick = cerrarFx; if (foco) p.querySelector('.x').focus(); } }
@@ -236,6 +236,7 @@ function reglas(der, L, U) {
   fila('def', U.secMin * 100, `${nf(U.secMin * 100, 1)} %`, U.secMin < 0.8, U.rachaDef);
   fila('sat', U.sat * 100 / 1.3, `${nf(U.sat * 100)} % de ${nf(U.cap || 14000)} t`, U.sat > 1, U.rachaSat);
   fila('res', r ? r.noRec / RES_GO * 100 / 1.3 : 0, r ? `${nf(r.noRec)} de ${RES_GO} t/día` : '—', r && r.noRec >= RES_GO, U.rachaRes);
+  { const lm = der.querySelector('[data-ab="lim"]'), t = nf(U.cap || 14000) + ' t'; if (lm && lm.textContent !== t) lm.textContent = t; }
   const d = der.querySelector('#ab-go [data-go="def"] span'); if (d) d.textContent = 'Déficit alimentario' + (S.n ? ' · ' + S.n.replace(/^Sector /, '') : '');
 }
 /* ---------- las cinco gráficas (viewBox 260 × 132): una pregunta, pocas líneas, valor rotulado al final ---------- */
@@ -273,11 +274,11 @@ const DIB = {
     const c = U.sat > 1 ? COL.mal : prop ? COL.vio : COL.cor, cB = prop ? COL.cor : COL.vio, x1 = x(L.sem), area = serie(M, h => X(h).sat * 100, x, y);
     const UB = MB && MB.length ? X(MB[MB.length - 1]) : null;
     const svg = rejilla(0, mx, y, (q) => nf(q) + ' %', 4) + ejeX(x)
-      + `<rect x="${PL}" y="${PT}" width="${IW}" height="${Math.max(0, y(100) - PT).toFixed(1)}" fill="${COL.oro}" fill-opacity=".07"/><line x1="${PL}" x2="${W - PR}" y1="${y(100).toFixed(1)}" y2="${y(100).toFixed(1)}" stroke="${COL.oro}" stroke-width="1.5" stroke-dasharray="5 3"/><text x="${PL + 3}" y="${(y(100) - 3).toFixed(1)}" style="fill:${COL.oro}">límite 14.000 t</text>`
+      + `<rect x="${PL}" y="${PT}" width="${IW}" height="${Math.max(0, y(100) - PT).toFixed(1)}" fill="${COL.oro}" fill-opacity=".07"/><line x1="${PL}" x2="${W - PR}" y1="${y(100).toFixed(1)}" y2="${y(100).toFixed(1)}" stroke="${COL.oro}" stroke-width="1.5" stroke-dasharray="5 3"/><text x="${PL + 3}" y="${(y(100) - 3).toFixed(1)}" style="fill:${COL.oro}">límite ${prop ? 'actual ' : ''}${nf(U.cap || 14000)} t</text>`
       + (MB ? `<path d="${serie(MB, h => X(h) ? X(h).sat * 100 : null, x, y)}" fill="none" stroke="${cB}" stroke-width="1.4" stroke-dasharray="3 3" stroke-opacity=".8"/>` : '')
       + `<path d="${area}L${x1.toFixed(1)} ${y(0).toFixed(1)}L${x(M[0].sem).toFixed(1)} ${y(0).toFixed(1)}Z" fill="${c}" fill-opacity=".16"/><path d="${area}" fill="none" stroke="${c}" stroke-width="2.4"/>`
       + rotulos([{ x: x1, y0: y(U.sat * 100), y: y(U.sat * 100), c, v: nf(U.sat * 100) + ' %', n: prop ? 'con propuesta' : 'sin propuesta' }].concat(UB ? [{ x: x1, y0: y(UB.sat * 100), y: y(UB.sat * 100), c: cB, v: nf(UB.sat * 100) + ' %', n: prop ? 'sin propuesta' : 'con propuesta' }] : []));
-    return { svg, sub: `Inventario ${nf(U.inv)} t de 14.000 (límite fijo). Entran ${nf(U.ing)} t/día.`, ley: [[c, prop ? 'Con propuesta' : 'Sin propuesta'], [cB, prop ? 'Sin propuesta' : 'Con propuesta', null, 'd'], [COL.oro, 'Límite', null, 'd']] }; },
+    return { svg, sub: `Inventario ${nf(U.inv)} t de su límite de ${nf(U.cap || 14000)} t${prop ? ' (baja con las naves quitadas)' : ' (fijo)'}. Entran ${nf(U.ing)} t/día.`, ley: [[c, prop ? 'Con propuesta' : 'Sin propuesta'], [cB, prop ? 'Sin propuesta' : 'Con propuesta', null, 'd'], [COL.oro, 'Límite', null, 'd']] }; },
   sec(H, FIN, B, prop, L, U) { const S = U.sectores.slice().sort((a, b) => a.cob - b.cob), n = S.length, bh = (HH - 10) / n, x0 = 86, x1 = W - 44, xs = (c) => x0 + Math.min(1.05, c) / 1.05 * (x1 - x0);
     let svg = '';
     S.forEach((s, i) => { const yy = 3 + i * bh, c = s.cob < 0.8 ? COL.mal : s.cob < 0.87 ? COL.amb : i === 0 ? COL.tur : COL.vio;

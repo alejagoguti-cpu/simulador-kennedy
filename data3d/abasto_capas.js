@@ -16,7 +16,7 @@
      cuántas = (1 + nivel), velocidad = 1 / (1 + nivel) (factor de tiempo de viaje de TomTom), color verde → ámbar → rojo con el nivel
      (0,62 + 0,033 × años; I.congestion01). Se actualiza cada semana simulada; se anima en cada cuadro. */
 import { RELOJ } from './reloj.js?v=5';
-import { crearViasDensidad, nivelLOS } from './vias_densidad.js?v=1';
+import { crearViasDensidad, nivelLOS } from './vias_densidad.js?v=3';
 
 const ALTO = 16;                       // m: altura de la caja de cada nave (las reales tienen 8,5–10,5 m; un poco más para leerse desde lejos)
 const CORA_C = [6150, 2250];           // centro aproximado de Corabastos en el modelo (corabastos.json)
@@ -283,9 +283,9 @@ export function crearCapas01({ T3 }) {
      · CAMIONES A CORABASTOS (los dos escenarios): llegan por la red vial desde ~2,6 km. Cuántos = 20 × ingreso ÷ 6.460 × cola (U.cola de
        ab01Paso, máx. 3) [escala visual]; con cola > 1 una parte (1 − 1 ÷ cola) espera en fila a la entrada: sin propuesta, cuando
        Corabastos se llena, se ven muchos camiones represados. Un árbol de caminos más cortos por destino, uno por cuadro como mucho. */
-  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], cam: [], n: 0, nCam: 0, col: 0xa21cff, MAX: 14, MAXC: 60 };
+  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], cam: [], n: 0, nCam: 0, col: 0xa21cff, MAX: 14, MAXC: 90 };
   function iniMorados() { if (MO.cargando) return; MO.cargando = true;
-    Promise.all([import('./viajes_mercados.js?v=10'), import('./vehiculos.js?v=10')]).then(([vm, mv]) => {
+    Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]).then(([vm, mv]) => {
       MO.arbol = vm.arbol; MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i); MO.bav = [MO.R.X[nb.i], MO.R.Z[nb.i]];
       MO.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: MO.MAX, camion: MO.MAXC } }); MO.VEH.grupo.visible = false;
       MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 }));
@@ -317,9 +317,13 @@ export function crearCapas01({ T3 }) {
         else if (MO.bav) { const a = (i - nM) * 2.6 + 0.9; r = rutaV('b' + i, MO.bav[0], MO.bav[1], MO.bav[0] + Math.cos(a) * 1800, MO.bav[1] + Math.sin(a) * 1800); }
         if (!r) continue; const s0 = ((tA * 14 / r.L) + i * 0.137) % 2, ida = s0 < 1, p = ponerV(MO.objs[i], 'carro', r, (ida ? s0 : 2 - s0) * r.L, ida); if (!k) MO.p0 = [Math.round(p[0]), Math.round(p[1])]; k++; } }
     // camiones que llegan a Corabastos
-    if (C) { const cola = Math.max(1, Math.min(3, U.cola || 1)), nC = Math.min(MO.MAXC, Math.round(20 * (U.ing || 6460) / 6460 * cola)), nEsp = Math.round(nC * (1 - 1 / cola)), vel = 12 / (1 + (U.cC || 0.62));
-      for (let i = 0; i < nC; i++) { const a = (i % 12) * 0.5236 + 0.2, d = 2400 + (i % 4) * 250, r = rutaV('c' + (i % 24), C.x, C.z, C.x + Math.cos(a) * d, C.z + Math.sin(a) * d); if (!r) continue;
-        const s = i < nEsp ? Math.max(0, r.L - 30 - 13 * Math.floor(i / 12)) : (((tA * vel / r.L) + i * 0.173) % 1) * r.L; // en fila a la entrada o llegando
+    /* v5.3 (pedido de la autora: ver el trancón junto a Corabastos sin propuesta): la fila ya no depende solo de la cola de inventario sino de cuánto
+       más tarda en salir la mercancía = la permanencia del modelo (U.Tp ÷ 0,76 d de 2025: congestión junto a Corabastos × cola); a más permanencia,
+       más camiones esperando (ley de Little). Sin propuesta la congestión de base sube cada año; con propuesta baja con los mercados. Los camiones
+       en fila esperan a 8 m uno de otro en los 6 accesos más cargados [escala visual declarada, no un aforo]. */
+    if (C) { const cola = Math.max(1, Math.min(3.5, U.Tp ? U.Tp / 0.76 : (U.cola || 1))), nC = Math.min(MO.MAXC, Math.round(24 * (U.ing || 6460) / 6460 * cola)), nEsp = Math.round(nC * (1 - 1 / cola)), vel = 12 / (1 + (U.cC || 0.62));
+      for (let i = 0; i < nC; i++) { const esp = i < nEsp, a = (esp ? (i % 6) * 1.0472 : (i % 12) * 0.5236) + 0.2, d = 2400 + (i % 4) * 250, r = rutaV('c' + (esp ? 'q' + (i % 6) : i % 24), C.x, C.z, C.x + Math.cos(a) * d, C.z + Math.sin(a) * d); if (!r) continue;
+        const s = esp ? Math.max(0, r.L - 30 - 8 * Math.floor(i / 6)) : (((tA * vel / r.L) + i * 0.173) % 1) * r.L; // en fila a la entrada o llegando
         ponerV(MO.cam[i], 'camion', r, s, true); kc++; } }
     MO.VEH.fin(); MO.n = k; MO.nCam = kc; }
   /* ---------- por cuadro (etiquetas mínimas: solo el porcentaje, pedido de la autora) ---------- */
@@ -340,7 +344,7 @@ export function crearCapas01({ T3 }) {
     else etR.style.display = 'none';
     const c = I.congestion01;
     if (c && estado.trafico) { const [x, z] = lw(CORA_C[0] + 900, CORA_C[1] + 900); const k = leer ? VIAS.medir(...lw(CORA_C[0], CORA_C[1]), 900) : null; /* v5.2: densidad medida en las vías a ≤ 900 m de Corabastos */
-      if (enPantalla(x, y0() + 40, z, etT) && leer && k != null) txt(etT, chip('Vías junto a Corabastos', nf(k, 1) + ' veh/km/carril', k >= 28 ? '#ff6b8a' : k >= 16 ? '#ffd27a' : '#9be8b0') + ` <span style="opacity:.6;font-size:10.5px">nivel ${nivelLOS(k)}</span>`); }
+      if (enPantalla(x, y0() + 40, z, etT) && leer && k != null) txt(etT, chip('Arterias junto a Corabastos', VIAS.zona ? nf(VIAS.zona.carmesi * 100) + ' % en rojo' : nf(k, 1) + ' veh/km/carril', VIAS.zona && VIAS.zona.carmesi >= 0.25 ? '#ff6b8a' : VIAS.zona && VIAS.zona.carmesi + VIAS.zona.amarillo >= 0.15 ? '#ffd27a' : '#9be8b0') + ` <span style="opacity:.6;font-size:10.5px">${VIAS.zona ? nf(VIAS.zona.amarillo * 100) + ' % en amarillo · ' : ''}${nf(k, 1)} veh/km/carril en promedio</span>`); }
     else etT.style.display = 'none';
   });
 

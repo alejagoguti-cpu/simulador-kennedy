@@ -942,7 +942,7 @@ function ab01Paso(E) {
   // los 8 sectores de Kennedy: demanda, recibido, déficit y cobertura
   let secMin = Infinity, secArg = -1;
   const sectores = KV.SECTORES.map((S, i) => { let d = 0, r = 0; for (const z of S.zonas) { d += AB_NEED[z]; r += AB_GOT[z]; } const c = d > 0 ? r / d : 1; if (c < secMin) { secMin = c; secArg = i; }
-    return { n: S.n, x: S.x, z: S.z, dem: d, rec: r, def: Math.max(0, d - r), cob: c }; });
+    return { n: S.n, x: S.x, z: S.z, zonas: S.zonas, dem: d, rec: r, def: Math.max(0, d - r), cob: c }; }); /* zonas: para resaltar el sector en el mapa (sector_deficit.js) */
   const vehDia = lleg / K.T_VEH;
   A.ult = { sem, mes, est, g, pob, demK, autoT, mercT, huertaT, nH: nHAct, nHMeta: A.nH, mercCap: act.length * K.MERC_T, nAct: act.length, regT, resto0: KV.RESTO0 * g, coraPedK: RK, coraK, resto, L, S: S_, ing, lleg, a0, tope, f,
     invIni: inv0, inv, Tp, cC, cCiudad, fMerc, cola, desp: desp / 7, perd: perd / 7, sat: inv / CAPS, cap: CAPS, nQuit: A.nQuit || 0, carga: inv / CAPS, cobK: demK > 0 ? rec / demK : 1, rec, zMin, sectores, secMin, secArg,
@@ -1061,7 +1061,7 @@ function rcPaso(E) {
 export const REGLAS_AB01 = [
   { k: 'deficit', n: 'Déficit alimentario', txt: 'un sector de Kennedy recibe menos del 80 % de su demanda (cobertura = recibido ÷ demanda) cuatro semanas seguidas', umbral: 80, unidad: '% de la demanda del sector', semanas: 4,
     fuente: 'Pedido de la autora (docs/sim01_abastecimiento_v3.md). Demanda = población × 0,951 kg/hab/día; déficit = máx(0, demanda − recibido). Sectores: los 8 de Kennedy agrupados por población con su Junta de Acción Comunal (IDPAC). Umbral de 80 %: umbral de prueba del proyecto.' },
-  { k: 'saturacion', n: 'Límite de abastecimiento de Corabastos', txt: 'el inventario de Corabastos pasa su límite de 14.000 t (capacidad de referencia) cuatro semanas seguidas', umbral: 100, unidad: '% de 14.000 t', semanas: 4,
+  { k: 'saturacion', n: 'Límite de abastecimiento de Corabastos', txt: 'el inventario de Corabastos pasa su límite (14.000 t; con propuesta, el de las naves que quedan) cuatro semanas seguidas', umbral: 100, unidad: '% de 14.000 t', semanas: 4,
     fuente: 'Capacidad de referencia de 14.000 t: documento técnico regional (SDDE-FAO 2018, citado en el DTS de logística de la Gobernación de Cundinamarca 2022); no es un límite diario certificado. Inventario = inventario inicial + ingresos (6.460 t/día en 2025, DANE-SIPSA; crecen con lo que se pide) − despachos − pérdidas (0,0155 de lo que sale, DANE 2012). Inventario promedio de 2025 ≈ 4.930 t (la mitad de recibo por bodega × días de permanencia, derivado); sale inventario ÷ permanencia, y la permanencia crece con la congestión (TomTom) [supuestos, docs/sim01_abastecimiento_v4.md].' },
   { k: 'residuosK', n: 'Residuos de Kennedy', txt: 'los residuos sin recoger de Kennedy (puntos críticos) llegan al doble de hoy, 296 t/día, cuatro semanas seguidas', umbral: 296, unidad: 't/día sin recoger', semanas: 4,
     fuente: 'UAESP (2026): 6.769 t/día en Bogotá, 1.089 en puntos críticos, +5,5 % en 2024–2026; repartido por población: Kennedy 922 t/día, 774 recogidas y 148 en puntos críticos (derivado). UNEP Food Waste Index 2024: 19 % de la comida se desperdicia. Kennedy tiene 71 puntos críticos activos (Alcaldía de Bogotá, 2025). El factor 2× es criterio de diseño [SUP].' }];
@@ -1130,7 +1130,7 @@ function gobernanzaPaso(E, x) {
   for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) gin += GOB_POB[i] * GOB_POB[j] * Math.abs(G.cov[i] - G.cov[j]);
   G.equidad = cm > 0 ? Math.max(0, 1 - gin / (2 * pw * pw * cm)) : 0; G.rondas++; G.decisiones += E.prop ? 9 : 1; }
 function indGobernanza(E) { const G = E.gob; if (!G) return null;
-  return { barrios: GOB_BARRIOS.map((B, b) => ({ n: B.n, x: B.x, z: B.z, necesidad: G.need[b], asignado: G.asig[b], cobertura: G.cov[b], prioridad: 0, equipamientos: G.eqn[b] }))
+  return { barrios: GOB_BARRIOS.map((B, b) => ({ n: B.n, x: B.x, z: B.z, zonas: B.zonas, necesidad: G.need[b], asignado: G.asig[b], cobertura: G.cov[b], prioridad: 0, equipamientos: G.eqn[b] }))
       .map((r, b, A) => ({ ...r, prioridad: 1 + [...A].sort((p, q) => q.necesidad - p.necesidad).indexOf(r) })),
     asambleas: GOB_BARRIOS.map(B => ({ x: B.jac.x, z: B.jac.z, n: B.jac.n, activa: !!E.prop })), decisiones: G.decisiones, rondas: G.rondas, equidad: G.equidad,
     coberturaMedia: G.cov.reduce((a, v, b) => a + v * GOB_POB[b], 0) / GOB_POB.reduce((a, v) => a + v, 0), equipamientos: G.equipos.slice(-60) }; }
