@@ -166,7 +166,7 @@ export function quitar() { const a = document.getElementById('sp-alerta'); if (a
 const GO_N = { arterias: 'Arterias saturadas', tiempo: 'Tiempo de viaje', abastoMov: 'Abastecimiento', abasto: 'Abastecimiento', trafico: 'Tráfico', ruido: 'Ruido', fauna: 'Fauna', habitat: 'Hábitat', humedal: 'Humedales', residuos: 'Residuos' };
 export function gameOver(g) { GO = g || null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO);
   if (GO) { const L = LIM[GO.regla], v = GO.valor != null ? (GO.regla === 'trafico' ? GO.valor * 100 : GO.valor) : null;
-    a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${año(GO.sem)}</b><span>${GO_N[GO.regla] || GO.regla}${GO.lugar && GO.lugar !== 'Kennedy' ? ' · ' + GO.lugar : ''}</span><strong>${L && v != null ? L.f(v) : ''}</strong><span class="go4">4 semanas seguidas</span>`; }
+    a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${año(GO.sem)}</b><span>${GO_N[GO.regla] || GO.regla}${GO.lugar && GO.lugar !== 'Kennedy' ? ' · ' + GO.lugar : ''}</span><strong>${L && v != null ? L.f(v) : ''}</strong><span class="go4">${L && L.sem === 1 ? 'en una semana' : '4 semanas seguidas'}</span>`; }
   feedBajo(); const der = document.getElementById('su-der'); if (der) marcarGo(der); }
 function marcarGo(der) { der.querySelectorAll('#sp-go .r').forEach(e => e.classList.toggle('go', !!GO && e.dataset.go === GO.regla));
   const h = der.querySelector('#sp-go h6'); if (h) h.textContent = GO ? `Game over: ${GO_N[GO.regla] || GO.regla}` : 'Game over · límites'; }

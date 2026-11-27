@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=5'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=6'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=46'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=47'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -993,7 +993,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* ---------- GAME OVER ---------- */
   function gameOver(g) {
     R.go = g; RELOJ.pausarAños(true);
-    if (window.KEN_FOCO) window.KEN_FOCO.on([g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' ? 'trafico' : 'especies', 'cierre', 'predio', 'basura', 'degradacion', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // la causa queda en color: el cierre, el predio o la basura
+    if (window.KEN_FOCO) window.KEN_FOCO.on([g.regla === 'ruido' ? 'ruido' : g.regla === 'trafico' || g.regla === 'arterias' || g.regla === 'tiempo' || g.regla === 'abastoMov' ? 'trafico' : 'especies', 'cierre-mov02', 'vias_densidad', 'cierre', 'predio', 'basura', 'degradacion', 'abasto', 'residuos', 'biodiversidad', 'suelo', 'gobernanza']); // la causa queda en color: el cierre, el predio o la basura
     /* simulación 01 (v4): primero se ve la causa (franja roja arriba y la fila de la regla en el panel), 4 s después el informe */
     if (R.def && R.def.par === 1) { try { AB01P.gameOver(g); } catch (e) { console.warn('game over 01:', e); } setTimeout(() => { if (R.go === g) abrirInforme(); }, 4000); return; }
     if (R.def && R.def.par >= 2 && R.def.par <= 6) { try { grafAb01(true); SP.gameOver(g); } catch (e) { console.warn('game over:', e); } setTimeout(() => { if (R.go === g) abrirInforme(); }, 4000); return; } /* 02–06: igual que la 01 */
@@ -1005,14 +1005,14 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=16');
+    try { const { abrirInforme2 } = await import('./informe.js?v=17');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];
       const cadena = (CADENA[R.def && R.def.par] || []).map(([t, f]) => { let v = '—'; try { v = f(I, I1); } catch (e) { /* dato que falta en esta corrida */ } return { t, v: v == null || v === '' ? '—' : String(v) }; });
       const reiniciar = () => { cerrarInforme(); const b = document.querySelector('#lp-anos .rei'); if (b) b.click(); else { RELOJ.reiniciarModelo(); RELOJ.pausarAños(true); dispatchEvent(new Event('lp-reinicio')); } };
       inf.className = 'i2-dlg ' + (R.go ? 'go' : '');
-      const res = abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: ((M && M.REGLAS) || []).concat(R.def && R.def.par === 1 && M.REGLAS_AB01 ? M.REGLAS_AB01 : []), parametros:{...R.valores}, definiciones:M.SIMS, go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, cadena, onCerrar: cerrarInforme, onReiniciar: reiniciar });
+      const res = abrirInforme2({ cont: inf.querySelector('.caja'), sim: R.sim, def: R.def || {}, hist: H, base: parejaSin() != null ? R.base : null, reglas: ((M && M.REGLAS) || []).concat(R.def && R.def.par === 1 && M.REGLAS_AB01 ? M.REGLAS_AB01 : []).concat(R.def && R.def.par === 2 && M.REGLAS_MOV02 ? M.REGLAS_MOV02 : []), parametros:{...R.valores}, definiciones:M.SIMS, go: R.go, eventos: R.eventos, extinciones: R.extinciones, ind: IND, semilla: SEMILLA, cadena, onCerrar: cerrarInforme, onReiniciar: reiniciar });
       if (res && (res.veredicto === 'Sí' || res.veredicto === 'Sostenible')) inf.classList.add('ok');
       if (!inf.open) inf.showModal(); inf.classList.add('on'); inf.querySelector('.caja').scrollTop = 0; return;
     } catch (e) { console.warn('informe nuevo:', e); }
