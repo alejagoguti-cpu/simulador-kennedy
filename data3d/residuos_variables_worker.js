@@ -1,4 +1,4 @@
-import * as S from './simulaciones12.js?v=43';
+import * as S from './simulaciones12.js?v=44';
 
 const listo = S.cargarDatos(url => fetch(url).then(r => {
   if (!r.ok) throw new Error(`Datos de residuos: HTTP ${r.status}`);

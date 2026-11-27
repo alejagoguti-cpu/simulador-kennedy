@@ -73,7 +73,9 @@ import * as V from './sim_vida.js?v=ab02';
 import { crearRed, MOTIVOS } from './red_trofica.js?v=3';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
-import { PLAN_BAV } from './plan_bavaria_datos.js?v=2'; // la misma instancia que usa sim_vida.js
+import { PLAN_BAV } from './plan_bavaria_datos.js?v=2';
+import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=1'; /* sim. 02: red vial con cierre (pedido de la autora, 2026-11-27) */
+const RODEO02 = rodeos(CIERRES, ZONAS); // la misma instancia que usa sim_vida.js
 
 const NZ = ZONAS.length, NP = PARCHES.length;
 export const ZONAS_XZ = ZONAS.map(z => [z[0], z[1]]); // centro de cada zona de 500 m, marco MUNDO del simulador (x este, z sur)
@@ -311,7 +313,7 @@ const sRec = { k: 'P3.rec', n: 'Recuperación del humedal', min: 0, max: 0.1, pa
 const sCap = { k: 'P1.capAcopio', n: 'Capacidad de acopio de los mercados', min: 20, max: 300, paso: 5, val: capAc, unidad: 't/día', ayuda: 'Frutas y verduras que pueden mover los mercados de barrio de la propuesta (los 35 de mercados_red.js). Sin propuesta no hay red.' };
 const sCapRed = { ...sCap, val: 200, ayuda: 'Frutas y verduras que pueden mover los mercados de barrio y puntos de acopio de la propuesta; en un corte compran directo a productores de la región hasta esta capacidad [SUP: 200 t/día, ampliada desde 132 t/día de mercados_red.js]. Sin propuesta no hay red.' };
 const sComp = { k: 'P2.cap', n: 'Capacidad de cada Estación Circular', min: 1000, max: 15000, paso: 500, val: 6000, unidad: 'kg/semana', ayuda: 'Orgánicos que trata cada Estación Circular de la propuesta. Sin propuesta todo va al relleno.' };
-const sT0 = { k: 'cierreT0', n: 'Semana en que se cierra la vía', min: 1, max: 1000, paso: 1, val: SUP_SIMS.CIERRE_T0, unidad: 'semana', ayuda: 'Cierre forzado de la Av. de las Américas.' };
+const sT0 = { k: 'cierreT0', n: 'Semana en que se cierra la vía', min: 1, max: 1000, paso: 1, val: SUP_SIMS.CIERRE_T0, unidad: 'semana', ayuda: 'Cierre forzado de la vía elegida.' };
 const sDur = { k: 'cierreDur', n: 'Duración del cierre', min: 1, max: 520, paso: 1, val: SUP_SIMS.CIERRE_DUR, unidad: 'semanas', ayuda: 'Las rutas que pasan por la vía se alargan: llega menos comida y se recogen menos orgánicos.' };
 /* · trafCrece: crecimiento anual de los carros (V = 0,70·carros + 0,22·motos + 0,08·camiones, sim_vida.js). Por defecto 1,5 %/año (Registro Distrital Automotor).
    · pobCrece: crecimiento anual de la población (más comida, más orgánicos y [SUP] más carros en la misma proporción).
@@ -333,7 +335,9 @@ const PAR_SL = {
     { k: 'coraTope', n: 'Tope de ingreso diario', min: 5, max: 25, paso: 1, val: 11, unidad: '% sobre 6.460 t/día', ayuda: 'Lo máximo que pueden descargar sus puertas en un día (inferencia, no cifra oficial: ocupación del 90 % → 11 %, SDDE-FAO 2018). La capacidad de almacenamiento es aparte: 14.000 t.' },
     { k: 'autoconsumo', n: 'Comida que producen los hogares', min: 0, max: 30, paso: 1, val: 0, unidad: '% de la demanda', ayuda: 'Parte de la comida que las familias cultivan en casa (patios, materas, solares) y no compran. Es aparte de las huertas hidropónicas de la propuesta. 0 % por defecto: no hay dato para Kennedy (Bogotá entera produce 4,5 % de lo que come, DTS logística 2022).' },
     { ...sPob(0.5), min: -0.5, max: 3, n: 'Crecimiento de la población', ayuda: 'Kennedy y la región que compra en Corabastos. 0,5 %/año = tendencia DANE 2017–2022; la proyección SDP 2024–2028 da ≈0 %. Más de 1 %/año es estrés declarado.' }],
-  2: [sT0, sDur, { k: 'desvioMayo', n: 'Desvío a la Av. Primero de Mayo', min: 0, max: 100, paso: 5, val: 50, unidad: '%' /* 2026-11-26: menos texto; % del tráfico de la vía cerrada */, ayuda: 'Supuesto: no hay aforo del desvío. Es la única vía principal paralela a 2,5 km o menos en OpenStreetMap; el resto del tráfico se reparte por calles locales.' }, sTraf, sRuido, sCapRed],
+  2: [{ k: 'viaCierre', n: 'Vía que se cierra', val: 1, opciones: OPCIONES_VIA, ayuda: 'El bloqueo se mueve a la vía elegida y el tráfico se reparte por sus alternas.' }, sT0, sDur,
+    { k: 'cierrePct', n: 'Porcentaje de cierre vial', min: 0, max: 100, paso: 5, val: 80, unidad: '%', ayuda: '0 % = vía abierta; 100 % = cierre total. Por defecto 80 % (la vía queda con el 20 % de su capacidad, ejemplo del pedido).' },
+    { k: 'permeab', n: 'Permeabilidad de los pasajes', min: 0, max: 100, paso: 5, val: 100, unidad: '%', ayuda: 'Solo con propuesta: qué tanto se abren los 4 pasajes por Bavaria (opacidad, sintaxis espacial, peatones y la caída de los viajes largos a Corabastos).' }, sTraf, sRuido, sCapRed],
   3: [{ k: 'orgAumento', n: 'Aumento de los residuos orgánicos', min: 0, max: 100, paso: 5, val: 30, unidad: '%', ayuda: 'Más orgánicos por persona (más consumo de frescos, más población flotante) [SUP: la prueba]; se alcanza en un año.' },
     { k: 'orgT0', n: 'Semana en que empieza el aumento', min: 1, max: 1000, paso: 1, val: 52, unidad: 'semana', ayuda: 'Desde esta semana los orgánicos suben durante un año hasta el aumento elegido.' }, sComp, sFrac, sRecol],
   4: [{ k: 'parche', n: 'Corredor verde que se pierde', val: 1, opciones: [[1,'Humedal El Burro'],[2,'Humedal de Techo'],[3,'Humedal La Vaca'],[4,'Bosque de Bavaria']], ayuda: 'El lugar elegido recibe la pérdida de área y cambia la red de especies.' },
@@ -532,7 +536,8 @@ export function crear(id, semilla = 1, valores = {}) {
   const mod = { red: RED }, P = S.par;
   if (P === 3 && S.propuesta && val.estacionObjetivo >= 0) mod.estacionObjetivo = Math.min(MERCADOS.length - 1, Math.round(val.estacionObjetivo));
   const metro = { red: SUP_SIMS.METRO_RED, desde: SUP_SIMS.METRO_SEM, F: PRE.metroF(SUP_SIMS.METRO_RED) }; // metro Línea 1 en TODAS (proyecto real)
-  if (P === 2) mod.cierre = { via: SUP_SIMS.CIERRE_VIA, t0: Math.round(val.cierreT0), dur: Math.round(val.cierreDur) };
+  const cie02 = P === 2 ? { via: VIA_DE[Math.round(val.viaCierre)] || SUP_SIMS.CIERRE_VIA, t0: Math.round(val.cierreT0), dur: Math.round(val.cierreDur) } : null;
+  if (cie02 && CIERRES.some(c => c.id === cie02.via) && val.cierrePct > 0) mod.cierre = cie02; /* sim_vida.js alarga las rutas de comida solo para las vías de su tabla CIERRES (la Calle 38 Sur no está: allí solo cuenta la congestión de mov02_modelo.js) */
   // La restauración depende de las intervenciones del modelo, sin multiplicador por escenario.
   const s = V.crear(S.propuesta ? S.base : 'D', semilla, mod); // sin propuesta = escenario D de sim_vida.js (A + plan parcial)
   const vivTot = PLAN_BAV.VIV_ETAPA.reduce((a, v) => a + v, 0);
@@ -550,7 +555,8 @@ export function crear(id, semilla = 1, valores = {}) {
   E.xAve = new Float32Array(NP).fill(1); E.xH = new Float32Array(NP).fill(1); E.xBas = new Float32Array(NP).fill(1); E.xDes = new Float32Array(NP).fill(1);
   s.red.xAve = E.xAve; s.red.xH = E.xH; s.red.fRata = 1;
   E.par = P; E.prop = S.propuesta; E.fOrg = 1;
-  E.bas = basuraIni(E); E.suelo = sueloIni(E); E.atr = atropellosIni(E); E.hechos = []; E.muertes = muertesIni(E); E.cie = mod.cierre ? { t0: mod.cierre.t0, dur: mod.cierre.dur, via: mod.cierre.via, fase: 0, faseMax: 0 } : null;
+  E.bas = basuraIni(E); E.suelo = sueloIni(E); E.atr = atropellosIni(E); E.hechos = []; E.muertes = muertesIni(E); E.cie = cie02 ? { t0: cie02.t0, dur: cie02.dur, via: cie02.via, pct: Math.max(0, Math.min(1, (val.cierrePct != null ? val.cierrePct : 100) / 100)), fase: 0, faseMax: 0 } : null;
+  E.mov = null; E.rachaMov = { arterias: 0, tiempo: 0, abastoMov: new Uint8Array(ZONAS.length) };
   E.traf.mit0 = E.traf.mit; E.S0 = null; E.pasoK = -1;
   E.par = P; E.prop = S.propuesta; E.xHb = new Float32Array(NP).fill(1); E.xFrag = new Float32Array(NP).fill(1); pruebaIni(E);
   E.rachasLocales = new Map(); E.rachaSectores = new Uint8Array(ZONAS.length);
@@ -686,7 +692,7 @@ function indCircular(E) {
 function faseCierre(C, t) { if (t < C.t0 || t >= C.t0 + C.dur) return 0; const S = DESVIO_SUP, u = (t - C.t0) / C.dur, ups = Math.min(S.SUBE * C.dur, S.SUBE_MAX); /* 2026-11-26: la obra tarda a lo sumo SUBE_MAX semanas en cerrar la vía (con 260 semanas, el 30 % serían 78: la vía parecería abierta un año y medio) */
   if (t - C.t0 < ups) return Math.min(3, Math.floor((t - C.t0) / ups * 3) + 1) / 3; if (u > 1 - S.BAJA) return Math.max(1, Math.ceil((1 - u) / S.BAJA * 3)) / 3; return 1; }
 function desvios(E, t) {
-  const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.traf = 1 + (E.val.desvioMayo != null ? E.val.desvioMayo / 100 : DESVIO_SUP.DESV) * (E.prop ? 2 / 3 : 1) * C.fase; /* con propuesta: tercera ruta por los pasajes y conexiones de Bavaria Común [SUP] */
+  const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.c = C.fase * (C.pct != null ? C.pct : 1); { const r = red02({ via: C.via, c: C.c, dem: E.ind0Traf || 1, rodeo: RODEO02[C.via] || 1 }), m = r.vias.mayo; C.traf = m.Vh > 0 ? m.V / m.Vh : 1; } /* 2026-11-27: el tráfico extra en la Primero de Mayo sale del reparto por capacidad de mov02_modelo.js (antes: deslizador «desvioMayo» [SUP]) */
   /* 2026-11-26: corrección. El comentario de la línea de arriba se tragaba este reinicio: E.xDes se multiplicaba semana a semana durante el cierre
      (efecto compuesto) y quedaba así para siempre después de reabrir. Ahora cada semana parte de 1, como dice DESVIO_SUP. */
   E.xDes.fill(1); if (!D || !C.fase) return;
@@ -1447,6 +1453,25 @@ function indBiodiversidad(E) {
   return { ...r, shannonArea: Ha, areaEsp, ref: E.bioRef || null }; }
 
 /* ---------- una semana ---------- */
+/* ---------- SIMULACIÓN 02 · red vial con cierre (data3d/mov02_modelo.js; pedido de la autora, 2026-11-27) ----------
+   Cada semana: c = % de cierre × avance de la obra; tráfico = x.trafico del modelo; partes del abastecimiento de cada zona de sim_vida.js.
+   Reglas propias (REGLAS_MOV02): más de 2 arterias > 140 % (en la semana), tiempo de viaje > 2,0× (en la semana), una zona < 80 % 4 semanas seguidas. */
+function mov02Paso(E, x) {
+  const C = E.cie, o = E.o, sem = E.s.t + 1; E.ind0Traf = x.trafico || 1;
+  const r = red02({ via: C.via, c: C.c || 0, dem: x.trafico || 1, prop: !!E.prop, perm: E.prop ? Math.max(0, Math.min(1, (E.val.permeab != null ? E.val.permeab : 100) / 100)) : 0, rodeo: RODEO02[C.via] || 1,
+    Z: { zRec: o.zRec, zLoc: o.zLoc, zRed: o.zRed, need: o.demandaZona } });
+  E.mov = r; const RM = E.rachaMov, nf1 = (v) => (Math.round(v * 10) / 10).toLocaleString('es-CO');
+  RM.arterias = r.sobre > MOV02.N_ART ? RM.arterias + 1 : 0; RM.tiempo = r.tt > MOV02.TT_MAX ? RM.tiempo + 1 : 0;
+  let zPeor = -1; if (r.ab.zona) for (let i = 0; i < r.ab.zona.length; i++) { RM.abastoMov[i] = r.ab.zona[i] < MOV02.ABASTO_MIN && o.demandaZona[i] > 0 ? Math.min(255, RM.abastoMov[i] + 1) : 0; if (RM.abastoMov[i] >= MOV02.SEMANAS && (zPeor < 0 || r.ab.zona[i] < r.ab.zona[zPeor])) zPeor = i; }
+  const V = r.vias, sat = Object.values(V).filter(v => v.art && v.k !== C.via && v.x > MOV02.SAT_ART).map(v => v.n);
+  if (!E.go && RM.arterias >= 1) E.go = { regla: 'arterias', enfoque: 'Movilidad', sem, inicio: sem, motivo: `${sat.length} arterias pasaron el 140 % de su capacidad a la vez (${sat.join(', ')}) con la ${V[C.via].n} cerrada al ${Math.round(C.c * 100)} %`, lugar: V[C.via].n, x: KEN_XZ[0], z: KEN_XZ[1], valor: Math.round(Math.max(...Object.values(V).filter(v => v.art && v.k !== C.via).map(v => v.x)) * 1000) / 10 };
+  if (!E.go && RM.tiempo >= 1) E.go = { regla: 'tiempo', enfoque: 'Movilidad', sem, inicio: sem, motivo: `el tiempo medio de viaje llegó a ${nf1(r.tt)} veces el normal con la ${V[C.via].n} cerrada al ${Math.round(C.c * 100)} %`, lugar: V[C.via].n, x: KEN_XZ[0], z: KEN_XZ[1], valor: Math.round(r.tt * 100) / 100 };
+  if (!E.go && zPeor >= 0) { const Z = ZONAS[zPeor]; E.go = { regla: 'abastoMov', enfoque: 'Comercio ecológico', sem, inicio: sem - MOV02.SEMANAS + 1, motivo: `una zona de Kennedy recibió ${nf1(r.ab.zona[zPeor] * 100)} % de su abastecimiento, menos del 80 %, cuatro semanas seguidas: los camiones de Corabastos hacen ${nf1(r.ab.g * 100)} % de sus viajes por la congestión`, lugar: 'Zona ' + (zPeor + 1), x: Z[0], z: Z[1], valor: Math.round(r.ab.zona[zPeor] * 1000) / 10 }; }
+  const vias = {}; for (const k in V) { const v = V[k]; vias[k] = { n: v.n, art: v.art, C: v.C, Cab: Math.round(v.Cab), V: Math.round(v.V), x: Math.round(v.x * 1000) / 1000, v: Math.round(v.v * 10) / 10, vBase: v.vBase, db: Math.round(v.db * 10) / 10, dDb: Math.round(v.dDb * 10) / 10, extra: Math.round(v.extra || 0), cerrada: v.cerrada, tl: v.tl != null ? Math.round(v.tl) : null }; }
+  x.mov02 = { via: C.via, c: C.c || 0, pct: C.pct, fase: C.fase, dem: r.dem, perm: r.perm, prop: r.prop, D: Math.round(r.D), tt: r.tt, sat: r.sat, dbRes: r.dbRes, sobre: r.sobre, rodeo: r.rodeo, g: r.ab.g, abMin: r.ab.min, abMedia: r.ab.media, zPeor: r.ab.iMin,
+    zPeorXZ: r.ab.iMin >= 0 ? [ZONAS[r.ab.iMin][0], ZONAS[r.ab.iMin][1]] : null, kProp: r.kProp, bosqueDb: r.bosqueDb, vias, rachas: { arterias: RM.arterias, tiempo: RM.tiempo, abasto: RM.abastoMov.reduce((a, v) => Math.max(a, v), 0) } };
+}
+export { REGLAS_MOV02 };
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
   if (E.traf.pob) s.pob *= Math.pow(1 + E.traf.pob, 1 / V.AÑO); // expansión poblacional (en vez de P1.crece, con la tasa del deslizador)
@@ -1486,6 +1511,7 @@ export function paso(E) {
         E.go = { regla: 'deficit', enfoque: 'Comercio ecológico', sem, inicio: sem - KV.SEMANAS + 1, motivo: `el ${S.n} recibió ${n1(S.cob * 100)} % de su demanda (${nf(S.rec)} de ${nf(S.dem)} t/día; déficit de ${nf(S.def)} t/día), menos del 80 %, cuatro semanas seguidas`, lugar: S.n, x: S.x, z: S.z, valor: Math.round(S.cob * 1000) / 10 }; } }
     if (!E.go && A.rachaRes >= RES01.SEMANAS) E.go = { regla: 'residuosK', enfoque: 'Circularidad', sem, inicio: sem - RES01.SEMANAS + 1, motivo: `los residuos sin recoger de Kennedy llegaron a ${Math.round(rc.noRec)} t/día, el doble de los ${RES01.PC0} t/día de hoy en puntos críticos, cuatro semanas seguidas`, lugar: 'Kennedy', x: PARCHES[VACA_P].x, z: PARCHES[VACA_P].z, valor: Math.round(rc.noRec * 10) / 10 }; }
   /* 2026-11-26 (paneles de las 6 simulaciones, data3d/sim_panel.js): valor de cada regla de game over y semanas seguidas fuera del límite (solo lectura) */
+  if (E.par === 2 && E.cie) mov02Paso(E, x);
   x.reglasV = { ...E.vals }; x.rachas = { ...E.racha }; x.fOrg = E.fOrg;
   if (E.gob) gobernanzaPaso(E, x); x.gobernanza = indGobernanza(E);
   { const ec = indEco(E, x), K = ec._conect; delete ec._conect; x.eco = ec; x.abeja = indAbeja(E, x, K); }
@@ -1635,7 +1661,7 @@ export function ind(E) {
 }
 function indCierre(E, o) { const C = E.cie, f = C ? C.fase : 0; if (!o.cierre && !f) return null;
   const D = C ? DESVIOS[C.via] : null, base = o.cierre || { via: D ? D.n : '', sem: null, dur: C ? C.dur : null, on: true };
-  return { ...base, fase: f, vias_desvio: D && f ? [...D.desvio.map(id => ({ id, n: DESVIOS.vias[id].n })), ...(E.prop ? [{ id: 'conexiones', n: 'Pasajes y conexiones de Bavaria Común' }] : [])] : [], traficoDesvio: C ? C.traf || 1 : 1, ruidoExtraDb: C ? 10 * Math.log10(C.traf || 1) : 0 }; }
+  return { ...base, viaId: C ? C.via : null, c: C ? C.c || 0 : 0, fase: f, vias_desvio: D && f ? [...D.desvio.map(id => ({ id, n: DESVIOS.vias[id].n })), ...(E.prop ? [{ id: 'conexiones', n: 'Pasajes y conexiones de Bavaria Común' }] : [])] : [], traficoDesvio: C ? C.traf || 1 : 1, ruidoExtraDb: C ? 10 * Math.log10(C.traf || 1) : 0 }; }
 function indPredio(E, trafico, mitDb) {
   const s = E.s, o = E.o, PD = E.pred, NFA = RED.NFA, occ = s.occ, S = PREDIO_SUP;
   let car = 0, cam = 0, hab = 0, vias = 0;
@@ -1829,7 +1855,7 @@ function avisos(E, x) {
     const ke = umbral(1 - X.equidad, [0.1, 0.2]); if (ke) { const wb = X.barrios.reduce((a, b) => b.cobertura < a.cobertura ? b : a); add('gob-eq', ke, 'comida', `El reparto se vuelve desigual: ${wb.n} recibe menos`, `La equidad del reparto baja a ${nf(X.equidad * 100)} %: ${wb.n} recibe ${nf(wb.cobertura * 100)} % de lo que necesita.`, [wb.x, wb.z], -1, [], false, `${wb.n} cubre ${nf(wb.cobertura * 100)} % de su necesidad`, wb.n); }
     const kq = umbral(G.equipos.length, [8, 24, 48]); if (kq) { const q = G.equipos[G.equipos.length - 1]; add('gob-eqp', kq, 'huertas', `Ya se habilitaron ${G.equipos.length} equipamientos en los barrios`, `El último: ${q.n}. Cada uno baja la necesidad de su sector.`, [q.x, q.z], 1, []); } }
   // 9c · cierre gradual: desvíos
-  if (E.cie && E.cie.fase >= 1 && x.cierre) { const D = DESVIOS[E.cie.via], nombres = D.desvio.map(id => DESVIOS.vias[id].n);
+  if (E.cie && E.cie.fase >= 1 && x.cierre && DESVIOS[E.cie.via]) { const D = DESVIOS[E.cie.via], nombres = D.desvio.map(id => DESVIOS.vias[id].n);
     let a0 = 0, a1 = 0; const sp = new Set(); for (const id of D.desvio) { const dd = DESVIOS.vias[id].dist; for (let p = 0; p < NP; p++) if (dd[p] <= DESVIO_SUP.RADIO && E.xDes[p] < 0.999) for (let i = 0; i < NFA; i++) if (RED.AVE[i] && s.occ[i * NP + p]) sp.add(nombre(i)); }
     add('desvio-' + E.cie.t0, 1, 'trafico', `El tráfico se desvía por la ${yLista(nombres)}`, `Con la ${D.n} cerrada del todo, por las vías de desvío pasan ${nf((E.cie.traf - 1) * 100)} % más vehículos (+${nf(x.cierre.ruidoExtraDb, 1)} dB); ${sp.size ? 'las aves de los corredores verdes junto a ellas (' + yLista([...sp].slice(0, 4).map(min1)) + ') pierden hasta ' + nf((1 - Math.min(...E.xDes)) * 100) + ' % de la calidad de su hábitat por el ruido.' : 'no hay corredores verdes con fauna junto a ellas.'}`,
       (() => { const dv = ATR.VIAS.find(v => v[0] === nombres[0]); return dv ? [dv[1], dv[2]] : KEN_XZ; })(), -1, [...sp].slice(0, 6), true, `+${nf((E.cie.traf - 1) * 100)} % de vehículos por la ${nombres[0]}`, nombres[0]); void a0; void a1; }

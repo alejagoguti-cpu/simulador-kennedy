@@ -23,32 +23,39 @@ export const LIM = {
   fauna: { n: 'Especies de fauna', u: '% de las del inicio', v: (I) => I.fauna / Math.max(1, I.fauna0) * 100, lim: 90, min: true, cerca: 94, S: 100, f: (v, I) => I ? `${I.fauna} de ${I.fauna0}` : nf(v) + ' %', r: (I) => (I.rachas || {}).fauna || 0, txt: 'quedan menos del 90 % de las especies' },
   habitat: { n: 'Territorio con fauna', u: '% del inicio', v: (I) => I.pares / Math.max(1, I.pares0) * 100, lim: 70, min: true, cerca: 80, S: 130, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).habitat || 0, txt: 'la ocupación de los corredores verdes cae 30 %' },
   humedal: { n: 'Humedales que funcionan', u: '% del área de hoy', v: (I) => I.humedalFuncional, lim: 70, min: true, cerca: 80, S: 110, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).humedal || 0, txt: 'los humedales pierden 30 % de su área funcional' },
+  arterias: { n: 'Arterias sobre 140 %', u: 'de 3 alternas', v: (I) => I.mov02 ? I.mov02.sobre : null, lim: 3, cerca: 2, S: 3, f: (v) => nf(v) + ' de 3', r: (I) => I.mov02 ? I.mov02.rachas.arterias : 0, txt: 'más de 2 arterias pasan el 140 % de su capacidad', sem: 1 },
+  tiempo: { n: 'Tiempo de viaje', u: 'veces el normal', v: (I) => I.mov02 ? I.mov02.tt : null, lim: 2, cerca: 1.6, S: 2.4, f: (v) => '×' + nf(v, 2), r: (I) => I.mov02 ? I.mov02.rachas.tiempo : 0, txt: 'el tiempo medio de viaje pasa el doble del normal', sem: 1 },
+  abastoMov: { n: 'Abastecimiento zona peor', u: '% de lo que necesita', v: (I) => I.mov02 ? I.mov02.abMin * 100 : null, lim: 80, min: true, cerca: 87, S: 100, f: (v) => nf(v, 1) + ' %', r: (I) => I.mov02 ? I.mov02.rachas.abasto : 0, txt: 'una zona recibe menos del 80 % de su abastecimiento' },
   residuos: { n: 'Orgánicos en las Estaciones', u: '% del almacenamiento', v: (I) => I.residuos * 100, lim: 100, cerca: 85, S: 130, f: (v) => nf(v) + ' %', r: (I) => (I.rachas || {}).residuos || 0, txt: 'los orgánicos pendientes pasan el almacenamiento' } };
 export const malo = (k, v) => (LIM[k].min ? v < LIM[k].lim : v >= LIM[k].lim);
 const cercaDe = (k, v) => (LIM[k].min ? v < LIM[k].cerca : v >= LIM[k].cerca);
 /* límites que mueve cada prueba (las 7 reglas siguen activas en todas: si cae otra, se agrega su fila) */
-export const PAR_LIM = { 2: ['abasto', 'ruido', 'trafico', 'fauna'], 3: ['residuos', 'humedal', 'fauna'], 4: ['fauna', 'habitat', 'humedal'], 5: ['trafico', 'humedal', 'ruido'], 6: ['humedal', 'abasto', 'habitat'] };
+export const PAR_LIM = { 2: ['arterias', 'tiempo', 'abastoMov', 'trafico'], 3: ['residuos', 'humedal', 'fauna'], 4: ['fauna', 'habitat', 'humedal'], 5: ['trafico', 'humedal', 'ruido'], 6: ['humedal', 'abasto', 'habitat'] };
 
 /* ---------- lo propio de cada simulación ---------- */
+const OPC_VIA = { 1: 'Av. de las Américas', 2: 'Av. Boyacá', 3: 'Calle 38 Sur' };
 const desvio = (I) => (I.cierre && I.cierre.fase ? I.cierre.traficoDesvio : 1);
 const equip = (I) => (I.gobernanza ? I.gobernanza.barrios.reduce((a, b) => a + b.equipamientos, 0) : 0);
 const conect = (I) => (I.verde && I.verde.resumen && I.verde.resumen.nParches ? I.verde.resumen.nConectados / I.verde.resumen.nParches * 100 : null);
 export const PAR_CFG = {
-  2: { titulo: 'Cierre de la Av. de las Américas',
-    alerta(I, val) { const t0 = val.cierreT0, d = val.cierreDur, s = I ? I.sem : 0;
-      if (s < t0) return ['Se cerrará la Av. de las Américas', 'en ' + nf(t0 - s) + ' sem'];
-      if (s < t0 + d) return ['Se cerró la Av. de las Américas', '+' + nf((desvio(I) - 1) * 100) + ' % en la 1.º de Mayo'];
+  2: { titulo: 'Movilidad y cierre vial',
+    alerta(I, val) { const m = I && I.mov02, via = m && m.vias[m.via] ? m.vias[m.via].n : OPC_VIA[val.viaCierre] || 'la vía', t0 = val.cierreT0, d = val.cierreDur, s = I ? I.sem : 0;
+      if (s < t0) return ['Se cerrará la ' + via, 'en ' + nf(t0 - s) + ' sem · ' + nf(val.cierrePct) + ' %'];
+      if (s < t0 + d) return ['Cerrada la ' + via + ' al ' + nf((m ? m.c : 0) * 100) + ' %', m ? '+' + nf(m.D) + ' veh/h desviados' : ''];
       return ['Vía reabierta', 'cerró ' + nf(d) + ' sem']; },
-    vivo: [['Tráfico en la Av. Primero de Mayo', (I) => desvio(I) * 100, 200, (v) => nf(v) + ' %'], ['Bienestar de las aves', (I) => I.avesRuido ? I.avesRuido.bienestarFauna * 100 : null, 100, (v) => nf(v, 1) + ' %'], ['Animales muertos esta semana', (I) => I.muertes ? I.muertes.semana : null, 100, (v) => nf(v)]],
-    graf: [{ t: '¿Cuánto tráfico se desvía?', s: [{ f: (I) => desvio(I) * 100, n: 'Primero de Mayo' }], fmt: (v) => nf(v) + ' %', sub: (I) => `100 % = tráfico normal. Hoy: ${nf(desvio(I) * 100)} %; el ruido allí sube ${nf(10 * Math.log10(desvio(I)), 1)} dB.` },
-      { t: '¿Llega la comida?', s: [{ f: (I) => I.comidaMin * 100, n: 'sector peor' }], lim: 80, limTxt: 'game over < 80 %', fmt: (v) => nf(v) + ' %', sub: (I) => `Las rutas por la vía cerrada se alargan: el sector peor recibe ${nf(I.comidaMin * 100, 1)} % de lo que necesita.` },
-      { t: '¿Cómo están las aves?', s: [{ f: (I) => I.avesRuido ? I.avesRuido.bienestarFauna * 100 : null, n: 'bienestar' }], fmt: (v) => nf(v, 1) + ' %', sub: (I) => `Bienestar de las aves frente al ruido (1 hasta 50 dB, 0 en 75 dB). Ruido promedio donde viven: ${nf(I.avesRuido && I.avesRuido.dbAves, 1)} dB.` },
-      { t: '¿Cuántos animales mueren?', s: [{ f: (I) => I.muertes ? I.muertes.total : null, n: 'acumulados' }], fmt: (v) => nf(v), sub: (I) => `Choques, atropellos, ruido y hambre desde el año 1. Por ruido: ${nf(I.muertes && I.muertes.porCausa.ruido)}.` }],
-    fx: [['Tráfico desviado', (I) => nf(desvio(I) * 100) + ' %', (I, v) => `1 + «desvío a la Primero de Mayo» ${nf(v.desvioMayo)} % × fase del cierre ${nf(I.cierre ? I.cierre.fase : 0, 2)}${I.propuesta ? ' × 2/3 (tercera ruta por Bavaria Común, supuesto)' : ''}`],
-      ['Ruido extra en el desvío', (I) => '+' + nf(10 * Math.log10(desvio(I)), 1) + ' dB', () => '10 × log10(tráfico desviado)'],
-      ['Bienestar de las aves', (I) => nf(I.avesRuido && I.avesRuido.bienestarFauna * 100, 1) + ' %', () => 'Σ aves × B(L) ÷ Σ aves · B = 1 hasta 50 dB y 0 en 75 dB (Shannon et al. 2016; 75 dB supuesto) · los corredores verdes a 600 m del desvío reciben su tráfico × tráfico desviado'],
-      ['Comida en el sector peor', (I) => nf(I.comidaMin * 100, 1) + ' %', () => 'recibido ÷ necesidad del sector · las rutas que pasan por la vía cerrada se alargan (sim_vida.js) · game over bajo 80 % 4 semanas'],
-      ['Animales muertos', (I) => nf(I.muertes && I.muertes.total), () => 'Σ choques con vidrio + atropellos + poblaciones locales perdidas por ruido o hambre']] },
+    vivo: [['Tiempo de viaje relativo', (I) => I.mov02 ? I.mov02.tt : null, 2.4, (v) => '×' + nf(v, 2)],
+      ['Saturación de la red', (I) => I.mov02 ? I.mov02.sat * 100 : null, 150, (v) => nf(v) + ' %'],
+      ['Abastecimiento barrial recibido', (I) => I.mov02 ? I.mov02.abMedia * 100 : null, 100, (v) => nf(v, 1) + ' %'],
+      ['Ruido en zonas residenciales', (I) => I.mov02 ? I.mov02.dbRes : null, 90, (v) => nf(v, 1) + ' dB(A)']],
+    graf: [{ t: '¿Cuánto más se tarda un viaje?', s: [{ f: (I) => I.mov02 && I.mov02.tt, n: 'tiempo' }], lim: 2, limTxt: 'game over > ×2', fmt: (v) => '×' + nf(v, 2), sub: (I) => `1 = sin cierre. Hoy ×${nf(I.mov02 && I.mov02.tt, 2)}: las alternas se llenan (BPR) y los desviados dan un rodeo de ×${nf(I.mov02 && I.mov02.rodeo, 2)}.` },
+      { t: '¿Qué tan llena está la red?', s: [{ f: (I) => I.mov02 && I.mov02.sat * 100, n: 'saturación' }], lim: 100, limTxt: 'capacidad', fmt: (v) => nf(v) + ' %', sub: (I) => I.mov02 ? 'Flujo ÷ capacidad abierta. ' + Object.values(I.mov02.vias).filter(v => v.art).map(v => v.n.replace('Av. ', '') + ' ' + nf(v.x * 100) + ' %').join(' · ') : '' },
+      { t: '¿Llega la comida a los barrios?', s: [{ f: (I) => I.mov02 && I.mov02.abMin * 100, n: 'zona peor' }, { f: (I) => I.mov02 && I.mov02.abMedia * 100, n: 'promedio', c: COL.tur }], lim: 80, limTxt: 'game over < 80 % · 4 sem', fmt: (v) => nf(v) + ' %', sub: (I) => `Los camiones de Corabastos hacen ${nf(I.mov02 && I.mov02.g * 100)} % de sus viajes por la congestión${I.propuesta ? '; con la propuesta se necesitan ' + nf((1 - (I.mov02 ? I.mov02.kProp : 1)) * 100) + ' % menos viajes largos' : ''}.` },
+      { t: '¿Cuánto ruido hay?', s: [{ f: (I) => I.mov02 && I.mov02.dbRes, n: 'residencial' }], fmt: (v) => nf(v, 1) + ' dB', sub: (I) => I.mov02 ? Object.values(I.mov02.vias).map(v => v.n.replace('Av. ', '').split(' (')[0] + ' ' + nf(v.db, 1)).join(' · ') + (I.mov02.bosqueDb ? ' · bosque de Bavaria ' + I.mov02.bosqueDb + ' dB(A)' : '') : '' }],
+    fx: [['Flujo desviado', (I) => nf(I.mov02 && I.mov02.D) + ' veh/h', (I, v) => `flujo de la vía × tráfico (${nf(I.trafico, 2)}) × cierre (${nf(v.cierrePct)} % × obra ${nf(I.mov02 && I.mov02.fase, 2)}); flujo = capacidad × jam factor ÷ 10 (supuesto); se reparte por la capacidad libre de las alternas (supuesto)`],
+      ['Tiempo de viaje relativo', (I) => '×' + nf(I.mov02 && I.mov02.tt, 2), () => 'Σ flujo × t ÷ Σ flujo × t sin cierre · t = t libre × (1 + 0,15 (v/c)^4) (BPR 1964) · + km de rodeo de los desviados (sim_red_datos.js)'],
+      ['Saturación de la red', (I) => nf(I.mov02 && I.mov02.sat * 100) + ' %', () => 'Σ flujo ÷ Σ capacidad abierta (capacidades de la autora, SUMO/Waze)'],
+      ['Abastecimiento', (I) => nf(I.mov02 && I.mov02.abMin * 100, 1) + ' % zona peor', () => 'local + mercados + Corabastos × g · g = mín(1, 1 / (r × k)), r = tiempo por km, k = 1 − 0,45 × permeabilidad con propuesta (dato de la autora) · flota sin holgura (supuesto)'],
+      ['Ruido residencial', (I) => nf(I.mov02 && I.mov02.dbRes, 1) + ' dB(A)', () => 'L = L de la autora + 10·log10(flujo ÷ flujo base) por vía; promedio energético de las 5 vías (pesos iguales, supuesto)']] },
   3: { titulo: 'Aumento de los residuos orgánicos',
     alerta(I, val) { const t0 = val.orgT0, s = I ? I.sem : 0; if (s < t0) return ['Subirán los residuos orgánicos', 'en ' + nf(t0 - s) + ' sem']; return ['Suben los residuos orgánicos', '+' + nf(((I.fOrg || 1) - 1) * 100) + ' %']; },
     vivo: [['Orgánicos por persona', (I) => (I.fOrg || 1) * 100, 200, (v) => nf(v) + ' %'], ['Orgánicos generados', (I) => I.evaluacion && I.evaluacion.territorio.organicos, 1500, (v) => nf(v) + ' t/día'], ['Basura sin recoger', (I) => I.basura ? I.basura.fraccionSinRecoger * 100 : null, 100, (v) => nf(v, 1) + ' %']],
@@ -110,6 +117,7 @@ const CSS = `
 #sp-alerta.go{background:linear-gradient(100deg,#7d1f3a 0%,#c63a3a 55%,#f2694a 100%);padding-right:12px} #sp-alerta .go4{font:400 10.5px var(--ui-sans,Inter,sans-serif);opacity:.85}
 @media (max-width:760px){#sp-alerta{top:6px;max-width:calc(100vw - 16px)}#sp-alerta span{max-width:38vw}}
 @keyframes spIco{0%,100%{opacity:1}50%{opacity:.55}} @media(prefers-reduced-motion:reduce){#sp-alerta>svg{animation:none}}
+#sp-mov{margin:8px 0 6px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}#sp-mov h6{margin:0 0 6px;font:600 10px/1.2 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-tx2,#c9cfc4)}#sp-mov .r{display:flex;justify-content:space-between;gap:8px;font:400 10.5px/1.5 var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#c9cfc4)}#sp-mov .r b{color:#eef1f4;font-weight:600}#sp-mov .sxn{margin:4px 0 0;font:400 9.5px/1.35 var(--ui-sans,Inter,sans-serif);opacity:.6}#sp-ruido{width:100%;margin:0 0 6px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#eef1f4;font:500 11px var(--ui-sans,Inter,sans-serif);cursor:pointer}#sp-ruido.on{background:rgba(239,68,68,.25);border-color:#ef4444}
 #sp-vivo,#sp-go,#sp-graf{margin:8px 0 6px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
 #sp-vivo h6,#sp-go h6,#sp-graf h6{margin:0 0 6px;font:600 10px/1.2 var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-tx2,#c9cfc4)}
 #sp-vivo .r,#sp-go .r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;align-items:center;font:400 10.5px/1.25 var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#c9cfc4);padding:3px 0}
@@ -155,7 +163,7 @@ addEventListener('resize', () => feedBajo());
 let GO = null, PAR = null, VAL = {}, VISTA = 0;
 export function quitar() { const a = document.getElementById('sp-alerta'); if (a) { a.remove(); const f = document.getElementById('su-feed'); if (f && !document.getElementById('ab-alerta')) f.style.top = ''; }
   const p = document.getElementById('sp-fxp'); if (p) p.remove(); GO = null; PAR = null; }
-const GO_N = { abasto: 'Abastecimiento', trafico: 'Tráfico', ruido: 'Ruido', fauna: 'Fauna', habitat: 'Hábitat', humedal: 'Humedales', residuos: 'Residuos' };
+const GO_N = { arterias: 'Arterias saturadas', tiempo: 'Tiempo de viaje', abastoMov: 'Abastecimiento', abasto: 'Abastecimiento', trafico: 'Tráfico', ruido: 'Ruido', fauna: 'Fauna', habitat: 'Hábitat', humedal: 'Humedales', residuos: 'Residuos' };
 export function gameOver(g) { GO = g || null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO);
   if (GO) { const L = LIM[GO.regla], v = GO.valor != null ? (GO.regla === 'trafico' ? GO.valor * 100 : GO.valor) : null;
     a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${año(GO.sem)}</b><span>${GO_N[GO.regla] || GO.regla}${GO.lugar && GO.lugar !== 'Kennedy' ? ' · ' + GO.lugar : ''}</span><strong>${L && v != null ? L.f(v) : ''}</strong><span class="go4">4 semanas seguidas</span>`; }
@@ -164,14 +172,24 @@ function marcarGo(der) { der.querySelectorAll('#sp-go .r').forEach(e => e.classL
   const h = der.querySelector('#sp-go h6'); if (h) h.textContent = GO ? `Game over: ${GO_N[GO.regla] || GO.regla}` : 'Game over · límites'; }
 
 /* ---------- HTML y montaje ---------- */
-const filaLim = (k) => { const L = LIM[k]; return `<div class="r" data-go="${k}" title="Game over si ${L.txt} 4 semanas seguidas"><span>${L.n}</span><b>—</b><i><u></u><s style="left:${(L.lim / L.S * 100).toFixed(1)}%"></s></i></div>`; };
+const filaLim = (k) => { const L = LIM[k]; return `<div class="r" data-go="${k}" title="Game over si ${L.txt} ${L.sem === 1 ? 'en una semana' : '4 semanas seguidas'}"><span>${L.n}</span><b>—</b><i><u></u><s style="left:${(L.lim / L.S * 100).toFixed(1)}%"></s></i></div>`; };
 export function htmlAbajo(def) { const C = PAR_CFG[def && def.par]; if (!C) return '';
   return `<div id="sp-vivo"><h6>En vivo · se mueve solo</h6>${C.vivo.map(([n], i) => `<div class="r" data-vi="${i}"><span>${n}</span><b>—</b><i><u></u></i></div>`).join('')}</div>
     <button type="button" id="sp-fx" aria-haspopup="dialog" title="Cómo se calcula cada variable y cada gráfica">${ICO_FX}<span>Fórmulas</span></button>
+    ${def.par === 2 ? HTML_MOV : ''}
     <div id="sp-go" aria-live="polite"><h6 title="4 semanas seguidas pasando un límite = game over. Mismos límites con y sin propuesta.">Game over · límites</h6>${PAR_LIM[def.par].map(filaLim).join('')}</div>
     <div id="sp-graf"><h6>Gráficas</h6><div class="tabs" role="tablist">${[...C.graf, { t: '¿Qué cambia con la propuesta?' }].map((g, i) => `<button type="button" role="tab" data-g="${i}" aria-selected="${i === VISTA}" title="${g.t}">${i + 1}</button>`).join('')}</div>
       <h5 data-sp="gt"></h5><p data-sp="gs"></p><svg viewBox="0 0 260 132" role="img" aria-label="Gráfica de la simulación"></svg><ul data-sp="gl"></ul></div>`; }
+const HTML_MOV = '<div id="sp-mov"><h6>Territorio</h6><button type="button" id="sp-ruido" aria-pressed="false">Mapa de ruido (dB)</button>' +
+  '<div class="r" data-sx="i"><span>Integración R800 · barrio</span><b>—</b></div><div class="r" data-sx="c"><span>Elección NACH · barrio</span><b>—</b></div><div class="r" data-sx="p"><span>Pasajes (4)</span><b>—</b></div><p class="sxn"></p></div>';
+let SXR = null; fetch('data3d/mov02_pasajes.json').then(r => r.json()).then(j => { SXR = { ...j.resumen, pas: j.pasajes.map(p => ({ m: p.m, m30: p.m30, tala: p.tala })) }; }).catch(() => {});
+function pintarMov(der, I) { const box = der.querySelector('#sp-mov'); if (!box) return; const m = I && I.mov02, set = (k, t) => { const e = box.querySelector('[data-sx="' + k + '"] b'); if (e && e.textContent !== t) e.textContent = t; };
+  const b = box.querySelector('#sp-ruido'), on = !!(window.KEN_MOV02 && window.KEN_MOV02.ruidoOn); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  if (!SXR) return; const A = SXR.barrio800.antes, D = SXR.barrio800.despues, p = m && m.prop ? m.perm : 0, lerp = (a, c) => a + (c - a) * p;
+  set('i', nf(lerp(A.nain, D.nain), 3)); set('c', nf(lerp(A.nach, D.nach), 3)); set('p', m && m.prop && p > 0 ? 'NAIN ' + nf(SXR.pasajes.nain, 2) + ' · NACH ' + nf(SXR.pasajes.nach, 2) : 'cerrados (sin propuesta)');
+  const n = box.querySelector('.sxn'), m30 = SXR.pas.reduce((a, q) => a + q.m30, 0), L = SXR.pas.reduce((a, q) => a + q.m, 0), t = 'Sintaxis angular R800 calculada (tools/mov02_pasajes.mjs; entre antes y después según la permeabilidad). Los pasajes no tocan ningún árbol, pero ' + nf(m30) + ' de sus ' + nf(L) + ' m pasan a menos de 30 m del bosque: el anillo de bosque no deja cruzar el lote con 30 m de retiro.'; if (n.textContent !== t) n.textContent = t; }
 export function montar(der, { def, R } = {}) {
+  { const b = der.querySelector('#sp-ruido'); if (b) b.onclick = () => { if (window.KEN_MOV02) window.KEN_MOV02.ruido(!window.KEN_MOV02.ruidoOn); pintarMov(der, (der._spH || [])[(der._spH || []).length - 1]); }; }
   if (!document.getElementById('sp-css')) { const st = document.createElement('style'); st.id = 'sp-css'; st.textContent = CSS; document.head.appendChild(st); }
   if (PAR !== def.par) VISTA = 0; PAR = def.par; VAL = R ? R.valores : {}; GO = null; alertaArriba().classList.remove('go');
   der.querySelectorAll('#sp-graf [data-g]').forEach(b => { b.setAttribute('aria-selected', +b.dataset.g === VISTA); b.onclick = () => { VISTA = +b.dataset.g; der.querySelectorAll('#sp-graf [data-g]').forEach(x => x.setAttribute('aria-selected', x === b)); if (der._spRepinta) der._spRepinta(); }; });
@@ -188,7 +206,7 @@ function pintarFx(der) { const p = document.getElementById('sp-fxp'); if (!p || 
   const f = (n, v, t) => `<div><dt>${n}<b>${v}</b></dt><dd>${t}</dd></div>`;
   let h = `<button type="button" class="x" aria-label="Cerrar las fórmulas">${ICO_X}</button><h3>Fórmulas · ${C.titulo}</h3><p>${I ? `Semana ${nf(I.sem)} (año ${año(I.sem)}), ${I.propuesta ? 'con' : 'sin'} propuesta.` : 'Dale play: los valores aparecen semana a semana.'} Fuentes y supuestos: docs/todas_las_simulaciones.md.</p>`;
   if (I) { h += `<h4>Variables</h4><dl>${C.fx.map(([n, v, t]) => { let a = '—', b = ''; try { a = v(I, VAL); b = t(I, VAL); } catch (e) { /* dato que falta */ } return f(n, a, b); }).join('')}</dl>`;
-    h += `<h4>Límites · game over</h4><dl>${PAR_LIM[PAR].map(k => { const L = LIM[k]; return f(L.n, L.f(L.v(I), k === 'fauna' ? I : null), `game over si ${L.txt} 4 semanas seguidas · límite ${L.f(L.lim)}`); }).join('')}</dl>`;
+    h += `<h4>Límites · game over</h4><dl>${PAR_LIM[PAR].map(k => { const L = LIM[k]; return f(L.n, L.f(L.v(I), k === 'fauna' ? I : null), `game over si ${L.txt} ${L.sem === 1 ? 'en una semana' : '4 semanas seguidas'} · límite ${L.f(L.lim)}`); }).join('')}</dl>`;
     h += `<h4>Gráficas</h4><dl>${C.graf.map((g, i) => f(`${i + 1} · ${g.t}`, '', g.sub(I))).join('')}${f(`${C.graf.length + 1} · Con frente a sin`, '', 'los mismos límites en la misma semana de las dos corridas (mismos valores de las variables)')}</dl>`; }
   if (p._h !== h) { p.innerHTML = h; p._h = h; p.querySelector('.x').onclick = cerrarFx; } }
 
@@ -205,10 +223,10 @@ export function actualizar(der, H, FIN = 780, B = null, def = {}) {
   // límites (y la regla de un game over que no esté en la lista)
   const ks = PAR_LIM[def.par].slice(); if (GO && LIM[GO.regla] && !ks.includes(GO.regla)) { ks.push(GO.regla); if (!der.querySelector(`#sp-go [data-go="${GO.regla}"]`)) der.querySelector('#sp-go').insertAdjacentHTML('beforeend', filaLim(GO.regla)); }
   for (const k of ks) { const e = der.querySelector(`#sp-go [data-go="${k}"]`); if (!e) continue; const L = LIM[k];
-    const v = I ? L.v(I) : null, m = v != null && malo(k, v), c = v != null && cercaDe(k, v), r = GO && GO.regla === k ? 4 : I ? Math.min(4, L.r(I)) : 0;
+    const v = I ? L.v(I) : null, m = v != null && malo(k, v), c = v != null && cercaDe(k, v), r = GO && GO.regla === k ? (L.sem || 4) : I ? Math.min(L.sem || 4, L.r(I)) : 0;
     e.classList.toggle('mal', !!m); const u = e.querySelector('u'); u.style.width = (v == null ? 0 : Math.max(0, Math.min(100, v / L.S * 100))).toFixed(1) + '%'; u.style.background = m ? COL.mal : c ? COL.amb : COL.ok;
-    const b = e.querySelector('b'), h = v == null ? '—' : `${L.f(v, k === 'fauna' ? I : null)}${r ? `<em>${r}/4 sem</em>` : ''}`; if (b.innerHTML !== h) b.innerHTML = h; }
-  marcarGo(der);
+    const b = e.querySelector('b'), h = v == null ? '—' : `${L.f(v, k === 'fauna' ? I : null)}${r ? `<em>${r}/${L.sem || 4} sem</em>` : ''}`; if (b.innerHTML !== h) b.innerHTML = h; }
+  marcarGo(der); if (def.par === 2) pintarMov(der, I);
   if (der._spFx) pintarFx(der);
   // gráfica
   const put = (k, s) => { const e = der.querySelector(`#sp-graf [data-sp="${k}"]`); if (e && e.innerHTML !== s) e.innerHTML = s; };
