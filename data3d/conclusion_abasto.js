@@ -1,4 +1,4 @@
-﻿/* ============ CONCLUSIÓN GENERAL DEL PAR 01 · ABASTECIMIENTO (informe.js) ============
+/* ============ CONCLUSIÓN GENERAL DEL PAR 01 · ABASTECIMIENTO (informe.js) ============
    conclusionAbasto({ H, B, go, def, parametros, completo }) → { estado, big, eye, frase, veredicto, html, pintar(root) }
    Todo sale de la corrida (I.abasto.ab01 de data3d/simulaciones12.js, una semana por elemento de H; B = la otra mitad del par).
    v3 (docs/sim01_abastecimiento_v3.md, 2026-11-26). VEREDICTO (reglas fijas, las mismas con y sin propuesta):
@@ -86,12 +86,12 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
   const est = rN && rN.nEst ? ` Las ${nf(rN.nEst)} Estaciones Circulares abiertas (20 t/día cada una) trataban ${nf(rN.trat)} t/día de orgánicos al final.` : '';
   const t4r = rM ? ` Residuos: lo que no se recoge llegó a ${nf(maxR)} t/día (hoy 148, game over 296) en el año ${añoDe(wMaxR.sem)}; La Vaca se degradó hasta ${nf(maxD * 100)} % y perdió ${nf(maxD * 50)} % de sus árboles e interacciones.${est}` : '';
   if (go && go.regla === 'saturacion') { const U = X(crit) || UC;
-    t4 = `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: entran más alimentos (${nf(U.ing)} t/día) de los que se despachan (${nf(U.desp)}) y se pierden (${nf(U.perd)}): el inventario se acumula.${t4r}`; }
+    t4 = `Game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: entran más alimentos (${nf(U.ing)} t/día) de los que se despachan (${nf(U.desp)}) y se pierden (${nf(U.perd)}): el inventario se acumula.${t4r}`; }
   else if (go && go.regla === 'residuosK') { const r = Rk(crit) || rN;
-    t4 = `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: Kennedy generaba ${nf(r ? r.gen : null)} t/día (hoy 922, +2,7 %/año y 0,19 t por cada tonelada extra de comida) y la recolección ordinaria se queda en 774${r && r.trat > 0.5 ? `; las Estaciones Circulares trataban ${nf(r.trat, 1)} t/día` : ''}.${t4r}`; }
+    t4 = `Game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: Kennedy generaba ${nf(r ? r.gen : null)} t/día (hoy 922, +2,7 %/año y 0,19 t por cada tonelada extra de comida) y la recolección ordinaria se queda en 774${r && r.trat > 0.5 ? `; las Estaciones Circulares trataban ${nf(r.trat, 1)} t/día` : ''}.${t4r}`; }
   else if (go && go.regla === 'deficit') { const U = X(crit) || UC;
-    t4 = `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: se pedían ${nf(U.L)} t/día a Corabastos y solo podía despachar ${nf(U.desp)}: todos reciben la misma fracción (${nf(U.f * 100, 1)} %) y el faltante pesa más en los sectores lejos de Corabastos.${t4r}`; }
-  else if (go) t4 = `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}) por una regla general del simulador: ${esc(go.motivo)}.${t4r}`;
+    t4 = `Game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}): ${esc(go.motivo)}. Causa: se pedían ${nf(U.L)} t/día a Corabastos y solo podía despachar ${nf(U.desp)}: todos reciben la misma fracción (${nf(U.f * 100, 1)} %) y el faltante pesa más en los sectores lejos de Corabastos.${t4r}`; }
+  else if (go) t4 = `Game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)}) por una regla general del simulador: ${esc(go.motivo)}.${t4r}`;
   else t4 = `No llegó a game over${completo ? ' en los 15 años' : ' hasta ahora'}: el sector peor servido fue ${esc(secMin)} con ${nf(minSec, 1)} % (año ${añoDe(wMinSec.sem)}) y el inventario llegó como máximo a ${nf(maxSat * 100)} % de 14.000 t.${t4r}`;
   const accion = (s) => s.k === 'autoconsumo' ? `subir la comida que producen los hogares de ${nf(s.de)} % a ${nf(s.a)} %`
     : s.k === 'mercados' ? (prop ? `abrir más mercados de 28 t/día: de ${nf(s.de)} a ${nf(s.a)}` : `pasar a la red de la propuesta con ${nf(s.a)} mercados de 28 t/día`)
@@ -99,7 +99,7 @@ export function conclusionAbasto({ H, B = null, go = null, def = {}, parametros 
     : s.k === 'coraTope' ? `cambiar el tope de ingreso diario de +${nf(s.de)} % a +${nf(s.a)} %`
     : `asegurar más oferta de la región (acuerdos con productores y circuitos cortos): ingreso de ${nf(s.de)} % a ${nf(s.a)} %`;
   const efecto = (s) => `${s.dCob >= 0 ? '+' : '−'}${nf(Math.abs(s.dCob), 1)} pts de cobertura y ${s.dCar <= 0 ? '−' : '+'}${nf(Math.abs(s.dCar), 1)} pts del límite de Corabastos`;
-  const VERD = { go: 'No sostenible', sostenible: 'Sostenible' };
+  const VERD = { go: 'Game over', sostenible: 'Sostenible' };
   const rC = Rk(crit) || rN, falta = rC ? Math.max(0, rC.noRec - CERCA_RES) : 0;
   const recRes = `Recomendación: separar y tratar cerca de la fuente al menos ${nf(Math.ceil(falta))} t/día más de orgánicos (Estaciones Circulares, E4) para que lo sin recoger quede bajo ${nf(CERCA_RES)} t/día en la semana crítica (año ${añoDe(crit.sem)})${rC && rC.trat > 0.5 ? `; hoy tratan ${nf(rC.trat, 1)} t/día${rC.nEst ? ` en ${nf(rC.nEst)} estaciones de 20 t/día` : ''}` : '; sin propuesta no hay Estaciones: la propuesta tiene 20 de 20 t/día que abren por fases'}. Ninguna palanca del abasto los baja: más comida que llega es más residuo.`;
   const t5 = `${VERD[estado]}${completo || go ? '' : ' (hasta ahora)'}. ${problema === 'res' ? recRes : mejor && (Math.abs(mejor.dCob) > 0.05 || Math.abs(mejor.dCar) > 0.05) ? `Recomendación: ${accion(mejor)}. En la semana crítica (año ${añoDe(crit.sem)}) es la palanca que más mueve el resultado: ${efecto(mejor)}.` : (problema === 'margen' ? 'Recomendación: mantener estas condiciones.' : 'Ninguna palanca de la lista mejora el resultado en la semana crítica: hay que cambiar lo que se probó (' + (problema === 'sat' ? 'lo que entra a Corabastos' : 'la demanda') + ').')}`;

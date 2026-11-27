@@ -16,7 +16,7 @@ export function conclusionPar({ H, B = null, go = null, def = {}, parametros = {
     for (const h of H) { const v = val(Lm.v, h); if (v == null) continue; if (peor == null || (Lm.min ? v < peor : v > peor)) { peor = v; wP = h.sem; } if (malo(k, v)) fuera++; }
     const camino = peor == null ? 0 : Lm.min ? (100 - peor) / Math.max(1e-6, 100 - Lm.lim) : (peor - (k === 'trafico' ? 100 : 0)) / Math.max(1e-6, Lm.lim - (k === 'trafico' ? 100 : 0)); /* camino de hoy (tráfico 100 %, ruido +0 dB, Estaciones 0 %) al límite */
     return { k, Lm, peor, wP, fuera, camino: Math.max(0, camino) }; });
-  const estado = go ? 'go' : 'sostenible', VERD = { go: 'No sostenible', sostenible: 'Sostenible' };
+  const estado = go ? 'go' : 'sostenible', VERD = { go: 'Game over', sostenible: 'Sostenible' };
   /* 1 · qué se cambió */
   const dec = (s) => (s.paso < 1 ? 2 : 0);
   const valor = (s, v) => s.opciones ? (s.opciones.find(o => o[0] === +v)?.[1] || '—') : `${nf(v, dec(s))}${s.unidad ? ' ' + s.unidad : ''}`;
@@ -28,7 +28,7 @@ export function conclusionPar({ H, B = null, go = null, def = {}, parametros = {
   const t3 = est.map(e => `${e.Lm.n}: peor ${e.Lm.f(e.peor)} (año ${añoDe(e.wP || 1)}; límite ${e.Lm.f(e.Lm.lim)})${e.fuera ? `, ${nf(e.fuera)} semanas fuera` : ''}`).join('. ') + '.';
   /* 4 · cuándo y dónde */
   const cerca = est.slice().sort((a, b) => b.camino - a.camino)[0];
-  const t4 = go ? `No sostenible en el año ${añoDe(go.sem)} (semana ${nf(go.sem)})${go.lugar && go.lugar !== 'Kennedy' ? ', en ' + go.lugar : ''}: ${String(go.motivo || go.regla).replace(/\bsector (Sector)\b/, '$1')}${/cuatro semanas/.test(go.motivo || '') ? '' : ', cuatro semanas seguidas'}.`
+  const t4 = go ? `Game over en el año ${añoDe(go.sem)} (semana ${nf(go.sem)})${go.lugar && go.lugar !== 'Kennedy' ? ', en ' + go.lugar : ''}: ${String(go.motivo || go.regla).replace(/\bsector (Sector)\b/, '$1')}${/cuatro semanas/.test(go.motivo || '') ? '' : ', cuatro semanas seguidas'}.`
     : `No llegó a game over${completo ? ' en los 15 años' : ' hasta ahora'}. El límite más cercano: ${cerca.Lm.n.toLowerCase()}, a ${nf(Math.min(1, cerca.camino) * 100)} % del camino de hoy a su límite.`;
   /* 5 · conclusión, con la otra mitad del par */
   const goB = B && B.length ? (B[B.length - 1].evaluacion && B[B.length - 1].evaluacion.territorio.gameOver) : null;
