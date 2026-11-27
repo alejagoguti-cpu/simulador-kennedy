@@ -12,6 +12,10 @@
    · CON PROPUESTA: los 4 pasajes de data3d/mov02_pasajes.json (tools/mov02_pasajes.mjs: sin tocar copas; esmeralda con borde ámbar), opacidad =
      permeabilidad, personas 3D que los cruzan (cuántas ∝ permeabilidad) y un manto verde bajo cada copa del bosque (árboles con marca 1 de bavaria_arboles.json). Sin nubes de puntos. */
 import { VIAS } from './cierre_gradual.js?v=8';
+import { MERCADOS } from './sim_red_datos.js?v=2';
+/* CON PROPUESTA (como la 01): carros MORADOS que van por las vías reales a los mercados de barrio de la propuesta (MERCADOS de sim_red_datos.js): son
+   los viajes a Corabastos que se cambian por viajes cortos. Cuántos = 11.465 veh/día a Corabastos × 10 % en la hora pico × 45 % × permeabilidad
+   (los mismos datos de mov02_modelo.js) ÷ 20 [escala visual declarada], máx. 30. Cada uno sale de un punto a ~800 m de su mercado. */
 const ART = ['americas', 'boyaca', 'mayo', 'calle38'];
 const BARRIOS = [[3063.8, 275.2], [4620.7, 742.9], [2936.6, 1098.1], [1148.3, 266]]; // Castilla, Marsella, Mandalay, María Paz (mundo; asambleas.json)
 const N_BARRIO = ['Castilla', 'Marsella', 'Mandalay', 'María Paz'];
@@ -35,6 +39,12 @@ export function crearMov02({ T3, RELOJ }) {
     const c = R.cv.getContext('2d'), fondo = x >= 1 ? '#9e0024' : x >= 0.85 ? '#ffdb14' : '#1ad94d', letra = x >= 0.85 && x < 1 ? '#111' : '#fff';
     c.clearRect(0, 0, 1024, 136); c.font = '700 60px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const w = Math.min(1000, c.measureText(txt).width + 70);
     c.fillStyle = fondo; c.beginPath(); c.roundRect((1024 - w) / 2, 20, w, 96, 48); c.fill(); c.fillStyle = letra; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, 512, 70); R.tx.needsUpdate = true; }
+  const MOR = { R: null, arbol: null, arb: new Map(), rutas: new Map(), pend: 0, objs: Array.from({ length: 30 }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: 0xa21cff, _pc: 0xa21cff, _vl: 0 })) };
+  function rutaMor(i) { if (MOR.rutas.has(i)) return MOR.rutas.get(i); if (!MOR.R || MOR.pend) return null; const m = MERCADOS[i % MERCADOS.length], a = i * 2.39996, d = 700 + (i % 3) * 150, Rr = MOR.R;
+    const nd = Rr.cercano(m.x, m.z), no = Rr.cercano(m.x + Math.cos(a) * d, m.z + Math.sin(a) * d); if (nd.i < 0 || no.i < 0) { MOR.rutas.set(i, null); return null; }
+    let T = MOR.arb.get(nd.i); if (!T) { MOR.pend = 1; T = MOR.arbol(Rr, nd.i); MOR.arb.set(nd.i, T); } if (!isFinite(T.dist[no.i])) { MOR.rutas.set(i, null); return null; }
+    const P = [[Rr.X[no.i], Rr.Z[no.i]]]; let u = no.i; while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) break; u = Rr.ea[e] === u ? Rr.eb[e] : Rr.ea[e]; P.push([Rr.X[u], Rr.Z[u]]); }
+    const S = [0]; for (let k = 1; k < P.length; k++) S.push(S[k - 1] + Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1])); const r = S[S.length - 1] > 150 ? { P, S, L: S[S.length - 1] } : null; MOR.rutas.set(i, r); return r; }
   const FILA = { VEH: null, objs: [], pos: null, MAX: 600, plan: [], clave: '' };
   const Yv = () => (T3.viaY != null ? T3.viaY : 0.62);
 
@@ -81,6 +91,7 @@ export function crearMov02({ T3, RELOJ }) {
     // vehículos de la fila: los mismos modelos de la 01 (vehiculos.js); vias_densidad.js los cuenta
     try { const mv = await import('./vehiculos.js?v=10'); FILA.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: FILA.MAX, camion: Math.ceil(FILA.MAX / 5) } }); FILA.VEH.grupo.visible = false;
       FILA.objs = Array.from({ length: FILA.MAX }, () => ({})); FILA.pos = { n: 0, x: new Float32Array(FILA.MAX), z: new Float32Array(FILA.MAX) };
+      import('./viajes_mercados.js?v=11').then(vm => { MOR.R = vm.construirRed(T3.net, T3.lw); MOR.arbol = vm.arbol; }).catch(() => {});
       import('./vias_densidad.js?v=3').then(m => m.crearViasDensidad({ T3 }).extra('mov02', () => (FILA.VEH && FILA.VEH.grupo.visible ? FILA.pos : null))).catch(() => {}); } catch (e) { console.warn('mov02 vehículos:', e); }
     // pasajes y bosque (con propuesta)
     try { const [PJ, AR] = await Promise.all([fetch('data3d/mov02_pasajes.json').then(r => r.json()), fetch('data3d/bavaria_arboles.json').then(r => r.json())]);
@@ -109,6 +120,11 @@ export function crearMov02({ T3, RELOJ }) {
   function cuadro() { if (!G || !G.visible) { if (FILA.VEH) FILA.VEH.grupo.visible = false; return; } const t = (RELOJ.tVis != null ? RELOJ.tVis : performance.now() / 1000); U.uT.value = t % 10000;
     if (FILA.VEH) { const P = FILA.plan; FILA.VEH.grupo.visible = P.length > 0; FILA.VEH.inicio(); FILA.pos.n = 0; const y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.02;
       for (let i = 0; i < P.length; i++) { const q = P[i]; FILA.VEH.poner(FILA.objs[i], q[3], q[0], y + (T3.alzaVia ? T3.alzaVia(q[0], q[1]) : 0), q[1], q[2]); FILA.pos.x[i] = q[0]; FILA.pos.z[i] = q[1]; FILA.pos.n++; }
+      if (M && M.prop && MOR.R) { MOR.pend = 0; const n = Math.min(30, Math.round(11465 * 0.1 * 0.45 * (M.perm || 0) / 20)), tA = RELOJ.tAnim || performance.now() / 1000;
+        for (let i = 0, k = P.length; i < n && k < FILA.MAX; i++) { const r = rutaMor(i); if (!r) continue; const s0 = ((tA * 11 / r.L) + i * 0.137) % 2, ida = s0 < 1, s = (ida ? s0 : 2 - s0) * r.L;
+          let a = 0, b = r.S.length - 1; while (b - a > 1) { const mm = (a + b) >> 1; if (r.S[mm] < s) a = mm; else b = mm; } const fr = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]); let fx = r.P[b][0] - r.P[a][0], fz = r.P[b][1] - r.P[a][1]; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; if (!ida) { fx = -fx; fz = -fz; }
+          const x = r.P[a][0] + (r.P[b][0] - r.P[a][0]) * fr - fz * 1.8, z = r.P[a][1] + (r.P[b][1] - r.P[a][1]) * fr + fx * 1.8;
+          FILA.VEH.poner(MOR.objs[i], 'carro', x, y + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); FILA.pos.x[k] = x; FILA.pos.z[k] = z; FILA.pos.n++; k++; } FILA.VEH.grupo.visible = true; }
       FILA.VEH.fin(); }
     // peatones
     if (peat.im && M && M.prop && peat.L.length) { const n = Math.round(peat.NMAX * (M.perm || 0)); peat.im.count = n; const now = performance.now() / 1000, dt = Math.min(0.1, now - (tPrev || now)); tPrev = now;

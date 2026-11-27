@@ -1,7 +1,7 @@
 import {adjuntarBalance} from './balance_final.js?v=4';
 import { conclusionAbasto } from './conclusion_abasto.js?v=7';
-import { conclusionPar } from './conclusion_par.js?v=5'; /* 02–06: veredicto binario y tarjetas con la misma lógica que la 01 (2026-11-26) */
-import { PAR_LIM } from './sim_panel.js?v=6';
+import { conclusionPar } from './conclusion_par.js?v=6'; /* 02–06: veredicto binario y tarjetas con la misma lógica que la 01 (2026-11-26) */
+import { PAR_LIM } from './sim_panel.js?v=7';
 import { TiempoRadial } from './graficas_arte.js?v=2'; // 2026-11-26: relojes de 15 años, línea de tiempo de burbujas y dona del veredicto (paleta URBIA + morados de la portada) // par 01: veredicto y «Conclusión general» con dos tarjetas (2026-11-25)
 /* ============ INFORME FINAL DE UNA SIMULACIÓN (versión 3: una sola historia) ============
    export function abrirInforme2({ cont, sim, def, hist, base, reglas, go, eventos, extinciones, ind, semilla, onCerrar })
@@ -70,20 +70,25 @@ const VAL = { fauna: (h) => h.fauna / Math.max(1, h.fauna0) * 100, habitat: (h) 
   /* simulación 01 (simulaciones12.js REGLAS_AB01, 2026-11-26): bodega más llena (% de su tope) y residuos sin recoger de Kennedy (t/día) */
   bodegas: (h) => (h.abasto && h.abasto.bodegas ? h.abasto.bodegas.max * 100 : null), residuosK: (h) => (h.residuosK ? h.residuosK.noRec : null),
   /* v3 (docs/sim01_abastecimiento_v3.md): sector peor servido (% de su demanda) y saturación de Corabastos (inventario ÷ 14.000 t) */
+  acum03: (h) => (h.res03 && h.res03.fase > 0 ? h.res03.acum : 0), edad03: (h) => (h.res03 && h.res03.fase > 0 ? h.res03.eMax : 0), /* sim. 03 (REGLAS_RES03) */
   arterias: (h) => (h.mov02 ? h.mov02.sobre : null), tiempo: (h) => (h.mov02 ? h.mov02.tt : null), abastoMov: (h) => (h.mov02 ? h.mov02.abMin * 100 : null), /* sim. 02 (REGLAS_MOV02) */
   deficit: (h) => (h.abasto && h.abasto.ab01 ? h.abasto.ab01.secMin * 100 : null), saturacion: (h) => (h.abasto && h.abasto.ab01 ? h.abasto.ab01.sat * 100 : null) };
-const HOY = { arterias: 0, tiempo: 1, abastoMov: 100, fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100, bodegas: 92, residuosK: 148, deficit: 100, saturacion: 35 }; /* v4–v5: el inventario promedio de 2025 es 35 % de 14.000 t */
-const UMB = { arterias: 3, tiempo: 2, abastoMov: 80, fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70, bodegas: 100, residuosK: 296, deficit: 80, saturacion: 100 };
-const FMT_R = { arterias: (v) => nf(v) + ' de 3', tiempo: (v) => '×' + nf(v, 2), abastoMov: (v) => nf(v, 1) + ' %', ruido: (v) => SG(v) + nf(Math.abs(v), 1) + ' dB', trafico: (v) => nf(v, 2), residuosK: (v) => nf(v) + ' t/día' };
+const HOY = { acum03: 0, edad03: 0, arterias: 0, tiempo: 1, abastoMov: 100, fauna: 100, habitat: 100, abasto: 100, residuos: 0, ruido: 0, trafico: 1, humedal: 100, bodegas: 92, residuosK: 148, deficit: 100, saturacion: 35 }; /* v4–v5: el inventario promedio de 2025 es 35 % de 14.000 t */
+const UMB = { acum03: 4500, edad03: 48, arterias: 3, tiempo: 2, abastoMov: 80, fauna: 90, habitat: 70, abasto: 80, residuos: 100, ruido: 3, trafico: 1.3, humedal: 70, bodegas: 100, residuosK: 296, deficit: 80, saturacion: 100 };
+const FMT_R = { acum03: (v) => nf(v) + ' t', edad03: (v) => nf(v) + ' h', arterias: (v) => nf(v) + ' de 3', tiempo: (v) => '×' + nf(v, 2), abastoMov: (v) => nf(v, 1) + ' %', ruido: (v) => SG(v) + nf(Math.abs(v), 1) + ' dB', trafico: (v) => nf(v, 2), residuosK: (v) => nf(v) + ' t/día' };
 const fmtR = (k, v) => (FMT_R[k] || ((x) => nf(x) + ' %'))(v);
-const ART = { arterias: 'las arterias saturadas', tiempo: 'el tiempo de viaje', abastoMov: 'el abastecimiento de la zona peor', fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico', bodegas: 'la bodega más llena de Corabastos', residuosK: 'lo que no se recoge de los residuos de Kennedy', deficit: 'la cobertura del sector peor servido', saturacion: 'el inventario de Corabastos' };
-const CORTO_R = { arterias: 'arterias saturadas', tiempo: 'tiempo de viaje', abastoMov: 'abastecimiento por la congestión', fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico', bodegas: 'bodegas de Corabastos llenas', residuosK: 'residuos sin recoger', deficit: 'déficit alimentario', saturacion: 'Corabastos en su límite de abastecimiento' };
+const ART = { acum03: 'los residuos acumulados', edad03: 'el tiempo sin tratar', arterias: 'las arterias saturadas', tiempo: 'el tiempo de viaje', abastoMov: 'el abastecimiento de la zona peor', fauna: 'la fauna', habitat: 'el territorio con fauna', humedal: 'el área funcional de los humedales', abasto: 'la cobertura distrital', residuos: 'el almacenamiento de orgánicos', ruido: 'el ruido', trafico: 'el tráfico', bodegas: 'la bodega más llena de Corabastos', residuosK: 'lo que no se recoge de los residuos de Kennedy', deficit: 'la cobertura del sector peor servido', saturacion: 'el inventario de Corabastos' };
+const CORTO_R = { acum03: 'residuos acumulados', edad03: 'orgánicos sin tratar', arterias: 'arterias saturadas', tiempo: 'tiempo de viaje', abastoMov: 'abastecimiento por la congestión', fauna: 'pérdida de especies', habitat: 'pérdida de territorio con fauna', humedal: 'humedales degradados', abasto: 'déficit distrital', residuos: 'orgánicos sin tratar', ruido: 'ruido', trafico: 'tráfico', bodegas: 'bodegas de Corabastos llenas', residuosK: 'residuos sin recoger', deficit: 'déficit alimentario', saturacion: 'Corabastos en su límite de abastecimiento' };
 const prox = (k, v, umbral) => { const h = HOY[k], u = umbral != null ? umbral : UMB[k]; if (v == null || u === h) return 0; return Math.max(0, Math.min(1.2, (v - h) / (u - h))); };
 const cruzó = (k, v, umbral) => { const u = umbral != null ? umbral : UMB[k]; return v != null && (HOY[k] < u ? v >= u : v <= u); };
 
 /* ---------- métricas para el héroe y las curvas (v devuelve el valor ya en la unidad que se muestra) ---------- */
 const pct = (x) => x == null ? null : x * 100;
 const MET = {
+  res03calle: { n: 'Residuos en la calle', u: 't', t: 'Residuos orgánicos en la calle durante la interrupción (t)', v: (h) => h.res03 && h.res03.fase > 0 ? num(h.res03.totCalle) : 0, f: (v) => nf(v) + ' t', sube: false, dif: 'rel', lim: 4500, limTxt: 'game over 4.500 t',
+    ay: 'Lo que generan los barrios y Corabastos y nadie recoge ni trata.' },
+  res03edad: { n: 'Horas sin tratar', u: 'h', t: 'Tiempo máximo con orgánicos sin tratar (h)', v: (h) => h.res03 && h.res03.fase > 0 ? num(h.res03.eMax) : 0, f: (v) => nf(v) + ' h', sube: false, dif: 'rel', lim: 48, limTxt: 'game over 48 h',
+    ay: 'Horas que lleva el residuo más viejo en la calle.' },
   mov02tt: { n: 'Tiempo de viaje', u: 'veces el normal', t: 'Tiempo de viaje relativo (1 = sin cierre)', v: (h) => h.mov02 ? num(h.mov02.tt) : null, f: (v) => '×' + nf(v, 2), sube: false, dif: 'rel', lim: 2, limTxt: 'game over ×2',
     ay: 'Minutos por viaje frente a la red sin cierre: las alternas hacen fila (Akçelik) y los desviados dan un rodeo.' },
   mov02ab: { n: 'Abastecimiento de la zona peor', u: 'de lo que necesita', t: 'Abastecimiento de la zona peor (%)', v: (h) => h.mov02 ? pct(num(h.mov02.abMin)) : null, f: (v) => nf(v, 1) + ' %', sube: true, dif: 'pts', lim: 80, limTxt: 'game over < 80 %',
@@ -131,8 +136,8 @@ const MET = {
   residuos: { n: 'Orgánicos sin tratar', u: 'del almacenamiento', t: 'Orgánicos sin tratar (% del almacenamiento)', v: (h) => pct(num(h.residuos)), f: (v) => nf(v) + ' %', sube: false, dif: 'pts', lim: 100, limTxt: 'game over 100 %',
     ay: 'Orgánicos que esperan tratamiento frente a la capacidad.' }
 };
-const REGLA_MET = { arterias: 'mov02sat', tiempo: 'mov02tt', abastoMov: 'mov02ab', fauna: 'fauna', habitat: 'habitat', humedal: 'humedal', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico', bodegas: 'bodegas', residuosK: 'resK', deficit: 'secPeor', saturacion: 'satCora' };
-const PAR_MET = { 1: ['secPeor', 'satCora', 'resK'], 2: ['mov02tt', 'mov02ab', 'mov02sat'], 3: ['basura', 'circular'], 4: ['territorio', 'red'], 5: ['hogares', 'suelo'], 6: ['equidad', 'cobertura'] };
+const REGLA_MET = { acum03: 'res03calle', edad03: 'res03edad', arterias: 'mov02sat', tiempo: 'mov02tt', abastoMov: 'mov02ab', fauna: 'fauna', habitat: 'habitat', humedal: 'humedal', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico', bodegas: 'bodegas', residuosK: 'resK', deficit: 'secPeor', saturacion: 'satCora' };
+const PAR_MET = { 1: ['secPeor', 'satCora', 'resK'], 2: ['mov02tt', 'mov02ab', 'mov02sat'], 3: ['res03calle', 'res03edad', 'basura'], 4: ['territorio', 'red'], 5: ['hogares', 'suelo'], 6: ['equidad', 'cobertura'] };
 const RELLENO = ['red', 'humedal', 'trafico', 'comida', 'basura'];
 
 /* ---------- red biótica (para la «bola») ---------- */
