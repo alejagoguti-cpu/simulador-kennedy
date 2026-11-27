@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=9';
-import { iniciarSimUI } from './sim_ui.js?v=152';
+import { iniciarSimUI } from './sim_ui.js?v=153';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -165,6 +165,35 @@ export function iniciarLimpio({ T3 }) {
   { const se = document.createElement('style'); se.textContent = `#lp-esc{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:4px;padding:4px}
     #lp-esc button{padding:8px 16px;border-radius:10px;border:0;background:none;color:inherit;font:500 12.5px var(--ui-sans,system-ui),sans-serif;cursor:pointer;opacity:.75}
     html.limpio #lp-der{display:none!important} html.limpio #su-inds{display:none!important} #su-avisos{top:74px!important}`; document.head.appendChild(se); }
+  /* DISPOSICIÓN (pedido de la autora 2026-11-27, escritorio): tablero a la IZQUIERDA; a la DERECHA el «Zoom del momento» (siempre activo, cambia
+     cada 5 s: data3d/zoom_momento.js) y debajo las simulaciones como tarjetas con ícono; la activa se abre a lo ancho con sus variables. */
+  const ICO_SIM = {"1":"<path d=\"M12 21v-8M12 13c0-4 3-7 8-7 0 4-3 7-8 7zM12 15c0-3-2.5-5.5-7-5.5 0 3 2.5 5.5 7 5.5z\"/>","2":"<rect x=\"4\" y=\"3\" width=\"16\" height=\"14\" rx=\"3\"/><path d=\"M4 11h16M8 21v-3M16 21v-3M7.5 14.5h1M15.5 14.5h1\"/>","3":"<path d=\"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6\"/>","4":"<path d=\"M3 12c3-5 7-7 11-6l7-2-3 5c0 6-6 10-12 9l-3 3\"/><path d=\"M8 16c2-3 5-5 8-6\"/>","5":"<path d=\"M3 21h18M5 21V9l5-3v15M10 21V4l9 4v13M13 10h3M13 14h3\"/>","6":"<circle cx=\"12\" cy=\"5\" r=\"2.5\"/><circle cx=\"5\" cy=\"18\" r=\"2.5\"/><circle cx=\"19\" cy=\"18\" r=\"2.5\"/><path d=\"M10.8 7.2 6.2 15.8M13.2 7.2l4.6 8.6M7.5 18h9\"/>"};
+  { const st = document.createElement('style'); st.textContent = `@media(min-width:1100px){
+    html.limpio body #lp-tablero{left:var(--lp-gap)!important;right:auto!important}
+    html.limpio.pi-plegado body #pi-abrir{left:var(--lp-gap)!important;right:auto!important}
+    html.limpio body #gs-izq{left:auto!important;right:var(--lp-gap)!important;top:calc(var(--lp-top) + 236px)!important;max-height:calc(100dvh - var(--lp-top) - 236px - var(--lp-gap))!important}
+    #lp-zoom{position:fixed;z-index:42;right:var(--lp-gap);top:var(--lp-top);width:var(--lp-izq-w);height:224px;box-sizing:border-box;padding:10px 10px 10px;display:flex;flex-direction:column;gap:8px;
+      background:var(--ui-glass);border:1px solid var(--ui-glass-bd);box-shadow:var(--ui-glass-sh);-webkit-backdrop-filter:var(--ui-glass-fx);backdrop-filter:var(--ui-glass-fx);border-radius:var(--lp-r,16px);color:var(--ui-tx,#eef1f4)}
+    #lp-zoom header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
+    #lp-zoom header small{display:block;font:600 9.5px/1.2 var(--ui-mono,monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx2,#c9cfc4)}
+    #lp-zoom header b{display:block;font:600 13.5px/1.25 var(--ui-sans,system-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+    #lp-zoom header button{border:0;border-radius:10px;padding:7px 14px;background:var(--ui-acc,#c9f27a);color:#13160f;font:600 12px var(--ui-sans,system-ui);cursor:pointer}
+    #lp-zoom .lz-vista{position:relative;flex:1;border-radius:12px;border:1px solid rgba(255,255,255,.14);overflow:hidden;background:transparent}
+    #lp-zoom .lz-vista span{position:absolute;left:8px;bottom:8px;padding:3px 8px;border-radius:8px;background:rgba(10,12,16,.72);font:500 10.5px var(--ui-mono,monospace);letter-spacing:.04em}
+    #lp-zoom .lz-vista i{position:absolute;right:8px;top:8px;padding:2px 7px;border-radius:8px;background:rgba(10,12,16,.72);font:500 10px var(--ui-mono,monospace);font-style:normal}
+    html.limpio body #gs-izq #lp-seis .lp-lista{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+    html.limpio body #gs-izq #lp-seis .lp-lista li{grid-template-columns:1fr!important;min-height:92px;border:1px solid var(--ui-glass-bd,rgba(255,255,255,.14))!important;background:rgba(255,255,255,.04)}
+    html.limpio body #gs-izq #lp-seis .lp-lista li .lp-ver{display:none!important}
+    html.limpio body #gs-izq #lp-seis .lp-sim{flex-direction:column!important;justify-content:center!important;gap:4px!important;padding:10px 4px!important;text-align:center}
+    html.limpio body #gs-izq #lp-seis .lp-sim .lp-ico{width:30px;height:30px;color:var(--ui-tx,#eef1f4);margin-bottom:2px}
+    html.limpio body #gs-izq #lp-seis .lp-sim b{white-space:normal!important;font-size:12px!important;line-height:1.15!important}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on{grid-column:1/-1;order:10;min-height:0;border-color:var(--ui-acc,#c9f27a)!important;box-shadow:0 0 0 1px var(--ui-acc,#c9f27a) inset}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-sim{flex-direction:row!important;justify-content:flex-start!important;padding:10px 12px!important}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-sim .lp-ico{color:var(--ui-acc,#c9f27a);width:24px;height:24px;margin:0}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
+  }
+  @media(max-width:1099px){#lp-zoom{display:none}}`; document.head.appendChild(st); }
+  import('./zoom_momento.js?v=1').then(m => { const ir = () => { if (T3.renderer) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1000); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
   escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.hidden = true; document.body.appendChild(der); /* se conserva vacío (otros módulos lo buscan), escondido */
@@ -281,7 +310,7 @@ export function iniciarLimpio({ T3 }) {
     /* filas de una línea: número + nombre; la prueba de estrés va en el title (y en la descripción accesible) */
     { const sd0 = document.getElementById('su-der'); if (sd0 && seis.contains(sd0)) seis.after(sd0); } /* las variables salen del acordeón antes de rehacer la lista */
     seis.innerHTML = `<header class="lp-sec"><h5 id="lp-seis-t">Simulaciones</h5><span class="lp-modo"></span></header><ul class="lp-lista">` + PARES.map(P => `<li title="${P.prueba}">
-      <button type="button" class="lp-sim" data-s="${idDe(P.par)}" data-p="${P.par}" aria-describedby="lp-pr-${P.par}"><i>${String(P.par).padStart(2, '0')}</i><b>${P.n}</b><small id="lp-pr-${P.par}" class="lp-sr">${P.prueba}</small></button>
+      <button type="button" class="lp-sim" data-s="${idDe(P.par)}" data-p="${P.par}" aria-describedby="lp-pr-${P.par}"><svg class="lp-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICO_SIM[P.par] || ''}</svg><i>${String(P.par).padStart(2, '0')}</i><b>${P.n}</b><small id="lp-pr-${P.par}" class="lp-sr">${P.prueba}</small></button>
       <button type="button" class="lp-ver" data-p="${P.par}" aria-label="Ver diapositivas de ${P.n}" title="Diapositivas">${ICO_SL}</button><div class="lp-acc" id="lp-acc-${P.par}" role="region" aria-label="Variables de ${P.n}"></div></li>`).join('') + '</ul>';
     seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
       /* ACORDEÓN: la simulación se aplica y sus variables se abren justo debajo de la fila; las diapositivas solo con su botón */

@@ -139,6 +139,9 @@ export function crearMov02({ T3, RELOJ }) {
 
   function aplicar() { const m = M; if (!G || !m) return; G.visible = true;
     planFila(m);
+    { const M2 = []; const cv = m.vias[m.via]; if (tramos[m.via] && cv && m.c > 0.02) { const L = tramos[m.via], q = L[L.length >> 1].p; M2.push({ t: cv.n + ' cerrada', s: Math.round(m.c * 100) + ' % de cierre', x: q[q.length >> 1][0], z: q[q.length >> 1][1] }); }
+      for (const k of ART) { const v = m.vias[k], p = puntoFila[k]; if (v && p && k !== m.via) M2.push({ t: 'Fila en ' + v.n, s: Math.round(v.x * 100) + ' % de su capacidad', x: p[0], z: p[1] }); }
+      if (m.prop) M2.push({ t: 'Pasajes de Bavaria', s: Math.round((m.perm || 0) * 100) + ' % de permeabilidad', x: 3977.7, z: 219.3, d: 320 }); window.KEN_MOM = M2; }
     for (const k of ART) { const v = m.vias[k]; pintarRot(k, v && k !== m.via && tramos[k] ? `${v.n.toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); if (ROT[k] && v && k !== m.via) { const p = puntoFila[k]; if (p) ROT[k].sp.position.set(p[0], ROT[k].sp.position.y, p[1]); } }
     BARRIOS.forEach((b, i) => { const v = m.vias.locales; pintarRot('b' + i, v && m.via ? `${N_BARRIO[i].toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); });
     for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const ur = ms.r.material.uniforms;
@@ -164,7 +167,7 @@ export function crearMov02({ T3, RELOJ }) {
     async poner(m) { M = m || null; if (!M) { if (G) G.visible = false; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     ruido(on) { ruidoOn = !!on; aplicar(); return ruidoOn; },
     get ruidoOn() { return ruidoOn; },
-    quitar() { M = null; if (G) G.visible = false; }
+    quitar() { M = null; if (G) G.visible = false; window.KEN_MOM = null; }
   };
   window.KEN_MOV02 = api; return api;
 }

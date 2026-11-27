@@ -139,8 +139,11 @@ export function crearS456({ T3, RELOJ }) {
     async poner(p, d) { par = p; if (!d) { G.visible = false; return; } G.visible = true;
       for (const k of [4, 5, 6]) if (SUB[k]) SUB[k].g.visible = k === p;
       if (!SUB[p]) { if (!armando[p]) armando[p] = (async () => { SUB[p] = p === 4 ? await armar04() : p === 5 ? await armar05() : armar06(d); })(); await armando[p]; for (const k of [4, 5, 6]) if (SUB[k]) SUB[k].g.visible = k === par; }
-      if (par !== p) return; if (p === 4) poner04(d); else if (p === 5) poner05(d); else poner06(d); },
-    quitar() { par = 0; G.visible = false; }
+      if (par !== p) return; if (p === 4) poner04(d); else if (p === 5) poner05(d); else poner06(d);
+      window.KEN_MOM = p === 4 ? [{ t: 'Humedal La Vaca', s: Math.round(d.p * 100) + ' % de los cruces chocan', x: 760, z: 1160 }, { t: 'Humedal El Burro', s: "Shannon H' " + (d.shannon || 0).toFixed(2), x: 2096, z: -109 }, { t: 'Humedal de Techo', s: 'aves ' + Math.round((d.pob || 1) * 100) + ' %', x: 2997, z: -606 }, { t: d.prop ? 'Paso elevado de fauna' : 'Cruce de aves sobre la vía', s: d.prop ? Math.round((d.impl || 0) * 100) + ' % construido' : 'a ras del tráfico', x: 1428, z: 525, d: 200 }]
+        : p === 5 ? [{ t: 'Predio Bavaria', s: d.viv.toLocaleString('es-CO') + ' viviendas · bosque ' + Math.round(d.ecoRest * 100) + ' %', x: 3977.7, z: 219.3, d: 420 }, { t: d.prop ? 'Naves reutilizadas' : 'Torres del plan parcial', s: d.prop ? Math.round(d.naves).toLocaleString('es-CO') + ' m²' : '+' + d.calor.toFixed(1) + ' °C', x: 3830, z: 300, d: 260 }]
+        : d.barrios.map(b => ({ t: b.jn || b.n, s: Math.round(b.cov * 100) + ' % cubierto' + (b.urg ? ' · ' + b.urg + ' sem sin recursos' : ''), x: b.jx, z: b.jz, d: 300 })); },
+    quitar() { par = 0; G.visible = false; window.KEN_MOM = null; }
   };
   window.KEN_S456 = api; return api;
 }
