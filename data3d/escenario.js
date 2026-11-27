@@ -201,7 +201,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
         console.info('[precarga] calentar sombreadores', Math.round(performance.now() - t0) + ' ms'); } catch (e) { console.warn('precarga (calentar):', e); }
     })();
   }
-  import('./escenarios_sim.js?v=55').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  import('./escenarios_sim.js?v=56').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   import('./cambio_50.js?v=8').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=11').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
   import('./trafico_plan.js?v=7').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio

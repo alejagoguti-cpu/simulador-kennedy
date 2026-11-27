@@ -369,7 +369,7 @@ ${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec,
     // aviso cuando la corrida que se ve colapsa (una vez por escenario y semilla)
     if (sv.colapso && !VIDA.avisado[e] && t >= sv.colapso.t) { VIDA.avisado[e] = true; avisar2(`${e} cerró en la semana ${fmt(sv.colapso.semana)} (año ${añoDe(sv.colapso.t)}): ${sv.colapso.motivo}. La simulación sigue`, sv.colapso.causas[0] === 'habitat' ? 'humedal' : sv.colapso.causas[0] === 'residuos' ? 'compost' : 'trafico'); }
     // 3D: en B los mercados de barrio no son nodos (se apagan sus cintas y bodegas); en C se ven como red. A: escenario «hoy» (los apaga escenario.js)
-    { const MM = window.KEN_MERC; if (MM && MM.ver && T3.escenario === 'proyecto') { const on = e === 'C' && !(T3.escSolo && T3.escSolo() === 'col'); if (MM._esc !== on) { MM._esc = on; MM.ver(on); } } else if (MM) MM._esc = undefined; }
+    { const MM = window.KEN_MERC; if (MM && MM.ver && T3.escenario === 'proyecto') { const on = e === 'C' && !(T3.escSolo && T3.escSolo() === 'col') && !document.documentElement.classList.contains('limpio'); /* vista limpia: la red 3D de mercados siempre está escondida (limpio.js); armarla trababa ~1 s el clic de «con propuesta» */ if (MM._esc !== on) { MM._esc = on; MM.ver(on); } } else if (MM) MM._esc = undefined; }
     // los paneles (etiquetas, «lo que ves en el mapa», indicadores) se repintan aparte y, durante la reproducción, a ~4 Hz
     CTX = { e, t, o, oA, sv, dep, hum, ab, al, nTr }; sucioPan = true;
     if (!enPaso) pintarPanel();
