@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=9'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=10'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -245,7 +245,8 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
       for (let k=0, inicio=performance.now(); k<4 && H.length<hasta && (!k || performance.now()-inicio<5); k++) { M.paso(s); const I = M.ind(s); derivar(I); H.push(I); if(M.gameOver(s))break; }
       if (!M.gameOver(s) && H.length < hasta) return void setTimeout(lote, 0);
       R.base = null; calcularBase(); // la pareja sin propuesta se vuelve a correr con los mismos valores
-      if (previa) { if (R.def && R.def.par >= 2 && R.def.par <= 6) { const Lv = semanaVista(H); if (Lv) { R.vistaH = H.slice(0, H.indexOf(Lv) + 1); R.vistaL = Lv; ponerCierre(Lv.cierre); ponerMov(Lv); grafAb01(true); } } /* el panel también muestra esa semana: los indicadores reaccionan a cada deslizador antes del play */
+      if (previa) { try { if (R.def && R.def.par >= 2 && R.def.par <= 6) SP.anticipo(M.gameOver(s) || null); } catch (e) { /* */ } /* la alerta anuncia el game over (o que aguanta) con estos valores */
+        if (R.def && R.def.par >= 2 && R.def.par <= 6) { const Lv = semanaVista(H); if (Lv) { R.vistaH = H.slice(0, H.indexOf(Lv) + 1); R.vistaL = Lv; ponerCierre(Lv.cierre); ponerMov(Lv); grafAb01(true); } } /* el panel también muestra esa semana: los indicadores reaccionan a cada deslizador antes del play */
         R.previa = true; R.s = M.crear(R.sim, SEMILLA, R.valores); R.hist = []; refrescarPicos(H[H.length - 1]); pintarPrevia(`Vista previa: así quedarían los picos al año ${Math.round(FIN / 52)} con estos valores. Dale play para verlo pasar.`); }
       else { R.s = s; R.hist = H; grafAb01(true); if(M.gameOver(s)){ if (H.length) ponerCapaPar(H[H.length - 1]); /* v4: el mapa queda en la semana del game over */ gameOver(M.gameOver(s));return;} refrescarPicos(); pintarIndicadores(true); pintarPrevia(''); pintarGraficas(); pintarHistoria(); const L = H[H.length - 1]; if (L) { ponerPredio(L.predio); ponerBasura(L); ponerCierre(L.cierre); ponerMov(L); ponerDegrada(L); ponerCaminos(L); ponerCapaPar(L); } }
     };
@@ -1029,7 +1030,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=21');
+    try { const { abrirInforme2 } = await import('./informe.js?v=22');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];

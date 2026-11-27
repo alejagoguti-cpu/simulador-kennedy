@@ -114,7 +114,7 @@ export const PAR_CFG = {
 
 /* ---------- estilos (mismo vidrio y paleta que la 01) ---------- */
 const CSS = `
-#sp-alerta{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:9px;align-items:center;max-width:calc(100vw - 32px);white-space:nowrap;padding:6px 6px 6px 12px;border-radius:12px;
+#sp-alerta.ant{background:linear-gradient(90deg,#7f1d1d,#b91c1c)!important}#sp-alerta{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:46;display:flex;gap:9px;align-items:center;max-width:calc(100vw - 32px);white-space:nowrap;padding:6px 6px 6px 12px;border-radius:12px;
   background:linear-gradient(100deg,#304ffe 0%,#3d8fe6 55%,#4fd1c5 100%);border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(20,40,110,.35);text-shadow:0 1px 2px rgba(10,20,60,.45);color:#fff;overflow:hidden;font:400 11.5px/1.35 var(--ui-sans,Inter,system-ui,sans-serif)}
 #sp-alerta[hidden]{display:none}#sp-alerta>svg{width:16px;height:16px;flex:none;animation:spIco 1.1s ease-in-out infinite}
 #sp-alerta span{font:500 12px var(--ui-sans,Inter,sans-serif);overflow:hidden;text-overflow:ellipsis}
@@ -168,10 +168,12 @@ function feedBajo() { const f = document.getElementById('su-feed'), a = document
   if (f) { const t = on ? Math.round(a.getBoundingClientRect().bottom + 8) + 'px' : ''; if (f.style.top !== t) f.style.top = t; } }
 addEventListener('resize', () => feedBajo());
 let GO = null, PAR = null, VAL = {}, VISTA = 0;
-export function quitar() { const a = document.getElementById('sp-alerta'); if (a) { a.remove(); const f = document.getElementById('su-feed'); if (f && !document.getElementById('ab-alerta')) f.style.top = ''; }
+/* ANTICIPO (2026-11-27): al escoger un escenario, la alerta dice lo que dará el modelo con estos valores (vista previa de sim_ui.js): «Game over en la semana N» o «Aguanta 15 años»; se va al llegar a esa semana o con el game over */
+let ANT = null; export function anticipo(g) { ANT = g || { sem: 0 }; }
+export function quitar() { ANT = null; const a = document.getElementById('sp-alerta'); if (a) { a.remove(); const f = document.getElementById('su-feed'); if (f && !document.getElementById('ab-alerta')) f.style.top = ''; }
   const p = document.getElementById('sp-fxp'); if (p) p.remove(); GO = null; PAR = null; }
 const GO_N = { tasa04: 'Atropellamientos', pob04: 'Población de aves', bosque05: 'Bosque talado', suelo05: 'Suelo productivo', urg06: 'Urgencia desatendida', sost06: 'Sostenibilidad', acum03: 'Residuos acumulados', edad03: 'Orgánicos sin tratar', arterias: 'Arterias saturadas', tiempo: 'Tiempo de viaje', abastoMov: 'Abastecimiento', abasto: 'Abastecimiento', trafico: 'Tráfico', ruido: 'Ruido', fauna: 'Fauna', habitat: 'Hábitat', humedal: 'Humedales', residuos: 'Residuos' };
-export function gameOver(g) { GO = g || null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO);
+export function gameOver(g) { GO = g || null; ANT = null; const a = alertaArriba(); a.hidden = false; a.classList.toggle('go', !!GO);
   if (GO) { const L = LIM[GO.regla], v = GO.valor != null ? (GO.regla === 'trafico' ? GO.valor * 100 : GO.valor) : null;
     a.innerHTML = `${ICO_ALERTA}<b>Game over · año ${año(GO.sem)}</b><span>${GO_N[GO.regla] || GO.regla}${GO.lugar && GO.lugar !== 'Kennedy' ? ' · ' + GO.lugar : ''}</span><strong>${L && v != null ? L.f(v) : ''}</strong><span class="go4">${L && L.sem === 1 ? 'en una semana' : '4 semanas seguidas'}</span>`; }
   feedBajo(); const der = document.getElementById('su-der'); if (der) marcarGo(der); }
@@ -200,7 +202,7 @@ export function montar(der, { def, R } = {}) {
   { const b = der.querySelector('#sp-riesgo'); if (b) b.onclick = () => { const on = window.KEN_RES03 ? window.KEN_RES03.riesgo(!window.KEN_RES03.riesgoOn) : !b.classList.contains('on'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }; }
   { const b = der.querySelector('#sp-ruido'); if (b) b.onclick = () => { if (window.KEN_MOV02) window.KEN_MOV02.ruido(!window.KEN_MOV02.ruidoOn); pintarMov(der, (der._spH || [])[(der._spH || []).length - 1]); }; }
   if (!document.getElementById('sp-css')) { const st = document.createElement('style'); st.id = 'sp-css'; st.textContent = CSS; document.head.appendChild(st); }
-  if (PAR !== def.par) VISTA = 0; PAR = def.par; VAL = R ? R.valores : {}; GO = null; alertaArriba().classList.remove('go');
+  if (PAR !== def.par) VISTA = 0; PAR = def.par; VAL = R ? R.valores : {}; GO = null; ANT = null; alertaArriba().classList.remove('go');
   der.querySelectorAll('#sp-graf [data-g]').forEach(b => { b.setAttribute('aria-selected', +b.dataset.g === VISTA); b.onclick = () => { VISTA = +b.dataset.g; der.querySelectorAll('#sp-graf [data-g]').forEach(x => x.setAttribute('aria-selected', x === b)); if (der._spRepinta) der._spRepinta(); }; });
   const fx = der.querySelector('#sp-fx'); if (fx) fx.onclick = () => abrirFx(der);
 }
@@ -225,7 +227,7 @@ export function actualizar(der, H, FIN = 780, B = null, def = {}) {
   der._spRepinta = () => actualizar(der, H, FIN, B, def); der._spH = H; PAR = def.par;
   const I = H && H.length ? H[H.length - 1] : null, prop = !!def.propuesta;
   if (GO && (!H || H.length < GO.sem)) { GO = null; const a = document.getElementById('sp-alerta'); if (a) a.remove(); }
-  const a = alertaArriba(); if (!GO) { const [t, v] = C.alerta(I, VAL); const pt = a.querySelector('[data-sp="t"]'), pv = a.querySelector('[data-sp="v"]'); if (pt && pt.textContent !== t) pt.textContent = t; if (pv && pv.textContent !== v) pv.textContent = v; } feedBajo();
+  const a = alertaArriba(); a.classList.toggle('ant', !GO && !!ANT && !!ANT.sem && (!H || H.length < ANT.sem)); if (!GO) { const [t, v] = ANT && (!H || !ANT.sem || H.length < ANT.sem) ? (ANT.sem ? ['Game over en la semana ' + nf(ANT.sem) + ' · año ' + año(ANT.sem), GO_N[ANT.regla] || ANT.regla] : ['Aguanta 15 años', 'sin game over']) : C.alerta(I, VAL); const pt = a.querySelector('[data-sp="t"]'), pv = a.querySelector('[data-sp="v"]'); if (pt && pt.textContent !== t) pt.textContent = t; if (pv && pv.textContent !== v) pv.textContent = v; } feedBajo();
   // en vivo
   C.vivo.forEach(([n, f, mx, fmt], i) => { const e = der.querySelector(`#sp-vivo [data-vi="${i}"]`); if (!e) return; let v = null; try { v = I ? f(I) : null; } catch (x) { v = null; }
     const b = e.querySelector('b'), t = v == null ? '—' : fmt(v); if (b.textContent !== t) b.textContent = t; e.querySelector('u').style.width = (v == null ? 0 : Math.max(0, Math.min(100, v / mx * 100))).toFixed(1) + '%'; });
