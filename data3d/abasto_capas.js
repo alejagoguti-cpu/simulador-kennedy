@@ -283,13 +283,13 @@ export function crearCapas01({ T3 }) {
      · CAMIONES A CORABASTOS (los dos escenarios): llegan por la red vial desde ~2,6 km. Cuántos = 20 × ingreso ÷ 6.460 × cola (U.cola de
        ab01Paso, máx. 3) [escala visual]; con cola > 1 una parte (1 − 1 ÷ cola) espera en fila a la entrada: sin propuesta, cuando
        Corabastos se llena, se ven muchos camiones represados. Un árbol de caminos más cortos por destino, uno por cuadro como mucho. */
-  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], cam: [], n: 0, nCam: 0, col: 0xa21cff, MAX: 14, MAXC: 90 };
+  const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], cam: [], n: 0, nCam: 0, col: 0xa21cff, MAX: 14, MAXC: 330 };
   function iniMorados() { if (MO.cargando) return; MO.cargando = true;
     Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]).then(([vm, mv]) => {
       MO.arbol = vm.arbol; MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i); MO.bav = [MO.R.X[nb.i], MO.R.Z[nb.i]];
       MO.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: MO.MAX, camion: MO.MAXC } }); MO.VEH.grupo.visible = false;
       MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 }));
-      MO.cam = Array.from({ length: MO.MAXC }, () => ({})); MO.listo = true;
+      MO.cam = Array.from({ length: MO.MAXC + 30 }, () => ({})); MO.listo = true;
     }).catch(e => console.warn('vehículos de la 01:', e)); }
   MO.ARB = new Map(); MO.pend = 0; MO.pos = { n: 0, x: new Float32Array(MO.MAX + MO.MAXC), z: new Float32Array(MO.MAX + MO.MAXC) };
   function arbolMo(x, z) { const n = MO.R.cercano(x, z); if (n.i < 0) return null; let T = MO.ARB.get(n.i);
@@ -302,7 +302,7 @@ export function crearCapas01({ T3 }) {
     const r = rutaDe(T, ox, oz); MO.rutas.set(key, r); return r; }
   const enRutaMo = (r, s) => { let a = 0, b = r.S.length - 1; while (b - a > 1) { const m = (a + b) >> 1; if (r.S[m] < s) a = m; else b = m; } const f = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]);
     const ex = r.P[b][0] - r.P[a][0], ez = r.P[b][1] - r.P[a][1], l = Math.hypot(ex, ez) || 1; return [r.P[a][0] + ex * f, r.P[a][1] + ez * f, ex / l, ez / l]; };
-  const ponerV = (o, tipo, r, s, ida) => { let [x, z, fx, fz] = enRutaMo(r, s); if (!ida) { fx = -fx; fz = -fz; } x -= fz * 1.8; z += fx * 1.8;
+  const ponerV = (o, tipo, r, s, ida, lat = 1.8) => { let [x, z, fx, fz] = enRutaMo(r, s); if (!ida) { fx = -fx; fz = -fz; } x -= fz * lat; z += fx * lat;
     MO.VEH.poner(o, tipo, x, y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz));
     const P = MO.pos; if (P.n < P.x.length) { P.x[P.n] = x; P.z[P.n] = z; P.n++; } /* v5.2: para medir la densidad de las vías (vias_densidad.js) */ return [x, z]; };
   function moverMorados() {
@@ -321,10 +321,15 @@ export function crearCapas01({ T3 }) {
        más tarda en salir la mercancía = la permanencia del modelo (U.Tp ÷ 0,76 d de 2025: congestión junto a Corabastos × cola); a más permanencia,
        más camiones esperando (ley de Little). Sin propuesta la congestión de base sube cada año; con propuesta baja con los mercados. Los camiones
        en fila esperan a 8 m uno de otro en los 6 accesos más cargados [escala visual declarada, no un aforo]. */
-    if (C) { const cola = Math.max(1, Math.min(3.5, U.Tp ? U.Tp / 0.76 : (U.cola || 1))), nC = Math.min(MO.MAXC, Math.round(24 * (U.ing || 6460) / 6460 * cola)), nEsp = Math.round(nC * (1 - 1 / cola)), vel = 12 / (1 + (U.cC || 0.62));
-      for (let i = 0; i < nC; i++) { const esp = i < nEsp, a = (esp ? (i % 6) * 1.0472 : (i % 12) * 0.5236) + 0.2, d = 2400 + (i % 4) * 250, r = rutaV('c' + (esp ? 'q' + (i % 6) : i % 24), C.x, C.z, C.x + Math.cos(a) * d, C.z + Math.sin(a) * d); if (!r) continue;
-        const s = esp ? Math.max(0, r.L - 30 - 8 * Math.floor(i / 6)) : (((tA * vel / r.L) + i * 0.173) % 1) * r.L; // en fila a la entrada o llegando
-        ponerV(MO.cam[i], 'camion', r, s, true); kc++; } }
+    /* v5.4 (pedido de la autora: que SE VEA el trancón en Corabastos sin propuesta): fila de camiones DETENIDOS en los 6 accesos (y las arterias que llegan a
+       ellos), contados por vias_densidad.js (las vías de esas filas se ponen carmesí). Cuántos = 300 × (permanencia − 0,8) ÷ 1,2 (permanencia = U.Tp ÷ 0,76, el
+       modelo; 0 con 0,8, 80 hoy en 1,12, tope 300 con ≥ 2,0): sin propuesta crece cada año, con propuesta baja con los mercados. Separados 9 m, en 2 carriles
+       [escala visual declarada, no un aforo]. Aparte, 24 camiones en movimiento llegan por 12 rutas. */
+    if (C) { const cola = Math.max(1, Math.min(3.5, U.Tp ? U.Tp / 0.76 : (U.cola || 1))), nMov = Math.round(24 * (U.ing || 6460) / 6460), nEsp = Math.round(300 * Math.max(0, Math.min(1, ((U.Tp ? U.Tp / 0.76 : cola) - 0.8) / 1.2))), vel = 12 / (1 + (U.cC || 0.62)); MO.cola = +cola.toFixed(2); MO.nEsp = nEsp;
+      for (let i = 0; i < nMov; i++) { const a = (i % 12) * 0.5236 + 0.2, d = 2400 + (i % 4) * 250, r = rutaV('c' + i % 24, C.x, C.z, C.x + Math.cos(a) * d, C.z + Math.sin(a) * d); if (!r) continue;
+        ponerV(MO.cam[i], 'camion', r, (((tA * vel / r.L) + i * 0.173) % 1) * r.L, true); kc++; }
+      for (let i = 0; i < nEsp; i++) { const q = i % 6, j = Math.floor(i / 6), r = rutaV('cq' + q, C.x, C.z, C.x + Math.cos(q * 1.0472 + 0.2) * 2600, C.z + Math.sin(q * 1.0472 + 0.2) * 2600); if (!r) continue;
+        const s = r.L - 25 - 9 * j - 2.5 * q; if (s < 5) continue; ponerV(MO.cam[nMov + i], 'camion', r, s, true, 1.8 + 3.4 * ((j + q) % 2)); kc++; } }
     MO.VEH.fin(); MO.n = k; MO.nCam = kc; }
   /* ---------- por cuadro (etiquetas mínimas: solo el porcentaje, pedido de la autora) ---------- */
   let tPrev = 0, tTxt = 0;
@@ -368,7 +373,7 @@ export function crearCapas01({ T3 }) {
     capa(k, on) { if (!(k in estado)) return; estado[k] = !!on; const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; g.visible = !!on; if (on && I) { R_.D = -1; TR.nivel = -1; api.poner(I); } },
     morados() { return MO.n; },
     visible(k) { const g = { bodegas: gB, residuos: gR, trafico: gT }[k]; return !!(raiz.visible && g && g.visible); },
-    info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { vias: TR.nAr, hora: +TR.mesh.material.uniforms.uH.value.toFixed(3) } : null, nivel: TR.nivel, morados: MO.n, camiones: MO.nCam, morado0: MO.p0 || null, moradosG: MO.listo ? { vis: MO.VEH.grupo.visible, padre: !!MO.VEH.grupo.parent, mallas: MO.VEH.grupo.children.filter(o => o.visible && o.count > 0).map(o => o.count) } : null, residuos: RP.n, barra: +gNiv.toFixed(3) }; }
+    info() { return { estaciones: estM.count, bodegas: B.listo ? B.n : 0, arboles: R_.n, montones: R_.mont ? R_.mont.count : 0, trafico: TR.listo ? { vias: TR.nAr, hora: +TR.mesh.material.uniforms.uH.value.toFixed(3) } : null, nivel: TR.nivel, morados: MO.n, camiones: MO.nCam, cola: MO.cola, enFila: MO.nEsp, morado0: MO.p0 || null, moradosG: MO.listo ? { vis: MO.VEH.grupo.visible, padre: !!MO.VEH.grupo.parent, mallas: MO.VEH.grupo.children.filter(o => o.visible && o.count > 0).map(o => o.count) } : null, residuos: RP.n, barra: +gNiv.toFixed(3) }; }
   };
   return api;
 }

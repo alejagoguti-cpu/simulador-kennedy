@@ -628,7 +628,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     if (repartir) { if (PAR) PAR.quitar(); if (CONT) CONT.ver(false); if (!REP) { if (!pRep) pRep = import('./reparto.js?v=2').then(m => { REP = m.crearReparto({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('reparto:', e)); return; } REP.ver(true); REP.poner(I.abasto); return; }
     if (REP) REP.ver(false);
     /* simulación 01 (2026-11-26): capas Bodegas · Residuos · Tráfico (data3d/abasto_capas.js), una vez por semana simulada */
-    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=9').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
+    if (p01 && I) { if (!CAP01) { if (!pCap01) pCap01 = import('./abasto_capas.js?v=10').then(m => { CAP01 = m.crearCapas01({ T3 }); const P = window.KEN_AB01_PEND; if (P) { for (const k in P) CAP01.capa(k, P[k]); window.KEN_AB01_PEND = null; } const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('capas 01:', e)); }
       else CAP01.poner(I); }
     else if (CAP01) { CAP01.poner(null); CAP01.ver(false); }
     if (c === 'abasto') { if (PAR) PAR.quitar(); if (!CONT) { if (!pCont) pCont = import('./abasto_contenedor.js?v=13').then(m => { CONT = m.crearContenedores({ T3 }); const L = ultimo(); if (L) ponerCapaPar(L); }).catch(e => console.warn('contenedores:', e)); return; } CONT.ver(true); CONT.poner(I.abasto); if (CONT.verCora) CONT.verCora(!p01); /* 01 v3: Corabastos lleva el medidor de barra (abasto_capas.js); los mercados siguen con su contenedor */ return; }

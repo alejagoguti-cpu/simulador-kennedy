@@ -206,3 +206,8 @@ La cubierta verde sube de 0,06 a 0,2 m sobre la losa y el desplazamiento de pol�
 
 ### Memoria
 Medido con GC forzado cada 20 s (7 puntos, semana 121 → 649): el heap retenido queda estable en ≈ 2,1 GB (+ ~15 MB por minuto del historial); geometrías y texturas de WebGL constantes (2.964 / 2.041). El «crecimiento» visto (3,5–4,4 GB) es basura entre recolecciones (≈ 120 MB/s de asignaciones). Se recortó: llave de `viajes_mercados.js` (un arreglo por vehículo y cuadro), listas de `TRAF.ocup` y de `api.contar` en index.html (destructuring por vehículo), `KEN_VIAS.medir`. Quedan como mayores fuentes `updateTraffic`, `Math.hypot`, `getParameters` de three y la fauna (biotica.js, de otro frente). La pérdida de contexto WebGL es memoria de GPU (≈ 2.000 texturas, 3.000 geometrías), no una fuga de JS; no se tocó.
+
+
+### v5.4 (2026-11-26) · Fila de camiones visible en Corabastos
+- `abasto_capas.js`: los camiones en fila ya no son hasta 90 a 8 m: ahora hasta **300 camiones detenidos** en los 6 accesos y las arterias que llegan a ellos, a 9 m uno de otro en 2 carriles; cuántos = 300 × (permanencia − 0,8) ÷ 1,2 (0 con 0,8; tope 300 con ≥ 2,0) con permanencia = U.Tp ÷ 0,76 (del modelo; sin propuesta crece cada año, con propuesta baja con los mercados). Aparte 24 camiones en movimiento. [escala visual declarada, no un aforo]. InstancedMesh de `vehiculos.js` (MAXC 330).
+- `vias_densidad.js` sin cambios: ya cuenta esos camiones (extra `ab01`), así que los tramos de las filas pasan a carmesí (densidad HCM ≥ 28 veh/km/carril con F = 2,4 sin tocar) y con propuesta, al haber menos camiones en fila, quedan más verdes. Incluye las calles dentro y alrededor del sitio (donde terminan las rutas).
