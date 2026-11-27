@@ -577,11 +577,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let RES = null, pRes = null, S456 = null, pS456 = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02 y la 03: la semana del cierre o de la interrupción */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     { const p = R.def && R.def.par, d = p >= 4 && p <= 6 && I ? I['s0' + p] : null; /* 04–06 (data3d/capas456.js) */
-      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=4').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
+      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=5').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
     { const r3 = R.def && R.def.par === 3 && I && I.res03 && I.res03.fase > 0 ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
-      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=3').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
+      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=4').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
     if (!m) { if (MOV) MOV.quitar(); return; }
-    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=6').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
+    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=7').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
     MOV.poner(m); }
   /* vista previa (año 1, antes de darle play): el territorio muestra la semana en que la vía ya está cerrada del todo con estos valores */
   const semanaVista = (H) => H.find(h => (h.mov02 && h.mov02.fase >= 1) || (h.res03 && h.res03.fase >= 1) || (h.s04 && h.s04.fase >= 1)) || (R.def && (R.def.par === 5 || R.def.par === 6) ? H[Math.min(H.length - 1, R.def.par === 5 ? 259 : 25)] : null) || H[H.length - 1]; /* 05: año 5 del plan; 06: medio año de rondas */

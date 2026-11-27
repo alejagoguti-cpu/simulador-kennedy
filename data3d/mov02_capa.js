@@ -37,8 +37,10 @@ export function crearMov02({ T3, RELOJ }) {
     sp.position.set(x, (T3.sueloY != null ? T3.sueloY : 0.3) + 30, z); sp.scale.set(0.22, 0.029, 1); sp.renderOrder = 31; sp.frustumCulled = false; sp.visible = false; G.add(sp); ROT[clave] = { sp, cv, tx, txt: '' }; }
   function pintarRot(clave, txt, x) { const R = ROT[clave]; if (!R) return; R.sp.visible = !!txt; if (!txt || R.txt === txt + x.toFixed(2)) return; R.txt = txt + x.toFixed(2);
     const c = R.cv.getContext('2d'), fondo = x >= 1 ? '#9e0024' : x >= 0.85 ? '#ffdb14' : '#1ad94d', letra = x >= 0.85 && x < 1 ? '#111' : '#fff';
-    c.clearRect(0, 0, 1024, 136); c.font = '700 60px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const w = Math.min(1000, c.measureText(txt).width + 70);
-    c.fillStyle = fondo; c.beginPath(); c.roundRect((1024 - w) / 2, 20, w, 96, 48); c.fill(); c.fillStyle = letra; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, 512, 70); R.tx.needsUpdate = true; }
+    const ico = /^(AV|CALLE)/.test(txt) ? '🚗' : '🏘️'; c.clearRect(0, 0, 1024, 136); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const tw = c.measureText(txt).width, w = Math.min(1010, tw + 70 + (ico ? 96 : 0)), x0 = (1024 - w) / 2;
+    c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10; c.fillStyle = fondo; c.beginPath(); c.roundRect(x0, 22, w, 92, 46); c.fill(); c.shadowBlur = 0; c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,.55)'; c.stroke();
+    if (ico) { c.beginPath(); c.arc(x0 + 50, 68, 38, 0, Math.PI * 2); c.fillStyle = '#ffffff'; c.fill(); c.font = '44px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ico, x0 + 50, 71); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; }
+    c.fillStyle = letra; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x0 + (ico ? 96 : 0) + (w - (ico ? 96 : 0)) / 2, 70); R.tx.needsUpdate = true; }
   const MOR = { R: null, arbol: null, arb: new Map(), rutas: new Map(), pend: 0, objs: Array.from({ length: 30 }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: 0xa21cff, _pc: 0xa21cff, _vl: 0 })) };
   function rutaMor(i) { if (MOR.rutas.has(i)) return MOR.rutas.get(i); if (!MOR.R || MOR.pend) return null; const m = MERCADOS[i % MERCADOS.length], a = i * 2.39996, d = 700 + (i % 3) * 150, Rr = MOR.R;
     const nd = Rr.cercano(m.x, m.z), no = Rr.cercano(m.x + Math.cos(a) * d, m.z + Math.sin(a) * d); if (nd.i < 0 || no.i < 0) { MOR.rutas.set(i, null); return null; }

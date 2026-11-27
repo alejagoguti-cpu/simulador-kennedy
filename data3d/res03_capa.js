@@ -24,8 +24,10 @@ export function crearRes03({ T3, RELOJ }) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false }));
     sp.position.set(x, Y() + alto, z); sp.scale.set(0.22, 0.029, 1); sp.renderOrder = 31; sp.frustumCulled = false; G.add(sp); return { sp, cv, tx, txt: '' }; }
   function pintar(Rt, txt, fondo, letra = '#fff') { Rt.sp.visible = !!txt; if (!txt || Rt.txt === txt + fondo) return; Rt.txt = txt + fondo; const c = Rt.cv.getContext('2d');
-    c.clearRect(0, 0, 1024, 136); c.font = '700 58px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const w = Math.min(1000, c.measureText(txt).width + 70);
-    c.fillStyle = fondo; c.beginPath(); c.roundRect((1024 - w) / 2, 20, w, 96, 48); c.fill(); c.fillStyle = letra; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, 512, 70); Rt.tx.needsUpdate = true; }
+    const ico = /BAVARIA/.test(txt) ? '🌱' : /ESTACIÓN/.test(txt) ? '♻️' : /CORABASTOS/.test(txt) ? '🏭' : '🗑️'; c.clearRect(0, 0, 1024, 136); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; const tw = c.measureText(txt).width, w = Math.min(1010, tw + 70 + (ico ? 96 : 0)), x0 = (1024 - w) / 2;
+    c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10; c.fillStyle = fondo; c.beginPath(); c.roundRect(x0, 22, w, 92, 46); c.fill(); c.shadowBlur = 0; c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,.55)'; c.stroke();
+    if (ico) { c.beginPath(); c.arc(x0 + 50, 68, 38, 0, Math.PI * 2); c.fillStyle = '#ffffff'; c.fill(); c.font = '44px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ico, x0 + 50, 71); c.font = '700 56px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; }
+    c.fillStyle = letra; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x0 + (ico ? 96 : 0) + (w - (ico ? 96 : 0)) / 2, 70); Rt.tx.needsUpdate = true; }
 
   async function armar() {
     G = new THREE.Group(); G.name = 'residuos03'; T3.scene.add(G);
