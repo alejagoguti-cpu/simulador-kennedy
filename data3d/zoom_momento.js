@@ -20,15 +20,20 @@ export function crearZoom({ T3, RELOJ }) {
   box.querySelector('[data-z="seguir"]').onclick = () => { if (!T3.camera || !T3.orbit) return; const P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), C1 = new THREE.Vector3(actual.x, 0, actual.z), P1 = new THREE.Vector3(actual.x + 160, 520, actual.z + 620), t0 = performance.now();
     T3.anim = null; (function paso() { const u = Math.min(1, (performance.now() - t0) / 1100), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; T3.camera.position.lerpVectors(P0, P1, e); T3.orbit.target.lerpVectors(C0, C1, e); T3.orbit.update(); if (u < 1) requestAnimationFrame(paso); })(); };
   pintar();
+  /* 2026-11-27 (QA): dibujar con tijera sobre el lienzo principal lo dejaba en blanco. Ahora se dibuja en una textura propia (WebGLRenderTarget) cada
+     120 ms y se copia a un lienzo 2D dentro del recuadro: el lienzo principal no se toca. */
+  const W = 384, H = 200, rt = new THREE.WebGLRenderTarget(W, H, { depthBuffer: true }); rt.texture.colorSpace = THREE.SRGBColorSpace;
+  const buf = new Uint8Array(W * H * 4), cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'; vista.prepend(cv);
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H); let tDib = 0;
   T3.trasRender = () => {
     const r = T3.renderer; if (!r || box.offsetParent === null) return; const now = performance.now();
-    if (now - tCambio > 5000) { tCambio = now; if (tCambio > 5000) siguiente(); }
-    const R = vista.getBoundingClientRect(), C = r.domElement.getBoundingClientRect(); if (R.width < 20 || R.height < 20) return;
-    ang += 0.0025; const Y = (T3.sueloY || 0.3), d = actual.d || 260; cam.position.set(actual.x + Math.cos(ang) * d, Y + d * 0.75, actual.z + Math.sin(ang) * d); cam.lookAt(actual.x, Y + 8, actual.z);
-    cam.aspect = R.width / R.height; cam.updateProjectionMatrix(); cam.layers.mask = T3.camera.layers.mask;
-    const x = R.left - C.left, y = C.bottom - R.bottom; const ac = r.autoClear;
-    r.setScissorTest(true); r.setScissor(x, y, R.width, R.height); r.setViewport(x, y, R.width, R.height); r.autoClear = true;
-    try { r.render(T3.scene, cam); } catch (e) { /* un cuadro sin zoom */ }
-    r.setScissorTest(false); r.setViewport(0, 0, C.width, C.height); r.autoClear = ac; };
+    if (now - tCambio > 5000) { tCambio = now; siguiente(); }
+    if (now - tDib < 120) return; tDib = now;
+    ang += 0.01; const Y = (T3.sueloY || 0.3), d = actual.d || 260; cam.position.set(actual.x + Math.cos(ang) * d, Y + d * 0.75, actual.z + Math.sin(ang) * d); cam.lookAt(actual.x, Y + 8, actual.z);
+    cam.aspect = W / H; cam.updateProjectionMatrix(); cam.layers.mask = T3.camera.layers.mask;
+    const prev = r.getRenderTarget(), ac = r.autoClear; r.autoClear = true;
+    try { r.setRenderTarget(rt); r.clear(); r.render(T3.scene, cam); r.readRenderTargetPixels(rt, 0, 0, W, H, buf); } catch (e) { /* un cuadro sin zoom */ }
+    r.setRenderTarget(prev); r.autoClear = ac;
+    for (let y = 0; y < H; y++) img.data.set(buf.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); ctx.putImageData(img, 0, 0); };
   return window.KEN_ZOOM = { siguiente, get actual() { return actual; } };
 }
