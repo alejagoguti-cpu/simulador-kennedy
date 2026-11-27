@@ -68,7 +68,7 @@ export function red02({ via, c = 0, dem = 1, prop = false, perm = 0, rodeo = 1, 
     kmT0 += o.Vh * tau0; kmT1 += o.V * tau1;
     o.db = R.db + Math.max(-MOV02.CAIDA_MAX, 10 * Math.log10(Math.max(1e-6, o.V) / o.V0)); o.dDb = o.db - R.db;
     eRes += Math.pow(10, o.db / 10);
-    o.sat = o.x; o.tl = R.tl != null && o.v > 0 ? R.tl * ((1 / o.v - o.tLibre) / Math.max(1e-6, 1 / R.v - o.tLibre)) : null; /* time loss de la autora escalado por la demora (s/día) */ }
+    o.cola = o.v > 0 ? o.V * Math.max(0, 1 / o.v - o.tLibre) : 0; /* vehículos detenidos o lentos por km = flujo × demora (ley de Little) */ o.sat = o.x; o.tl = R.tl != null && o.v > 0 ? R.tl * ((1 / o.v - o.tLibre) / Math.max(1e-6, 1 / R.v - o.tLibre)) : null; /* time loss de la autora escalado por la demora (s/día) */ }
   if (wAlt) T1 += (tAlt / wAlt) * D * (rodeo - 1); // km de más de los desviados, a la velocidad media de sus alternas
   const tt = T0 > 0 ? T1 / T0 : 1, rKm = kmT0 > 0 ? (kmT1 / Math.max(1e-6, Vt)) / (kmT0 / Math.max(1e-6, ids.reduce((a, k) => a + out[k].Vh, 0))) : 1;
   const sat = Ct > 0 ? Vt / Ct : 0, dbRes = 10 * Math.log10(eRes / ids.length);

@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=45'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=46'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -576,7 +576,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let MOV = null, pMov = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02: la semana del cierre */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     if (!m) { if (MOV) MOV.quitar(); return; }
-    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=2').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
+    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=3').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
     MOV.poner(m); }
   /* vista previa (año 1, antes de darle play): el territorio muestra la semana en que la vía ya está cerrada del todo con estos valores */
   const semanaVista = (H) => H.find(h => h.mov02 && h.mov02.fase >= 1) || H[H.length - 1];

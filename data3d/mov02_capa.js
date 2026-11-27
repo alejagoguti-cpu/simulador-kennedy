@@ -19,7 +19,11 @@ const R_BARRIO = 450, WMAX = 26, WRUIDO = 320;
 export function crearMov02({ T3, RELOJ }) {
   if (window.KEN_MOV02) return window.KEN_MOV02;
   const THREE = T3.THREE; let G = null, armado = null, M = null, ruidoOn = false, ult = null;
-  const U = { uT: { value: 0 } }, mallas = {}, peat = { pts: null, P: null, n: 0, L: [] };
+  const U = { uT: { value: 0 } }, mallas = {}, peat = { pts: null, P: null, n: 0, L: [] }, tramos = {};
+  /* FILA: vehículos detenidos en las vías alternas. Cuántos por vía = vehículos por km en fila del modelo (flujo × demora de Akçelik, ley de Little)
+     × km de la vía ÷ 4 [escala visual declarada, como la fila de camiones de la 01], máx. 140 por vía; 1 de cada 5 es camión (abastecimiento
+     atrapado). Se ponen desde el punto de la vía más cercano a la vía cerrada hacia afuera, cada 7 m en dos carriles. */
+  const FILA = { VEH: null, objs: [], pos: null, MAX: 600, plan: [], clave: '' };
   const Yv = () => (T3.viaY != null ? T3.viaY : 0.62);
 
   function cinta(lista, w, Y) { // lista: [{ p: [[x,z]…] }] en el mundo → tira de ancho w; aV (−1…1 a lo ancho), aS (m a lo largo)
@@ -50,14 +54,20 @@ export function crearMov02({ T3, RELOJ }) {
     G = new THREE.Group(); G.name = 'cierre-mov02'; T3.scene.add(G);
     const E = T3.net.edges, lw = T3.lw, poli = (e) => E[e][1].map(q => lw(q[0], q[1]));
     // arterias
+    /* 2026-11-27 (la autora: «que se vea como la 01»): las vías ya no llevan cintas de color propias; el color lo da vias_densidad.js, que cuenta
+       los carros de SUMO y los de la fila de abajo, igual que en la 01. Se guardan los tramos de cada vía para poner la fila. */
     for (const k of ART) { const L = (VIAS[k] ? VIAS[k].e : []).filter(e => E[e]).map(e => ({ p: poli(e) })); if (!L.length) continue;
-      const mv = new THREE.Mesh(cinta(L, WMAX, Yv() + 1.1), mat('via')); mv.renderOrder = 8; mv.frustumCulled = false; G.add(mv);
+      const mv = null; tramos[k] = L;
       const mr = new THREE.Mesh(cinta(L, WRUIDO, Yv() + 0.9), mat('ruido')); mr.renderOrder = 4; mr.visible = false; mr.frustumCulled = false; G.add(mr);
-      mallas[k] = { v: mv, r: mr }; }
+      mallas[k] = { r: mr }; }
     // calles locales de Castilla, Marsella, Mandalay y María Paz
     const loc = []; for (let e = 0; e < E.length; e++) { if (E[e][0] !== 'local') continue; const P = poli(e), m = P[P.length >> 1]; if (BARRIOS.some(b => Math.hypot(m[0] - b[0], m[1] - b[1]) < R_BARRIO)) loc.push({ p: P }); }
-    if (loc.length) { const mv = new THREE.Mesh(cinta(loc, 12, Yv() + 1.05), mat('via')); mv.renderOrder = 7; mv.frustumCulled = false; G.add(mv);
-      const mr = new THREE.Mesh(cinta(loc, 90, Yv() + 0.85), mat('ruido')); mr.renderOrder = 3; mr.visible = false; mr.frustumCulled = false; G.add(mr); mallas.locales = { v: mv, r: mr, n: loc.length }; }
+    if (loc.length) { tramos.locales = loc;
+      const mr = new THREE.Mesh(cinta(loc, 90, Yv() + 0.85), mat('ruido')); mr.renderOrder = 3; mr.visible = false; mr.frustumCulled = false; G.add(mr); mallas.locales = { r: mr, n: loc.length }; }
+    // vehículos de la fila: los mismos modelos de la 01 (vehiculos.js); vias_densidad.js los cuenta
+    try { const mv = await import('./vehiculos.js?v=10'); FILA.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: FILA.MAX, camion: Math.ceil(FILA.MAX / 5) } }); FILA.VEH.grupo.visible = false;
+      FILA.objs = Array.from({ length: FILA.MAX }, () => ({})); FILA.pos = { n: 0, x: new Float32Array(FILA.MAX), z: new Float32Array(FILA.MAX) };
+      import('./vias_densidad.js?v=3').then(m => m.crearViasDensidad({ T3 }).extra('mov02', () => (FILA.VEH && FILA.VEH.grupo.visible ? FILA.pos : null))).catch(() => {}); } catch (e) { console.warn('mov02 vehículos:', e); }
     // pasajes y bosque (con propuesta)
     try { const [PJ, AR] = await Promise.all([fetch('data3d/mov02_pasajes.json').then(r => r.json()), fetch('data3d/bavaria_arboles.json').then(r => r.json())]);
       const L = PJ.pasajes.map(p => ({ p: p.p.map(q => lw(q[0], q[1])) }));
@@ -82,7 +92,10 @@ export function crearMov02({ T3, RELOJ }) {
   const colorSat = (x, out) => { if (x >= COLS[COLS.length - 1][0]) return out.copy(COLS[COLS.length - 1][1]); for (let i = 1; i < COLS.length; i++) if (x < COLS[i][0]) return out.copy(COLS[i - 1][1]).lerp(COLS[i][1], (x - COLS[i - 1][0]) / (COLS[i][0] - COLS[i - 1][0])); return out; };
   const colorDb = (db, out) => out.set(db > 75 ? '#ef4444' : db > 65 ? '#f97316' : db >= 50 ? '#eab308' : '#22c55e');
   let tPrev = 0;
-  function cuadro() { if (!G || !G.visible) return; const t = (RELOJ.tVis != null ? RELOJ.tVis : performance.now() / 1000); U.uT.value = t % 10000;
+  function cuadro() { if (!G || !G.visible) { if (FILA.VEH) FILA.VEH.grupo.visible = false; return; } const t = (RELOJ.tVis != null ? RELOJ.tVis : performance.now() / 1000); U.uT.value = t % 10000;
+    if (FILA.VEH) { const P = FILA.plan; FILA.VEH.grupo.visible = P.length > 0; FILA.VEH.inicio(); FILA.pos.n = 0; const y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.02;
+      for (let i = 0; i < P.length; i++) { const q = P[i]; FILA.VEH.poner(FILA.objs[i], q[3], q[0], y + (T3.alzaVia ? T3.alzaVia(q[0], q[1]) : 0), q[1], q[2]); FILA.pos.x[i] = q[0]; FILA.pos.z[i] = q[1]; FILA.pos.n++; }
+      FILA.VEH.fin(); }
     // peatones
     if (peat.im && M && M.prop && peat.L.length) { const n = Math.round(peat.NMAX * (M.perm || 0)); peat.im.count = n; const now = performance.now() / 1000, dt = Math.min(0.1, now - (tPrev || now)); tPrev = now;
       for (let i = 0; i < n; i++) { const s = peat.sem[i], c = peat.L[s[0]]; s[1] += s[2] * s[3] * 1.4 * 4 * dt / c.len; /* 1,4 m/s × 4 (acelerado para que se vea) */ if (s[1] > 1) { s[1] = 1; s[2] = -1; } if (s[1] < 0) { s[1] = 0; s[2] = 1; }
@@ -93,16 +106,25 @@ export function crearMov02({ T3, RELOJ }) {
       peat.im.instanceMatrix.needsUpdate = true; } }
 
   function aplicar() { const m = M; if (!G || !m) return; G.visible = true;
-    for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const u = ms.v.material.uniforms, ur = ms.r.material.uniforms;
-      const cerrada = k === m.via && m.c > 0.02;
-      if (cerrada) { u.uC.value.set('#7f1d1d'); u.uW.value = 0.35; u.uA.value = 0.75; u.uVel.value = 0; }
-      else { colorSat(v.x, u.uC.value); u.uW.value = Math.max(0.18, Math.min(1, v.V / (k === 'locales' ? 4400 : 6500))); u.uA.value = 0.92; u.uVel.value = Math.max(0.6, v.v * 0.6); /* km/h → m/s de dibujo (× 0,6) */ }
+    planFila(m);
+    for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const ur = ms.r.material.uniforms;
       colorDb(v.db, ur.uC.value); ur.uA.value = Math.max(0.15, Math.min(1, (v.db - 45) / 35)); ms.r.visible = ruidoOn; }
     const prop = !!m.prop, pm = m.perm || 0;
     if (mallas.pasajes) { mallas.pasajes.visible = prop && pm > 0.001; mallas.pasajes.material.uniforms.uA.value = 0.15 + 0.85 * pm; }
     if (peat.im) peat.im.visible = prop && pm > 0.001;
     if (mallas.bosque) { mallas.bosque.visible = prop; mallas.bosque.material.opacity = 0.14 + 0.14 * pm + (ruidoOn ? 0.08 : 0); }
   }
+  function planFila(m) {
+    const clave = m.via + '|' + Object.keys(m.vias).map(k => Math.round((m.vias[k].cola || 0) * 2)).join(','); if (clave === FILA.clave) return; FILA.clave = clave;
+    const P = []; const Lc = tramos[m.via] || []; let cx = 0, cz = 0, nc = 0; for (const c of Lc) for (const q of c.p) { cx += q[0]; cz += q[1]; nc++; } cx /= nc || 1; cz /= nc || 1;
+    for (const k of [...ART, 'locales']) { const v = m.vias[k], L = tramos[k]; if (!v || !L || k === m.via || !(v.cola >= 3)) continue;
+      let km = 0; for (const c of L) for (let i = 1; i < c.p.length; i++) km += Math.hypot(c.p[i][0] - c.p[i - 1][0], c.p[i][1] - c.p[i - 1][1]); km /= 2000; /* dos calzadas */
+      let n = Math.min(140, Math.round(v.cola * km / 4)); if (n < 1) continue;
+      const orden = L.map(c => ({ c, d: Math.min(...c.p.map(q => Math.hypot(q[0] - cx, q[1] - cz))) })).sort((a, b) => a.d - b.d);
+      for (const { c } of orden) { if (n <= 0 || P.length >= FILA.MAX) break; const p = c.p;
+        for (let i = 1; i < p.length && n > 0; i++) { const a = p[i - 1], b = p[i], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz); if (l < 1) continue; const ux = dx / l, uz = dz / l;
+          for (let s = 3.5; s < l && n > 0 && P.length < FILA.MAX; s += 7) for (const lado of [1.8, 5.2]) { if (n <= 0) break; P.push([a[0] + ux * s - uz * lado, a[1] + uz * s + ux * lado, Math.atan2(ux, uz), P.length % 5 === 4 ? 'camion' : 'carro']); n--; } } } }
+    FILA.plan = P; }
   const api = {
     async poner(m) { M = m || null; if (!M) { if (G) G.visible = false; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     ruido(on) { ruidoOn = !!on; aplicar(); return ruidoOn; },

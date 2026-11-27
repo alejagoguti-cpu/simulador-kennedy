@@ -74,7 +74,7 @@ import { crearRed, MOTIVOS } from './red_trofica.js?v=3';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
 import { PLAN_BAV } from './plan_bavaria_datos.js?v=2';
-import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=2'; /* sim. 02: red vial con cierre (pedido de la autora, 2026-11-27) */
+import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=3'; /* sim. 02: red vial con cierre (pedido de la autora, 2026-11-27) */
 const RODEO02 = rodeos(CIERRES, ZONAS); // la misma instancia que usa sim_vida.js
 
 const NZ = ZONAS.length, NP = PARCHES.length;
@@ -1467,7 +1467,7 @@ function mov02Paso(E, x) {
   if (!E.go && RM.arterias >= 1) E.go = { regla: 'arterias', enfoque: 'Movilidad', sem, inicio: sem, motivo: `${sat.length} arterias pasaron el 140 % de su capacidad a la vez (${sat.join(', ')}) con la ${V[C.via].n} cerrada al ${Math.round(C.c * 100)} %`, lugar: V[C.via].n, x: KEN_XZ[0], z: KEN_XZ[1], valor: Math.round(Math.max(...Object.values(V).filter(v => v.art && v.k !== C.via).map(v => v.x)) * 1000) / 10 };
   if (!E.go && RM.tiempo >= 1) E.go = { regla: 'tiempo', enfoque: 'Movilidad', sem, inicio: sem, motivo: `el tiempo medio de viaje llegó a ${nf1(r.tt)} veces el normal con la ${V[C.via].n} cerrada al ${Math.round(C.c * 100)} %`, lugar: V[C.via].n, x: KEN_XZ[0], z: KEN_XZ[1], valor: Math.round(r.tt * 100) / 100 };
   if (!E.go && zPeor >= 0) { const Z = ZONAS[zPeor]; E.go = { regla: 'abastoMov', enfoque: 'Comercio ecológico', sem, inicio: sem - MOV02.SEMANAS + 1, motivo: `una zona de Kennedy recibió ${nf1(r.ab.zona[zPeor] * 100)} % de su abastecimiento, menos del 80 %, cuatro semanas seguidas: los camiones de Corabastos hacen ${nf1(r.ab.g * 100)} % de sus viajes por la congestión`, lugar: 'Zona ' + (zPeor + 1), x: Z[0], z: Z[1], valor: Math.round(r.ab.zona[zPeor] * 1000) / 10 }; }
-  const vias = {}; for (const k in V) { const v = V[k]; vias[k] = { n: v.n, art: v.art, C: v.C, Cab: Math.round(v.Cab), V: Math.round(v.V), x: Math.round(v.x * 1000) / 1000, v: Math.round(v.v * 10) / 10, vBase: v.vBase, db: Math.round(v.db * 10) / 10, dDb: Math.round(v.dDb * 10) / 10, extra: Math.round(v.extra || 0), cerrada: v.cerrada, tl: v.tl != null ? Math.round(v.tl) : null }; }
+  const vias = {}; for (const k in V) { const v = V[k]; vias[k] = { n: v.n, art: v.art, C: v.C, Cab: Math.round(v.Cab), V: Math.round(v.V), x: Math.round(v.x * 1000) / 1000, v: Math.round(v.v * 10) / 10, vBase: v.vBase, db: Math.round(v.db * 10) / 10, dDb: Math.round(v.dDb * 10) / 10, extra: Math.round(v.extra || 0), cola: Math.round((v.cola || 0) * 10) / 10, cerrada: v.cerrada, tl: v.tl != null ? Math.round(v.tl) : null }; }
   x.mov02 = { via: C.via, c: C.c || 0, pct: C.pct, fase: C.fase, dem: r.dem, perm: r.perm, prop: r.prop, D: Math.round(r.D), tt: r.tt, sat: r.sat, dbRes: r.dbRes, sobre: r.sobre, rodeo: r.rodeo, g: r.ab.g, abMin: r.ab.min, abMedia: r.ab.media, zPeor: r.ab.iMin,
     zPeorXZ: r.ab.iMin >= 0 ? [ZONAS[r.ab.iMin][0], ZONAS[r.ab.iMin][1]] : null, kProp: r.kProp, bosqueDb: r.bosqueDb, vias, rachas: { arterias: RM.arterias, tiempo: RM.tiempo, abasto: RM.abastoMov.reduce((a, v) => Math.max(a, v), 0) } };
 }
