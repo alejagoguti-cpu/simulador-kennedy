@@ -187,9 +187,8 @@ export function iniciarLimpio({ T3 }) {
     html.limpio body #gs-izq #lp-seis .lp-sim{flex-direction:column!important;justify-content:center!important;gap:4px!important;padding:10px 4px!important;text-align:center}
     html.limpio body #gs-izq #lp-seis .lp-sim .lp-ico{width:30px;height:30px;color:var(--ui-tx,#eef1f4);margin-bottom:2px}
     html.limpio body #gs-izq #lp-seis .lp-sim b{white-space:normal!important;font-size:12px!important;line-height:1.15!important}
-    html.limpio body #gs-izq #lp-seis .lp-lista li.on{grid-column:1/-1;order:10;min-height:0;border-color:var(--ui-acc,#c9f27a)!important;box-shadow:0 0 0 1px var(--ui-acc,#c9f27a) inset}
-    html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-sim{flex-direction:row!important;justify-content:flex-start!important;padding:10px 12px!important}
-    html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-sim .lp-ico{color:var(--ui-acc,#c9f27a);width:24px;height:24px;margin:0}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on{border-color:var(--ui-acc,#c9f27a)!important;box-shadow:0 0 0 1px var(--ui-acc,#c9f27a) inset}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-sim .lp-ico{color:var(--ui-acc,#c9f27a)} html.limpio body #gs-izq #lp-seis .lp-lista .lp-acc{display:none!important}
     html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
   }
   @media(max-width:1099px){#lp-zoom{display:none}}`; document.head.appendChild(st); }
@@ -329,7 +328,7 @@ export function iniciarLimpio({ T3 }) {
     if (rl && rl.nextElementSibling !== seis) rl.after(seis); else if (!rl && seis.parentNode !== gz) gz.prepend(seis);
     /* Variables + informe: dentro del acordeón de la simulación activa (debajo de su fila); con la simulación base, plegadas después de la lista */
     const acc = seis.querySelector('li.on .lp-acc');
-    if (sd && acc) { if (sd.parentNode !== acc) acc.appendChild(sd); const dt = sd.querySelector('#lp-vars'); if (dt && !dt.open) dt.open = true; } else if (sd && seis.nextElementSibling !== sd) seis.after(sd);
+    if (sd && acc && !matchMedia('(min-width:1100px)').matches) { if (sd.parentNode !== acc) acc.appendChild(sd); const dt = sd.querySelector('#lp-vars'); if (dt && !dt.open) dt.open = true; } else if (sd && seis.nextElementSibling !== sd) seis.after(sd); /* escritorio: tarjetas 1–6 en su orden y las variables de la activa debajo de la cuadrícula */
     const ref = sd && sd.parentNode === gz ? sd : seis; if (ref.nextElementSibling !== capas) ref.after(capas); if (capas.nextElementSibling !== conv) capas.after(conv);
     const db = capas.querySelector('.lp-db');
     for (const id of ['rc-btn', 'lp-bio']) { const b = document.getElementById(id); if (b && gz.contains(b) && b.parentNode !== db) db.appendChild(b); }
