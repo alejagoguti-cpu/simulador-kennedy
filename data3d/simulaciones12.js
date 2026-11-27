@@ -69,7 +69,7 @@
      motivo = el que anotó data3d/red_trofica.js al extinguirse en ese parche (sin recursos de la red, tráfico y ruido, tala, humedal degradado o
      azar demográfico). */
 import { redCompleta, evaluarEstado } from './evaluacion_ecologica.js?v=2';
-import * as V from './sim_vida.js?v=ab01';
+import * as V from './sim_vida.js?v=ab02';
 import { crearRed, MOTIVOS } from './red_trofica.js?v=3';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
@@ -208,7 +208,7 @@ export const BASURA_SUP = { CORA_T: 100, FLORES_T: 5, KG_HAB: 0.72, CRECE: 0.027
    del tráfico de la vía cerrada que absorbe la Primero de Mayo [SUP, deslizador «desvioMayo», 50 % por defecto: el resto se reparte por la red
    local, que el 3D dibuja con los desvíos de data3d/cierre_gradual.js]; ruidoExtraDb = 10·log10(traficoDesvio). Fauna: cada parche a 600 m o menos de una vía de desvío recibe la zona de efecto de su tráfico
    (la regla de sim_vida.js, distancia ∝ Q^0,4, 25 % menos aves dentro). */
-export const DESVIO_SUP = { DESV: 0.5, SUBE: 0.3, BAJA: 0.2, RADIO: 600 };
+export const DESVIO_SUP = { DESV: 0.5, SUBE: 0.3, SUBE_MAX: 13, BAJA: 0.2, RADIO: 600 }; /* SUBE_MAX [SUP]: la obra cierra en 3 fases en el menor entre el 30 % del cierre y 13 semanas (un trimestre); sim_vida.js usa el mismo lapso para que las rutas de comida se alarguen poco a poco */
 // generado por tools/cierre_desvios_datos.mjs: distancia (m) de cada parche (orden de sim_red_datos.js) a cada vía
 const DESVIOS = { americas: { n: 'Av. de las Américas', desvio: ['mayo'] },
   vias: { mayo: { n: 'Av. Primero de Mayo', dist: [2458, 1484, 2857, 2413, 3075, 4699, 618, 1008, 1003, 1976, 3261, 1556, 2914, 4812, 2829, 1666, 2771, 894, 413, 3335, 2860, 3907, 1913, 2397, 271, 342, 204, 947, 2201, 2900, 2422, 1660, 2869, 2016, 3614, 2472, 3499, 940, 2174, 299, 924, 3119, 3712, 1189, 2968, 113, 395, 558, 593, 3182, 2835, 4283, 1052, 3707, 4073, 372, 1492, 283, 3789, 643, 2408, 3323, 4086, 3012, 1471, 1046, 126, 370, 675, 2467, 1474] } } };
@@ -252,7 +252,7 @@ export const SUP_SIMS = {
   METRO_RADIO: 800,    // [SUP] «cerca del corredor» = 800 m o menos del eje (caminata típica a una estación; el de tools/escenarios_instalacion.mjs)
   SIN_CORA: 52,        // [SUP] e5: Corabastos deja de abastecer en la semana 52 (hipotético; no hay plan oficial de cierre)
   DESM_LIB: 1,         // [SUP] e6: la carga liberada de Corabastos tiende a 1 (el desmonte sigue el calendario de B y C)
-  CIERRE_VIA: 'americas', CIERRE_T0: 104, CIERRE_DUR: 26, // [SUP] e8, e9: cierre forzado de la Av. de las Américas 26 semanas desde la 104
+  CIERRE_VIA: 'americas', CIERRE_T0: 4, CIERRE_DUR: 260, // [SUP] e8, e9, sim. 02: cierre forzado de la Av. de las Américas desde la semana 4 y durante 5 años (pedido de la autora, 2026-11-26)
   TECHOS_M2: 49000,    // e12: 4,9 ha de techos y balcones (desglose de P1.sup = 9,8 ha en data3d/sim_modelos.js: parques y lotes ~2 ha, techos y balcones ~4,9 ha, Bavaria ~2,9 ha)
   TECHOS_SEM: 156,     // e12: las superficies se montan en 3 años (la misma regla [SUP] de sim_vida.js para supF)
   M2_HUERTA: 50,       // m² por huerta (documento, sim_modelos.js area0): para contar los techos como huertas equivalentes
@@ -312,7 +312,7 @@ const sCap = { k: 'P1.capAcopio', n: 'Capacidad de acopio de los mercados', min:
 const sCapRed = { ...sCap, val: 200, ayuda: 'Frutas y verduras que pueden mover los mercados de barrio y puntos de acopio de la propuesta; en un corte compran directo a productores de la región hasta esta capacidad [SUP: 200 t/día, ampliada desde 132 t/día de mercados_red.js]. Sin propuesta no hay red.' };
 const sComp = { k: 'P2.cap', n: 'Capacidad de cada Estación Circular', min: 1000, max: 15000, paso: 500, val: 6000, unidad: 'kg/semana', ayuda: 'Orgánicos que trata cada Estación Circular de la propuesta. Sin propuesta todo va al relleno.' };
 const sT0 = { k: 'cierreT0', n: 'Semana en que se cierra la vía', min: 1, max: 1000, paso: 1, val: SUP_SIMS.CIERRE_T0, unidad: 'semana', ayuda: 'Cierre forzado de la Av. de las Américas.' };
-const sDur = { k: 'cierreDur', n: 'Duración del cierre', min: 1, max: 104, paso: 1, val: SUP_SIMS.CIERRE_DUR, unidad: 'semanas', ayuda: 'Las rutas que pasan por la vía se alargan: llega menos comida y se recogen menos orgánicos.' };
+const sDur = { k: 'cierreDur', n: 'Duración del cierre', min: 1, max: 520, paso: 1, val: SUP_SIMS.CIERRE_DUR, unidad: 'semanas', ayuda: 'Las rutas que pasan por la vía se alargan: llega menos comida y se recogen menos orgánicos.' };
 /* · trafCrece: crecimiento anual de los carros (V = 0,70·carros + 0,22·motos + 0,08·camiones, sim_vida.js). Por defecto 1,5 %/año (Registro Distrital Automotor).
    · pobCrece: crecimiento anual de la población (más comida, más orgánicos y [SUP] más carros en la misma proporción).
    · mitiga: % de calles pacificadas y con barreras verdes: [SUP] −3 dB en ellas (EEA 2010, https://www.eea.europa.eu/publications/eea_technical_report_2010_11). */
@@ -683,8 +683,8 @@ function indCircular(E) {
   return { organicos_t_dia: kg(o.gen), compostado_t_dia: kg(comp), indice: o.gen > 0 ? Math.min(1, comp / o.gen) : 0, comidaLocal_t_dia: kg(o.prod || 0), flujos: fl.filter(f => f.t_dia > 0.01) }; }
 
 /* ---------- cierre gradual y desvíos (ver DESVIO_SUP) ---------- */
-function faseCierre(C, t) { if (t < C.t0 || t >= C.t0 + C.dur) return 0; const S = DESVIO_SUP, u = (t - C.t0) / C.dur;
-  if (u < S.SUBE) return Math.min(3, Math.floor(u / S.SUBE * 3) + 1) / 3; if (u > 1 - S.BAJA) return Math.max(1, Math.ceil((1 - u) / S.BAJA * 3)) / 3; return 1; }
+function faseCierre(C, t) { if (t < C.t0 || t >= C.t0 + C.dur) return 0; const S = DESVIO_SUP, u = (t - C.t0) / C.dur, ups = Math.min(S.SUBE * C.dur, S.SUBE_MAX); /* 2026-11-26: la obra tarda a lo sumo SUBE_MAX semanas en cerrar la vía (con 260 semanas, el 30 % serían 78: la vía parecería abierta un año y medio) */
+  if (t - C.t0 < ups) return Math.min(3, Math.floor((t - C.t0) / ups * 3) + 1) / 3; if (u > 1 - S.BAJA) return Math.max(1, Math.ceil((1 - u) / S.BAJA * 3)) / 3; return 1; }
 function desvios(E, t) {
   const C = E.cie, D = DESVIOS[C.via]; C.fase = faseCierre(C, t); if (C.fase > C.faseMax) C.faseMax = C.fase; C.traf = 1 + (E.val.desvioMayo != null ? E.val.desvioMayo / 100 : DESVIO_SUP.DESV) * (E.prop ? 2 / 3 : 1) * C.fase; /* con propuesta: tercera ruta por los pasajes y conexiones de Bavaria Común [SUP] */
   /* 2026-11-26: corrección. El comentario de la línea de arriba se tragaba este reinicio: E.xDes se multiplicaba semana a semana durante el cierre

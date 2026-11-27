@@ -37,7 +37,7 @@ export const PAR_CFG = {
   2: { titulo: 'Cierre de la Av. de las Américas',
     alerta(I, val) { const t0 = val.cierreT0, d = val.cierreDur, s = I ? I.sem : 0;
       if (s < t0) return ['Se cerrará la Av. de las Américas', 'en ' + nf(t0 - s) + ' sem'];
-      if (s < t0 + d) return ['Av. de las Américas cerrada', '+' + nf((desvio(I) - 1) * 100) + ' % en la 1.º de Mayo'];
+      if (s < t0 + d) return ['Se cerró la Av. de las Américas', '+' + nf((desvio(I) - 1) * 100) + ' % en la 1.º de Mayo'];
       return ['Vía reabierta', 'cerró ' + nf(d) + ' sem']; },
     vivo: [['Tráfico en la Av. Primero de Mayo', (I) => desvio(I) * 100, 200, (v) => nf(v) + ' %'], ['Bienestar de las aves', (I) => I.avesRuido ? I.avesRuido.bienestarFauna * 100 : null, 100, (v) => nf(v, 1) + ' %'], ['Animales muertos esta semana', (I) => I.muertes ? I.muertes.semana : null, 100, (v) => nf(v)]],
     graf: [{ t: '¿Cuánto tráfico se desvía?', s: [{ f: (I) => desvio(I) * 100, n: 'Primero de Mayo' }], fmt: (v) => nf(v) + ' %', sub: (I) => `100 % = tráfico normal. Hoy: ${nf(desvio(I) * 100)} %; el ruido allí sube ${nf(10 * Math.log10(desvio(I)), 1)} dB.` },

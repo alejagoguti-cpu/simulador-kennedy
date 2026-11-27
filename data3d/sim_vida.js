@@ -236,7 +236,10 @@ export function paso(s, PAR) {
   if (P1.crece) s.pob *= Math.pow(1.015, 1 / AÑO);
   const popF = s.pob / POB_K;
   const tau = !prop ? SUP.TAU_A : SUP.TAU_BC + Math.min(20, s.resolPrev || 1);
-  const fe = (z, j) => { if (!Fk) return 1; const f = Fk[z * NF + j]; return f >= 1 ? 1 : f + (1 - f) * (1 - Math.exp(-semCi / tau)); }; // la ruta larga se va compensando (más viajes) en ~τ semanas
+  /* 2026-11-26 (sim. 02): en el cierre FORZADO la obra avanza por fases (el primer 30 % del cierre, como DESVIO_SUP.SUBE de simulaciones12.js), así que
+     las rutas se alargan poco a poco y no de golpe: el factor de ruta baja de 1 a f en ese lapso [SUP]. Los cierres al azar (1–6 semanas) siguen igual. */
+  const rampaCi = CI && CI.forzado ? Math.min(1, (semCi + 1) / Math.max(1, Math.min(0.3 * CI.dur, 13))) : 1;
+  const fe = (z, j) => { if (!Fk) return 1; const f0 = Fk[z * NF + j]; if (f0 >= 1) return 1; const f = 1 - (1 - f0) * rampaCi; return f + (1 - f) * (1 - Math.exp(-semCi / tau)); }; // la ruta larga se va compensando (más viajes) en ~τ semanas
 
   /* ---- huertas, promotores y producción (SIM-01 sin eventos: solo azar demográfico) ---- */
   if (prop) { if (t % 13 === 0) s.pipe.push([t + P1.retardo, P1.cupos]); while (s.pipe.length && s.pipe[0][0] <= t) s.prom += s.pipe.shift()[1]; } // Bavaria forma una cohorte por trimestre (en B y en C)

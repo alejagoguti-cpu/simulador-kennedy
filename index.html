@@ -2770,7 +2770,7 @@ function updateTraffic(dt) {
     const j = m.get(A.ids[i]);
     let x1 = x0, y1 = y0;
     if (j !== undefined) { x1 = B.xs[j] - LC.x; y1 = LC.y - B.ys[j]; }
-    let dx = x1 - x0, dy = y1 - y0; const dvq = cl === 0 && T3.desvio ? T3.desvio(A.ids[i], TRAF.t) : null; /* vía cerrada: va por el desvío */
+    let dx = x1 - x0, dy = y1 - y0; const dvq = T3.desvio ? T3.desvio(A.ids[i], (TRAF.t + cl * 487) % TRAF.NS) : null; /* también las copias desfasadas: ningún carro pasa por la vía cerrada */ /* vía cerrada: va por el desvío */
     if (dvq) { const L = Math.hypot(dvq[2], dvq[3]) || 1; dx = dvq[2] / L * 8; dy = dvq[3] / L * 8; }
     if (dx * dx + dy * dy > 1e-6) TRAF.head[n] = Math.atan2(-dy, dx);
     const hd = TRAF.head[n];
@@ -3865,7 +3865,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
       if (KEN && !document.getElementById('rc-btn')) { /* ruido de los carros y cierre de vía (data3d/ruido_cierre.js, como en el módulo 08) */
-        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=15'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
+        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=16'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
         const b1 = document.createElement('button'); b1.id = 'rc-btn'; b1.textContent = 'Ruido de carros'; b1.title = 'Mapa de ruido en vivo según dónde van los carros'; b1.style.cssText = 'width:100%;margin-top:6px';
         b1.onclick = async () => { const on = !b1.classList.contains('on'); b1.classList.toggle('on', on); try { const a = await rcApi(); a.ruido.ver(on); if (!on) T3.rcMod.panelRuido(false); /* la usuaria: al prender el ruido solo se ve el mapa, sin abrir el panel */ } catch (e) { console.warn('ruido:', e); } };
         const b2 = document.createElement('button'); b2.id = 'ci-open'; b2.textContent = 'Cerrar una vía'; b2.title = 'Cierra una vía crítica y desvía los carros por las calles vecinas'; b2.style.cssText = 'width:100%;margin-top:6px';

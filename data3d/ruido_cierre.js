@@ -75,30 +75,46 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
   // ---------------- CIERRE DE VÍA ----------------
   let cerrada = null, desvios = new Map(), marca = null;
   const segDist = (px, py, ax, ay, bx, by) => { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy; let t = L2 ? ((px - ax) * dx + (py - ay) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - ax - t * dx, py - ay - t * dy); };
-  function grafo(ie, R) {
-    const P = N.edges[ie][1]; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const [x, y] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  /* 2026-11-26 (sim. 02): ie puede ser una arista o una LISTA de aristas (toda la Av. de las Américas). El grafo cuesta largo × clase de vía (arteria 1,
+     intermedia 1,15, local 1,6: la misma regla de data3d/cierre_gradual.js), así los desvíos prefieren las arterias paralelas; la búsqueda es A* (heurística = distancia en línea recta). */
+  const COSTO = { major: 1, mid: 1.15, local: 1.6 };
+  function grafo(cer, R) {
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const ie of cer) for (const [x, y] of N.edges[ie][1]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
     x0 -= R; x1 += R; y0 -= R; y1 += R;
     const nodos = new Map(), ady = new Map(), SN = 22, clave = (x, y) => Math.round(x / SN) + ',' + Math.round(y / SN);
     const nodo = (x, y) => { const k = clave(x, y); if (!nodos.has(k)) nodos.set(k, { x, y }); return k; };
     const arista = (a, b, d) => { if (a === b) return; (ady.get(a) || ady.set(a, []).get(a)).push([b, d]); (ady.get(b) || ady.set(b, []).get(b)).push([a, d]); };
-    N.edges.forEach(([, pts], k) => { if (k === ie) return; for (let i = 0; i < pts.length - 1; i++) { const [ax, ay] = pts[i], [bx, by] = pts[i + 1]; if (!((ax >= x0 && ax <= x1 && ay >= y0 && ay <= y1) || (bx >= x0 && bx <= x1 && by >= y0 && by <= y1))) continue; const d = Math.hypot(bx - ax, by - ay); if (d > 0) arista(nodo(ax, ay), nodo(bx, by), d); } });
-    return { nodos, ady };
+    N.edges.forEach(([tipo, pts], k) => { if (cer.has(k)) return; const c = COSTO[tipo] || 1.3; for (let i = 0; i < pts.length - 1; i++) { const [ax, ay] = pts[i], [bx, by] = pts[i + 1]; if (!((ax >= x0 && ax <= x1 && ay >= y0 && ay <= y1) || (bx >= x0 && bx <= x1 && by >= y0 && by <= y1))) continue; const d = Math.hypot(bx - ax, by - ay); if (d > 0) arista(nodo(ax, ay), nodo(bx, by), d * c); } });
+    const CG = 60, cel = new Map(); nodos.forEach((p, k) => { if (!ady.has(k)) return; const ck = Math.floor(p.x / CG) * 100003 + Math.floor(p.y / CG); (cel.get(ck) || cel.set(ck, []).get(ck)).push(k); });
+    return { nodos, ady, cel, CG };
   }
-  const cercano = (G, x, y) => { let m = null, dm = 1e18; G.nodos.forEach((p, k) => { if (!G.ady.has(k)) return; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < dm) { dm = d; m = k; } }); return m; };
-  function dijkstra(G, s, t) {
-    const dist = new Map([[s, 0]]), prev = new Map(), vis = new Set(), H = [[0, s]];
+  const cercano = (G, x, y) => { const cx = Math.floor(x / G.CG), cy = Math.floor(y / G.CG); let m = null, dm = 1e18;
+    for (let r = 0; r <= 12; r++) { for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) { if (Math.max(Math.abs(i), Math.abs(j)) !== r) continue; const L = G.cel.get((cx + i) * 100003 + cy + j); if (!L) continue; for (const k of L) { const p = G.nodos.get(k), d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < dm) { dm = d; m = k; } } }
+      if (m && dm <= (r * G.CG) ** 2) break; }
+    return m; };
+  function dijkstra(G, s, t) { // A*
+    const T = G.nodos.get(t), h = (u) => { const p = G.nodos.get(u); return Math.hypot(p.x - T.x, p.y - T.y); };
+    const dist = new Map([[s, 0]]), prev = new Map(), vis = new Set(), H = [[h(s), s]];
     const push = (it) => { H.push(it); let i = H.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (H[p][0] <= H[i][0]) break; [H[p], H[i]] = [H[i], H[p]]; i = p; } };
     const pop = () => { const top = H[0], last = H.pop(); if (H.length) { H[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < H.length && H[l][0] < H[m][0]) m = l; if (r < H.length && H[r][0] < H[m][0]) m = r; if (m === i) break; [H[m], H[i]] = [H[i], H[m]]; i = m; } } return top; };
-    while (H.length) { const [d, u] = pop(); if (vis.has(u)) continue; vis.add(u); if (u === t) break; for (const [v, w] of G.ady.get(u) || []) { const nd = d + w; if (nd < (dist.has(v) ? dist.get(v) : 1e18)) { dist.set(v, nd); prev.set(v, u); push([nd, v]); } } }
+    while (H.length) { const [, u] = pop(); if (vis.has(u)) continue; vis.add(u); if (u === t) break; const du = dist.get(u); for (const [v, w] of G.ady.get(u) || []) { const nd = du + w; if (nd < (dist.has(v) ? dist.get(v) : 1e18)) { dist.set(v, nd); prev.set(v, u); push([nd + h(v), v]); } } }
     if (!dist.has(t)) return null; const camino = []; for (let u = t; u; u = prev.get(u)) { camino.push(G.nodos.get(u)); if (u === s) break; } return camino.reverse();
   }
-  function calcularDesvios(ie) {
+  async function calcularDesvios(cer) {
     desvios = new Map(); const TR = T3.TRAF; if (!TR) return 0;
-    const P = N.edges[ie][1], cerca = new Map();
-    for (const st of TR.steps) { if (!st) continue; for (let i = 0; i < st.ids.length; i++) { const x = st.xs[i], y = st.ys[i]; let dm = 1e9; for (let k = 0; k < P.length - 1; k++) { const d = segDist(x, y, P[k][0], P[k][1], P[k + 1][0], P[k + 1][1]); if (d < dm) dm = d; } if (dm < 14) { const id = st.ids[i]; (cerca.get(id) || cerca.set(id, []).get(id)).push([st.t, x, y]); } } }
-    const G = grafo(ie, 900); let n = 0;
+    /* los vehículos que usan la vía: los que van a menos de 14 m de alguna arista cerrada y avanzan al menos 80 m por ella (los que solo la cruzan no se desvían) */
+    const CEL = 20, rej = new Map();
+    for (const ie of cer) { const P = N.edges[ie][1]; for (let k = 0; k < P.length - 1; k++) { const L = Math.hypot(P[k + 1][0] - P[k][0], P[k + 1][1] - P[k][1]), n = Math.max(1, Math.ceil(L / 10)), vistos = new Set();
+      for (let q = 0; q <= n; q++) { const x = P[k][0] + (P[k + 1][0] - P[k][0]) * q / n, y = P[k][1] + (P[k + 1][1] - P[k][1]) * q / n, key = Math.floor(x / CEL) * 100003 + Math.floor(y / CEL); if (vistos.has(key)) continue; vistos.add(key); (rej.get(key) || rej.set(key, []).get(key)).push(P[k][0], P[k][1], P[k + 1][0], P[k + 1][1]); } } }
+    const cerca = new Map();
+    let ns = 0;
+    for (const st of TR.steps) { if (!st) continue; if (++ns % 100 === 0) await new Promise(r => setTimeout(r, 0)); for (let i = 0; i < st.ids.length; i++) { const x = st.xs[i], y = st.ys[i], cx = Math.floor(x / CEL), cy = Math.floor(y / CEL); let dm = 1e9;
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const l = rej.get((cx + a) * 100003 + cy + b); if (l) for (let k = 0; k < l.length; k += 4) { const d = segDist(x, y, l[k], l[k + 1], l[k + 2], l[k + 3]); if (d < dm) dm = d; } }
+      if (dm < 14) { const id = st.ids[i]; (cerca.get(id) || cerca.set(id, []).get(id)).push([st.t, x, y]); } } }
+    const G = grafo(cer, 900); let n = 0, c = 0;
     for (const [id, L] of cerca) {
-      if (n >= 400) break; L.sort((a, b) => a[0] - b[0]); const A = L[0], B = L[L.length - 1];
+      if (n >= 1800) break; if (++c % 120 === 0) await new Promise(r => setTimeout(r, 0)); if (L.length < 3) continue; L.sort((a, b) => a[0] - b[0]); const A = L[0], B = L[L.length - 1];
+      if (Math.hypot(B[1] - A[1], B[2] - A[2]) < 80) continue;
       const s = cercano(G, A[1], A[2]), t = cercano(G, B[1], B[2]); if (!s || !t || s === t) continue;
       const cam = dijkstra(G, s, t); if (!cam || cam.length < 2) continue;
       const acum = [0]; for (let i = 1; i < cam.length; i++) acum.push(acum[i - 1] + Math.hypot(cam[i].x - cam[i - 1].x, cam[i].y - cam[i - 1].y));
@@ -129,9 +145,11 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
     if (!T3.TRAF) { estado('La simulación de tráfico aún está cargando; intenta en un momento.'); return; }
     estado('Bajando el tráfico grabado y calculando desvíos…'); { const TR = T3.TRAF; if (TR.pedirTrozo) await Promise.all([...Array(Math.ceil(TR.NS / TR.chunk))].map((_, k) => TR.pedirTrozo(k))); } /* el tráfico se baja por partes: el cierre necesita todo */
     await new Promise(r => setTimeout(r, 30));
-    const n = calcularDesvios(ie); cerrada = ie; marcar(ie);
+    const lista = Array.isArray(ie), cer = new Set(lista ? ie : [ie]); /* lista: la vía entera (la obra y su rótulo los dibuja data3d/cierre_gradual.js) */
+    const n = await calcularDesvios(cer); cerrada = ie; marcar(lista ? null : ie);
     const vc = VIAS_CRITICAS.find(v => v.e === ie);
     estado(`${vc ? vc.n : 'Vía'}: cerrada. ${n} vehículos desviados por calles vecinas.`);
+    if (lista) return;
     const p = N.edges[ie][1][Math.floor(N.edges[ie][1].length / 2)], [x, z] = lw(p[0], p[1]);
     if (T3.orbit) { T3.orbit.target.set(x, 0, z); T3.camera.position.set(x + 260, 300, z + 260); T3.orbit.update(); }
   }

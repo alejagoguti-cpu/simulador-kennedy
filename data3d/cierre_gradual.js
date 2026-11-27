@@ -1,4 +1,4 @@
-/* ============ CIERRE GRADUAL DE UNA VÍA (obra) + DESVÍOS + RUIDO DE LOS DESVÍOS ============
+﻿/* ============ CIERRE GRADUAL DE UNA VÍA (obra) + DESVÍOS + RUIDO DE LOS DESVÍOS ============
    window.KEN_CIERRE = { poner({ via, fase, ruidoExtraDb, traficoDesvio }), quitar() }
    · via: 'americas' | 'boyaca' | 'cali' | 'agoberto' | 'mayo' (los mismos ids de CIERRES en data3d/sim_red_datos.js y de
      SUP_SIMS.CIERRE_VIA en simulaciones12.js; también acepta el nombre con tildes, «Av. de las Américas», etc.), 'critica1'…'critica6'
@@ -41,7 +41,7 @@ function normalizar(v) {
 export function crearCierre({ T3, RELOJ }) {
   if (window.KEN_CIERRE) return window.KEN_CIERRE; // una sola obra en la escena: sim_ui.js y el recorrido de la sim. 02 (recorrido_movilidad.js) la comparten
   const THREE = T3.THREE;
-  let G = null, U = null, RED = null, actual = null, viaKey = null, rcEdge = null, mallas = [];
+  let G = null, U = null, RED = null, actual = null, viaKey = null, rcEdge = null, mallas = [], rotulos = [];
   const meta = { fase: 0, db: 0, tr: 0 }, cur = { fase: 0, db: 0, tr: 0 };
   let rcEstado = 'abierta', rcCola = Promise.resolve(), rcPend = 0, rcEspera = 0;
   const camP = new THREE.Vector3(), camT = new THREE.Vector3();
@@ -96,7 +96,7 @@ export function crearCierre({ T3, RELOJ }) {
   const FS = {
     // vía cerrada: ámbar mientras se cierran carriles, rojo con el cierre total; avanza a lo largo de la vía con la fase
     cerrada: 'uniform float uFase, uT; varying float vV, vS, vW, vU; void main(){ float rev = smoothstep(vU * 0.96, vU * 0.96 + 0.03, uFase * 2.0); float full = smoothstep(0.5, 1.0, uFase);' +
-      ' vec3 c = mix(vec3(1.0, 0.66, 0.16), vec3(0.98, 0.16, 0.13), full); float e = 1.0 - smoothstep(0.55, 1.0, abs(vV));' +
+      ' vec3 c = mix(vec3(1.0, 0.66, 0.16), vec3(0.98, 0.16, 0.13), full); c = mix(c, vec3(0.07, 0.06, 0.08), step(0.5, fract((vS + vV * 6.0) / 8.0)) * (0.55 + 0.4 * full)); float e = 1.0 - smoothstep(0.55, 1.0, abs(vV));' + /* franjas diagonales oscuras / rojas: «obra, vía cerrada» */
       ' float a = rev * e * (0.5 + 0.3 * full + 0.1 * sin(uT * 3.0)); if (a < 0.004) discard; gl_FragColor = vec4(c, a); }',
     cerradaHalo: 'uniform float uFase, uT; varying float vV, vS, vW, vU; void main(){ float rev = smoothstep(vU * 0.96, vU * 0.96 + 0.03, uFase * 2.0); float full = smoothstep(0.5, 1.0, uFase);' +
       ' float f = 1.0 - abs(vV); float a = rev * f * f * (0.14 + 0.16 * full); if (a < 0.004) discard; gl_FragColor = vec4(mix(vec3(1.0, 0.55, 0.1), vec3(0.95, 0.12, 0.1), full), a); }',
@@ -106,7 +106,7 @@ export function crearCierre({ T3, RELOJ }) {
       ' gl_FragColor = vec4(mix(vec3(1.0, 0.6, 0.14), vec3(0.97, 0.2, 0.12), vW), a); }',
     ruido: 'uniform float uH; varying float vV, vS, vW, vU; void main(){ float f = 1.0 - vV * vV; float a = uH * f * f * 0.26 * (0.35 + 0.65 * vW); if (a < 0.003) discard; gl_FragColor = vec4(0.86, 0.1, 0.09, a); }'
   };
-  const matCinta = (fs, orden) => { const m = new THREE.ShaderMaterial({ uniforms: U, vertexShader: VS, fragmentShader: FS[fs], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 - orden, polygonOffsetUnits: -4 - orden }); return m; };
+  const matCinta = (fs, orden) => { const m = new THREE.ShaderMaterial({ uniforms: U, vertexShader: VS, fragmentShader: FS[fs], transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4 - orden, polygonOffsetUnits: -4 - orden }); return m; };
 
   /* ---------- conos, barricadas y luces (instancias; aparecen en el sombreador según la fase) ---------- */
   function geoPartes(lista) { // lista de [geometría, color]
@@ -200,10 +200,20 @@ export function crearCierre({ T3, RELOJ }) {
     const ld = []; for (let e = 0; e < R.M; e++) if (peso[e] > 0 && !bloq[e]) { const P = E[e][1]; ld.push({ p: P.map(q => lw(q[0], q[1])), w: Math.min(1, peso[e] / Math.max(1, pm * 0.6)) }); }
     const mD = new THREE.Mesh(cinta(ld, 6, Yv + 0.9), matCinta('desvio', 3)); mD.name = 'cierre-desvios'; mD.renderOrder = 7;
     const mR = new THREE.Mesh(cinta(ld, 70, Yv + 0.75), matCinta('ruido', 0)); mR.name = 'cierre-ruido'; mR.renderOrder = 4;
-    mallas = [mR, mH, mC, mD, iC, iB, iL]; for (const m of mallas) G.add(m);
+    // rótulo «AV. DE LAS AMÉRICAS · CERRADA» (tamaño fijo en pantalla) en 4 puntos de la vía
+    rotulos = [];
+    { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 128; const cx = cv.getContext('2d');
+      cx.fillStyle = 'rgba(14,16,20,0.92)'; cx.fillRect(0, 0, 1024, 128); cx.fillStyle = '#e8262a'; cx.fillRect(0, 0, 18, 128); cx.fillRect(1006, 0, 18, 128);
+      cx.fillStyle = '#ffffff'; cx.font = '700 62px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText((def.n + ' · CERRADA').toUpperCase(), 512, 68);
+      const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4;
+      const medios = cerr.map(e => { const P = E[e][1], q = P[Math.floor(P.length / 2)]; return { e, q, u: uDe(q[0], q[1]) }; });
+      for (const ut of [0.12, 0.37, 0.63, 0.88]) { let b = null; for (const m of medios) if (!b || Math.abs(m.u - ut) < Math.abs(b.u - ut)) b = m; if (!b) continue;
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false, opacity: 0 }));
+        const [wx, wz] = lw(b.q[0], b.q[1]); sp.position.set(wx, Ys + 30, wz); sp.scale.set(0.24, 0.03, 1); sp.renderOrder = 30; sp.name = 'cierre-rotulo'; sp.frustumCulled = false; rotulos.push(sp); } }
+    mallas = [mR, mH, mC, mD, iC, iB, iL, ...rotulos]; for (const m of mallas) G.add(m);
     // arista para T3.rc.cerrar (los carros grabados se desvían): la cerrada más cercana a Corabastos con al menos 30 m
     let be = cerr[0], bd = Infinity; for (const e of cerr) { if (R.eL[e] < 30 && cerr.length > 1) continue; const P = E[e][1], q = P[Math.floor(P.length / 2)], d = (q[0] - CORA[0]) ** 2 + (q[1] - CORA[1]) ** 2; if (d < bd) { bd = d; be = e; } }
-    rcEdge = be;
+    rcEdge = cerr.length > 1 ? cerr.slice() : be; /* 2026-11-26: toda la vía (la lista) para que los carros grabados que la usan tomen el desvío */
     Object.assign(est, { aristas: cerr.length, desvios: ld.length, rutas, conos: conos.length, barricadas: barr.length, rcArista: be, ms: Math.round(performance.now() - t0) });
   }
 
@@ -217,7 +227,7 @@ export function crearCierre({ T3, RELOJ }) {
   /* ---------- carros grabados (data3d/ruido_cierre.js, como rcApi() de index.html) ---------- */
   async function rcApi() {
     if (T3.rc) return T3.rc;
-    const m = await import('./ruido_cierre.js?v=14');
+    const m = await import('./ruido_cierre.js?v=16');
     if (!T3.rc) { T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE, T3, LC: T3.LC }); }
     return T3.rc;
   }
@@ -249,7 +259,7 @@ export function crearCierre({ T3, RELOJ }) {
     U.uFase.value = cur.fase; U.uT.value = RELOJ.tAnim || 0;
     U.uI.value = cur.fase * Math.max(0, Math.min(1.5, cur.tr));
     U.uH.value = cur.fase * Math.max(0, Math.min(1.25, cur.db / 8));
-    G.visible = cur.fase > 0.001;
+    G.visible = cur.fase > 0.001; for (const r of rotulos) r.material.opacity = Math.max(0, Math.min(1, (cur.fase - 0.2) / 0.3));
     if (rcPend > 0 && T3.orbit) { camP.copy(T3.camera.position); camT.copy(T3.orbit.target); } // lo último que se vio antes de que ruido_cierre mueva la cámara
     if (rcEdge != null && rcEstado === 'abierta' && meta.fase >= 0.5 && cur.fase >= 0.5 && performance.now() > rcEspera) { rcEstado = 'cerrando'; rcHacer(rcEdge); }
     else if (rcEstado === 'cerrada' && meta.fase < 0.45) { rcEstado = 'abriendo'; rcHacer(null); }
