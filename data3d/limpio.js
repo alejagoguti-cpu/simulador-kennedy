@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=9';
-import { iniciarSimUI } from './sim_ui.js?v=148';
+import { iniciarSimUI } from './sim_ui.js?v=149';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -268,7 +268,7 @@ export function iniciarLimpio({ T3 }) {
     { const E = T3.EST; if (E && E.focoCubiertas) { if (par === 1 && con) setTimeout(() => { if (ESC.activo === id) E.focoCubiertas(true); }, 150); else E.focoCubiertas(false); } }
     /* 2026-11-26 (pedido de la autora): se quitó el recorrido de la 02 con el «paro» (data3d/recorrido_movilidad.js ya no se carga; el archivo queda) */
     import('./recorrido_residuos.js?v=6').then(m => {
-      if (par !== 3) return m.cerrarRecorridoResiduos();
+      return m.cerrarRecorridoResiduos(); /* 2026-11-27: la 03 es ahora la interrupción de la recolección; el recorrido viejo (¿dónde van los orgánicos?) tapaba el mapa */
       setTimeout(() => { if (ESC.activo === id) m.abrirRecorridoResiduos({ con }).catch(e => console.warn('recorrido residuos:', e)); }, 150);
     }).catch(e => console.warn('recorrido residuos:', e));
   }

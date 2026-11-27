@@ -27,8 +27,8 @@ export function crearS456({ T3, RELOJ }) {
   async function armar04() { const g = new THREE.Group(); G.add(g);
     /* humedales delimitados (polígonos reales de data3d/water_bodies.json): borde cian y relleno suave; el borde se engrosa con el estrés de la oleada */
     const bordes = []; try { const W = await fetch('data3d/water_bodies.json').then(r => r.json()); for (const w of W.filter(x => /El Burro|La Vaca|de Techo/.test(x.nombre))) { const P = w.pts.map(p => lw(p[0], p[1]));
-      const c = new THREE.CatmullRomCurve3(P.filter((_, i) => i % 3 === 0).map(p => new THREE.Vector3(p[0], Y() + 2, p[1])), true); const b = new THREE.Mesh(new THREE.TubeGeometry(c, Math.min(600, P.length), 2.5, 5, true), basic(0x22d3ee, 0.95, { depthWrite: false })); b.renderOrder = 10; g.add(b);
-      const sh = new THREE.Shape(P.map(p => new THREE.Vector2(p[0], -p[1]))), r = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), basic(0x06b6d4, 0.18, { depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })); r.position.y = Y() + 0.9; r.renderOrder = 5; g.add(r); bordes.push({ b, r }); } } catch (e) { console.warn('humedales:', e); }
+      const c = new THREE.CatmullRomCurve3(P.filter((_, i) => i % 3 === 0).map(p => new THREE.Vector3(p[0], Y() + 2, p[1])), true); const b = new THREE.Mesh(new THREE.TubeGeometry(c, Math.min(600, P.length), 2.5, 5, true), basic(0x22d3ee, 0.95, { depthWrite: false, depthTest: false })); b.renderOrder = 10; g.add(b);
+      const sh = new THREE.Shape(P.map(p => new THREE.Vector2(p[0], -p[1]))), r = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), basic(0x06b6d4, 0.18, { depthWrite: false, depthTest: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })); r.position.y = Y() + 0.9; r.renderOrder = 5; g.add(r); bordes.push({ b, r }); } } catch (e) { console.warn('humedales:', e); }
     const H = { vaca: [760, 1160], burro: [2096, -109], techo: [2997, -606], bav: [4100, 60] }, N = { vaca: 'Humedal La Vaca', burro: 'Humedal El Burro', techo: 'Humedal de Techo', bav: 'Bosque de Bavaria' };
     const pares = [['vaca', 'burro'], ['burro', 'techo'], ['techo', 'bav'], ['burro', 'bav']];
     const curvas = (alto) => pares.map(([a, b]) => { const A = H[a], B = H[b], M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2]; return new THREE.QuadraticBezierCurve3(new THREE.Vector3(A[0], Y() + 8, A[1]), new THREE.Vector3(M[0], Y() + alto, M[1]), new THREE.Vector3(B[0], Y() + 8, B[1])); });
@@ -36,7 +36,7 @@ export function crearS456({ T3, RELOJ }) {
     const tubo = (c, col, r) => new THREE.Mesh(new THREE.TubeGeometry(c, 48, r, 6, false), basic(col, 0.55, { depthWrite: false }));
     const tb = bajas.map(c => tubo(c, 0xf87171, 1.6)), ta = altas.map(c => tubo(c, 0x34d399, 2.2)); [...tb, ...ta].forEach(m => { m.renderOrder = 9; g.add(m); });
     // corredores en el suelo
-    const cor = pares.map(([a, b]) => { const A = H[a], B = H[b], L = Math.hypot(B[0] - A[0], B[1] - A[1]), m = new THREE.Mesh(new THREE.PlaneGeometry(L, 1).rotateX(-Math.PI / 2), basic(0x84cc16, 0.35, { depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    const cor = pares.map(([a, b]) => { const A = H[a], B = H[b], L = Math.hypot(B[0] - A[0], B[1] - A[1]), m = new THREE.Mesh(new THREE.PlaneGeometry(L, 1).rotateX(-Math.PI / 2), basic(0x84cc16, 0.35, { depthWrite: false, depthTest: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       m.position.set((A[0] + B[0]) / 2, Y() + 0.8, (A[1] + B[1]) / 2); m.rotation.y = -Math.atan2(B[1] - A[1], B[0] - A[0]); m.renderOrder = 3; g.add(m); return m; });
     // paso elevado (sobre la vía entre La Vaca y El Burro): tablero verde con árboles
     const Mp = [(H.vaca[0] + H.burro[0]) / 2, (H.vaca[1] + H.burro[1]) / 2], ang = -Math.atan2(H.burro[1] - H.vaca[1], H.burro[0] - H.vaca[0]);
@@ -46,11 +46,11 @@ export function crearS456({ T3, RELOJ }) {
     for (const sx of [-38, 38]) for (const sz of [-18, 18]) { const p = new THREE.Mesh(new THREE.BoxGeometry(3, 9, 3), mPila); p.position.set(sx, 4.5, sz); paso.add(p); }
     const mArb = new THREE.MeshStandardMaterial({ color: 0x2f6b2a, roughness: 1, transparent: true }); for (let i = 0; i < 14; i++) { const t = new THREE.Mesh(new THREE.ConeGeometry(4 + (i % 3), 9 + (i % 4) * 2, 7), mArb); t.position.set(-36 + (i % 7) * 12, 15, -12 + Math.floor(i / 7) * 24); paso.add(t); }
     // anillos de jardines y barreras
-    const anillos = Object.values(H).map(([x, z]) => { const m = new THREE.Mesh(new THREE.RingGeometry(150, 175, 64).rotateX(-Math.PI / 2), basic(0x10b981, 0.45, { depthWrite: false })); m.position.set(x, Y() + 0.9, z); m.renderOrder = 4; g.add(m); return m; });
+    const anillos = Object.values(H).map(([x, z]) => { const m = new THREE.Mesh(new THREE.RingGeometry(150, 175, 64).rotateX(-Math.PI / 2), basic(0x10b981, 0.45, { depthWrite: false, depthTest: false })); m.position.set(x, Y() + 0.9, z); m.renderOrder = 4; g.add(m); return m; });
     // aves: dos alas (malla instanciada)
     const gAve = new THREE.BufferGeometry(); gAve.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 1.2, -2.2, 0.5, -0.4, 0, 0, -0.6, 0, 0, 1.2, 0, 0, -0.6, 2.2, 0.5, -0.4], 3)); gAve.computeVertexNormals();
     const aves = new THREE.InstancedMesh(gAve, basic(0x1e3a8a, 1, { side: THREE.DoubleSide }), 160); aves.count = 0; aves.frustumCulled = false; aves.renderOrder = 11; g.add(aves);
-    const marcas = pares.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), basic(0xef4444, 0.5, { depthWrite: false })); m.renderOrder = 6; g.add(m); return m; });
+    const marcas = pares.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), basic(0xef4444, 0.5, { depthWrite: false, depthTest: false })); m.renderOrder = 6; g.add(m); return m; });
     marcas.forEach((m, i) => { const p = bajas[i].getPoint(0.5); m.position.set(p.x, Y() + 1.2, p.z); });
     const rot = Object.entries(H).map(([k, [x, z]]) => ({ k, R: rotulo(g, x, z, 140) }));
     return { g, bordes, tb, ta, cor, paso, mPaso, mPila, mArb, anillos, aves, marcas, rot, bajas, altas, N, pares };
@@ -82,15 +82,15 @@ export function crearS456({ T3, RELOJ }) {
       cand.push({ x, y, bosque: dB < 20 }); if (dE < 70 && dB > 25) borde.push({ x, y }); }
     cand.sort((a, b) => (a.bosque - b.bosque) || (a.x - b.x)); /* primero donde no hay bosque; luego el bosque (lo que tala el plan sin blindaje) */
     const gT = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), torres = new THREE.InstancedMesh(gT, new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85 }), cand.length + borde.length); torres.count = 0; torres.castShadow = true; g.add(torres);
-    const gD = new THREE.CircleGeometry(1, 16).rotateX(-Math.PI / 2), tala = new THREE.InstancedMesh(gD, basic(0x6b7280, 0.85, { depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), arb.length); tala.count = 0; tala.renderOrder = 3; g.add(tala);
-    const bos = arb.filter(t => t[4]), halo = new THREE.InstancedMesh(gD, basic(0x10b981, 0.22, { depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), bos.length);
+    const gD = new THREE.CircleGeometry(1, 16).rotateX(-Math.PI / 2), tala = new THREE.InstancedMesh(gD, basic(0x6b7280, 0.85, { depthWrite: false, depthTest: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), arb.length); tala.count = 0; tala.renderOrder = 3; g.add(tala);
+    const bos = arb.filter(t => t[4]), halo = new THREE.InstancedMesh(gD, basic(0x10b981, 0.22, { depthWrite: false, depthTest: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), bos.length);
     bos.forEach((t, i) => { const [x, z] = lw(t[0], t[1]); m4.makeScale(t[3] + 6, 1, t[3] + 6).setPosition(x, Y() + 0.5, z); halo.setMatrixAt(i, m4); }); halo.renderOrder = 2; g.add(halo);
     const mNave = new THREE.MeshStandardMaterial({ color: 0xe2a55b, roughness: 0.5, transparent: true, opacity: 0.85, emissive: 0x38bdf8, emissiveIntensity: 0.15 }), mRuina = basic(0x4b5563, 0.7, { depthWrite: false });
     const naves = edif.map(P => { const sh = new THREE.Shape(P.map(p => { const [x, z] = lw(p[0], p[1]); return new THREE.Vector2(x, -z); })); const ge = new THREE.ExtrudeGeometry(sh, { depth: 14, bevelEnabled: false }).rotateX(-Math.PI / 2);
       const m = new THREE.Mesh(ge, mNave); m.position.y = Y() + 0.2; g.add(m); const h = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), mRuina); h.position.y = Y() + 0.7; h.renderOrder = 3; g.add(h);
       let A = 0; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; A += a[0] * b[1] - b[0] * a[1]; } return { m, h, A: Math.abs(A / 2) }; }).sort((a, b) => b.A - a.A);
     const gB = new THREE.BoxGeometry(2.4, 0.6, 1.2), banc = new THREE.InstancedMesh(gB, new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 1 }), PR.bancales.length); PR.bancales.forEach((b, i) => { const [x, z] = lw(b[0], b[1]); m4.makeRotationY(-0.47).setPosition(x, Y() + 0.3, z); banc.setMatrixAt(i, m4); }); g.add(banc);
-    const [cx, cz] = lw(PR.centro[0], PR.centro[1]); const calor = new THREE.Mesh(new THREE.CircleGeometry(620, 64).rotateX(-Math.PI / 2), basic(0xf97316, 0.2, { depthWrite: false })); calor.position.set(cx, Y() + 1, cz); calor.renderOrder = 4; g.add(calor);
+    const [cx, cz] = lw(PR.centro[0], PR.centro[1]); const calor = new THREE.Mesh(new THREE.CircleGeometry(620, 64).rotateX(-Math.PI / 2), basic(0xf97316, 0.2, { depthWrite: false, depthTest: false })); calor.position.set(cx, Y() + 1, cz); calor.renderOrder = 4; g.add(calor);
     const R1 = rotulo(g, cx, cz, 230), R2 = rotulo(g, cx + 1, cz + 1, 170);
     return { g, cand: cand.map(c => ({ ...c, w: lw(c.x, c.y) })), borde: borde.map(c => lw(c.x, c.y)), torres, tala, halo, naves, banc, calor, arb: arb.map(t => ({ w: lw(t[0], t[1]), bos: !!t[4] })), R1, R2 }; }
   function poner05(d) { const S = SUB[5]; const prop = d.prop; let n = 0;

@@ -70,7 +70,7 @@ export function crearMov02({ T3, RELOJ }) {
       ' float a = uA * (1.0 - smoothstep(0.85, 1.0, r)) * (0.8 + 0.2 * sin(vS * 0.15 - uT * 2.0)); if (a < 0.004) discard; gl_FragColor = vec4(c, a); }'
   };
   const mat = (fs, ex = {}) => new THREE.ShaderMaterial({ uniforms: { ...U, uC: { value: new THREE.Color('#22c55e') }, uW: { value: 0.4 }, uA: { value: 0.9 }, uVel: { value: 8 }, ...ex },
-    vertexShader: VS, fragmentShader: FS[fs], transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
+    vertexShader: VS, fragmentShader: FS[fs], transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
 
   async function armar() {
     G = new THREE.Group(); G.name = 'cierre-mov02'; T3.scene.add(G);
@@ -107,7 +107,7 @@ export function crearMov02({ T3, RELOJ }) {
       peat.sem = Array.from({ length: NMAX }, (_, i) => [i % L.length, ((i * 0.6180339) % 1), i % 2 ? 1 : -1, 0.85 + (i * 0.37 % 0.4), ((i * 7) % 5 - 2) * 0.7]); G.add(peat.im);
       // bosque protegido: manto verde translúcido bajo cada copa del bosque (copa + 6 m), una malla instanciada sobre el suelo
       const B = AR.arboles.filter(t => t[4] === 1), gc = new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2);
-      const mb = new THREE.InstancedMesh(gc, new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.2, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), B.length);
+      const mb = new THREE.InstancedMesh(gc, new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.2, depthWrite: false, depthTest: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), B.length);
       { const m4 = new THREE.Matrix4(); B.forEach((t, i) => { const w = lw(t[0], t[1]), r = t[3] + 6; m4.makeScale(r, 1, r).setPosition(w[0], Yv() + 0.5, w[1]); mb.setMatrixAt(i, m4); }); mb.instanceMatrix.needsUpdate = true; }
       mb.renderOrder = 2; mb.frustumCulled = false; G.add(mb); mallas.bosque = mb;
     } catch (e) { console.warn('mov02 pasajes/bosque:', e); }

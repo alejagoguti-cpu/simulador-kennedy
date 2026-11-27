@@ -34,12 +34,12 @@ export function crearRes03({ T3, RELOJ }) {
     for (const n of NODOS03) { const [x, z] = pos(n), o = { n, x, z };
       if (n.t !== 'bavaria') { o.mat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.95, metalness: 0 }); o.montones = [];
         for (let j = 0; j < 7; j++) { const a = j * 2.39996, d = j ? 14 + 9 * (j % 3) : 0, m = new THREE.Mesh(gCono, o.mat); m.position.set(x + Math.cos(a) * d, Y(), z + Math.sin(a) * d); m.userData.k = j ? 0.55 + 0.1 * (j % 4) : 1; m.castShadow = true; m.visible = false; G.add(m); o.montones.push(m); }
-        o.halo = new THREE.Mesh(gDisco, new THREE.MeshBasicMaterial({ color: 0xdc2626, transparent: true, opacity: 0.22, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+        o.halo = new THREE.Mesh(gDisco, new THREE.MeshBasicMaterial({ color: 0xdc2626, transparent: true, opacity: 0.22, depthWrite: false, depthTest: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
         o.halo.position.set(x, Y() + 0.6, z); o.halo.renderOrder = 3; o.halo.visible = false; G.add(o.halo); }
       if (n.t === 'estacion' || n.t === 'bavaria') { const col = n.t === 'bavaria' ? 0x10b981 : 0x06b6d4;
         o.col = new THREE.Mesh(gCol, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
         o.col.position.set(x, Y(), z); o.col.scale.set(n.t === 'bavaria' ? 14 : 8, n.t === 'bavaria' ? 220 : 140, n.t === 'bavaria' ? 14 : 8); o.col.renderOrder = 12; o.col.visible = false; G.add(o.col);
-        o.anillo = new THREE.Mesh(gDisco, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false }));
+        o.anillo = new THREE.Mesh(gDisco, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, depthWrite: false, depthTest: false, toneMapped: false }));
         o.anillo.position.set(x, Y() + 0.7, z); o.anillo.scale.setScalar(n.t === 'bavaria' ? 70 : 40); o.anillo.renderOrder = 4; o.anillo.visible = false; G.add(o.anillo); }
       o.rot = rotulo(x, z, n.t === 'bavaria' ? 250 : 170); N[n.k] = o; }
     // camiones de la propuesta: rutas reales por la red vial (las mismas herramientas de la 01)
@@ -65,7 +65,7 @@ export function crearRes03({ T3, RELOJ }) {
     const dec = r.fase; // la semana siguiente lo acumulado va bajando (se recoge)
     const porK = Object.fromEntries(r.nodos.map(q => [q.k, q]));
     for (const n of NODOS03) { const o = N[n.k], q = porK[n.k]; if (!o || !q) continue; const t = q.calle * dec, h = q.edad;
-      if (o.montones) { colorEdad(h, o.mat.color); const s = t > 0.5 ? Math.sqrt(t) : 0; o.montones.forEach(m => { m.visible = s > 0; const k = m.userData.k; m.scale.set((6 + 1.6 * s) * k, (2 + 0.55 * s) * k, (6 + 1.6 * s) * k); });
+      if (o.montones) { colorEdad(h, o.mat.color); const s = t > 0.5 ? Math.sqrt(t) : 0; o.montones.forEach(m => { m.visible = s > 0; const k = m.userData.k; m.scale.set((10 + 2.6 * s) * k, (6 + 1.3 * s) * k, (10 + 2.6 * s) * k); /* escala visual declarada: se lee desde la vista de pájaro */ });
         o.halo.visible = riesgoOn && h > 0.5 && t > 0.5; o.halo.scale.setScalar(60 + 540 * Math.min(1, h / 48)); o.halo.material.opacity = 0.12 + 0.18 * Math.min(1, h / 48); }
       const usado = n.t === 'estacion' ? Math.min(1, q.tratado / Math.max(1, 250 * r.cap * r.horas / 24)) : n.t === 'bavaria' ? Math.min(1, (r.nodos.reduce((a, z) => a, 0) + 0.5)) : 0;
       if (o.col) { o.col.visible = !!r.prop && r.cap > 0; o.anillo.visible = o.col.visible; o.col.material.opacity = 0.18 + 0.4 * usado; }
