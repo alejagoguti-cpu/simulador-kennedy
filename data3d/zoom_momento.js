@@ -16,7 +16,7 @@ export function crearZoom({ T3 }) {
   const vista = box.querySelector('[data-z="v"]'), cv = vista.querySelector('canvas'), ctx = cv.getContext('2d'); cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
   const W = 448, H = 240; cv.width = W; cv.height = H; const rt = new THREE.WebGLRenderTarget(W, H, { depthBuffer: true }); rt.texture.colorSpace = THREE.SRGBColorSpace;
   const buf = new Uint8Array(W * H * 4), img = ctx.createImageData(W, H);
-  const PIL = []; let k = -1, actual = FIJOS[0], tCambio = performance.now(), tDib = 0, espera = 350, ang = 0;
+  const PIL = [], ASY = { gl: undefined, pbo: null, sync: null }; let k = -1, actual = FIJOS[0], tCambio = performance.now(), tDib = 0, espera = 350, ang = 0;
   /* solo momentos del escenario activo (window.KEN_ESC_PROP: con propuesta o actual); cada momento lleva su marca prop (o KEN_MOM_TAG para la lista de la capa) */
   /* 2026-11-27 (la autora: «en todas, en algún momento, debes mostrar cuando se estrella un animal»): avisos de la simulación que corre (KEN_PAR, sim_ui.js);
      en 01 y 04 hasta 4, en las demás solo las muertes (hasta 2) para que siga mandando lo de esa simulación. Orden: los dos primeros momentos de la simulación
@@ -56,6 +56,12 @@ export function crearZoom({ T3 }) {
       const sigue = i < 0 && actual.muerte && actual.prop === !!window.KEN_ESC_PROP && (actual.par == null || actual.par === window.KEN_PAR); /* un choque en pantalla termina sus 8 s aunque lleguen avisos nuevos */
       if (i < 0 && !sigue) { tCambio = now; k = -1; siguiente(); } else if (L[i] !== actual) { actual = L[i]; k = i; pintar(); } } /* el escenario cambió: fuera lo que ya no corresponde. Las listas se rehacen cada semana con objetos nuevos: se compara por título y lugar (antes saltaba de momento sin razón) y se toma el texto nuevo (p. ej. el avance de la obra) */
     if (CH.activo) CH.paso(cam); /* el animal que se estrella se mueve cada cuadro (también se ve en la vista principal) */
+    /* RENDIMIENTO (2026-11-27): la imagen del recuadro se lee de la GPU sin bloquear (WebGL2: buffer de píxeles + fence); se copia cuando la GPU avisa que terminó.
+       Antes readRenderTargetPixels esperaba a la GPU en cada dibujo (13 % del tiempo de JavaScript en el perfil). */
+    if (ASY.gl === undefined) { const gl = T3.renderer && T3.renderer.getContext(); ASY.gl = gl && typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext ? gl : null; if (ASY.gl) { ASY.pbo = gl.createBuffer(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, ASY.pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER, W * H * 4, gl.STREAM_READ); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); } }
+    if (ASY.sync) { const gl = ASY.gl, st = gl.clientWaitSync(ASY.sync, 0, 0);
+      if (st === gl.ALREADY_SIGNALED || st === gl.CONDITION_SATISFIED) { gl.deleteSync(ASY.sync); ASY.sync = null; gl.bindBuffer(gl.PIXEL_PACK_BUFFER, ASY.pbo); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, buf); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); copiar(); }
+      else return; /* la GPU aún no termina el dibujo anterior: no se pide otro */ }
     if (now - tDib < (CH.activo ? 110 : espera) || !box.getClientRects().length || document.getElementById('urbia-intro')) return; tDib = now; /* (offsetParent es null en elementos fijos: no sirve para saber si se ve) · en un choque, más seguido para que se lea el movimiento */
     const r = T3.renderer; if (!r) return; ang += CH.activo ? 0.006 : 0.04;
     const Y = (T3.sueloY || 0.3), d = CH.activo ? 100 : (actual.d || 230); cam.position.set(actual.x + Math.cos(ang) * d, Y + d * (CH.activo ? 0.95 : 0.62), actual.z + Math.sin(ang) * d); cam.lookAt(actual.x, Y + (CH.activo ? 10 : 6), actual.z); /* en un choque, desde arriba: las torres no tapan el lugar */ cam.updateMatrixWorld(); cam.layers.mask = T3.camera.layers.mask;
@@ -63,10 +69,14 @@ export function crearZoom({ T3 }) {
     /* sin las píldoras de los carros lejanos (vehiculos.js): su tamaño se calcula para la cámara principal y de cerca salen como manchas enormes */
     if (now - (T3._zPil || 0) > 2000) { T3._zPil = now; PIL.length = 0; T3.scene.traverse(o => { if (o.name === 'vehiculos-lejos' || o.name === 'vehiculos-lejos-borde') PIL.push(o); }); }
     const pv = PIL.map(o => o.visible); PIL.forEach(o => { o.visible = false; });
-    try { r.setRenderTarget(rt); r.clear(); r.render(T3.scene, cam); r.readRenderTargetPixels(rt, 0, 0, W, H, buf); } catch (e) { /* un cuadro sin zoom */ }
+    let leido = false;
+    try { r.setRenderTarget(rt); r.clear(); r.render(T3.scene, cam);
+      if (ASY.gl) { const gl = ASY.gl; gl.bindBuffer(gl.PIXEL_PACK_BUFFER, ASY.pbo); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, 0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); ASY.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); gl.flush(); }
+      else { r.readRenderTargetPixels(rt, 0, 0, W, H, buf); leido = true; } } catch (e) { /* un cuadro sin zoom */ }
     PIL.forEach((o, i) => { o.visible = pv[i]; });
     r.setRenderTarget(prev); r.autoClear = ac; const ms = performance.now() - t0; espera = ms > 60 ? Math.min(1500, espera * 1.5) : Math.max(350, espera * 0.9); /* si pesa, dibuja menos seguido */
-    for (let y = 0; y < H; y++) img.data.set(buf.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); ctx.putImageData(img, 0, 0); };
+    if (leido) copiar(); };
+  function copiar() { for (let y = 0; y < H; y++) img.data.set(buf.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); ctx.putImageData(img, 0, 0); }
   /* ir(f): salta al primer momento que cumpla f (pruebas y enlaces); devuelve si lo encontró */
   const ir = (f) => { const L = lista(), i = L.findIndex(f); if (i < 0) return false; k = i; actual = L[i]; ang = (k * 1.7) % (Math.PI * 2); CH.poner(actual); pintar(); tDib = 0; tCambio = performance.now(); return true; };
   return window.KEN_ZOOM = { siguiente, ir, lista, get actual() { return actual; } };

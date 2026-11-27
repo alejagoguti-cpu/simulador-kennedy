@@ -173,7 +173,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
       () => { huertasBarrio(false, true); return pHBar; },
       () => { parchesArboles(false, true); return pParch; },
       () => { mercadosBarrio(false, true); return pMerc; },
-      () => (MERC && MERC.precalentar ? MERC.precalentar() : null), /* la geometría de los 21 sitios, uno por rato libre (antes se armaba al hacer clic) */
+      () => (MERC && MERC.precalentar && !document.documentElement.classList.contains('limpio') ? MERC.precalentar() : null), /* la geometría de los 21 sitios, uno por rato libre (antes se armaba al hacer clic) · RENDIMIENTO 2026-11-27: en la vista limpia ese grupo siempre está escondido (limpio.js lo apaga), no se arma (≈ 9 % del JavaScript en el perfil) */
       () => { parqueCorabastos(false, true); return pPCora; },
       () => { distritoBavaria(true); return pDist; },
       () => (T3.EST && T3.EST.hidroponia ? T3.EST.hidroponia(T3.escenario !== 'hoy', true) : null)
@@ -185,7 +185,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     (async () => {
       /* 2026-11-26: antes se salía con la vista limpia (la de siempre) y TODO esto se armaba al tocar «Kennedy con propuesta» (~9 s de página
          trabada). Ahora se arma escondido justo después de «Iniciar» (detrás de la portada nadie lo ve y le quitaría ancho de banda a la foto) */
-      while (document.getElementById('urbia-intro')) await new Promise(r => setTimeout(r, 400));
+      while (document.getElementById('urbia-intro')) await new Promise(r => setTimeout(r, 400));
       await libre(1500);
       const todos0 = new Set(T3.scene.children), nuevos = [];
       for (const [i, f] of pasos.entries()) { const antes = new Set(T3.scene.children), t0 = performance.now(); try { await Promise.resolve(f()); console.info('[precarga]', i, Math.round(performance.now() - t0) + ' ms', 'a los', Math.round(performance.now() / 1000) + ' s'); } catch (e) { console.warn('precarga:', e); } await libre(150); compilar(T3.scene.children.filter(o => !antes.has(o))); await libre(250); }
@@ -277,7 +277,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); // las parcelas viejas (en diagonal) ya no: las reemplazan las huertas de enseñanza del distrito
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (window.KEN_PCORA && window.KEN_PCORA.aplicarVis) window.KEN_PCORA.aplicarVis(); else if (co && co.userData.quitadas) co.userData.quitadas.visible = !hu; // con la propuesta las bodegas junto al humedal se desmontan por fases (data3d/corabastos_parque.js, según sim_vida.js)
     parqueCorabastos(hu); // y en su lugar queda el parque humedal (agua y árboles nativos)
-    mercadosBarrio(hu); // red de mercados: de barrio y plazoletas en parques grandes, abren año a año
+    mercadosBarrio(hu && !document.documentElement.classList.contains('limpio')); // red de mercados: de barrio y plazoletas en parques grandes, abren año a año · en la vista limpia su grupo siempre está escondido (limpio.js): no se arma (rendimiento 2026-11-27)
     if (window.KEN_VIAJES) { window.KEN_VIAJES.ver(hu); window.KEN_VIAJES.panel(hu); } // viajes de abastecimiento hacia mercados y Bavaria
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();

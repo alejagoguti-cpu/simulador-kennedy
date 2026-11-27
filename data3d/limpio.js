@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=10';
-import { iniciarSimUI } from './sim_ui.js?v=173';
+import { iniciarSimUI } from './sim_ui.js?v=174';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -60,6 +60,10 @@ export const SIMS = [
 const OCULTAR = ['#guia', '#guia-velo', '#su-hist', '#su-graf', '#ci-toast', '#in-btn', '#ind-panel', '#esc', '#dock', '#esim', '#trafficHud', '#hud-c', '#c50-pill', '#ms-volver', '#ms', '#ms-intro', '#ms-cmp', '#cvMarca', '#pz-panel', '#cvAyuda', '#cvMini', '#c50-nuevo', '#c50-pan', '#c50-cmp', '#toast', '.es-et', '.esc-pt', '#vm-panel', '.vaca-et', '#mercred-ley', '.mr-et', '.merc-et', '#hid-red'];
 
 export function iniciarLimpio({ T3 }) {
+  /* RENDIMIENTO (2026-11-27): getObjectByName recorre toda la escena, con la malla de Google (miles de nodos), y aquí se usaba cada 500 ms y en cada cuadro.
+     buscarObj mira primero los hijos directos de la escena; si no está, busca a fondo como mucho cada 3 s por nombre y recuerda lo encontrado mientras siga en la escena. */
+  const BUSCA = new Map(), buscarObj = (n) => { const S = T3.scene; if (!S) return null; for (const o of S.children) if (o.name === n) return o; const c = BUSCA.get(n), ahora = performance.now();
+    if (c && (c.o ? c.o.parent : ahora - c.t < 3000)) return c.o; const o = S.getObjectByName(n) || null; BUSCA.set(n, { o, t: ahora }); return o; };
   const html = document.documentElement;
   html.classList.add('limpio');
   const css = document.createElement('style'); css.id = 'limpio-css';
@@ -154,7 +158,7 @@ export function iniciarLimpio({ T3 }) {
   const esVerdePlano = (o) => { if (!o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.color) return false; const c = o.material.color;
     if (!(c.g > 0.5 && c.g > c.r * 1.25 && c.g > c.b * 1.6)) return false; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox; return b && (b.max.y - b.min.y) < 0.5; };
   // sin los anillos naranjas de entrada ni los halos de camiones (data3d/origenes.js): la autora no los quiere (solo los carros)
-  setInterval(() => { { const og = T3.scene.getObjectByName('origenes'); if (og) og.visible = false; const gi = T3.scene.getObjectByName('indicadores'); if (gi) gi.visible = false; const vm = T3.scene.getObjectByName('vm_marcas'); if (vm) vm.visible = false; for (const o of T3.scene.children) { if (o.name || !o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.vertexColors || o.renderOrder < 2 || o.renderOrder > 4) continue; const pa = o.geometry && o.geometry.attributes.position; if (pa && pa.count > 20000 && o.material.visible) o.material.visible = false; } /* sin las cintas de colores en las calles (flujo de carros y sintaxis espacial): se volvían a prender solas */ for (const nm of ['escenarios_sim', 'estrategias', 'red-mercados', 'picos_zonas', 'picos_zonas_base', 'medicion', 'mercados-barrio'])  { /* las huertas hidropónicas en cubiertas SÍ se ven (con propuesta: se instalan año a año, data3d/huertas_hidro.js) */ const g = T3.scene.getObjectByName(nm); if (g && g.visible) g.visible = false; } /* sin capas de escenario (columnas, rutas, líneas de colores): mapa limpio */ if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = T3.scene.getObjectByName(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
+  setInterval(() => { { const og = buscarObj('origenes'); if (og) og.visible = false; const gi = buscarObj('indicadores'); if (gi) gi.visible = false; const vm = buscarObj('vm_marcas'); if (vm) vm.visible = false; for (const o of T3.scene.children) { if (o.name || !o.isMesh || !o.material || o.material.type !== 'MeshBasicMaterial' || !o.material.vertexColors || o.renderOrder < 2 || o.renderOrder > 4) continue; const pa = o.geometry && o.geometry.attributes.position; if (pa && pa.count > 20000 && o.material.visible) o.material.visible = false; } /* sin las cintas de colores en las calles (flujo de carros y sintaxis espacial): se volvían a prender solas */ for (const nm of ['escenarios_sim', 'estrategias', 'red-mercados', 'picos_zonas', 'picos_zonas_base', 'medicion', 'mercados-barrio'])  { /* las huertas hidropónicas en cubiertas SÍ se ven (con propuesta: se instalan año a año, data3d/huertas_hidro.js) */ const g = buscarObj(nm); if (g && g.visible) g.visible = false; } /* sin capas de escenario (columnas, rutas, líneas de colores): mapa limpio */ if (ESC.activo) for (const nm of ['escenarios_sim', 'parches_arboles']) { const g = buscarObj(nm); if (g) g.traverse(o => { if (o.isPoints) o.visible = false; }); } /* con una simulación: sin íconos redondos de huertas y parches (la red verde ya los muestra) */ const ib = document.getElementById('in-btn'); if (ib) ib.style.display = 'none'; } /* sin picos de indicadores */ for (const nm of ['picos_zonas', 'picos_zonas_base', 'picos_ind']) T3.scene.traverse(o => { if (o.name === nm && o.material) o.material.visible = false; }); /* sin anillos naranjas ni agujas azules */ document.querySelectorAll('.og-et').forEach(e => { e.style.display = 'none'; }); }, 500);
   setInterval(() => { T3.scene.traverse(o => {
     if (o.name && /^orilla_/.test(o.name)) o.traverse(x => { if (x.material) (Array.isArray(x.material) ? x.material : [x.material]).forEach(m => { m.visible = false; }); });
     else if (o.userData.lpVerde !== false && esVerdePlano(o)) { o.material.visible = false; o.userData.lpVerde = true; } }); }, 1500);
@@ -223,7 +227,7 @@ export function iniciarLimpio({ T3 }) {
     html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-ico{color:var(--ui-acc,#c9f27a)}
     html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
   }`; document.head.appendChild(st); }
-  import('./zoom_momento.js?v=11').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
+  import('./zoom_momento.js?v=12').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
   escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.hidden = true; document.body.appendChild(der); /* se conserva vacío (otros módulos lo buscan), escondido */
@@ -252,7 +256,7 @@ export function iniciarLimpio({ T3 }) {
   sw.resalte = () => `<svg viewBox="0 0 18 12" aria-hidden="true"><defs><linearGradient id="lpcvr" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfff5e" stop-opacity=".95"/><stop offset="1" stop-color="#cfff5e" stop-opacity="0"/></linearGradient></defs><rect x="3" y="1" width="12" height="10" fill="url(#lpcvr)"/><path d="M3 11h12" stroke="#e9ffb0" stroke-width="1.4"/></svg>`;
   /* CONVENCIONES SIEMPRE ABIERTAS Y SOLO DE LO QUE SE VE: cada entrada lleva su condición de visibilidad (lee el estado de la escena y de
      los módulos; no toca nada). Se revisan cada 0,8 s y la lista solo se rehace si cambió lo que está a la vista. */
-  const esc3 = (n) => { const o = T3.scene && T3.scene.getObjectByName(n); return !!(o && o.visible); };
+  const esc3 = (n) => { const o = T3.scene && buscarObj(n); return !!(o && o.visible); };
   let vehG = []; const hayVeh = () => { if (!vehG.length && T3.scene) vehG = T3.scene.children.filter(o => o.name === 'vehiculos');
     for (const g of vehG) { if (!g.visible) continue; for (const o of g.children) if (o.visible && o.isInstancedMesh && o.count > 0) return true; } return false; };
   const ab01Vis = (k) => { const C = window.KEN_AB01C; return !!(C && C.visible(k)); };
@@ -452,7 +456,7 @@ export function iniciarLimpio({ T3 }) {
     const a = Math.min(AÑOS, Math.floor(s / 52) + 1), fa = FASES.find(f => a >= f.a0 && a <= f.a1) || FASES[0], txa = `Año ${a}<small>${MESES[Math.min(11, Math.floor((s % 52) / 52 * 12))]} ${AÑO0 + Math.floor(s / 52)} · ${fa.n.replace(' plazo', '')} plazo</small>`;
     if ($b('.ano').innerHTML !== txa) $b('.ano').innerHTML = txa;
     { const md = RELOJ.minutoDia, hh = String(Math.floor(md / 60) % 24).padStart(2, '0') + ':' + String(Math.floor(md % 60)).padStart(2, '0'); const hb = $b('.hora b'); if (hb.textContent !== hh) hb.textContent = hh; }
-    /* simulador: el tablero y las simulaciones quedan visibles mientras corre (sin desvanecer paneles) */ T3.horaLuz = 10.5; /* siempre luz de media mañana (el reloj y los carros siguen su hora) */ { const hg = T3.scene.getObjectByName('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las cruces de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
+    /* simulador: el tablero y las simulaciones quedan visibles mientras corre (sin desvanecer paneles) */ T3.horaLuz = 10.5; /* siempre luz de media mañana (el reloj y los carros siguen su hora) */ { const hg = buscarObj('hechos'); if (hg) for (const o of hg.children) if (o.isPoints) o.visible = !corre; } /* corriendo: sin las cruces de atropellos */ /* con una simulación: luz de media mañana, cielo despejado y poca neblina (como la referencia) */ if (window.KEN_FOCO && ESC.activo && corre && window.KEN_FOCO.activo) window.KEN_FOCO.off({ dur: 1.5 }); /* corriendo: la ciudad con su luz real, sin oscurecer */
     const p = $b('.play'); if (p.dataset.corre !== String(corre)) { p.dataset.corre = corre; p.innerHTML = corre ? ICO_PAUSA : ICO_PLAY; p.setAttribute('aria-label', corre ? 'Pausar' : 'Correr'); }
   });
 
@@ -508,7 +512,7 @@ export function iniciarLimpio({ T3 }) {
      compilan sus sombreadores en ese momento la imagen se congela ~0,5 s; se hace una vez al cargar, con esos grupos visibles un instante */
   setTimeout(function precompilar() {
     const L = document.getElementById('loader'); if (L && !L.classList.contains('hidden')) return void setTimeout(precompilar, 800);
-    try { const g = ['metro_l1_estaciones', 'metro_l1_catenaria', 'metro_l1_letreros', 'metro_l1_obra'].map(n => T3.scene.getObjectByName(n)).filter(Boolean);
+    try { const g = ['metro_l1_estaciones', 'metro_l1_catenaria', 'metro_l1_letreros', 'metro_l1_obra'].map(n => buscarObj(n)).filter(Boolean);
       const antes = g.map(o => o.visible); g.forEach(o => { o.visible = true; }); if (T3.renderer.compile) T3.renderer.compile(T3.scene, T3.camera); g.forEach((o, i) => { o.visible = antes[i]; }); } catch (e) { /* sin precompilar */ }
   }, 2500);  /* RUIDO QUE SALE DE CADA CARRO: con el mapa de ruido prendido, cada carro de la simulación de tráfico lleva un halo naranja-rojo suave
      (aditivo, ~22 m) que se mueve con él: se ve que el ruido lo producen los carros y que se concentra donde hay más. Una InstancedMesh;
@@ -519,7 +523,7 @@ export function iniciarLimpio({ T3 }) {
       fragmentShader: 'varying vec2 vU; void main(){ float d = length(vU); float a = (1.0 - smoothstep(0.0, 1.0, d)); gl_FragColor = vec4(vec3(0.95, 0.16, 0.08) * a * a * 0.16, 1.0); }' });
     const halo = new T3.THREE.InstancedMesh(g, m, N); halo.count = 0; halo.frustumCulled = false; halo.renderOrder = 6; halo.name = 'ruido-halos'; T3.scene.add(halo);
     const A = halo.instanceMatrix.array, R = 13, Y = (T3.viaY != null ? T3.viaY : 0.6) + 1.6;
-    let planoRC = null; /* rendimiento: getObjectByName recorría toda la escena (con la malla de Google) en CADA cuadro */ RELOJ.alDibujar(() => { if (!planoRC || !planoRC.parent) planoRC = T3.scene.getObjectByName('ruido-carros'); const plano = planoRC; if (!plano || !plano.visible || !ESC.activo) { halo.visible = false; return; } halo.visible = true;
+    let planoRC = null; /* rendimiento: getObjectByName recorría toda la escena (con la malla de Google) en CADA cuadro */ RELOJ.alDibujar(() => { if (!planoRC || !planoRC.parent) planoRC = buscarObj('ruido-carros'); const plano = planoRC; if (!plano || !plano.visible || !ESC.activo) { halo.visible = false; return; } halo.visible = true;
       let k = 0; for (const grp of T3.scene.children) { if (grp.name !== 'vehiculos' || !grp.visible) continue;
         grp.traverse(o => { if (!o.isInstancedMesh || !o.visible) return; const B = o.instanceMatrix.array; for (let i = 0; i < o.count && k < N; i++) { const s = i * 16; if (B[s] === 0 && B[s + 5] === 0 && B[s + 10] === 0) continue; const d = k * 16;
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }

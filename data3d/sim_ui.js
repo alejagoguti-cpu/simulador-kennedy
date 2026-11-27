@@ -952,10 +952,10 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     hist.innerHTML = `<h5>¿Qué está pasando? · ${d.parN || ''}</h5><p>${d.prueba || ''}</p>${otra ? '<div class="cab"><span></span><b>Con propuesta</b><i>Sin propuesta</i></div>' : `<div class="cab"><span></span><b>${d.propuesta ? 'Con propuesta' : 'Sin propuesta'}</b></div>`}<ul>${filas}</ul>`;
     hist.classList.add('on');
   }
-  const CAPA_G = {};
+  const CAPA_T = {}, CAPA_G = {};
   function aplicarHistoria() {
     const P = R.def && R.def.par, H = HISTORIA[P]; if (!H) return;
-    for (const nm of TODAS) { let g = CAPA_G[nm]; if (!g || !g.parent) g = CAPA_G[nm] = T3.scene.getObjectByName(nm); /* rendimiento: referencia guardada (antes un recorrido de toda la escena por capa, 2,5 veces por segundo) */ if (!g) continue; const si = H.capas.includes(nm) || (nm === 'indicadores' && R.ind); if (!si && g.visible) g.visible = false; }
+    for (const nm of TODAS) { let g = CAPA_G[nm]; if ((!g || !g.parent) && performance.now() - (CAPA_T[nm] || 0) > 3000) { CAPA_T[nm] = performance.now(); g = CAPA_G[nm] = T3.scene.getObjectByName(nm); } /* si la capa no existe, no se busca a fondo más de una vez cada 3 s */ /* rendimiento: referencia guardada (antes un recorrido de toda la escena por capa, 2,5 veces por segundo) */ if (!g) continue; const si = H.capas.includes(nm) || (nm === 'indicadores' && R.ind); if (!si && g.visible) g.visible = false; }
     for (const e of ['bas', 'pares']) { const el = document.getElementById(e + '-etq'); if (el) el.style.display = H.etq.includes(e) ? '' : 'none'; }
   }
   setInterval(() => { if (R.sim && !viendo) aplicarHistoria(); }, 400);
