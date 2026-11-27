@@ -44,7 +44,10 @@ export function crearS456({ T3, RELOJ }) {
     const mPaso = new THREE.MeshStandardMaterial({ color: 0x3f7d3a, roughness: 0.9, transparent: true, opacity: 1 }), mPila = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.8, transparent: true });
     const tab = new THREE.Mesh(new THREE.BoxGeometry(90, 3, 50), mPaso); tab.position.y = 9; paso.add(tab);
     for (const sx of [-38, 38]) for (const sz of [-18, 18]) { const p = new THREE.Mesh(new THREE.BoxGeometry(3, 9, 3), mPila); p.position.set(sx, 4.5, sz); paso.add(p); }
-    const mArb = new THREE.MeshStandardMaterial({ color: 0x2f6b2a, roughness: 1, transparent: true }); for (let i = 0; i < 14; i++) { const t = new THREE.Mesh(new THREE.ConeGeometry(4 + (i % 3), 9 + (i % 4) * 2, 7), mArb); t.position.set(-36 + (i % 7) * 12, 15, -12 + Math.floor(i / 7) * 24); paso.add(t); }
+    const mArb = new THREE.MeshStandardMaterial({ color: 0x3f7a35, roughness: 1, transparent: true, flatShading: true }), mTr = new THREE.MeshStandardMaterial({ color: 0x5b4632, roughness: 1, transparent: true });
+    const gCopa = new THREE.IcosahedronGeometry(1, 1), gTr = new THREE.CylinderGeometry(0.5, 0.8, 1, 6).translate(0, 0.5, 0);
+    for (let i = 0; i < 22; i++) { const tx = -40 + (i * 17.3) % 80, tz = -20 + (i * 11.7) % 40, h = 5 + (i % 4), r = 3.5 + (i % 3) * 1.2; const tr = new THREE.Mesh(gTr, mTr); tr.position.set(tx, 10.5, tz); tr.scale.set(1, h, 1); paso.add(tr);
+      const c = new THREE.Mesh(gCopa, mArb); c.position.set(tx, 10.5 + h + r * 0.6, tz); c.scale.set(r, r * 0.85, r); paso.add(c); } /* árboles con tronco y copa (no conos) */
     // anillos de jardines y barreras
     const anillos = Object.values(H).map(([x, z]) => { const m = new THREE.Mesh(new THREE.RingGeometry(150, 175, 64).rotateX(-Math.PI / 2), basic(0x10b981, 0.45, { depthWrite: false, depthTest: false })); m.position.set(x, Y() + 0.9, z); m.renderOrder = 4; g.add(m); return m; });
     // aves: dos alas (malla instanciada)
@@ -53,13 +56,13 @@ export function crearS456({ T3, RELOJ }) {
     const marcas = pares.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), basic(0xef4444, 0.5, { depthWrite: false, depthTest: false })); m.renderOrder = 6; g.add(m); return m; });
     marcas.forEach((m, i) => { const p = bajas[i].getPoint(0.5); m.position.set(p.x, Y() + 1.2, p.z); });
     const rot = Object.entries(H).map(([k, [x, z]]) => ({ k, R: rotulo(g, x, z, 140) }));
-    return { g, bordes, tb, ta, cor, paso, mPaso, mPila, mArb, anillos, aves, marcas, rot, bajas, altas, N, pares };
+    return { g, bordes, tb, ta, cor, paso, mPaso, mPila, mArb, mTr, anillos, aves, marcas, rot, bajas, altas, N, pares };
   }
   function poner04(d) { const S = SUB[4]; const prop = d.prop, imp = d.impl || 0, act = d.fase > 0;
     S.tb.forEach(m => { m.visible = act || !prop; m.material.opacity = prop ? 0.2 * (1 - imp) + 0.05 : 0.6; });
     S.ta.forEach(m => { m.visible = prop && imp > 0.01; m.material.opacity = 0.25 + 0.5 * imp; });
     S.cor.forEach(m => { m.visible = prop && imp > 0.01; m.scale.z = 10 + 60 * imp; m.material.opacity = 0.2 + 0.3 * imp; });
-    S.paso.visible = prop && imp > 0.01; for (const m of [S.mPaso, S.mPila, S.mArb]) { m.opacity = imp; m.depthWrite = imp > 0.95; }
+    S.paso.visible = prop && imp > 0.01; for (const m of [S.mPaso, S.mPila, S.mArb, S.mTr]) { if (!m) continue; m.opacity = imp; m.depthWrite = imp > 0.95; }
     S.paso.scale.set(1, 0.3 + 0.7 * imp, 1);
     S.anillos.forEach(m => { m.visible = prop && d.barreras; });
     S.bordes.forEach(({ b, r }) => { const estres = act && !prop ? Math.min(1, d.p / 0.2) : 0; b.material.color.set(estres > 0.99 ? 0xef4444 : estres > 0.5 ? 0xf59e0b : 0x22d3ee); b.scale.y = 1; r.material.opacity = 0.12 + 0.18 * (prop ? imp : 1 - estres); });

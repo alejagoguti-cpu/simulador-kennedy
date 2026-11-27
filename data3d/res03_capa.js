@@ -17,7 +17,7 @@ export function crearRes03({ T3, RELOJ }) {
   const THREE = T3.THREE; let G = null, armado = null, R = null, riesgoOn = true;
   const Y = () => (T3.sueloY != null ? T3.sueloY : 0.3);
   const N = {}, VE = { VEH: null, objs: [], R: null, arbol: null, rutas: new Map(), arb: new Map(), pos: null, MAX: 90, pend: 0 };
-  const C_AMB = new THREE.Color('#f59e0b'), C_NAR = new THREE.Color('#c2410c'), C_MAR = new THREE.Color('#7c2d12'), C_PUR = new THREE.Color('#581c87');
+  const C_AMB = new THREE.Color('#ffffff'), C_NAR = new THREE.Color('#f2c48a'), C_MAR = new THREE.Color('#b0764a'), C_PUR = new THREE.Color('#9b6fb3'); /* tinte sobre los colores de la basura: limpio → amarillento → marrón → morado (48 h) */
   const colorEdad = (h, out) => h < 24 ? out.copy(C_AMB).lerp(C_NAR, h / 24) : h < 36 ? out.copy(C_NAR).lerp(C_MAR, (h - 24) / 12) : out.copy(C_MAR).lerp(C_PUR, Math.min(1, (h - 36) / 12));
 
   function rotulo(x, z, alto) { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 136; const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
@@ -29,10 +29,18 @@ export function crearRes03({ T3, RELOJ }) {
 
   async function armar() {
     G = new THREE.Group(); G.name = 'residuos03'; T3.scene.add(G);
-    const gCono = new THREE.ConeGeometry(1, 1, 9, 2).translate(0, 0.5, 0); { const p = gCono.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y > 0.02 && y < 0.98) { const k = 1 + 0.18 * Math.sin(i * 12.9898) ; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } } gCono.computeVertexNormals(); }
+    /* MONTÓN DE BASURA (2026-11-27, la autora: «no conos»): media esfera deformada con ruido (bordes irregulares, bultos) y colores por vértice de
+       basura mezclada: bolsas negras y verdes, cartón, plástico blanco y orgánicos; con las horas el material se tiñe de marrón y morado. */
+    const gCono = new THREE.SphereGeometry(1, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2); { const p = gCono.attributes.position, col = new Float32Array(p.count * 3), PAL = ['#16181d', '#23262d', '#1f3a24', '#2d4a2f', '#e5e7eb', '#8b5a2b', '#6b4423', '#a16207', '#3f3f46', '#14532d'].map(c => new THREE.Color(c));
+      const ruido = (x, y, z) => Math.sin(x * 5.1 + z * 3.3) * 0.5 + Math.sin(z * 7.7 - x * 2.9 + y * 4.1) * 0.35 + Math.sin(x * 13.3 + z * 11.1) * 0.15;
+      for (let k = 0; k < p.count; k++) { const x = p.getX(k), y = p.getY(k), z = p.getZ(k), r = 1 + 0.22 * ruido(x, y, z); p.setXYZ(k, x * r * (1 + 0.15 * Math.sin(z * 2.1)), y * (0.55 + 0.3 * (0.5 + 0.5 * Math.sin(x * 3.7 + z * 2.3))), z * r);
+        const c = PAL[Math.floor(Math.abs(Math.sin(k * 12.9898) * 43758.5453) % PAL.length)]; col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; }
+      gCono.setAttribute('color', new THREE.BufferAttribute(col, 3)); gCono.computeVertexNormals(); }
+    const gMancha = new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2);
     const gDisco = new THREE.CircleGeometry(1, 48).rotateX(-Math.PI / 2), gCol = new THREE.CylinderGeometry(1, 1, 1, 20, 1, true).translate(0, 0.5, 0);
     for (const n of NODOS03) { const [x, z] = pos(n), o = { n, x, z };
-      if (n.t !== 'bavaria') { o.mat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.95, metalness: 0 }); o.montones = [];
+      if (n.t !== 'bavaria') { o.mat = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, roughness: 0.92, metalness: 0.02 }); o.montones = [];
+        o.mancha = new THREE.Mesh(gMancha, new THREE.MeshBasicMaterial({ color: 0x3b2412, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false })); o.mancha.position.set(x, Y() + 0.5, z); o.mancha.renderOrder = 4; o.mancha.visible = false; G.add(o.mancha); /* lixiviado bajo el montón */
         for (let j = 0; j < 7; j++) { const a = j * 2.39996, d = j ? 14 + 9 * (j % 3) : 0, m = new THREE.Mesh(gCono, o.mat); m.position.set(x + Math.cos(a) * d, Y(), z + Math.sin(a) * d); m.userData.k = j ? 0.55 + 0.1 * (j % 4) : 1; m.castShadow = true; m.visible = false; G.add(m); o.montones.push(m); }
         o.halo = new THREE.Mesh(gDisco, new THREE.MeshBasicMaterial({ color: 0xdc2626, transparent: true, opacity: 0.22, depthWrite: false, depthTest: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
         o.halo.position.set(x, Y() + 0.6, z); o.halo.renderOrder = 3; o.halo.visible = false; G.add(o.halo); }
@@ -65,7 +73,7 @@ export function crearRes03({ T3, RELOJ }) {
     const dec = r.fase; // la semana siguiente lo acumulado va bajando (se recoge)
     const porK = Object.fromEntries(r.nodos.map(q => [q.k, q]));
     for (const n of NODOS03) { const o = N[n.k], q = porK[n.k]; if (!o || !q) continue; const t = q.calle * dec, h = q.edad;
-      if (o.montones) { colorEdad(h, o.mat.color); const s = t > 0.5 ? Math.sqrt(t) : 0; o.montones.forEach(m => { m.visible = s > 0; const k = m.userData.k; m.scale.set((10 + 2.6 * s) * k, (6 + 1.3 * s) * k, (10 + 2.6 * s) * k); /* escala visual declarada: se lee desde la vista de pájaro */ });
+      if (o.montones) { colorEdad(h, o.mat.color); const s = t > 0.5 ? Math.sqrt(t) : 0; o.montones.forEach(m => { m.visible = s > 0; const k = m.userData.k; m.scale.set((10 + 2.6 * s) * k, (5 + 1.1 * s) * k, (10 + 2.6 * s) * k); /* escala visual declarada: se lee desde la vista de pájaro */ }); if (o.mancha) { const rm = s > 0 ? (16 + 3.6 * s) : 0; o.mancha.visible = s > 0; o.mancha.scale.set(rm, 1, rm * 0.8); o.mancha.material.opacity = 0.3 + 0.4 * Math.min(1, h / 48); } o.montones.forEach(m => { });
         o.halo.visible = riesgoOn && h > 0.5 && t > 0.5; o.halo.scale.setScalar(60 + 540 * Math.min(1, h / 48)); o.halo.material.opacity = 0.12 + 0.18 * Math.min(1, h / 48); }
       const usado = n.t === 'estacion' ? Math.min(1, q.tratado / Math.max(1, 250 * r.cap * r.horas / 24)) : n.t === 'bavaria' ? Math.min(1, (r.nodos.reduce((a, z) => a, 0) + 0.5)) : 0;
       if (o.col) { o.col.visible = !!r.prop && r.cap > 0; o.anillo.visible = o.col.visible; o.col.material.opacity = 0.18 + 0.4 * usado; }
