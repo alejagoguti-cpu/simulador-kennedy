@@ -95,7 +95,7 @@ export function crearMov02({ T3, RELOJ }) {
     try { const mv = await import('./vehiculos.js?v=10'); FILA.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: FILA.MAX, camion: Math.ceil(FILA.MAX / 5) } }); FILA.VEH.grupo.visible = false;
       FILA.objs = Array.from({ length: FILA.MAX }, () => ({})); FILA.pos = { n: 0, x: new Float32Array(FILA.MAX), z: new Float32Array(FILA.MAX) };
       import('./viajes_mercados.js?v=11').then(vm => { MOR.R = vm.construirRed(T3.net, T3.lw); MOR.arbol = vm.arbol; }).catch(() => {});
-      import('./vias_densidad.js?v=3').then(m => m.crearViasDensidad({ T3 }).extra('mov02', () => (FILA.VEH && FILA.VEH.grupo.visible ? FILA.pos : null))).catch(() => {}); } catch (e) { console.warn('mov02 vehículos:', e); }
+      import('./vias_densidad.js?v=4').then(m => m.crearViasDensidad({ T3 }).extra('mov02', () => (FILA.VEH && FILA.VEH.grupo.visible ? FILA.pos : null))).catch(() => {}); } catch (e) { console.warn('mov02 vehículos:', e); }
     // pasajes y bosque (con propuesta)
     try { const [PJ, AR] = await Promise.all([fetch('data3d/mov02_pasajes.json').then(r => r.json()), fetch('data3d/bavaria_arboles.json').then(r => r.json())]);
       const L = PJ.pasajes.map(p => ({ p: p.p.map(q => lw(q[0], q[1])) }));

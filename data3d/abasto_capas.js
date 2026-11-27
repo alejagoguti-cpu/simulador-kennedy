@@ -16,7 +16,7 @@
      cuántas = (1 + nivel), velocidad = 1 / (1 + nivel) (factor de tiempo de viaje de TomTom), color verde → ámbar → rojo con el nivel
      (0,62 + 0,033 × años; I.congestion01). Se actualiza cada semana simulada; se anima en cada cuadro. */
 import { RELOJ } from './reloj.js?v=5';
-import { crearViasDensidad, nivelLOS } from './vias_densidad.js?v=3';
+import { crearViasDensidad, nivelLOS } from './vias_densidad.js?v=4';
 
 const ALTO = 16;                       // m: altura de la caja de cada nave (las reales tienen 8,5–10,5 m; un poco más para leerse desde lejos)
 const CORA_C = [6150, 2250];           // centro aproximado de Corabastos en el modelo (corabastos.json)

@@ -57,7 +57,7 @@ export function crearRes03({ T3, RELOJ }) {
     try { const [vm, mv] = await Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]);
       VE.R = vm.construirRed(T3.net, T3.lw); VE.arbol = vm.arbol; VE.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: 2, camion: VE.MAX } }); VE.VEH.grupo.visible = false;
       VE.objs = Array.from({ length: VE.MAX }, () => ({})); VE.pos = { n: 0, x: new Float32Array(VE.MAX), z: new Float32Array(VE.MAX) };
-      import('./vias_densidad.js?v=3').then(m => m.crearViasDensidad({ T3 }).extra('res03', () => (VE.VEH && VE.VEH.grupo.visible ? VE.pos : null))).catch(() => {});
+      import('./vias_densidad.js?v=4').then(m => m.crearViasDensidad({ T3 }).extra('res03', () => (VE.VEH && VE.VEH.grupo.visible ? VE.pos : null))).catch(() => {});
     } catch (e) { console.warn('res03 camiones:', e); }
     RELOJ.alDibujar(cuadro);
   }
@@ -88,7 +88,8 @@ export function crearRes03({ T3, RELOJ }) {
         if (t > 0.5) L.push({ x: p[0], z: p[1], ico: 'basura', txt: Math.round(t).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h', q: q.edad / 48, title: n.n + ' · orgánicos sin recoger' });
         else if (r.prop && r.cap > 0 && n.t === 'estacion') L.push({ x: p[0], z: p[1], ico: 'estacion', txt: Math.round(q.tratado / Math.max(1, r.horas / 24)).toLocaleString('es-CO') + ' t/día', col: '#67e8f9', title: 'Estación Circular ' + n.n });
         else if (r.prop && r.cap > 0 && n.t === 'bavaria') L.push({ x: p[0], z: p[1], ico: 'brote', txt: Math.round(r.compostDia).toLocaleString('es-CO') + ' t/día', col: '#6ee7b7', title: 'Bavaria Común · compost para las huertas' }); }
-      crearChips({ T3, RELOJ }).poner('res03', L); window.KEN_ESCENA = { escena: 'basura', prop: !!r.prop }; }
+      crearChips({ T3, RELOJ }).poner('res03', L);
+      { const Z = window.KEN_VIAS_ZONAS || (window.KEN_VIAS_ZONAS = {}); Z.res03 = r.nodos.filter(q => q.calle * dec > 5).map(q => { const p = pos(NODOS03.find(z => z.k === q.k)); return { x: p[0], z: p[1], r: 700, f: 1 + Math.min(1.6, q.calle * dec / 600) }; }); } /* botaderos en la calle: las vías de alrededor se bloquean (pedido de la autora) */ window.KEN_ESCENA = { escena: 'basura', prop: !!r.prop }; }
     window.KEN_MOM = r.nodos.filter(q => q.calle > 0.5 || (r.prop && q.t !== 'barrio' && q.t !== 'cora')).map(q => { const n = NODOS03.find(z => z.k === q.k), p = pos(n); return { t: n.n, s: q.calle > 0.5 ? Math.round(q.calle).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h sin tratar' : 'tratando ' + Math.round(q.tratado / Math.max(1, r.horas / 24)) + ' t/día', x: p[0], z: p[1], d: 220 }; });
     // viajes: cada nodo a su estación y de las estaciones a Bavaria; camiones ∝ t/h tratadas [escala: 1 camión por 1,5 t/h, máx. 8 por viaje]
     viajes = []; if (r.prop && r.cap > 0) { const est = NODOS03.filter(n => n.t === 'estacion'), bav = pos(NODOS03.find(n => n.t === 'bavaria'));
@@ -100,7 +101,7 @@ export function crearRes03({ T3, RELOJ }) {
     async poner(r) { R = r || null; if (!R || !(R.fase > 0 || (R.prop && R.nodos))) { if (G) G.visible = false; viajes = []; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     riesgo(on) { riesgoOn = !!on; aplicar(); return riesgoOn; },
     get riesgoOn() { return riesgoOn; },
-    quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('res03'); window.KEN_ESCENA = null; }
+    quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('res03'); window.KEN_ESCENA = null; if (window.KEN_VIAS_ZONAS) delete window.KEN_VIAS_ZONAS.res03; }
   };
   window.KEN_RES03 = api; return api;
 }

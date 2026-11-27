@@ -210,7 +210,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     /* v5.2: la propuesta 3D (ya armada escondida) se prende en el mismo clic, en la semana en que va; el modelo se pone al día por lotes detrás */
     try { const pp = R.def && R.def.par >= 1 && R.def.par <= 6; if (pp && R.def.propuesta && P01) P01.poner({ sem: (opc && opc.desde) || 1 }); else if (pp && !R.def.propuesta && P01) P01.apagar(); } catch (e) { console.warn('propuesta 01:', e); }
     R.valores = {}; (R.def && R.def.sliders || []).forEach(s => { R.valores[s.k] = s.val; });
-    import('./propuesta_flujos.js?v=3').then(m => m.crearFlujosPropuesta({ T3, RELOJ }).poner(R.def && R.def.par, R.def && R.def.propuesta)).catch(e => console.warn('flujos:', e)); /* con propuesta: menos viajes a Corabastos y rutas a los mercados */
+    import('./propuesta_flujos.js?v=4').then(m => m.crearFlujosPropuesta({ T3, RELOJ }).poner(R.def && R.def.par, R.def && R.def.propuesta)).catch(e => console.warn('flujos:', e)); /* con propuesta: menos viajes a Corabastos y rutas a los mercados */
     reiniciarModelo(); pintarPanel(); der.classList.add('on'); ponerLugares(null); if (!(R.def && R.def.par >= 2 && R.def.par <= 6)) { ponerMov(null); ponerCierre(null); } else if (!(opc && opc.desde > 1)) setTimeout(recalcularAqui, 500); /* 02: vista previa desde el primer momento */
     setTimeout(apagarSintaxis, 1600); setTimeout(apagarSintaxis, 3200);
     setTimeout(() => { const H = HISTORIA[R.def && R.def.par]; const rb = document.getElementById('rc-btn'); const ruidoOn = false; /* el ruido solo se prende a mano */ /* con propuesta: sin capa de ruido, la historia es la red verde y el reparto */ if (H && rb && rb.classList.contains('on') !== ruidoOn) rb.click(); pintarHistoria(); focoHistoria(5);
@@ -582,11 +582,11 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   let RES = null, pRes = null, S456 = null, pS456 = null;
   function ponerMov(I) { if (R.previa && R.vistaL) I = R.vistaL; /* vista previa de la 02 y la 03: la semana del cierre o de la interrupción */ const m = R.def && R.def.par === 2 && I && I.mov02 ? I.mov02 : null;
     { const p = R.def && R.def.par, d = p >= 4 && p <= 6 && I ? I['s0' + p] : null; /* 04–06 (data3d/capas456.js) */
-      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=12').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
+      if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=13').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
     { const r3 = R.def && R.def.par === 3 && I && I.res03 && (I.res03.fase > 0 || (I.res03.prop && I.res03.nodos)) ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
-      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=10').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
+      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=11').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
     if (!m) { if (MOV) MOV.quitar(); return; }
-    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=13').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
+    if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=14').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
     MOV.poner(m); }
   /* vista previa (año 1, antes de darle play): el territorio muestra la semana en que la vía ya está cerrada del todo con estos valores */
   const semanaVista = (H) => H.find(h => (h.mov02 && h.mov02.fase >= 1) || (h.res03 && h.res03.fase >= 1) || (h.s04 && h.s04.fase >= 1)) || (R.def && (R.def.par === 5 || R.def.par === 6) ? H[Math.min(H.length - 1, R.def.par === 5 ? 259 : 25)] : null) || H[H.length - 1]; /* 05: año 5 del plan; 06: medio año de rondas */
@@ -652,7 +652,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     const c = I ? capaPar() : null;
     /* v5.2: vías pintadas por la densidad MEDIDA de vehículos (data3d/vias_densidad.js) en las 6 simulaciones; en la 01 la maneja su capa «Tráfico» (abasto_capas.js) */
     window.KEN_VIAS_PAR = !!(parI && !p01);
-    if (parI && !p01) import('./vias_densidad.js?v=3').then(m => m.crearViasDensidad({ T3 }).ver(true)).catch(e => console.warn('vías:', e));
+    if (parI && !p01) import('./vias_densidad.js?v=4').then(m => m.crearViasDensidad({ T3 }).ver(true)).catch(e => console.warn('vías:', e));
     else if (!parI && window.KEN_VIAS) window.KEN_VIAS.ver(false);
     // par 01: medidores de capacidad (data3d/abasto_contenedor.js): Corabastos y, con propuesta, uno por mercado
     /* antes, con propuesta: data3d/reparto.js (volúmenes proporcionales); ahora los mismos medidores muestran el reparto */

@@ -64,6 +64,7 @@ export function crearViasDensidad({ T3 }) {
        alrededor, con los tramos del mismo tipo de vía (arteria con arteria, local con local): carros de la ventana ÷ (km × carriles de la ventana) */
     const nb = new Map(), R2 = VENTANA * VENTANA, CV = VENTANA; const kc = (x, z) => Math.floor(x / CV) * 100003 + Math.floor(z / CV);
     for (let t = 0; t < nt; t++) { if (ml[t] > 0) { mx[t] /= ml[t]; mz[t] /= ml[t]; } else { mx[t] = mz[t] = 1e9; } const key = kc(mx[t], mz[t]); let a = nb.get(key); if (!a) nb.set(key, a = []); a.push(t); }
+    V.mx = Float32Array.from(mx); V.mz = Float32Array.from(mz); /* centros de tramo para las zonas de cada simulación (KEN_VIAS_ZONAS) */
     const off = new Int32Array(nt + 1), lst = []; for (let t = 0; t < nt; t++) { off[t] = lst.length; if (mx[t] > 1e8) { lst.push(t); continue; } const cx = Math.floor(mx[t] / CV), cz = Math.floor(mz[t] / CV);
       for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = nb.get((cx + i) * 100003 + cz + j); if (!a) continue; for (const u of a) if (tip[u] === tip[t] && (mx[u] - mx[t]) ** 2 + (mz[u] - mz[t]) ** 2 <= R2) lst.push(u); } }
     off[nt] = lst.length; V.off = off; V.lst = Int32Array.from(lst); V.cw = new Float32Array(nt); V.lk = new Float32Array(nt);
@@ -80,7 +81,7 @@ export function crearViasDensidad({ T3 }) {
     const a = 1 - Math.exp(-dt / TAU), primera = !V.medidos;
     let snk = 0, sn = 0;
     for (let t = 0; t < V.n; t++) { let c = 0; for (let q = V.off[t]; q < V.off[t + 1]; q++) c += V.cnt[V.lst[q]]; V.cw[t] = c; }
-    for (let t = 0; t < V.n; t++) { const k0 = V.cw[t] / V.lk[t]; snk += V.cnt[t] * k0; sn += V.cnt[t]; const k = k0 * V.F; V.k[t] = k; V.kS[t] = primera ? k : V.kS[t] + (k - V.kS[t]) * a; }
+    for (let t = 0; t < V.n; t++) { const k0 = V.cw[t] / V.lk[t]; snk += V.cnt[t] * k0; sn += V.cnt[t]; const k = k0 * V.F * zonaF(t); V.k[t] = k; V.kS[t] = primera ? k : V.kS[t] + (k - V.kS[t]) * a; }
     V.kVeh = sn ? snk / sn : 0; /* densidad (sin escalar) que vive el vehículo medio: se usa para calibrar F */
     const arr = V.aC.array, a0 = V.aC0.array, mx = V.mesh.material.uniforms.uMix.value; for (let v = 0; v < arr.length; v++) { a0[v] = a0[v] + (arr[v] - a0[v]) * mx; arr[v] = V.kS[V.vTr[v]] / KC; }
     V.aC.needsUpdate = true; V.aC0.needsUpdate = true; V.mesh.material.uniforms.uMix.value = 0; V.tMed = performance.now() / 1000; V.medidos++; V.vehiculos = n; }
@@ -88,6 +89,11 @@ export function crearViasDensidad({ T3 }) {
     V.mesh.position.y = (T3.viaY != null ? T3.viaY : (T3.sueloY != null ? T3.sueloY : 0.3) + 0.3) + 0.28; V.mesh.material.uniforms.uT.value = RELOJ.tAnim || 0;
     V.mesh.material.uniforms.uMix.value = Math.min(1, (ahora - V.tMed) / CADA);
     if (ahora - V.ult >= CADA) { const dt = V.ult ? Math.min(3, ahora - V.ult) : CADA; V.ult = ahora; medirAhora(dt); } });
+  /* 2026-11-27 (la autora: «las vías deben cambiar con cada simulación y cada año»): la densidad medida se multiplica por
+     · window.KEN_VIAS_ZONAS = { grupo: [{ x, z, r, f }] }: zonas que fija cada simulación (botaderos de la 03 que bloquean calles, carros nuevos del plan parcial
+       en la 05): factor f en el centro que baja a 1 en el radio r. */
+  function zonaF(t) { let f = 1; /* el tráfico del modelo (KEN_TRAF_F) ya cambia cuántos carros se dibujan: no se cuenta dos veces */ const Z = window.KEN_VIAS_ZONAS; if (!Z || !V.mx) return f;
+    const x = V.mx[t], z = V.mz[t]; for (const g in Z) for (const q of Z[g] || []) { const d = Math.hypot(x - q.x, z - q.z); if (d < q.r) f *= 1 + (q.f - 1) * (1 - d / q.r); } return f; }
   const api = window.KEN_VIAS = { grupo, get F() { return V.F; }, set F(v) { V.F = v; }, get kVeh() { return V.kVeh; },
     ver(on) { on = !!on; if (on && !V.listo && !armar()) return; grupo.visible = on; if (!on) { V.ult = 0; V.medidos = 0; } },
     extra(id, fn) { if (fn) V.extras.set(id, fn); else V.extras.delete(id); },
