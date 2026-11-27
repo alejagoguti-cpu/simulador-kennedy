@@ -19,16 +19,19 @@ export const ICO = {
   torre: P('<path d="M4 14.5V2.5h8v12M6.5 5h1M8.5 5h1M6.5 8h1M8.5 8h1M6.5 11h1M8.5 11h1"/>'),
   gente: P('<circle cx="5.5" cy="5" r="1.8"/><circle cx="11" cy="5.5" r="1.5"/><path d="M2 13c.4-2.6 1.8-4 3.5-4s3.1 1.4 3.5 4M9 9.2c.6-.4 1.2-.6 2-.6 1.6 0 2.7 1.2 3 3.4"/>'),
   alcaldia: P('<path d="M2 14h12M3 14V7h10v7M2 7l6-4.5L14 7M5.5 14V9.5M8 14V9.5M10.5 14V9.5"/>'),
+  mercado: P('<path d="M1.5 6 3 2.5h10L14.5 6M1.5 6c0 1 .8 1.6 1.6 1.6S4.7 7 4.7 6c0 1 .8 1.6 1.6 1.6S7.9 7 7.9 6c0 1 .8 1.6 1.6 1.6s1.6-.6 1.6-1.6c0 1 .8 1.6 1.6 1.6s1.3-.6 1.3-1.6M2.8 7.6V14h10.4V7.6M6 14v-3.5h4V14"/>'),
   red: P('<circle cx="8" cy="3" r="1.6"/><circle cx="3" cy="12.5" r="1.6"/><circle cx="13" cy="12.5" r="1.6"/><path d="M7.2 4.4 3.8 11M8.8 4.4l3.4 6.6M4.6 12.5h6.8"/>')
 };
 const CSS = 'position:fixed;z-index:6;pointer-events:auto;transform:translate(-50%,-100%);display:none;align-items:center;justify-content:center;width:32px;height:32px;box-sizing:border-box;padding:0;border-radius:50%;border-width:1.5px!important;background:linear-gradient(180deg,rgba(40,44,52,.78),rgba(20,22,28,.88));border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#f2f3f5;font:600 11px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)';
+/* color continuo (2026-11-27: «que cambien los colores con los años»): q = 0 verde · 0,5 amarillo · 1 rojo, sin saltos */
+export const colorQ = (q) => { q = Math.max(0, Math.min(1, q)); const A = [[155, 232, 176], [255, 210, 122], [255, 138, 128]], i = q < 0.5 ? 0 : 1, f = q < 0.5 ? q / 0.5 : (q - 0.5) / 0.5, c = A[i].map((v, k) => Math.round(v + (A[i + 1][k] - v) * f)); return '#' + c.map(v => v.toString(16).padStart(2, '0')).join(''); };
 export function crearChips({ T3, RELOJ }) {
   if (window.KEN_CHIPS) return window.KEN_CHIPS;
   const G = new Map(), v = new (T3.THREE.Vector3)(), pool = []; let usados = 0;
   const el = (i) => { if (!pool[i]) { const d = document.createElement('div'); d.className = 'ken-chip'; d.style.cssText = CSS; document.body.appendChild(d); pool[i] = d; } return pool[i]; };
   RELOJ.alDibujar(() => { const C = T3.camera, cv = T3.renderer && T3.renderer.domElement; if (!C || !cv) return; const R = cv.getBoundingClientRect(); let i = 0;
     for (const L of G.values()) for (const c of L) { v.set(c.x, c.y != null ? c.y : (T3.sueloY || 0.3) + 40, c.z).project(C); if (v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
-      const d = el(i++), h = ICO[c.ico] || '', k = h + (c.col || ''); if (d._k !== k) { d.innerHTML = h; d.style.color = c.col || '#f2f3f5'; d.style.borderColor = c.col ? c.col + '88' : 'rgba(255,255,255,.16)'; d._k = k; } d.title = [c.title, c.txt].filter(Boolean).join(' · '); /* sin números en el mapa (pedido de la autora): el dato va al pasar el mouse */
+      if (c.q != null) c.col = colorQ(c.q); const d = el(i++), h = ICO[c.ico] || '', k = h + (c.col || ''); if (d._k !== k) { d.innerHTML = h; d.style.color = c.col || '#f2f3f5'; d.style.borderColor = c.col ? c.col + '88' : 'rgba(255,255,255,.16)'; d._k = k; } d.title = [c.title, c.txt].filter(Boolean).join(' · '); /* sin números en el mapa (pedido de la autora): el dato va al pasar el mouse */
       d.style.left = (R.left + (v.x + 1) / 2 * R.width) + 'px'; d.style.top = (R.top + (1 - v.y) / 2 * R.height) + 'px'; d.style.display = 'flex'; }
     for (let j = i; j < usados; j++) pool[j].style.display = 'none'; usados = i; });
   const api = { poner(g, lista) { if (lista && lista.length) G.set(g, lista); else G.delete(g); }, quitar(g) { G.delete(g); } };

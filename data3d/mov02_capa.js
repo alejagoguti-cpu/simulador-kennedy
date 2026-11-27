@@ -13,7 +13,7 @@
      permeabilidad, personas 3D que los cruzan (cuántas ∝ permeabilidad) y un manto verde bajo cada copa del bosque (árboles con marca 1 de bavaria_arboles.json). Sin nubes de puntos. */
 import { VIAS } from './cierre_gradual.js?v=8';
 import { MERCADOS } from './sim_red_datos.js?v=2';
-import { crearChips } from './chips.js?v=2'; /* chips con ícono plano, como la 01 (2026-11-27) */
+import { crearChips } from './chips.js?v=3'; /* chips con ícono plano, como la 01 (2026-11-27) */
 /* CON PROPUESTA (como la 01): carros MORADOS que van por las vías reales a los mercados de barrio de la propuesta (MERCADOS de sim_red_datos.js): son
    los viajes a Corabastos que se cambian por viajes cortos. Cuántos = 11.465 veh/día a Corabastos × 10 % en la hora pico × 45 % × permeabilidad
    (los mismos datos de mov02_modelo.js) ÷ 20 [escala visual declarada], máx. 30. Cada uno sale de un punto a ~800 m de su mercado. */
@@ -145,8 +145,8 @@ export function crearMov02({ T3, RELOJ }) {
       if (m.prop) M2.push({ t: 'Pasajes de Bavaria', s: Math.round((m.perm || 0) * 100) + ' % de permeabilidad', x: 3977.7, z: 219.3, d: 320 }); window.KEN_MOM = M2; }
     for (const k of ART) { const v = m.vias[k]; pintarRot(k, v && k !== m.via && tramos[k] ? `${v.n.toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); if (ROT[k] && v && k !== m.via) { const p = puntoFila[k]; if (p) ROT[k].sp.position.set(p[0], ROT[k].sp.position.y, p[1]); } }
     { const CH = crearChips({ T3, RELOJ }), cc = (q) => q >= 1 ? '#ff8a80' : q >= 0.85 ? '#ffd27a' : '#9be8b0', L = [];
-      for (const k of ART) { const v = m.vias[k], R = ROT[k]; if (!v || !R || !tramos[k]) continue; const p = R.sp.position; if (k === m.via && m.c > 0.02) L.push({ x: p.x, z: p.z, ico: 'cierre', txt: 'Cerrada ' + Math.round(m.c * 100) + ' %', col: '#ff8a80', title: v.n }); else L.push({ x: p.x, z: p.z, ico: 'via', txt: Math.round(v.x * 100) + ' %', col: cc(v.x), title: v.n + ' · flujo ÷ capacidad' }); }
-      const vl = m.vias.locales; if (vl) BARRIOS.forEach((b, i) => L.push({ x: b[0], z: b[1], ico: 'barrio', txt: Math.round(vl.x * 100) + ' %', col: cc(vl.x), title: N_BARRIO[i] + ' · calles locales' }));
+      for (const k of ART) { const v = m.vias[k], R = ROT[k]; if (!v || !R || !tramos[k]) continue; const p = R.sp.position; if (k === m.via && m.c > 0.02) L.push({ x: p.x, z: p.z, ico: 'cierre', txt: 'Cerrada ' + Math.round(m.c * 100) + ' %', col: '#ff8a80', title: v.n }); else L.push({ x: p.x, z: p.z, ico: 'via', txt: Math.round(v.x * 100) + ' %', q: (v.x - 0.7) / 0.5, title: v.n + ' · flujo ÷ capacidad' }); }
+      const vl = m.vias.locales; if (vl) BARRIOS.forEach((b, i) => L.push({ x: b[0], z: b[1], ico: 'barrio', txt: Math.round(vl.x * 100) + ' %', q: (vl.x - 0.5) / 0.7, title: N_BARRIO[i] + ' · calles locales' }));
       if (m.prop) L.push({ x: 3977.7, z: 219.3, ico: 'pasaje', txt: Math.round((m.perm || 0) * 100) + ' %', col: '#86efac', title: 'Pasajes de Bavaria · permeabilidad' });
       CH.poner('mov02', L); window.KEN_ESCENA = { escena: 'fila', prop: !!m.prop }; }
     BARRIOS.forEach((b, i) => { const v = m.vias.locales; pintarRot('b' + i, v && m.via ? `${N_BARRIO[i].toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); });

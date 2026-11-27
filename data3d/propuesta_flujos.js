@@ -8,7 +8,7 @@
      cuántos = 11.465 veh/día a Corabastos × 10 % en hora pico × 45 % ÷ 20 [escala visual declarada], máx. 30. La 02 ya los dibuja (mov02_capa.js).
    · Chip en Corabastos con el cambio. */
 import { MERCADOS } from './sim_red_datos.js?v=2';
-import { crearChips } from './chips.js?v=2';
+import { crearChips } from './chips.js?v=3';
 const CORA = [1054.7, 995.9], R0 = 600, R1 = 2600, BAJA = 0.45;
 export function crearFlujosPropuesta({ T3, RELOJ }) {
   if (window.KEN_FLUJOS) return window.KEN_FLUJOS;
@@ -24,13 +24,14 @@ export function crearFlujosPropuesta({ T3, RELOJ }) {
     if (nd.i < 0 || no.i < 0) { MOR.rutas.set(i, null); return null; } let T = MOR.arb.get(nd.i); if (!T) { if (MOR.pend) return null; MOR.pend = 1; T = MOR.arbol(R, nd.i); MOR.arb.set(nd.i, T); }
     if (!isFinite(T.dist[no.i])) { MOR.rutas.set(i, null); return null; } const P = [[R.X[no.i], R.Z[no.i]]]; let u = no.i; while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) break; u = R.ea[e] === u ? R.eb[e] : R.ea[e]; P.push([R.X[u], R.Z[u]]); }
     const S = [0]; for (let k = 1; k < P.length; k++) S.push(S[k - 1] + Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1])); const r = S[S.length - 1] > 150 ? { P, S, L: S[S.length - 1] } : null; MOR.rutas.set(i, r); return r; }
-  RELOJ.alDibujar(() => { if (!MOR.VEH) return; MOR.VEH.grupo.visible = morados; if (!morados) return; MOR.pend = 0; { const sem = RELOJ.sem || 1; fAb = MERCADOS.filter(m => sem >= m.desde).length / MERCADOS.length; } const n = Math.min(30, Math.round(11465 * 0.1 * BAJA * fAb / 20)), tA = RELOJ.tAnim || performance.now() / 1000, Y = (T3.sueloY || 0.3) + 0.02;
+  function chipsMercados() { const sem = RELOJ.sem || 1, ab = MERCADOS.filter(m => sem >= m.desde); if (ab.length !== MOR.nAb) { MOR.nAb = ab.length; crearChips({ T3, RELOJ }).poner('mercados', ab.map(m => ({ x: m.x, z: m.z, ico: 'mercado', txt: '', col: '#c4b5fd', title: (m.n || 'Mercado de barrio') + ' · abierto' }))); } } /* un ícono por mercado que ya abrió: aparecen nuevos cada año */
+  RELOJ.alDibujar(() => { if (on) chipsMercados(); if (!MOR.VEH) return; MOR.VEH.grupo.visible = morados; if (!morados) return; MOR.pend = 0; { const sem = RELOJ.sem || 1; fAb = MERCADOS.filter(m => sem >= m.desde).length / MERCADOS.length; } const n = Math.min(30, Math.round(11465 * 0.1 * BAJA * fAb / 20)), tA = RELOJ.tAnim || performance.now() / 1000, Y = (T3.sueloY || 0.3) + 0.02;
     MOR.VEH.inicio(); MOR.pos.n = 0; let k = 0;
     for (let i = 0; i < n; i++) { if (RELOJ.sem < MERCADOS[i % MERCADOS.length].desde) continue; const r = ruta(i); if (!r) continue; const s0 = ((tA * 11 / r.L) + i * 0.137) % 2, ida = s0 < 1, s = (ida ? s0 : 2 - s0) * r.L; let a = 0, b = r.S.length - 1; while (b - a > 1) { const mm = (a + b) >> 1; if (r.S[mm] < s) a = mm; else b = mm; }
       const fr = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]); let fx = r.P[b][0] - r.P[a][0], fz = r.P[b][1] - r.P[a][1]; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; if (!ida) { fx = -fx; fz = -fz; }
       const x = r.P[a][0] + (r.P[b][0] - r.P[a][0]) * fr - fz * 1.8, z = r.P[a][1] + (r.P[b][1] - r.P[a][1]) * fr + fx * 1.8; MOR.VEH.poner(MOR.objs[i], 'carro', x, Y + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); MOR.pos.x[k] = x; MOR.pos.z[k] = z; MOR.pos.n = ++k; }
     MOR.VEH.fin(); });
   const api = { poner(par, prop) { on = !!prop && par >= 2 && par <= 6; morados = on && par !== 2; const CH = crearChips({ T3, RELOJ });
-      if (on) CH.poner('flujos', [{ x: CORA[0], z: CORA[1], y: (T3.sueloY || 0.3) + 70, ico: 'via', txt: '−45 % viajes', col: '#9be8b0', title: 'Corabastos con la propuesta: 45 % menos viajes largos (mercados y huertas de barrio)' }]); else CH.quitar('flujos'); } };
+      if (!on) { CH.quitar('mercados'); MOR.nAb = -1; } if (on) CH.poner('flujos', [{ x: CORA[0], z: CORA[1], y: (T3.sueloY || 0.3) + 70, ico: 'via', txt: '−45 % viajes', col: '#9be8b0', title: 'Corabastos con la propuesta: 45 % menos viajes largos (mercados y huertas de barrio)' }]); else CH.quitar('flujos'); } };
   window.KEN_FLUJOS = api; return api;
 }

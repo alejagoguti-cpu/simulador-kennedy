@@ -9,7 +9,7 @@
      reales (vehiculos.js, los de la 01) que van por las vías de cada nodo a su Estación y de las Estaciones a Bavaria; cuántos ∝ t/h movidas.
    · RÓTULOS: nombre del nodo con toneladas en la calle y horas sin tratar (o «tratado» con la propuesta). */
 import { NODOS03 } from './res03_modelo.js?v=1';
-import { crearChips } from './chips.js?v=2';
+import { crearChips } from './chips.js?v=3';
 const POS = { cora: [1054.7, 995.9], bavaria: [3977.7, 219.3] };
 const pos = (n) => n.p ? n.p[0] : POS[n.k];
 
@@ -85,7 +85,7 @@ export function crearRes03({ T3, RELOJ }) {
       else if (t > 0.5) pintar(o.rot, `${n.n.toUpperCase()} · ${tt} t · ${Math.round(h)} h`, h >= 48 ? '#581c87' : h >= 24 ? '#c2410c' : '#b45309');
       else pintar(o.rot, r.prop && n.t === 'estacion' && r.cap > 0 ? `ESTACIÓN ${n.n.toUpperCase()} · trata ${Math.round(q.tratado / Math.max(1, r.horas / 24)).toLocaleString('es-CO')} t/día` : '', '#0e7490'); }
     { const L = []; for (const q of r.nodos) { const n = NODOS03.find(z => z.k === q.k), p = pos(n), t = q.calle * dec;
-        if (t > 0.5) L.push({ x: p[0], z: p[1], ico: 'basura', txt: Math.round(t).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h', col: q.edad >= 48 ? '#d8b4fe' : q.edad >= 24 ? '#fdba74' : '#fde68a', title: n.n + ' · orgánicos sin recoger' });
+        if (t > 0.5) L.push({ x: p[0], z: p[1], ico: 'basura', txt: Math.round(t).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h', q: q.edad / 48, title: n.n + ' · orgánicos sin recoger' });
         else if (r.prop && r.cap > 0 && n.t === 'estacion') L.push({ x: p[0], z: p[1], ico: 'estacion', txt: Math.round(q.tratado / Math.max(1, r.horas / 24)).toLocaleString('es-CO') + ' t/día', col: '#67e8f9', title: 'Estación Circular ' + n.n });
         else if (r.prop && r.cap > 0 && n.t === 'bavaria') L.push({ x: p[0], z: p[1], ico: 'brote', txt: Math.round(r.compostDia).toLocaleString('es-CO') + ' t/día', col: '#6ee7b7', title: 'Bavaria Común · compost para las huertas' }); }
       crearChips({ T3, RELOJ }).poner('res03', L); window.KEN_ESCENA = { escena: 'basura', prop: !!r.prop }; }
