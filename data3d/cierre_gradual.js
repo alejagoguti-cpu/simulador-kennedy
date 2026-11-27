@@ -42,7 +42,11 @@ function normalizar(v) {
 export function crearCierre({ T3, RELOJ }) {
   if (window.KEN_CIERRE) return window.KEN_CIERRE; // una sola obra en la escena: sim_ui.js y el recorrido de la sim. 02 (recorrido_movilidad.js) la comparten
   const THREE = T3.THREE;
-  let G = null, U = null, RED = null, actual = null, viaKey = null, rcEdge = null, mallas = [], rotulos = [];
+  let G = null, U = null, RED = null, actual = null, viaKey = null, rcEdge = null, mallas = [], rotulos = [], MASK = null;
+  const MASK_R = 9; /* m a cada lado del eje de cada calzada cerrada: cubre sus carriles y los cruces sobre ella */
+  T3.enCierre = (x, z) => { if (!MASK || meta.fase < 0.5) return false; const C = MASK.C, ci = Math.floor(x / C), cj = Math.floor(z / C);
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = MASK.M.get((ci + a) * 100003 + cj + b); if (L) for (let k = 0; k < L.length; k += 2) { const dx = L[k] - x, dz = L[k + 1] - z; if (dx * dx + dz * dz < MASK_R * MASK_R) return true; } }
+    return false; };
   const meta = { fase: 0, db: 0, tr: 0 }, cur = { fase: 0, db: 0, tr: 0 };
   let rcEstado = 'abierta', rcCola = Promise.resolve(), rcPend = 0, rcEspera = 0;
   const camP = new THREE.Vector3(), camT = new THREE.Vector3();
@@ -215,6 +219,13 @@ export function crearCierre({ T3, RELOJ }) {
     // arista para T3.rc.cerrar (los carros grabados se desvían): la cerrada más cercana a Corabastos con al menos 30 m
     let be = cerr[0], bd = Infinity; for (const e of cerr) { if (R.eL[e] < 30 && cerr.length > 1) continue; const P = E[e][1], q = P[Math.floor(P.length / 2)], d = (q[0] - CORA[0]) ** 2 + (q[1] - CORA[1]) ** 2; if (d < bd) { bd = d; be = e; } }
     rcEdge = cerr.length > 1 ? cerr.slice() : be; /* 2026-11-26: toda la vía (la lista) para que los carros grabados que la usan tomen el desvío */
+    /* MÁSCARA DE LA VÍA CERRADA (pedido de la autora 2026-11-27: «si se cierra una vía ningún carro puede pasar por ahí, ni tocarla»): puntos de cada
+       calzada cerrada cada 3 m en una rejilla de 12 m; T3.enCierre(x, z) = true a ≤ MASK_R m de una calzada cerrada mientras la vía está cerrada del todo
+       (fase ≥ 0,5, el mismo umbral del desvío de los carros grabados). data3d/vehiculos.js no dibuja ningún vehículo ahí (grabados, fila, morados, camiones). */
+    { const C = 12, M = new Map(); for (const e of cerr) { const P = E[e][1].map(q => lw(q[0], q[1]));
+        for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(l / 3));
+          for (let k = 0; k <= n; k++) { const x = a[0] + (b[0] - a[0]) * k / n, z = a[1] + (b[1] - a[1]) * k / n, key = Math.floor(x / C) * 100003 + Math.floor(z / C); let L = M.get(key); if (!L) M.set(key, L = []); L.push(x, z); } } }
+      MASK = { C, M }; }
     Object.assign(est, { aristas: cerr.length, desvios: ld.length, rutas, conos: conos.length, barricadas: barr.length, rcArista: be, ms: Math.round(performance.now() - t0) });
   }
 

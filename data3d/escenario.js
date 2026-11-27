@@ -204,14 +204,14 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   import('./escenarios_sim.js?v=55').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   import('./cambio_50.js?v=8').then(m => m.iniciarCambio50({ T3 })).catch(e => console.warn('cambio a los 50 años:', e));
   import('./plan_bavaria.js?v=11').then(m => m.iniciarPlanBavaria({ T3 })).catch(e => console.warn('plan parcial Bavaria:', e)); // Plan Parcial Fábrica Bavaria por etapas (escenario del plan parcial)
-  import('./trafico_plan.js?v=6').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio
+  import('./trafico_plan.js?v=7').then(m => m.iniciarTraficoPlan({ T3 })).catch(e => console.warn('carros del plan parcial:', e)); // escenario D: carros nuevos que salen y llegan al predio
   import('./metro_l1.js?v=2').then(m => m.iniciarMetro({ T3 })).catch(e => console.warn('Metro de Bogotá, Línea 1:', e)); // viaducto, estaciones 2-6 y trenes de la Línea 1 (proyecto real, en todos los escenarios)
   import('./picos_zonas.js?v=6').then(m => m.iniciarPicosZonas({ T3 })).catch(e => console.warn('picos por zona:', e)); // picos en el piso: comida, huertas y red por zona, cambian con los años // qué cambia entre el año 0 y el 50 (árboles que crecen, balizas, orilla del humedal, comparar año 0 ↔ ahora)
   Promise.all([import('./alivio_cali.js?v=9'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   /* viajes de abastecimiento (data3d/viajes_mercados.js): la simulación EVALÚA adónde van los carros y camiones que iban a Corabastos (mercados de
      barrio, plazoletas y Bavaria) según los mercados abiertos cada año; el tráfico que se quita cerca de Corabastos sale de este modelo. Se carga
      siempre (el reloj lo pone al día); panel, rutas y vehículos solo con la propuesta */
-  import('./viajes_mercados.js?v=11').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
+  import('./viajes_mercados.js?v=12').then(m => m.crearViajesMercados({ T3, cj })).then(v => { window.KEN_VIAJES = v; const on = T3.escenario === 'proyecto' && solo !== 'col'; v.ver(on); v.panel(on); }).catch(e => console.warn('viajes de abastecimiento:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;

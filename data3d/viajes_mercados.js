@@ -303,7 +303,7 @@ export async function crearViajesMercados({ T3, cj }) {
   /* ---------- vehículos en ruta (modelos de data3d/vehiculos.js) ---------- */
   const grupo = new THREE.Group(); grupo.name = 'viajes_mercados'; grupo.visible = false; T3.scene.add(grupo);
   let VEH = null, verVeh = false, verRutas = false, modoRutas = 'pro', verPanel = false;
-  import('./vehiculos.js?v=8').then(mv => { VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 4000, cuantos: { carro: 160, camion: 200 } }); VEH.grupo.visible = false; }).catch(e => console.warn('viajes · vehículos:', e));
+  import('./vehiculos.js?v=9').then(mv => { VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 4000, cuantos: { carro: 160, camion: 200 } }); VEH.grupo.visible = false; }).catch(e => console.warn('viajes · vehículos:', e));
   const objs = [];
 
   /* ---------- capa «Rutas de abastecimiento»: flujo por tramo ---------- */

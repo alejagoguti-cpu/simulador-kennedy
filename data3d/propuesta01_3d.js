@@ -31,7 +31,7 @@
    · PRECARGA: todo se arma escondido en trozos de ≤ 8 ms (requestIdleCallback) apenas se crea (sim_ui.js lo crea después de «Iniciar»):
      poner() solo prende, cambia uniformes y edades. Incluye las calles verdes (calles_verdes3d.js) y el humedal artificial de Bavaria
      (humedal_bavaria3d.js). */
-import { quitadas01, semQuita01 } from './abasto_capas.js?v=9';
+import { quitadas01, semQuita01 } from './abasto_capas.js?v=12';
 import { crearParches3D, ESPECIES } from './parches_arboles.js?v=12';
 import { hoyo01 } from './gris01.js?v=1';
 import { crearEcoducto } from './ecoducto.js?v=2';

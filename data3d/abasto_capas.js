@@ -285,8 +285,8 @@ export function crearCapas01({ T3 }) {
        Corabastos se llena, se ven muchos camiones represados. Un árbol de caminos más cortos por destino, uno por cuadro como mucho. */
   const MO = { listo: false, cargando: false, VEH: null, R: null, T: null, rutas: new Map(), objs: [], cam: [], n: 0, nCam: 0, col: 0xa21cff, MAX: 14, MAXC: 330 };
   function iniMorados() { if (MO.cargando) return; MO.cargando = true;
-    Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]).then(([vm, mv]) => {
-      MO.arbol = vm.arbol; MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i); MO.bav = [MO.R.X[nb.i], MO.R.Z[nb.i]];
+    Promise.all([import('./viajes_mercados.js?v=12'), import('./vehiculos.js?v=11'), import('./morados_marca.js?v=2')]).then(([vm, mv, mm]) => {
+      MO.MK = mm.crearMarcasMorados({ T3, max: MO.MAX }); MO.arbol = vm.arbol; MO.R = vm.construirRed(T3.net, lw); const [bx, bz] = lw(9319, 2942.6), nb = MO.R.cercano(bx, bz); if (nb.i < 0) return; MO.T = vm.arbol(MO.R, nb.i); MO.bav = [MO.R.X[nb.i], MO.R.Z[nb.i]];
       MO.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: MO.MAX, camion: MO.MAXC } }); MO.VEH.grupo.visible = false;
       MO.objs = Array.from({ length: MO.MAX }, (_, i) => ({ _vv: ['suv', 'sedan', 'hatch'][i % 3], _vc: MO.col, _pc: MO.col, _vl: 0 }));
       MO.cam = Array.from({ length: MO.MAXC + 30 }, () => ({})); MO.listo = true;
@@ -307,15 +307,16 @@ export function crearCapas01({ T3 }) {
     const P = MO.pos; if (P.n < P.x.length) { P.x[P.n] = x; P.z[P.n] = z; P.n++; } /* v5.2: para medir la densidad de las vías (vias_densidad.js) */ return [x, z]; };
   function moverMorados() {
     const U = I && I.abasto && I.abasto.ab01, C = I && I.abasto && I.abasto.cora, prop = !!(I && I.propuesta);
-    const on = !!(U && estado.trafico && raiz.visible); if (on && !MO.listo) iniMorados(); if (!MO.listo) return; MO.VEH.grupo.visible = on; if (!on) { MO.n = 0; MO.nCam = 0; return; }
-    MO.cuadro = (MO.cuadro || 0) + 1; const tA = RELOJ.tAnim || 0; MO.VEH.inicio(); let k = 0, kc = 0; MO.pos.n = 0;
+    const on = !!(U && estado.trafico && raiz.visible); if (on && !MO.listo) iniMorados(); if (!MO.listo) return; MO.VEH.grupo.visible = on; if (!on) { MO.n = 0; MO.nCam = 0; if (MO.MK) MO.MK.ver(false); return; }
+    MO.cuadro = (MO.cuadro || 0) + 1; const tA = RELOJ.tAnim || 0; MO.VEH.inicio(); if (MO.MK) MO.MK.inicio(); let k = 0, kc = 0; MO.pos.n = 0;
     // morados: carros nuevos de la propuesta (mercados y Bavaria Común)
     const ms = prop && I.abasto.mercados ? I.abasto.mercados.filter(m => m.activo) : [];
     if (prop && ms.length) { const nM = Math.min(MO.MAX - 2, Math.max(2, Math.ceil(ms.length / 2.5))), n = nM + 2;
       for (let i = 0; i < n; i++) { let r;
         if (i < nM) { const m = ms[Math.floor(i * ms.length / nM)], a = i * 2.39996, d = 700 + (i % 3) * 150; r = rutaV('m' + i + ':' + m.x + ',' + m.z, m.x, m.z, m.x + Math.cos(a) * d, m.z + Math.sin(a) * d); }
         else if (MO.bav) { const a = (i - nM) * 2.6 + 0.9; r = rutaV('b' + i, MO.bav[0], MO.bav[1], MO.bav[0] + Math.cos(a) * 1800, MO.bav[1] + Math.sin(a) * 1800); }
-        if (!r) continue; const s0 = ((tA * 14 / r.L) + i * 0.137) % 2, ida = s0 < 1, p = ponerV(MO.objs[i], 'carro', r, (ida ? s0 : 2 - s0) * r.L, ida); if (!k) MO.p0 = [Math.round(p[0]), Math.round(p[1])]; k++; } }
+        /* SOLO DE IDA (2026-11-27: «que se vea que los morados van hacia los mercados»): del barrio al mercado (o a Bavaria Común) y vuelve a salir del barrio; con la marca morada (morados_marca.js) */
+        if (!r) continue; const s = (((tA * 14 / r.L) + i * 0.137) % 1) * r.L, p = ponerV(MO.objs[i], 'carro', r, s, true); if (MO.MK) MO.MK.poner(p[0], y0() + 0.02 + (T3.alzaVia ? T3.alzaVia(p[0], p[1]) : 0), p[1], r, s); if (!k) MO.p0 = [Math.round(p[0]), Math.round(p[1])]; k++; } }
     // camiones que llegan a Corabastos
     /* v5.3 (pedido de la autora: ver el trancón junto a Corabastos sin propuesta): la fila ya no depende solo de la cola de inventario sino de cuánto
        más tarda en salir la mercancía = la permanencia del modelo (U.Tp ÷ 0,76 d de 2025: congestión junto a Corabastos × cola); a más permanencia,
@@ -330,14 +331,14 @@ export function crearCapas01({ T3 }) {
         ponerV(MO.cam[i], 'camion', r, (((tA * vel / r.L) + i * 0.173) % 1) * r.L, true); kc++; }
       for (let i = 0; i < nEsp; i++) { const q = i % 6, j = Math.floor(i / 6), r = rutaV('cq' + q, C.x, C.z, C.x + Math.cos(q * 1.0472 + 0.2) * 2600, C.z + Math.sin(q * 1.0472 + 0.2) * 2600); if (!r) continue;
         const s = r.L - 25 - 9 * j - 2.5 * q; if (s < 5) continue; ponerV(MO.cam[nMov + i], 'camion', r, s, true, 1.8 + 3.4 * ((j + q) % 2)); kc++; } }
-    MO.VEH.fin(); MO.n = k; MO.nCam = kc; }
+    MO.VEH.fin(); if (MO.MK) MO.MK.fin(); MO.n = k; MO.nCam = kc; }
   /* ---------- por cuadro (etiquetas mínimas: solo el porcentaje, pedido de la autora) ---------- */
   let tPrev = 0, tTxt = 0;
   const ETS = [etB, etR, etT, etG];
   const chip = (n, pc, col) => `<span style="opacity:.75">${n}</span> <b style="font-size:13px;color:${col}">${pc}</b>`;
   const colPc = (v) => (v >= 1 ? '#ff8a80' : v >= 0.9 ? '#ffd27a' : '#9be8b0');
   RELOJ.alDibujar(() => {
-    if (!raiz.visible || !I) { if (MO.listo && MO.VEH.grupo.visible) MO.VEH.grupo.visible = false; if (etG.style.display !== 'none' || etB.style.display !== 'none') ETS.forEach(e => { e.style.display = 'none'; }); return; }
+    if (!raiz.visible || !I) { if (MO.listo && MO.VEH.grupo.visible) MO.VEH.grupo.visible = false; if (MO.MK) MO.MK.ver(false); if (etG.style.display !== 'none' || etB.style.display !== 'none') ETS.forEach(e => { e.style.display = 'none'; }); return; }
     const ahora = performance.now(), dt = tPrev ? Math.min(0.1, (ahora - tPrev) / 1000) : 0; tPrev = ahora;
     moverBodegas(dt, ahora); moverTrafico(dt); moverMedidor(dt); moverPuntosRes(); moverMorados();
     const leer = ahora - tTxt > 200; if (leer) tTxt = ahora;

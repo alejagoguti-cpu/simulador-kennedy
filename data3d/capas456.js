@@ -117,7 +117,7 @@ export function crearS456({ T3, RELOJ }) {
      Común y las Juntas. Cuántas ∝ recursos × (participación con propuesta) [escala visual declarada]. La información va en chips (chips.js). */
   async function armar06(d) { const g = new THREE.Group(); G.add(g);
     const VE = { R: null, arbol: null, arb: new Map(), rutas: new Map(), VEH: null, objs: [], MAX: 60 };
-    try { const [vm, mv] = await Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]); VE.R = vm.construirRed(T3.net, lw); VE.arbol = vm.arbol;
+    try { const [vm, mv] = await Promise.all([import('./viajes_mercados.js?v=12'), import('./vehiculos.js?v=11')]); VE.R = vm.construirRed(T3.net, lw); VE.arbol = vm.arbol;
       VE.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: VE.MAX, camion: 2 } }); VE.VEH.grupo.visible = false; VE.objs = Array.from({ length: VE.MAX }, (_, i) => ({ _vv: 'van', _vc: 0x38bdf8, _pc: 0x38bdf8, _vl: 0 })); } catch (e) { console.warn('06 furgonetas:', e); }
     const ALC = [1461, 1238], BAV = [3977.7, 219.3], J = d.barrios.map(b => [b.jx, b.jz]);
     const arco = (A, B, h) => { const M = new THREE.Vector3((A[0] + B[0]) / 2, Y() + h, (A[1] + B[1]) / 2); return new THREE.QuadraticBezierCurve3(new THREE.Vector3(A[0], Y() + 30, A[1]), M, new THREE.Vector3(B[0], Y() + 30, B[1])); };

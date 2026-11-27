@@ -10,7 +10,7 @@
    [SUP] METRO_MENOS_CARROS = 0,10: no hay cifra oficial de cuánto tráfico quita la Línea 1. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearSlides } from './slides_sim.js?v=9';
-import { iniciarSimUI } from './sim_ui.js?v=167';
+import { iniciarSimUI } from './sim_ui.js?v=168';
 
 export const METRO_SEM_OP = 114;
 export const SEMANAS_FIN = 780; /* 15 años */
@@ -172,6 +172,7 @@ export function iniciarLimpio({ T3 }) {
     html.limpio body #lp-tablero{left:var(--lp-gap)!important;right:auto!important}
     html.limpio.pi-plegado body #pi-abrir{left:var(--lp-gap)!important;right:auto!important}
     html.limpio body #gs-izq{left:auto!important;right:var(--lp-gap)!important;top:calc(var(--lp-top) + 236px)!important;max-height:calc(100dvh - var(--lp-top) - 236px - var(--lp-gap))!important}
+    html.limpio body #lp-anos{left:calc(var(--lp-gap) + var(--lp-tab-sp))!important;right:calc(var(--lp-gap) + var(--lp-izq-w) + 12px)!important} /* barra de años ENTRE el tablero (izquierda) y las simulaciones (derecha): el play nunca queda debajo de un panel */
     #lp-zoom{position:fixed;z-index:42;right:var(--lp-gap);top:var(--lp-top);width:var(--lp-izq-w);height:224px;box-sizing:border-box;padding:10px 10px 10px;display:flex;flex-direction:column;gap:8px;
       background:var(--ui-glass);border:1px solid var(--ui-glass-bd);box-shadow:var(--ui-glass-sh);-webkit-backdrop-filter:var(--ui-glass-fx);backdrop-filter:var(--ui-glass-fx);border-radius:var(--lp-r,16px);color:var(--ui-tx,#eef1f4)}
     #lp-zoom header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
@@ -523,8 +524,7 @@ export function iniciarLimpio({ T3 }) {
           A[d] = R; A[d + 1] = 0; A[d + 2] = 0; A[d + 3] = 0; A[d + 4] = 0; A[d + 5] = 1; A[d + 6] = 0; A[d + 7] = 0; A[d + 8] = 0; A[d + 9] = 0; A[d + 10] = R; A[d + 11] = 0; A[d + 12] = B[s + 12]; A[d + 13] = Y; A[d + 14] = B[s + 14]; A[d + 15] = 1; k++; } }); }
       halo.count = k; halo.instanceMatrix.needsUpdate = true; }); }
   /* PRECARGA: los módulos de las simulaciones se bajan mientras está la portada, para que nada cargue (ni trabe) al darle play */
-  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=8', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=14', './informe.js?v=26', './capas_pares.js?v=2', './lugares.js?v=4', './abasto_contenedor.js?v=13']) import(m).catch(() => {});
-
+  for (const m of ['./basura.js?v=2', './cierre_gradual.js?v=9', './predio_trafico.js?v=4', './caminos_instituto.js?v=1', './degradacion.js?v=1', './indicadores.js?v=14', './informe.js?v=26', './capas_pares.js?v=2', './lugares.js?v=4', './abasto_contenedor.js?v=13']) import(m).catch(() => {});
   /* al entrar queda escogida la simulación 1 (estado actual), en el año 1 y en pausa: la misma vista y el mismo panel que al darle «Simulación 1» */
   const autoUno = () => { if (ESC.activo) return; const L = document.getElementById('loader');
     if ((L && !L.classList.contains('hidden')) || !document.querySelector('#esim .seg button[data-e="A"]') || !document.getElementById('lp-sims')) return void setTimeout(autoUno, 400);

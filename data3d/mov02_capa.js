@@ -11,7 +11,7 @@
      < 50 verde.
    · CON PROPUESTA: los 4 pasajes de data3d/mov02_pasajes.json (tools/mov02_pasajes.mjs: sin tocar copas; esmeralda con borde ámbar), opacidad =
      permeabilidad, personas 3D que los cruzan (cuántas ∝ permeabilidad) y un manto verde bajo cada copa del bosque (árboles con marca 1 de bavaria_arboles.json). Sin nubes de puntos. */
-import { VIAS } from './cierre_gradual.js?v=8';
+import { VIAS } from './cierre_gradual.js?v=9';
 import { MERCADOS } from './sim_red_datos.js?v=2';
 import { crearChips } from './chips.js?v=3'; /* chips con ícono plano, como la 01 (2026-11-27) */
 /* CON PROPUESTA (como la 01): carros MORADOS que van por las vías reales a los mercados de barrio de la propuesta (MERCADOS de sim_red_datos.js): son
@@ -48,6 +48,11 @@ export function crearMov02({ T3, RELOJ }) {
     let T = MOR.arb.get(nd.i); if (!T) { MOR.pend = 1; T = MOR.arbol(Rr, nd.i); MOR.arb.set(nd.i, T); } if (!isFinite(T.dist[no.i])) { MOR.rutas.set(i, null); return null; }
     const P = [[Rr.X[no.i], Rr.Z[no.i]]]; let u = no.i; while (u !== T.fuente) { const e = T.prevE[u]; if (e < 0) break; u = Rr.ea[e] === u ? Rr.eb[e] : Rr.ea[e]; P.push([Rr.X[u], Rr.Z[u]]); }
     const S = [0]; for (let k = 1; k < P.length; k++) S.push(S[k - 1] + Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1])); const r = S[S.length - 1] > 150 ? { P, S, L: S[S.length - 1] } : null; MOR.rutas.set(i, r); return r; }
+  /* los carros morados NO usan la vía cerrada: mientras esté cerrada, sus tramos de la red de rutas cuestan infinito y las rutas se recalculan */
+  function bloquearCierre() { const R = MOR.R; if (!R) return; if (!MOR.eC0) MOR.eC0 = Float64Array.from(R.eC);
+    const st = window.KEN_CIERRE && window.KEN_CIERRE.estado, cerrada = !!(T3.enCierre && st && st.via && st.fase >= 0.5), clave = cerrada ? st.via : '';
+    if (clave === MOR.bloq) return; MOR.bloq = clave; MOR.arb.clear(); MOR.rutas.clear();
+    for (let e = 0; e < R.eC.length; e++) R.eC[e] = cerrada && T3.enCierre((R.X[R.ea[e]] + R.X[R.eb[e]]) / 2, (R.Z[R.ea[e]] + R.Z[R.eb[e]]) / 2) ? Infinity : MOR.eC0[e]; }
   const FILA = { VEH: null, objs: [], pos: null, MAX: 600, plan: [], clave: '' };
   const Yv = () => (T3.viaY != null ? T3.viaY : 0.62);
 
@@ -92,9 +97,10 @@ export function crearMov02({ T3, RELOJ }) {
     if (loc.length) { tramos.locales = loc;
       const mr = new THREE.Mesh(cinta(loc, 90, Yv() + 0.85), mat('ruido')); mr.renderOrder = 3; mr.visible = false; mr.frustumCulled = false; G.add(mr); mallas.locales = { r: mr, n: loc.length }; }
     // vehículos de la fila: los mismos modelos de la 01 (vehiculos.js); vias_densidad.js los cuenta
-    try { const mv = await import('./vehiculos.js?v=10'); FILA.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: FILA.MAX, camion: Math.ceil(FILA.MAX / 5) } }); FILA.VEH.grupo.visible = false;
+    try { const mv = await import('./vehiculos.js?v=11'); FILA.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: FILA.MAX, camion: Math.ceil(FILA.MAX / 5) } }); FILA.VEH.grupo.visible = false;
       FILA.objs = Array.from({ length: FILA.MAX }, () => ({})); FILA.pos = { n: 0, x: new Float32Array(FILA.MAX), z: new Float32Array(FILA.MAX) };
-      import('./viajes_mercados.js?v=11').then(vm => { MOR.R = vm.construirRed(T3.net, T3.lw); MOR.arbol = vm.arbol; }).catch(() => {});
+      import('./viajes_mercados.js?v=12').then(vm => { MOR.R = vm.construirRed(T3.net, T3.lw); MOR.arbol = vm.arbol; }).catch(() => {});
+      import('./morados_marca.js?v=2').then(mm => { MOR.MK = mm.crearMarcasMorados({ T3, max: 30 }); }).catch(() => {});
       import('./vias_densidad.js?v=4').then(m => m.crearViasDensidad({ T3 }).extra('mov02', () => (FILA.VEH && FILA.VEH.grupo.visible ? FILA.pos : null))).catch(() => {}); } catch (e) { console.warn('mov02 vehículos:', e); }
     // pasajes y bosque (con propuesta)
     try { const [PJ, AR] = await Promise.all([fetch('data3d/mov02_pasajes.json').then(r => r.json()), fetch('data3d/bavaria_arboles.json').then(r => r.json())]);
@@ -120,15 +126,17 @@ export function crearMov02({ T3, RELOJ }) {
   const colorSat = (x, out) => { if (x >= COLS[COLS.length - 1][0]) return out.copy(COLS[COLS.length - 1][1]); for (let i = 1; i < COLS.length; i++) if (x < COLS[i][0]) return out.copy(COLS[i - 1][1]).lerp(COLS[i][1], (x - COLS[i - 1][0]) / (COLS[i][0] - COLS[i - 1][0])); return out; };
   const colorDb = (db, out) => out.set(db > 75 ? '#ef4444' : db > 65 ? '#f97316' : db >= 50 ? '#eab308' : '#22c55e');
   let tPrev = 0;
-  function cuadro() { if (!G || !G.visible) { if (FILA.VEH) FILA.VEH.grupo.visible = false; return; } const t = (RELOJ.tVis != null ? RELOJ.tVis : performance.now() / 1000); U.uT.value = t % 10000;
+  function cuadro() { if (!G || !G.visible) { if (FILA.VEH) FILA.VEH.grupo.visible = false; if (MOR.MK) MOR.MK.ver(false); return; } const t = (RELOJ.tVis != null ? RELOJ.tVis : performance.now() / 1000); U.uT.value = t % 10000;
     if (FILA.VEH) { const P = FILA.plan; FILA.VEH.grupo.visible = P.length > 0; FILA.VEH.inicio(); FILA.pos.n = 0; const y = (T3.sueloY != null ? T3.sueloY : 0.3) + 0.02;
-      for (let i = 0; i < P.length; i++) { const q = P[i]; FILA.VEH.poner(FILA.objs[i], q[3], q[0], y + (T3.alzaVia ? T3.alzaVia(q[0], q[1]) : 0), q[1], q[2]); FILA.pos.x[i] = q[0]; FILA.pos.z[i] = q[1]; FILA.pos.n++; }
-      if (M && M.prop && MOR.R) { MOR.pend = 0; const n = Math.min(30, Math.round(11465 * 0.1 * 0.45 * (M.perm || 0) / 20)), tA = RELOJ.tAnim || performance.now() / 1000;
-        for (let i = 0, k = P.length; i < n && k < FILA.MAX; i++) { const r = rutaMor(i); if (!r) continue; const s0 = ((tA * 11 / r.L) + i * 0.137) % 2, ida = s0 < 1, s = (ida ? s0 : 2 - s0) * r.L;
-          let a = 0, b = r.S.length - 1; while (b - a > 1) { const mm = (a + b) >> 1; if (r.S[mm] < s) a = mm; else b = mm; } const fr = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]); let fx = r.P[b][0] - r.P[a][0], fz = r.P[b][1] - r.P[a][1]; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; if (!ida) { fx = -fx; fz = -fz; }
-          const x = r.P[a][0] + (r.P[b][0] - r.P[a][0]) * fr - fz * 1.8, z = r.P[a][1] + (r.P[b][1] - r.P[a][1]) * fr + fx * 1.8;
-          FILA.VEH.poner(MOR.objs[i], 'carro', x, y + (T3.alzaVia ? T3.alzaVia(x, z) : 0), z, Math.atan2(fx, fz)); FILA.pos.x[k] = x; FILA.pos.z[k] = z; FILA.pos.n++; k++; } FILA.VEH.grupo.visible = true; }
-      FILA.VEH.fin(); }
+      for (let i = 0; i < P.length; i++) { const q = P[i]; if (FILA.VEH.poner(FILA.objs[i], q[3], q[0], y + (T3.alzaVia ? T3.alzaVia(q[0], q[1]) : 0), q[1], q[2]) === false) continue; FILA.pos.x[FILA.pos.n] = q[0]; FILA.pos.z[FILA.pos.n] = q[1]; FILA.pos.n++; }
+      if (MOR.MK) MOR.MK.inicio();
+      if (M && M.prop && MOR.R) { bloquearCierre(); MOR.pend = 0; const n = Math.min(30, Math.round(11465 * 0.1 * 0.45 * (M.perm || 0) / 20)), tA = RELOJ.tAnim || performance.now() / 1000;
+        /* SOLO DE IDA (2026-11-27: «que se vea que van hacia los mercados»): del barrio al mercado, y vuelve a salir del barrio */
+        for (let i = 0, k = P.length; i < n && k < FILA.MAX; i++) { const r = rutaMor(i); if (!r) continue; const s = (((tA * 11 / r.L) + i * 0.137) % 1) * r.L;
+          let a = 0, b = r.S.length - 1; while (b - a > 1) { const mm = (a + b) >> 1; if (r.S[mm] < s) a = mm; else b = mm; } const fr = (s - r.S[a]) / Math.max(1e-6, r.S[b] - r.S[a]); let fx = r.P[b][0] - r.P[a][0], fz = r.P[b][1] - r.P[a][1]; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
+          const x = r.P[a][0] + (r.P[b][0] - r.P[a][0]) * fr - fz * 1.8, z = r.P[a][1] + (r.P[b][1] - r.P[a][1]) * fr + fx * 1.8, yv = y + (T3.alzaVia ? T3.alzaVia(x, z) : 0);
+          if (FILA.VEH.poner(MOR.objs[i], 'carro', x, yv, z, Math.atan2(fx, fz)) === false) continue; if (MOR.MK) MOR.MK.poner(x, yv, z, r, s); FILA.pos.x[k] = x; FILA.pos.z[k] = z; FILA.pos.n++; k++; } FILA.VEH.grupo.visible = true; }
+      FILA.VEH.fin(); if (MOR.MK) MOR.MK.fin(); }
     // peatones
     if (peat.im && M && M.prop && peat.L.length) { const n = Math.round(peat.NMAX * (M.perm || 0)); peat.im.count = n; const now = performance.now() / 1000, dt = Math.min(0.1, now - (tPrev || now)); tPrev = now;
       for (let i = 0; i < n; i++) { const s = peat.sem[i], c = peat.L[s[0]]; s[1] += s[2] * s[3] * 1.4 * 4 * dt / c.len; /* 1,4 m/s × 4 (acelerado para que se vea) */ if (s[1] > 1) { s[1] = 1; s[2] = -1; } if (s[1] < 0) { s[1] = 0; s[2] = 1; }

@@ -54,7 +54,7 @@ export function crearRes03({ T3, RELOJ }) {
         o.anillo.position.set(x, Y() + 0.7, z); o.anillo.scale.setScalar(n.t === 'bavaria' ? 70 : 40); o.anillo.renderOrder = 4; o.anillo.visible = false; G.add(o.anillo); }
       o.rot = rotulo(x, z, n.t === 'bavaria' ? 250 : 170); N[n.k] = o; }
     // camiones de la propuesta: rutas reales por la red vial (las mismas herramientas de la 01)
-    try { const [vm, mv] = await Promise.all([import('./viajes_mercados.js?v=11'), import('./vehiculos.js?v=10')]);
+    try { const [vm, mv] = await Promise.all([import('./viajes_mercados.js?v=12'), import('./vehiculos.js?v=11')]);
       VE.R = vm.construirRed(T3.net, T3.lw); VE.arbol = vm.arbol; VE.VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 5000, cuantos: { carro: 2, camion: VE.MAX } }); VE.VEH.grupo.visible = false;
       VE.objs = Array.from({ length: VE.MAX }, () => ({})); VE.pos = { n: 0, x: new Float32Array(VE.MAX), z: new Float32Array(VE.MAX) };
       import('./vias_densidad.js?v=4').then(m => m.crearViasDensidad({ T3 }).extra('res03', () => (VE.VEH && VE.VEH.grupo.visible ? VE.pos : null))).catch(() => {});

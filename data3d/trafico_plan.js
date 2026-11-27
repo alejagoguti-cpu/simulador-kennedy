@@ -5,7 +5,7 @@
    entre el predio y 16 destinos repartidos por Kennedy (centros de las zonas de 500 m más pobladas de cada sector). Movimiento cosmético
    (reloj universal, RELOJ.tAnim); carros como los del tráfico SUMO grabado pero pintados de violeta para distinguirlos. Solo en el escenario D. */
 import { RELOJ } from './reloj.js?v=5';
-import { construirRed, arbol } from './viajes_mercados.js?v=11';
+import { construirRed, arbol } from './viajes_mercados.js?v=12';
 import { ZONAS } from './sim_red_datos.js?v=2';
 
 const POR_CARRO = 60, VEL = 14, MAXC = 500, POR_VEH = 36; /* Escala visual: 1 carro por cada 36 vehículos/día (~470 con el plan terminado). Menos carros en pantalla para dejar más espacio; los viajes del modelo no cambian. */ // autos por carro dibujado · m/s en pantalla · tope de carros dibujados
@@ -29,7 +29,7 @@ export async function iniciarTraficoPlan({ T3 }) {
   /* se dibujan con los MISMOS carros que el tráfico grabado (data3d/vehiculos.js: modelo real de cerca, volumen de lejos, píldora muy lejos),
      pintados de un color propio (COLOR) para distinguirlos. Antes eran esferas naranjas de 16 m. */
   const COLOR = 0x8b5cf6; // violeta
-  let VEH = null; import('./vehiculos.js?v=10').then(mv => { VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 3200, cuantos: { carro: MAXC } }); VEH.grupo.visible = false; }).catch(e => console.warn('carros del plan parcial:', e));
+  let VEH = null; import('./vehiculos.js?v=11').then(mv => { VEH = mv.crearVehiculos({ T3, movil: !!(T3.movil || T3.liviano), maxDist: 3200, cuantos: { carro: MAXC } }); VEH.grupo.visible = false; }).catch(e => console.warn('carros del plan parcial:', e));
   const objs = Array.from({ length: MAXC }, (_, i) => ({ _vv: ['sedan', 'hatch', 'suv'][i % 3], _vc: COLOR, _pc: COLOR, _vl: 0 }));
   const im = { count: 0, visible: false };
   // cada carro: ruta (por peso de población del destino), desfase y sentido (sale / llega), fijos por índice (determinista)

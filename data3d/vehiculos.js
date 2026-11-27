@@ -416,8 +416,10 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
     // desplazamiento lateral hacia la derecha del sentido de marcha (en Colombia se maneja por la derecha)
     carril(a, tipo) { if (a._vv === undefined) elegir(a, tipo); return (tipo === 'camion' ? 2.0 : tipo === 'carro' ? 1.8 : tipo === 'moto' ? 1.4 : 2.7) + a._vl; },
     vistos: [], // vehículos puestos en este cuadro (para seguirlos: data3d/seguir.js)
-    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; np = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); api.tPrev = api.tFrame || 0; api.tFrame = tAhora; if (REAL) REAL.nc = 0; },
+    ocultosCierre: 0,
+    inicio() { api.ocultosCierre = 0; for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; np = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); api.tPrev = api.tFrame || 0; api.tFrame = tAhora; if (REAL) REAL.nc = 0; },
     poner(a, tipo, x, y, z, rumbo) {
+      if (T3.enCierre && T3.enCierre(x, z)) { api.ocultosCierre++; return false; } /* vía cerrada (data3d/cierre_gradual.js): ningún vehículo pasa por ella ni la toca */
       if (a._vv === undefined) elegir(a, tipo);
       a._x = x; a._y = y; a._z = z; a._r = rumbo; a._tp = tipo; a._ts = tAhora; a._vs = api; api.vistos.push(a);
       const o = V[a._vv]; if (!o) return;
