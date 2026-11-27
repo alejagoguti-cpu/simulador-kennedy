@@ -12,9 +12,11 @@ export function crearZoom({ T3 }) {
   const FIJOS = [{ t: 'Corabastos', s: 'central de abastos', x: 1054.7, z: 995.9 }, { t: 'Bavaria', s: 'predio y bosque', x: 3977.7, z: 219.3 },
     { t: 'Humedal El Burro', s: 'humedal', x: 2096, z: -109 }, { t: 'Humedal La Vaca', s: 'humedal', x: 760, z: 1160 }, { t: 'Av. de las Américas', s: 'arteria', x: 2300, z: 700 }];
   const box = document.createElement('section'); box.id = 'lp-zoom'; box.setAttribute('aria-label', 'Zoom del momento');
-  box.innerHTML = '<header><div><small>Zoom del momento</small><b data-z="t">—</b></div><button type="button" data-z="seguir">Seguir</button></header><div class="lz-vista" data-z="v"><canvas></canvas><span data-z="s"></span><i data-z="n"></i></div>';
+  box.innerHTML = '<header><div><small>Zoom del momento</small><b data-z="t">—</b></div><button type="button" data-z="seguir">Seguir</button></header><div class="lz-vista" data-z="v"><video muted playsinline autoplay></video><canvas></canvas><span data-z="s"></span><i data-z="n"></i></div>';
   document.body.appendChild(box);
-  const vista = box.querySelector('[data-z="v"]'), cv = vista.querySelector('canvas'), ctx = cv.getContext('2d'); cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+  const vista = box.querySelector('[data-z="v"]'), cv = vista.querySelector('canvas'), ctx = cv.getContext('2d'), vid = vista.querySelector('video'); cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none'; vid.style.cssText = 'position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none';
+  /* el mapa en vivo: transmisión del lienzo 3D (captureStream, la copia la hace la tarjeta de video) ampliada ×3 con CSS sobre el lugar */
+  try { vid.srcObject = T3.renderer.domElement.captureStream(12); vid.play().catch(() => {}); } catch (e) { console.warn('zoom: sin transmisión', e); }
   let k = 0, actual = FIJOS[0], tCambio = performance.now(), tDib = 0;
   const lista = () => { const L = Array.isArray(window.KEN_MOM) && window.KEN_MOM.length ? window.KEN_MOM : FIJOS; return L.filter(m => isFinite(m.x) && isFinite(m.z)); };
   const enPantalla = (m) => { v.set(m.x, (T3.sueloY || 0.3) + 5, m.z).project(T3.camera); return v.z < 1 && Math.abs(v.x) < 0.92 && Math.abs(v.y) < 0.92 ? { x: (v.x + 1) / 2, y: (1 - v.y) / 2 } : null; };
@@ -27,10 +29,10 @@ export function crearZoom({ T3 }) {
     const now = performance.now(); if (now - tCambio > 5000) { tCambio = now; siguiente(); }
     if (now - tDib < 200 || box.offsetParent === null) return; tDib = now;
     const src = T3.renderer && T3.renderer.domElement; if (!src) return; const R = vista.getBoundingClientRect(); if (R.width < 20) return;
-    const w = Math.round(R.width), h = Math.round(R.height); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
-    const p = enPantalla(actual); if (!p) { ctx.fillStyle = 'rgba(10,12,16,.85)'; ctx.fillRect(0, 0, w, h); return; }
-    const sw = src.width / 3, sh = sw * h / w, sx = Math.max(0, Math.min(src.width - sw, p.x * src.width - sw / 2)), sy = Math.max(0, Math.min(src.height - sh, p.y * src.height - sh / 2));
-    try { ctx.drawImage(src, sx, sy, sw, sh, 0, 0, w, h); } catch (e) { /* un cuadro sin zoom */ }
-    const cx = (p.x * src.width - sx) / sw * w, cy = (p.y * src.height - sy) / sh * h; ctx.strokeStyle = '#c9f27a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.stroke(); };
+    const w = Math.round(R.width), h = Math.round(R.height); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } ctx.clearRect(0, 0, w, h);
+    const p = enPantalla(actual); if (!p) { vid.style.visibility = 'hidden'; ctx.fillStyle = 'rgba(10,12,16,.85)'; ctx.fillRect(0, 0, w, h); return; } vid.style.visibility = 'visible';
+    const Z = 3, VW = w * Z, VH = VW * (src.clientHeight / Math.max(1, src.clientWidth)); vid.style.width = VW + 'px'; vid.style.height = VH + 'px';
+    const tx = Math.max(w - VW, Math.min(0, w / 2 - p.x * VW)), ty = Math.max(h - VH, Math.min(0, h / 2 - p.y * VH)); vid.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    const cx = tx + p.x * VW, cy = ty + p.y * VH; ctx.strokeStyle = '#c9f27a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.stroke(); };
   return window.KEN_ZOOM = { siguiente, get actual() { return actual; } };
 }

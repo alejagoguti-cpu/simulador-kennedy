@@ -193,7 +193,7 @@ export function iniciarLimpio({ T3 }) {
     html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
   }
   @media(max-width:1099px){#lp-zoom{display:none}}`; document.head.appendChild(st); }
-  import('./zoom_momento.js?v=3').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
+  import('./zoom_momento.js?v=4').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
   escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
   const der = document.createElement('div'); der.id = 'lp-der'; der.hidden = true; document.body.appendChild(der); /* se conserva vacío (otros módulos lo buscan), escondido */
