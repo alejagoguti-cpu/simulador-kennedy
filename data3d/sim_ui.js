@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=15'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=16'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=53'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=54'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -584,7 +584,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     { const p = R.def && R.def.par, d = p >= 4 && p <= 6 && I ? I['s0' + p] : null; /* 04–06 (data3d/capas456.js) */
       if (!d) { if (S456) S456.quitar(); } else if (!S456) { if (!pS456) pS456 = import('./capas456.js?v=16').then(x => { S456 = x.crearS456({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('capas 04–06:', e)); } else S456.poner(p, d); }
     { const r3 = R.def && R.def.par === 3 && I && I.res03 && (I.res03.fase > 0 || (I.res03.prop && I.res03.nodos)) ? I.res03 : null; /* 03: montones, estaciones y camiones (data3d/res03_capa.js) */
-      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=13').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
+      if (!r3) { if (RES) RES.quitar(); } else if (!RES) { if (!pRes) pRes = import('./res03_capa.js?v=14').then(x => { RES = x.crearRes03({ T3, RELOJ }); ponerMov(R.vistaL || R.hist[R.hist.length - 1] || I); }).catch(e => console.warn('res03:', e)); } else RES.poner(r3); }
     if (!m) { if (MOV) MOV.quitar(); return; }
     if (!MOV) { if (!pMov) pMov = import('./mov02_capa.js?v=16').then(x => { MOV = x.crearMov02({ T3, RELOJ }); const L = R.hist[R.hist.length - 1]; ponerMov(L || I); }).catch(e => console.warn('mov02:', e)); return; }
     MOV.poner(m); }
@@ -593,7 +593,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* VISTA INSTANTÁNEA (pedido de la autora: «que cada vez que deslice se vea»): mientras se arrastra un deslizador de la 02 o la 03, el mapa y los números
      se recalculan al momento con el mismo modelo (mov02_modelo.js / res03_modelo.js) sobre la semana que se está viendo; al soltar corre el modelo completo.
      En la 02 el abastecimiento por zona espera al modelo completo (depende de sim_vida.js). */
-  let QM = null; const qm = () => QM || (QM = Promise.all([import('./mov02_modelo.js?v=3'), import('./res03_modelo.js?v=1'), import('./sim_red_datos.js?v=2'), import('./sims456_modelo.js?v=3'), import('./plan_bavaria_datos.js?v=2')]).then(([a, b, c, m4, pb]) => ({ a, b, m4, pb: pb.PLAN_BAV, rod: a.rodeos(c.CIERRES, c.ZONAS), frac: b.repartoZonas(c.ZONAS) })));
+  let QM = null; const qm = () => QM || (QM = Promise.all([import('./mov02_modelo.js?v=4'), import('./res03_modelo.js?v=2'), import('./sim_red_datos.js?v=2'), import('./sims456_modelo.js?v=4'), import('./plan_bavaria_datos.js?v=2')]).then(([a, b, c, m4, pb]) => ({ a, b, m4, pb: pb.PLAN_BAV, rod: a.rodeos(c.CIERRES, c.ZONAS), frac: b.repartoZonas(c.ZONAS) })));
   function vistaRapida() { const par = R.def && R.def.par; if (!(par >= 2 && par <= 6)) return; const H0 = R.previa && R.vistaH ? R.vistaH : R.hist, L = R.previa && R.vistaL ? R.vistaL : H0[H0.length - 1]; if (!L) return;
     qm().then(Q => { const v = { ...R.valores }; der.querySelectorAll('[data-k]').forEach(i => { v[i.dataset.k] = +i.value; }); let I2 = null;
       if (par === 2 && L.mov02) { const o = L.mov02, via = Q.a.VIA_DE[Math.round(v.viaCierre)] || o.via, fase = o.fase || 1, c = fase * Math.max(0, Math.min(1, v.cierrePct / 100));
@@ -1032,7 +1032,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=26');
+    try { const { abrirInforme2 } = await import('./informe.js?v=27');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];

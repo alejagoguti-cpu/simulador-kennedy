@@ -3,7 +3,7 @@
    de apertura proceden de MERCADOS; las cantidades salen de simulaciones12. */
 import { RELOJ } from './reloj.js?v=5';
 import { crearGris } from './gris.js?v=1';
-import { SIMS } from './simulaciones12.js?v=53';
+import { SIMS } from './simulaciones12.js?v=54';
 import { MERCADOS } from './sim_red_datos.js?v=2';
 
 let actual = null;
@@ -120,7 +120,7 @@ function vista(s, fase) {
 
 function T3vuelo(s, p, c) { s.T3.anim={t:0,dur:2.1,p0:s.T3.camera.position.clone(),c0:s.T3.orbit.target.clone(),p1:p.clone(),c1:c.clone()}; }
 function recalcular(s) {
-  if (!s.worker) { s.worker = new Worker(new URL('./residuos_variables_worker.js?v=5',import.meta.url),{type:'module'}); s.worker.onmessage=({data})=>{ if(actual!==s||data.id!==s.solicitud)return; const estado=s.caja.querySelector('#rr-estado'); if(data.error){if(estado)estado.textContent='No se pudo calcular: '+data.error;return;} s.serie=data.serie; pintar(s); }; }
+  if (!s.worker) { s.worker = new Worker(new URL('./residuos_variables_worker.js?v=6',import.meta.url),{type:'module'}); s.worker.onmessage=({data})=>{ if(actual!==s||data.id!==s.solicitud)return; const estado=s.caja.querySelector('#rr-estado'); if(data.error){if(estado)estado.textContent='No se pudo calcular: '+data.error;return;} s.serie=data.serie; pintar(s); }; }
   s.serie=[]; const estado=s.caja.querySelector('#rr-estado'); if(estado)estado.textContent='Calculando las 780 semanas…'; s.worker.postMessage({id:++s.solicitud,sim:s.con?6:5,valores:{...s.valores}});
 }
 function datos(s) {

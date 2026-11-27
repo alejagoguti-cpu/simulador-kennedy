@@ -189,11 +189,11 @@ body:has(#cubiertas-foco[data-phase="variables"]) #hid-red{display:none!importan
     if (variablesListas) { recalcular(); return; }
     variablesListas = true;
     try {
-      const sim = await import('./simulaciones12.js?v=53');
+      const sim = await import('./simulaciones12.js?v=54');
       const controles = panel.querySelector('#cf-controles');
       const sliders = sim.SIMS.find(s => s.id === 2).sliders;
       controles.innerHTML = sliders.map(s => `<label class="cf-slider"><span>${s.n}<output data-v="${s.k}">${s.val} ${s.unidad}</output></span><input type="range" data-k="${s.k}" min="${s.min}" max="${s.max}" step="${s.paso}" value="${s.val}" aria-label="${s.n}" title="${s.ayuda}"></label>`).join('') + '<label class="cf-slider"><span>Año de lectura<output data-v="anio">0</output></span><input type="range" data-k="anio" min="0" max="10" step="0.001" value="0" aria-label="Año de lectura"></label>';
-      worker = new Worker(new URL('./abasto_variables_worker.js?v=4', import.meta.url), { type:'module' });
+      worker = new Worker(new URL('./abasto_variables_worker.js?v=5', import.meta.url), { type:'module' });
       worker.onmessage = ({data}) => {
         if (data.id !== solicitud || !activo || fase !== 'variables') return;
         const estado = panel.querySelector('#cf-estado');

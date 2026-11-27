@@ -36,7 +36,11 @@ export function aves04({ flujo = 0.6, impl = 0, barreras = false, prop = false, 
   const cruza = Math.min(1, S04.CRUZA * (1 + flujo)), muerteSem = cruza * p;
   return { pCruce, p, cruza, muerteSem, fuera, bajo, Q: Q * 3600 };
 }
-export const S05 = { VIV_TOT: 14000, ARB_TOT: 3250, SUELTOS: 1492 / 3250, LIBRE_HA: 27.85, TORRES_HA: 25, NAVES_M2: 121436, SUELO_MIN: 15, CALOR: 2, BOSQUE_MAX: 0.2, SUELO_FR: 0.8 };
+export const S05 = { VIV_TOT: 14000, ARB_TOT: 3250, SUELTOS: 1492 / 3250, LIBRE_HA: 27.85, TORRES_HA: 25, NAVES_M2: 121436, SUELO_MIN: 15, CALOR: 2, BOSQUE_MAX: 0.2, SUELO_FR: 0.8,
+  /* TRÁFICO ALREDEDOR DE BAVARIA (guion de la autora 2026-11-27: «con propuesta se alcanza un Game Over en el año quince, cuando el tráfico llega al 130,1 %»):
+     índice = tráfico de Kennedy (1 = hoy) × (1 + K_TRAF × viviendas construidas ÷ 14.000); game over sobre TRAF_MAX cuatro semanas seguidas.
+     K_TRAF calibrado para ese año [SUP]; igual con y sin propuesta. */
+  K_TRAF: 0.1524, TRAF_MAX: 1.3, TRAF_SEM: 4 };
 export function suelo05({ años = 0, presion = 1, reuso = 0, blindaje = false, prop = false, VIV_ETAPA, ARB_ETAPA }) {
   const k = Math.max(0, Math.min(10, años)), ent = Math.floor(k), fr = k - ent; let viv = 0, arb = 0;
   for (let i = 0; i < ent; i++) { viv += VIV_ETAPA[i]; arb += ARB_ETAPA[i]; } if (ent < 10) { viv += VIV_ETAPA[ent] * fr; arb += ARB_ETAPA[ent] * fr; }
@@ -52,7 +56,8 @@ export const REGLAS_456 = {
   4: [{ k: 'tasa04', n: 'Cruces que terminan en choque', txt: 'más del 20 % de los cruces de fauna terminan en choque', umbral: 20, unidad: '% de los cruces', semanas: 1, fuente: 'Pedido de la autora. Probabilidad por llegadas de Poisson (huecos del tráfico) con los flujos SUMO/Waze de la autora; 25 % de cruces a ras [SUP].' },
       { k: 'pob04', n: 'Población de aves que cruza', txt: 'la especie pierde más del 30 % de su población cuatro semanas seguidas', umbral: 70, unidad: '% de la población', semanas: 4, fuente: 'Pedido de la autora. 30 % cruza por semana × (1 + flujo extra) [SUP]; recuperación 2 %/semana [SUP].' }],
   5: [{ k: 'bosque05', n: 'Bosque y rondas que quedan', txt: 'se pierde más del 20 % del bosque y las rondas verdes del predio', umbral: 80, unidad: '% de los árboles', semanas: 1, fuente: 'Plan parcial Bavaria (Alcaldía 2023): árboles que caen por etapa (PLAN_BAV); bavaria_arboles.json (Esri World Imagery).' },
-      { k: 'suelo05', n: 'Suelo productivo', txt: 'el suelo para huertas y centros circulares baja de 12 ha (80 % de 15 ha)', umbral: 12, unidad: 'ha', semanas: 1, fuente: 'Pedido de la autora (15 ha mínimas). Suelo libre del predio 27,85 ha (bavaria_pres.json); torres del plan 25 ha (El Espectador).' }],
+      { k: 'suelo05', n: 'Suelo productivo', txt: 'el suelo para huertas y centros circulares baja de 12 ha (80 % de 15 ha)', umbral: 12, unidad: 'ha', semanas: 1, fuente: 'Pedido de la autora (15 ha mínimas). Suelo libre del predio 27,85 ha (bavaria_pres.json); torres del plan 25 ha (El Espectador).' },
+      { k: 'traf05', n: 'Tráfico alrededor de Bavaria', txt: 'el tráfico alrededor de Bavaria pasa el 130 % de hoy cuatro semanas seguidas', umbral: 130, unidad: '% de hoy', semanas: 4, fuente: 'Guion de la autora (2026-11-27): game over con propuesta en el año 15 con 130,1 %. Tráfico de Kennedy (sim_vida.js) × (1 + 0,1524 × viviendas del plan ÷ 14.000) [SUP calibrado].' }],
   6: [{ k: 'urg06', n: 'Urgencia desatendida', txt: 'un sector con necesidad crítica (menos del 50 % cubierto) pasa más de 4 semanas sin recibir recursos', umbral: 4, unidad: 'semanas', semanas: 1, fuente: 'Pedido de la autora (4 semanas). Necesidad y reparto: modelo de gobernanza (8 sectores con su Junta, IDPAC); 50 % [SUP].' },
       { k: 'sost06', n: 'Índice de sostenibilidad', txt: 'el índice de sostenibilidad territorial baja de 40 %', umbral: 40, unidad: '%', semanas: 1, fuente: 'Pedido de la autora (40 %). Índice ecológico del modelo (evaluacion_ecologica.js).' }]
 };

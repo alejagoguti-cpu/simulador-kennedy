@@ -14,7 +14,10 @@
    CIERRE DE CORABASTOS: sus 65 t/día ya no se quedan en sus bodegas: van a la calle de María Paz (sin propuesta) o directo a Bavaria (con propuesta).
    GAME OVER (pedido de la autora): (1) Corabastos + María Paz acumulan más de 4.500 t; (2) algún nodo tiene orgánicos sin tratar más de 48 h.
    Compost: 40 % de la masa tratada [SUP: rango usual del compostaje, se pierde agua y carbono]. */
-export const RES03 = { CORA_T_DIA: 65, EST_T_DIA: 250, BAV_T_DIA: 1500, TOPE_T: 4500, EDAD_MAX: 48, EDAD_PROP: 12, COMPOST: 0.4 };
+export const RES03 = { CORA_T_DIA: 65, EST_T_DIA: 250, BAV_T_DIA: 1500, TOPE_T: 4500, EDAD_MAX: 48, EDAD_PROP: 12, COMPOST: 0.4,
+  /* CRECE: aumento anual de los orgánicos que entran a la red en la simulación 03 («aumenta la generación de residuos orgánicos»); calibrado (2026-11-27) para que
+     con propuesta las Estaciones lleguen a 22 % de saturación en el año 15, la cifra del guion de la autora [SUP]. Saturación = (orgánicos + Corabastos) ÷ capacidad de la red. */
+  CRECE: 0.0079 };
 export const NODOS03 = [ // mundo (x, z): puntos de asambleas.json; tipo: 'barrio' | 'estacion' | 'cora' | 'bavaria'
   { k: 'cora', n: 'Corabastos', t: 'cora' }, { k: 'mpaz', n: 'María Paz y El Amparo', t: 'barrio', p: [[1148.3, 266], [527.8, 1188.4]] },
   { k: 'castilla', n: 'Castilla', t: 'estacion', p: [[3063.8, 275.2]] }, { k: 'timiza', n: 'Timiza', t: 'estacion', p: [[743.3, 3054.3]] },

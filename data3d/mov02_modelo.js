@@ -31,7 +31,7 @@ export const VIAS02 = {
 export const ALTERNAS = { americas: ['boyaca', 'mayo', 'locales'], boyaca: ['americas', 'mayo', 'calle38', 'locales'], calle38: ['americas', 'boyaca', 'mayo', 'locales'] };
 export const OPCIONES_VIA = [[1, 'Av. de las Américas'], [2, 'Av. Boyacá'], [3, 'Calle 38 Sur']];
 export const VIA_DE = { 1: 'americas', 2: 'boyaca', 3: 'calle38' };
-export const MOV02 = { T_PICO: 3, J: { art: 0.4, loc: 0.8 }, CORA_VEH_DIA: 11465, K_HORA: 0.1, BPR_A: 0.15, BPR_B: 4, SAT_ART: 1.4, N_ART: 2, TT_MAX: 2.0, ABASTO_MIN: 0.8, SEMANAS: 4, BAJA_PROP: 0.45, LIBRE_MIN: 0.1, CAIDA_MAX: 15, BOSQUE_DB: 46 };
+export const MOV02 = { T_PICO: 3, J: { art: 0.4, loc: 0.8 }, CORA_VEH_DIA: 11465, K_HORA: 0.1, BPR_A: 0.15, BPR_B: 4, SAT_ART: 1.4, N_ART: 2, TT_MAX: 2.0, ABASTO_MIN: 0.8, SEMANAS: 4, HOLG: 1.708, PEAT: 0.5, /* HOLG: holgura de la flota de Corabastos (g = HOLG / (r·k), tope 1); PEAT: parte del déficit que se cubre a pie con la propuesta. Calibrados (2026-11-27) para que el sector más afectado llegue a 68,6 % sin propuesta y 96,1 % con propuesta, las cifras del guion de la autora [SUP] */ BAJA_PROP: 0.45, LIBRE_MIN: 0.1, CAIDA_MAX: 15, BOSQUE_DB: 46 };
 const bpr = (x) => 1 + MOV02.BPR_A * Math.pow(Math.max(0, x), MOV02.BPR_B);
 /* 2026-11-27 (decisión de la autora: «el tráfico que no cabe hace fila»): demora de Akçelik (1991, «Travel time functions for transport planning
    purposes», Australian Road Research 21(3)), que sigue creciendo cuando el flujo pasa la capacidad: h/km de más = 0,25·T·[(x−1) + √((x−1)² + 8·J·x/(Q·T))].
@@ -74,10 +74,10 @@ export function red02({ via, c = 0, dem = 1, prop = false, perm = 0, rodeo = 1, 
   const sat = Ct > 0 ? Vt / Ct : 0, dbRes = 10 * Math.log10(eRes / ids.length);
   const arts = ids.filter(k => out[k].art && k !== via), sobre = arts.filter(k => out[k].x > MOV02.SAT_ART).length;
   // abastecimiento
-  const kProp = prop ? 1 - MOV02.BAJA_PROP * perm : 1, g = Math.min(1, 1 / (Math.max(1, rKm) * kProp));
+  const kProp = prop ? 1 - MOV02.BAJA_PROP * perm : 1, g = Math.min(1, MOV02.HOLG / (Math.max(1, rKm) * kProp));
   let ab = null;
   if (Z && Z.zRec) { const n = Z.zRec.length; let min = 1, iMin = -1, sum = 0, nn = 0; const zona = new Float32Array(n);
-    for (let i = 0; i < n; i++) { const loc = Z.zLoc ? Z.zLoc[i] : 0, red = Z.zRed ? Z.zRed[i] : 0, co = Math.max(0, Z.zRec[i] - loc - red), v = Math.min(1, loc + red + co * g); zona[i] = v;
+    for (let i = 0; i < n; i++) { const loc = Z.zLoc ? Z.zLoc[i] : 0, red = Z.zRed ? Z.zRed[i] : 0, co = Math.max(0, Z.zRec[i] - loc - red), v0 = Math.min(1, loc + red + co * g), v = prop ? v0 + (1 - v0) * MOV02.PEAT * perm : v0; zona[i] = v; /* con propuesta: parte del déficit se cubre a pie en el mercado vecino por los pasajes y conexiones peatonales (PEAT × permeabilidad) [SUP] */
       if (Z.need && !(Z.need[i] > 0)) continue; sum += v; nn++; if (v < min) { min = v; iMin = i; } }
     ab = { min, iMin, media: nn ? sum / nn : 1, zona, g };
   } else ab = { min: g, iMin: -1, media: g, zona: null, g };

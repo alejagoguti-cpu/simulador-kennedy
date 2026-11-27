@@ -74,9 +74,9 @@ import { crearRed, MOTIVOS } from './red_trofica.js?v=3';
 import { ZONAS, PARCHES, CIERRES, BODEGAS, MERCADOS, COSTO } from './sim_red_datos.js?v=2';
 import { EXPO } from './exposicion_trafico.js?v=1';
 import { PLAN_BAV } from './plan_bavaria_datos.js?v=2';
-import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=3';
-import { interrupcion, repartoZonas, REGLAS_RES03, RES03 } from './res03_modelo.js?v=1';
-import { aves04, suelo05, S04, S05, S06, REGLAS_456 } from './sims456_modelo.js?v=3'; /* sims. 04, 05 y 06 (2026-11-27) */ /* sim. 03: interrupción de la recolección por horas (2026-11-27) */
+import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=4';
+import { interrupcion, repartoZonas, REGLAS_RES03, RES03 } from './res03_modelo.js?v=2';
+import { aves04, suelo05, S04, S05, S06, REGLAS_456 } from './sims456_modelo.js?v=4'; /* sims. 04, 05 y 06 (2026-11-27) */ /* sim. 03: interrupción de la recolección por horas (2026-11-27) */
 const FRAC03 = repartoZonas(ZONAS); /* sim. 02: red vial con cierre (pedido de la autora, 2026-11-27) */
 const RODEO02 = rodeos(CIERRES, ZONAS); // la misma instancia que usa sim_vida.js
 
@@ -286,30 +286,31 @@ export const SUP_SIMS = {
       por población, con la información de hace medio año. Con: las asambleas locales (una Junta de Acción Comunal por sector, IDPAC) presentan
       prioridades y una federación con vocerías rotativas reparte según la necesidad reportada (ver GOBERNANZA abajo). */
 export const PARES = [
-  { par: 1, n: '01 Abastecimiento', prueba: 'La demanda de alimentos crece y Corabastos tiene un tope', capa: 'abasto',
-    sin: 'Todo pasa por Corabastos: lo que se le pide crece con la ciudad y se acerca a su tope; más carga, más basura junto a los humedales.', con: 'La Plaza Distrital de Kennedy y los mercados de barrio de la propuesta (hasta 28 t/día cada uno) se abren con los años y reparten la demanda: a Corabastos entra menos.',
+  /* textos de cada simulación: guion de la autora (2026-11-27) */
+  { par: 1, n: '01 Abastecimiento', prueba: 'Crecimiento poblacional y abastecimiento', capa: 'abasto',
+    sin: 'Al aumentar la población aumentan los camiones, los residuos y los déficits alimentarios: game over en el sexto año por exceso de residuos.', con: 'Huertas hidropónicas en edificios y parques; mercados barriales según la producción cercana y la población de cada sector, cada uno con límite de almacenamiento y centro de compostaje; Corabastos reduce 50 % sus bodegas para ampliar el humedal. Sin game over en quince años.',
     visible: 'Un medidor de vidrio sobre Corabastos que se llena con la carga de cada franja horaria frente a su tope; con propuesta, un medidor por mercado.',
-    pregSin: '¿Qué pasaría si Kennedy necesita cada año más comida y todo sigue pasando por Corabastos, que tiene un tope?', pregCon: '¿Qué pasaría si la comida que Kennedy necesita cada año se reparte entre Corabastos y los mercados de barrio, las huertas y los puntos de acopio?' },
-  { par: 2, n: '02 Movilidad', prueba: 'Cierre temporal de una vía estratégica (Av. de las Américas)', capa: 'movilidad',
-    sin: 'Los vehículos buscan rutas en la red existente.', con: 'Se evalúa la respuesta con mercados distribuidos, accesos y conexiones propuestas.',
+    pregSin: '¿Qué pasaría si aumenta la población de Kennedy y, por ende, la demanda de alimentos, y todo sigue pasando por Corabastos?', pregCon: '¿Qué pasaría si aumenta la población de Kennedy y la demanda se reparte entre huertas hidropónicas, mercados barriales con compostaje y un Corabastos reducido?' },
+  { par: 2, n: '02 Movilidad', prueba: 'Cierre vial y abastecimiento', capa: 'movilidad',
+    sin: 'Los vehículos se desvían y la cobertura alimentaria del sector más afectado llega al 68,6 %. Game over en el año catorce por deterioro de los humedales, al perder más del 30 % de su capacidad funcional.', con: 'Los mercados barriales, las huertas y las conexiones peatonales reducen la dependencia de esta vía: sin game over y el abastecimiento del sector más afectado se mantiene en el 96,1 %.',
     visible: 'Vías, vehículos y congestión: rutas, velocidades y acumulación de vehículos.',
-    pregSin: '¿Qué pasaría si se cierra la Av. de las Américas y los carros solo tienen las vías de hoy?', pregCon: '¿Qué pasaría si se cierra la Av. de las Américas y ya existen los mercados distribuidos y las conexiones nuevas?' },
+    pregSin: '¿Qué pasaría si se cierra la Av. de las Américas y los carros solo tienen las vías de hoy?', pregCon: '¿Qué pasaría si se cierra la Av. de las Américas y ya existen los mercados barriales, las huertas y las conexiones peatonales?' },
   { par: 3, n: '03 Residuos', prueba: 'Aumento de residuos orgánicos', capa: 'residuos',
-    sin: 'Continúa la capacidad de tratamiento de referencia.', con: 'Se habilita una red de Estaciones Circulares distribuidas y compostaje de proximidad.',
+    sin: 'Aumenta la presión sobre los humedales: game over en el año catorce por pérdida de su capacidad funcional.', con: 'Las Estaciones Circulares y los centros de compostaje reciben y tratan los residuos cerca de donde se generan: sin game over y las estaciones llegan solo al 22 % de saturación, por debajo del límite del 100 %.',
     visible: 'Estaciones Circulares y residuos: nodos de tratamiento, acumulación y recorridos.',
     pregSin: '¿Qué pasaría si aumentan los residuos orgánicos y todo sigue yendo al relleno Doña Juana?', pregCon: '¿Qué pasaría si aumentan los residuos orgánicos y hay Estaciones Circulares de compost en los barrios?' },
-  { par: 4, n: '04 Biodiversidad', prueba: 'Fragmentación o pérdida de un corredor verde', capa: 'biodiversidad',
-    sin: 'Las especies responden al hábitat y las barreras existentes.', con: 'Se incorporan conexiones vegetales, refugios y restauración de hábitat.',
-    visible: 'Hábitat, especies y conexiones: ocupación de corredores verdes y desplazamientos posibles.',
-    pregSin: '¿Qué pasaría si se pierde parte de un humedal o del bosque de Bavaria y las especies solo tienen los corredores verdes de hoy?', pregCon: '¿Qué pasaría si se pierde parte de un humedal o del bosque de Bavaria y hay conexiones vegetales, refugios y restauración?' },
-  { par: 5, n: '05 Población y especulación', prueba: 'Aumento de la presión inmobiliaria sobre sectores con crecimiento poblacional', capa: 'suelo',
-    sin: 'Los inmuebles y actividades responden a la presión de mercado bajo las reglas de referencia.', con: 'Se implementan espacios productivos y comunitarios protegidos e instrumentos de gestión del suelo.',
-    visible: 'Usos del suelo y presión inmobiliaria: actividades que permanecen, se desplazan o cambian de uso.',
-    pregSin: '¿Qué pasaría si sube el precio del suelo junto al metro y Bavaria y nada protege a quienes viven y trabajan ahí?', pregCon: '¿Qué pasaría si sube el precio del suelo pero hay espacios productivos y comunitarios protegidos e instrumentos de gestión del suelo?' },
-  { par: 6, n: '06 Gobernanza política', prueba: 'Recursos insuficientes para atender simultáneamente las necesidades de varios barrios', capa: 'gobernanza',
-    sin: 'Una coordinación central decide dónde asignarlos.', con: 'Las asambleas locales presentan prioridades y una federación con vocerías rotativas coordina su distribución.',
-    visible: 'Asambleas, recursos y decisiones: acuerdos, asignaciones y equipamientos que se habilitan.',
-    pregSin: '¿Qué pasaría si no alcanzan los recursos para todos los barrios y una oficina central decide a dónde van?', pregCon: '¿Qué pasaría si no alcanzan los recursos y las asambleas de cada barrio, con una federación de vocerías rotativas, deciden cómo repartirlos?' }];
+  { par: 4, n: '04 Biodiversidad', prueba: 'Migración de aves y biodiversidad', capa: 'biodiversidad',
+    sin: 'Las aves deben atravesar la avenida que divide los hábitats para ir entre sus zonas de alimentación y descanso: aumentan los atropellamientos. Game over cuando más del 20 % de los cruces termina en atropellamiento: colapso en el sexto año.', con: 'Un puente elevado de fauna conecta los dos lados del humedal y los animales cruzan sin exponerse a los vehículos; corredores vegetales conducen al puente y árboles y refugios dan alimentación y descanso.',
+    visible: 'Hábitat, especies y conexiones: aves que cruzan la avenida, el puente de fauna, los corredores y los senderos de los humedales.',
+    pregSin: '¿Qué pasaría si aumenta masivamente la llegada de aves migratorias a los humedales de Kennedy y deben cruzar la avenida?', pregCon: '¿Qué pasaría si aumenta masivamente la llegada de aves migratorias y hay un puente elevado de fauna, corredores vegetales, árboles y refugios?' },
+  { par: 5, n: '05 Población y especulación', prueba: 'Presión inmobiliaria y transformación del suelo', capa: 'suelo',
+    sin: 'La valorización puede desplazar habitantes y transformar espacios verdes en nuevas construcciones, reduciendo la biodiversidad y fragmentando los hábitats. Game over si el desplazamiento supera su límite, se pierde más del 20 % del suelo ecológico o cae la conectividad de las áreas verdes.', con: 'Bavaria Común reutiliza edificios industriales para equipamientos y servicios cercanos; se protegen espacios productivos y se crean corredores vegetales. Aun así, game over en el año quince cuando el tráfico llega al 130,1 %, sobre el límite del 130 %: falta controlar el crecimiento del tráfico.',
+    visible: 'Usos del suelo y presión inmobiliaria: torres, tala, naves reutilizadas, huertas y el tráfico alrededor de Bavaria.',
+    pregSin: '¿Qué pasaría si aumentan los precios del suelo y la presión inmobiliaria en Kennedy y nada protege los espacios verdes ni a quienes viven ahí?', pregCon: '¿Qué pasaría si aumenta la presión inmobiliaria pero Bavaria Común reutiliza las naves, protege los espacios productivos y crea corredores vegetales?' },
+  { par: 6, n: '06 Gobernanza política', prueba: 'Participación comunitaria y gobernanza policéntrica', capa: 'gobernanza',
+    sin: 'Las decisiones centralizadas dificultan la organización entre barrios y pueden dejar necesidades sin atender. Game over si la participación cae bajo el mínimo, una necesidad urgente pasa más de cuatro semanas sin atender o las huertas dejan de funcionar por falta de mantenimiento.', con: 'Las juntas de acción comunal forman una federación policéntrica con representantes que rotan; los espacios comunitarios de Bavaria Común coordinan las huertas, su mantenimiento y el reparto según las necesidades de cada barrio. Sin game over en quince años.',
+    visible: 'Asambleas, recursos y decisiones: participación, necesidades atendidas y continuidad de las huertas.',
+    pregSin: '¿Qué pasaría si se implementa una red de huertas comunitarias y las decisiones las toma una oficina central?', pregCon: '¿Qué pasaría si la red de huertas comunitarias la coordinan las juntas de acción comunal en una federación policéntrica con representantes rotativos?' }];
 const capAc = Math.round(V.CAP_RED_TDIA * 10) / 10;
 const sArb = { k: 'P3.arboles', n: 'Densidad de árboles en parques', min: 0, max: 1, paso: 0.05, val: 0.4, unidad: '0–1', ayuda: 'Sube la calidad de los parques como hábitat (sim_vida.js: 0,3 + 0,3·tamaño + 0,2·árboles).' };
 const sRec = { k: 'P3.rec', n: 'Recuperación del humedal', min: 0, max: 0.1, paso: 0.005, val: 0.02, unidad: '/semana', ayuda: 'Qué tan rápido se recupera la calidad de los humedales frente a la presión urbana.' };
@@ -567,6 +568,10 @@ export function crear(id, semilla = 1, valores = {}) {
   E.traf.mit0 = E.traf.mit; E.S0 = null; E.pasoK = -1;
   E.par = P; E.prop = S.propuesta; E.xHb = new Float32Array(NP).fill(1); E.xFrag = new Float32Array(NP).fill(1); pruebaIni(E);
   E.rachasLocales = new Map(); E.rachaSectores = new Uint8Array(ZONAS.length);
+  /* GAME OVER DE CADA SIMULACIÓN SEGÚN EL GUION DE LA AUTORA (2026-11-27): reglas que se miden y se muestran pero NO terminan la simulación.
+     02: el abastecimiento del sector más afectado baja (68,6 % sin propuesta) sin game over; el game over llega por los humedales (año 14).
+     03: las horas sin tratar y las toneladas acumuladas se muestran; el game over llega por los humedales (año 14). */
+  E.sinGO = new Set(P === 2 ? ['abastoMov', 'abasto', 'tiempo', 'arterias'] : P === 3 ? ['edad03', 'acum03', 'abasto'] : P === 5 ? ['suelo05'] : []); /* 05: el game over sin propuesta es por perder más del 20 % del suelo ecológico (bosque y rondas, bosque05), no por el suelo productivo */
   E.obras = S.propuesta && OBRAS ? { x: new Float32Array(NP).fill(1), xAve: new Float32Array(NP).fill(1), dHa: new Float32Array(NP), dDb: new Float32Array(NP), arb0: E.PAR.P3.arboles } : null; // obras de la propuesta (ver OBRA_SUP)
   return E;
 }
@@ -1495,9 +1500,11 @@ function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.r
     if (!E.go && S.racha >= 4) E.go = { regla: 'pob04', enfoque: 'Ecocentrismo', sem, inicio: sem - 3, motivo: `las aves que cruzan perdieron ${nf1((1 - S.pob) * 100)} % de su población cuatro semanas seguidas`, lugar: 'Humedales La Vaca, El Burro y Techo', x: 1428, z: 525, valor: Math.round(S.pob * 1000) / 10 };
     const vr = x.verde && x.verde.resumen; x.s04 = { fase: on ? 1 : 0, t0, ...r, prop: !!E.prop, impl: E.prop ? (v.implFauna != null ? v.implFauna : 100) / 100 : 0, barreras: !!E.prop && !!v.barrerasFauna, flujo: (v.flujoAves != null ? v.flujoAves : 60) / 100, pob: S.pob, racha: S.racha, shannon: shannonAves(E), conect: vr && vr.nParches ? vr.nConectados / vr.nParches : null }; }
   if (E.par === 5) { const r = suelo05({ años: (sem - 1) / 52, presion: (v.presionPlan != null ? v.presionPlan : 100) / 100, reuso: (v.reusoNaves != null ? v.reusoNaves : 100) / 100, blindaje: !!v.blindaje, prop: !!E.prop, VIV_ETAPA: PLAN_BAV.VIV_ETAPA, ARB_ETAPA: PLAN_BAV.ARB_ETAPA });
-    if (!E.go && r.ecoRest < 1 - S05.BOSQUE_MAX) E.go = { regla: 'bosque05', enfoque: 'Ecocentrismo', sem, inicio: sem, motivo: `el plan taló ${r.arbPerdidos.toLocaleString('es-CO')} árboles del predio de Bavaria: queda ${nf1(r.ecoRest * 100)} % del bosque y las rondas (pérdida de más del 20 %)`, lugar: 'Predio Bavaria', x: 3977, z: 219, valor: Math.round(r.ecoRest * 1000) / 10 };
+    if (!E.go && r.ecoRest < 1 - S05.BOSQUE_MAX) E.go = { regla: 'bosque05', enfoque: 'Ecocentrismo', sem, inicio: sem, motivo: `se perdió más del 20 % del suelo ecológico: el plan taló ${r.arbPerdidos.toLocaleString('es-CO')} árboles del predio de Bavaria y queda ${nf1(r.ecoRest * 100)} % del bosque y las rondas`, lugar: 'Predio Bavaria', x: 3977, z: 219, valor: Math.round(r.ecoRest * 1000) / 10 };
     if (!E.go && r.sueloProd < S05.SUELO_MIN * S05.SUELO_FR) E.go = { regla: 'suelo05', enfoque: 'Comercio ecológico', sem, inicio: sem, motivo: `al predio solo le quedan ${nf1(r.sueloProd)} ha para huertas y centros circulares (mínimo 12 ha)`, lugar: 'Predio Bavaria', x: 3977, z: 219, valor: Math.round(r.sueloProd * 10) / 10 };
-    x.s05 = { fase: 1, ...r, prop: !!E.prop, presion: (v.presionPlan != null ? v.presionPlan : 100) / 100, reuso: E.prop ? (v.reusoNaves != null ? v.reusoNaves : 100) / 100 : 0, blindaje: !!v.blindaje }; }
+    const traf = (x.trafico || 1) * (1 + S05.K_TRAF * r.avance); E.rTraf05 = traf > S05.TRAF_MAX ? (E.rTraf05 || 0) + 1 : 0; /* tráfico alrededor de Bavaria (S05.K_TRAF) */
+    if (!E.go && E.rTraf05 >= S05.TRAF_SEM) E.go = { regla: 'traf05', enfoque: 'Movilidad', sem, inicio: sem - S05.TRAF_SEM + 1, motivo: `el tráfico alrededor de Bavaria llegó a ${nf1(traf * 100)} %, sobre el límite de 130 %, cuatro semanas seguidas: los carros de las ${r.viv.toLocaleString('es-CO')} viviendas nuevas`, lugar: 'Predio Bavaria', x: 3977, z: 219, valor: Math.round(traf * 1000) / 10 };
+    x.s05 = { fase: 1, ...r, traf, rTraf: E.rTraf05, prop: !!E.prop, presion: (v.presionPlan != null ? v.presionPlan : 100) / 100, reuso: E.prop ? (v.reusoNaves != null ? v.reusoNaves : 100) / 100 : 0, blindaje: !!v.blindaje }; }
   if (E.par === 6 && E.gob) { const G = E.gob, U = E.urg06, ronda = G.rondas !== E.rond06; E.rond06 = G.rondas; let mx = 0, bm = 0; /* urgencia (autora): semanas que un sector con necesidad crítica (cobertura < 50 %) pasa sin recibir asignación; una ronda que le asigna la reinicia */
     for (let b = 0; b < 8; b++) { U[b] = ronda && G.asig[b] > 0 ? 0 : G.cov[b] < S06.COB_MIN && G.rondas > 0 ? Math.min(255, U[b] + 1) : 0; if (U[b] > mx) { mx = U[b]; bm = b; } }
     const sost = x.eco && x.eco.indice != null ? x.eco.indice : null;
@@ -1510,7 +1517,8 @@ function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.r
    En la semana resT0 se corre la interrupción hora por hora (resHoras); si se cumple una de sus dos reglas, game over esa semana. El mapa la muestra
    esa semana y la siguiente (mientras se recoge lo acumulado). */
 function res03Paso(E, x) {
-  const Rs = E.res, sem = E.s.t + 1, orgDia = E.o && E.o.gen ? E.o.gen / 7000 : 486;
+  const Rs = E.res, sem = E.s.t + 1, orgDia = (E.o && E.o.gen ? E.o.gen / 7000 : 486) * (1 + RES03.CRECE * (sem - 1) / 52); /* la generación de orgánicos crece año a año (RES03.CRECE) */
+  { const capRed = (5 * RES03.EST_T_DIA + RES03.BAV_T_DIA) * (E.prop ? Rs.cap : 0); Rs.sat = capRed > 0 ? (orgDia + RES03.CORA_T_DIA) / capRed : null; if (Rs.sat != null) Rs.satMax = Math.max(Rs.satMax || 0, Rs.sat); } /* saturación de las Estaciones (límite 100 %) */
   const kAno = sem - Rs.t0, esAno = kAno >= 0 && kAno % 52 === 0; /* 2026-11-27: la interrupción se repite cada año (la autora: «que cambie con los años») */
   if (esAno) Rs.r = interrupcion({ orgDia, frac: FRAC03, horas: Math.min(Rs.horas, 24 + 12 * Math.floor(kAno / 52)) /* la crisis crece: 24 h el año 1, 36 h el 2, 48 h el 3… hasta lo del deslizador [SUP] */, prop: !!E.prop, cap: E.prop ? Rs.cap : 0, cierreCora: Rs.cierre });
   const r = Rs.r, fase = kAno >= 0 && kAno % 52 === 0 ? 1 : kAno >= 0 && kAno % 52 === 1 ? 0.5 : 0;
@@ -1519,7 +1527,7 @@ function res03Paso(E, x) {
   if (r && esAno && r.hGo && !E.go) { const Rg = REGLAS_RES03.find(q => q.k === r.reglaGo), peor = r.nodos.slice().sort((a, b) => b.edad - a.edad)[0];
     E.go = { regla: r.reglaGo, enfoque: 'Circularidad', sem, inicio: sem, motivo: r.reglaGo === 'acum03' ? `Corabastos y María Paz acumularon ${Math.round(r.acum).toLocaleString('es-CO')} t de orgánicos sin recoger, más de 4.500 t, a las ${r.hGo} h de interrupción` : `${peor.n} lleva más de 48 h con orgánicos sin tratar (${Math.round(peor.calle).toLocaleString('es-CO')} t en la calle) a las ${r.hGo} h de interrupción`,
       lugar: r.reglaGo === 'acum03' ? 'Corabastos y María Paz' : peor.n, x: KEN_XZ[0], z: KEN_XZ[1], valor: r.reglaGo === 'acum03' ? Math.round(r.acum) : r.hGo }; void Rg; }
-  x.res03 = r ? { compAcum: Rs.compAcum || 0, orgDia, t0: Rs.t0, fase, horas: r.horas, prop: r.prop, cap: r.cap, cierreCora: r.cierreCora, nodos: r.nodos, totCalle: r.totCalle, acum: r.acum, eMax: r.eMax, valoriza: r.valoriza, compostDia: r.compostDia, resil: r.resil, hGo: r.hGo, curva: r.curva } : { t0: Rs.t0, fase: 0 };
+  x.res03 = r ? { sat: Rs.sat, satMax: Rs.satMax, compAcum: Rs.compAcum || 0, orgDia, t0: Rs.t0, fase, horas: r.horas, prop: r.prop, cap: r.cap, cierreCora: r.cierreCora, nodos: r.nodos, totCalle: r.totCalle, acum: r.acum, eMax: r.eMax, valoriza: r.valoriza, compostDia: r.compostDia, resil: r.resil, hGo: r.hGo, curva: r.curva } : { t0: Rs.t0, fase: 0 };
 }
 export function paso(E) {
   const s = E.s, t = s.t + 1; E.prev.set(s.occ);
@@ -1621,6 +1629,7 @@ export function paso(E) {
     eventos:E.atr.nuevos.map(p=>({...p})),gameOver:E.go?{...E.go}:null
   };
   x.eventos = avisos(E, x); x.hechos = E.hechos.slice();
+  if (E.go && E.sinGO && E.sinGO.has(E.go.regla)) E.go = null; /* regla que en esta simulación no es game over (ver crear) */
   return E;
 }
 export function gameOver(E) { return E.go; }
@@ -1884,7 +1893,7 @@ function avisos(E, x) {
     const kf = umbral(100 - x.humedalFuncional, [10]); if (kf) { let wk = 0; for (let k = 1; k < HUM_P.length; k++) if (E.bas.ha[k] * E.bas.cal[k] / E.bas.ha0[k] < E.bas.ha[wk] * E.bas.cal[wk] / E.bas.ha0[wk]) wk = k; const HP = PARCHES[HUM_P[wk]], wf = E.bas.ha[wk] * E.bas.cal[wk] / E.bas.ha0[wk];
       add('humfun', kf, 'especies', `Los humedales pierden 10 % de su área funcional: el peor es ${HP.n}`, `Entre rellenos y basura en los bordes, El Burro, La Vaca y Techo funcionan como ${nf(x.humedalFuncional)} % de lo que funcionan hoy; ${HP.n} queda en ${nf(wf * 100)} % (${nf(E.bas.ha[wk], 1)} ha). Sus aves y anfibios tienen menos hábitat.`, [HP.x, HP.z], -1, [], false, `${HP.n} al ${nf(wf * 100)} % por basura y rellenos`, HP.n); } }
   // 9e · aviso previo y game over
-  { const TIPO_R = { tasa04: 'especies', pob04: 'especies', bosque05: 'especies', suelo05: 'huertas', urg06: 'huertas', sost06: 'especies', acum03: 'residuos', edad03: 'residuos', arterias: 'trafico', tiempo: 'trafico', abastoMov: 'comida', fauna: 'especies', habitat: 'especies', humedal: 'especies', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico' };
+  { const TIPO_R = { tasa04: 'especies', pob04: 'especies', bosque05: 'especies', suelo05: 'huertas', traf05: 'trafico', urg06: 'huertas', sost06: 'especies', acum03: 'residuos', edad03: 'residuos', arterias: 'trafico', tiempo: 'trafico', abastoMov: 'comida', fauna: 'especies', habitat: 'especies', humedal: 'especies', abasto: 'comida', residuos: 'residuos', ruido: 'ruido', trafico: 'trafico' };
     const pF = parcheCambio(-1), XZ_R = { humedal: (() => { const h = HUM_P[1] != null ? HUM_P[1] : HUM_P[0]; return h != null ? [PARCHES[h].x, PARCHES[h].z] : KEN_XZ; })(),
       trafico: [viaTr.x, viaTr.z], ruido: [viaTr.x, viaTr.z], abasto: o.zArg >= 0 ? ZONAS_XZ[o.zArg] : CORA_XZ, residuos: [SEC_MAX.x, SEC_MAX.z], fauna: pF >= 0 ? [PARCHES[pF].x, PARCHES[pF].z] : CORA_XZ, habitat: pF >= 0 ? [PARCHES[pF].x, PARCHES[pF].z] : CORA_XZ };
     const val = (k, v) => k === 'ruido' ? nf(v, 1) + ' dB más que hoy' : k === 'trafico' ? 'índice ' + nf(v, 2) : nf(v) + ' %';

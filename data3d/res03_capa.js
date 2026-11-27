@@ -8,7 +8,7 @@
    · CON PROPUESTA: columnas de luz cian (#06b6d4) en las 5 Estaciones y esmeralda (#10b981) en Bavaria Común, más brillantes cuanto más tratan; camiones
      reales (vehiculos.js, los de la 01) que van por las vías de cada nodo a su Estación y de las Estaciones a Bavaria; cuántos ∝ t/h movidas.
    · RÓTULOS: nombre del nodo con toneladas en la calle y horas sin tratar (o «tratado» con la propuesta). */
-import { NODOS03 } from './res03_modelo.js?v=1';
+import { NODOS03 } from './res03_modelo.js?v=2';
 import { crearChips } from './chips.js?v=3';
 const POS = { cora: [1054.7, 995.9], bavaria: [3977.7, 219.3] };
 const pos = (n) => n.p ? n.p[0] : POS[n.k];
