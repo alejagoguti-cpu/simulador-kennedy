@@ -286,12 +286,12 @@ export function iniciarLimpio({ T3 }) {
     seis.querySelectorAll('.lp-sim').forEach(b => b.onclick = () => { const id = +b.dataset.s, base = escE === 'con' ? 14 : 13;
       /* ACORDEÓN: la simulación se aplica y sus variables se abren justo debajo de la fila; las diapositivas solo con su botón */
       if (ESC.activo === id) { escoger(base, true); SL.cerrar(); abrirRecorridoDePar(null); } else { escoger(id, true); abrirRecorridoDePar(+b.dataset.p, escE === 'con', id); }
-      refrescarSeis(); setTimeout(refrescarSeis, 150); });
+      refrescarSeis(); setTimeout(refrescarSeis, 150); setTimeout(() => volarVista(), 650); /* después de cancelar el vuelo del panel escondido (300 y 600 ms) */ });
     seis.querySelectorAll('.lp-ver').forEach(b => b.onclick = () => SL.abrir(+b.dataset.p, escE === 'con', b));
     refrescarSeis(); }
   escB.querySelectorAll('button').forEach(b => b.onclick = () => { escE = b.dataset.e; escB.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
     const par = ESC.activo && ESC.activo <= 12 ? Math.ceil(ESC.activo / 2) : null; escoger(par ? idDe(par) : (escE === 'con' ? 14 : 13), true); /* mismo escenario en el otro Kennedy (mismas variables, otro resultado), sin volver al año 1 */
-    pintarSeis(); abrirRecorridoDePar(par, escE === 'con', par ? idDe(par) : null); if (par && SL.abierto) SL.abrir(par, escE === 'con'); });
+    pintarSeis(); abrirRecorridoDePar(par, escE === 'con', par ? idDe(par) : null); if (par && SL.abierto) SL.abrir(par, escE === 'con'); setTimeout(() => volarVista(), 650); });
   /* orden del panel izquierdo: un observador (no un intervalo que pelea) pone cada bloque en su sitio cuando giro_sim.js o sim_ui.js agregan nodos */
   /* Panel izquierdo angosto, de arriba abajo: «Simulaciones» (#lp-seis) → Variables (plegable) + «Ver informe» (#su-der) → «Capas del mapa»
      (plegable). El reloj grande se esconde (la hora va en la barra de años). Los datos van al tablero de la derecha (#lp-tablero). */
@@ -429,6 +429,19 @@ export function iniciarLimpio({ T3 }) {
   const VISTA = { c: [2350, 0, 380], d: [300, 1450, 1650] }; /* desde más arriba (no tan bajo), con algo de horizonte */ /* vista oblicua fija desde el inicio (la misma del modo presentación), sin vuelos */
   function ponerVista() { if (!T3.camera || !T3.orbit) return; T3.anim = null; T3.llegada = null; T3.orbit.target.set(VISTA.c[0], VISTA.c[1], VISTA.c[2]); T3.camera.position.set(VISTA.c[0] + VISTA.d[0], VISTA.d[1], VISTA.c[2] + VISTA.d[2]); T3.orbit.update(); }
   ponerVista();
+  /* VOLVER A LA VISTA PRINCIPAL (pedido de la autora, 2026-11-27): al escoger un escenario o una simulación la cámara vuelve, en un vuelo corto, a
+     esta misma vista; el botón «Vista principal» (siempre visible) la trae de vuelta después de acercarse a algo. Solo tras un clic de la persona
+     (camara_quieta.js deja mover la cámara 2,5 s después de una acción). */
+  function volarVista(ms = 1100) { if (!T3.camera || !T3.orbit) return; T3.anim = null; T3.llegada = null; if (T3.siguiendo) T3.siguiendo = false;
+    if (window.KEN_OJO && window.KEN_OJO.cerrar) try { window.KEN_OJO.cerrar(); } catch (e) { /* */ }
+    const V3 = T3.THREE.Vector3, P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), P1 = new V3(VISTA.c[0] + VISTA.d[0], VISTA.d[1], VISTA.c[2] + VISTA.d[2]), C1 = new V3(VISTA.c[0], VISTA.c[1], VISTA.c[2]), t0 = performance.now();
+    (function paso() { const u = Math.min(1, (performance.now() - t0) / ms), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+      T3.camera.position.lerpVectors(P0, P1, e); T3.orbit.target.lerpVectors(C0, C1, e); T3.orbit.update(); if (u < 1) requestAnimationFrame(paso); })(); }
+  window.KEN_VISTA = volarVista;
+  { const b = document.createElement('button'); b.type = 'button'; b.id = 'lp-home'; b.title = 'Volver a la vista principal'; b.setAttribute('aria-label', 'Vista principal');
+    b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16"><path d="M3 9.5 10 3.5l7 6M5 8.2V16.5h3.6v-4.2h2.8v4.2H15V8.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Vista principal</span>';
+    b.style.cssText = 'position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:45;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(20,22,28,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#eef1f4;font:500 12px Geist,system-ui,sans-serif;cursor:pointer';
+    b.onclick = () => volarVista(); document.body.appendChild(b); }
   { let k = 0; const fija = setInterval(() => { const L = document.getElementById('loader'); if (L && !L.classList.contains('hidden')) { ponerVista(); return; } if (++k < 12) ponerVista(); else clearInterval(fija); }, 250); } // mientras carga y el primer segundo y medio después de abrir
   /* PRECOMPILAR lo que aparece más tarde (estaciones, catenaria y letreros del metro, que se prenden al abrir en la semana 114): si se
      compilan sus sombreadores en ese momento la imagen se congela ~0,5 s; se hace una vez al cargar, con esos grupos visibles un instante */
