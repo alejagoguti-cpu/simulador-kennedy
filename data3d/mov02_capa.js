@@ -148,7 +148,7 @@ export function crearMov02({ T3, RELOJ }) {
       for (const k of ART) { const v = m.vias[k], R = ROT[k]; if (!v || !R || !tramos[k]) continue; const p = R.sp.position; if (k === m.via && m.c > 0.02) L.push({ x: p.x, z: p.z, ico: 'cierre', txt: 'Cerrada ' + Math.round(m.c * 100) + ' %', col: '#ff8a80', title: v.n }); else L.push({ x: p.x, z: p.z, ico: 'via', txt: Math.round(v.x * 100) + ' %', col: cc(v.x), title: v.n + ' · flujo ÷ capacidad' }); }
       const vl = m.vias.locales; if (vl) BARRIOS.forEach((b, i) => L.push({ x: b[0], z: b[1], ico: 'barrio', txt: Math.round(vl.x * 100) + ' %', col: cc(vl.x), title: N_BARRIO[i] + ' · calles locales' }));
       if (m.prop) L.push({ x: 3977.7, z: 219.3, ico: 'pasaje', txt: Math.round((m.perm || 0) * 100) + ' %', col: '#86efac', title: 'Pasajes de Bavaria · permeabilidad' });
-      CH.poner('mov02', L); }
+      CH.poner('mov02', L); window.KEN_ESCENA = { escena: 'fila', prop: !!m.prop }; }
     BARRIOS.forEach((b, i) => { const v = m.vias.locales; pintarRot('b' + i, v && m.via ? `${N_BARRIO[i].toUpperCase()} · ${Math.round(v.x * 100)} %` : '', v ? v.x : 0); });
     for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const ur = ms.r.material.uniforms;
       colorDb(v.db, ur.uC.value); ur.uA.value = Math.max(0.15, Math.min(1, (v.db - 45) / 35)); ms.r.visible = ruidoOn; }
@@ -173,7 +173,7 @@ export function crearMov02({ T3, RELOJ }) {
     async poner(m) { M = m || null; if (!M) { if (G) G.visible = false; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     ruido(on) { ruidoOn = !!on; aplicar(); return ruidoOn; },
     get ruidoOn() { return ruidoOn; },
-    quitar() { M = null; if (G) G.visible = false; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('mov02'); }
+    quitar() { M = null; if (G) G.visible = false; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('mov02'); window.KEN_ESCENA = null; }
   };
   window.KEN_MOV02 = api; return api;
 }

@@ -88,7 +88,7 @@ export function crearRes03({ T3, RELOJ }) {
         if (t > 0.5) L.push({ x: p[0], z: p[1], ico: 'basura', txt: Math.round(t).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h', col: q.edad >= 48 ? '#d8b4fe' : q.edad >= 24 ? '#fdba74' : '#fde68a', title: n.n + ' · orgánicos sin recoger' });
         else if (r.prop && r.cap > 0 && n.t === 'estacion') L.push({ x: p[0], z: p[1], ico: 'estacion', txt: Math.round(q.tratado / Math.max(1, r.horas / 24)).toLocaleString('es-CO') + ' t/día', col: '#67e8f9', title: 'Estación Circular ' + n.n });
         else if (r.prop && r.cap > 0 && n.t === 'bavaria') L.push({ x: p[0], z: p[1], ico: 'brote', txt: Math.round(r.compostDia).toLocaleString('es-CO') + ' t/día', col: '#6ee7b7', title: 'Bavaria Común · compost para las huertas' }); }
-      crearChips({ T3, RELOJ }).poner('res03', L); }
+      crearChips({ T3, RELOJ }).poner('res03', L); window.KEN_ESCENA = { escena: 'basura', prop: !!r.prop }; }
     window.KEN_MOM = r.nodos.filter(q => q.calle > 0.5 || (r.prop && q.t !== 'barrio' && q.t !== 'cora')).map(q => { const n = NODOS03.find(z => z.k === q.k), p = pos(n); return { t: n.n, s: q.calle > 0.5 ? Math.round(q.calle).toLocaleString('es-CO') + ' t · ' + Math.round(q.edad) + ' h sin tratar' : 'tratando ' + Math.round(q.tratado / Math.max(1, r.horas / 24)) + ' t/día', x: p[0], z: p[1], d: 220 }; });
     // viajes: cada nodo a su estación y de las estaciones a Bavaria; camiones ∝ t/h tratadas [escala: 1 camión por 1,5 t/h, máx. 8 por viaje]
     viajes = []; if (r.prop && r.cap > 0) { const est = NODOS03.filter(n => n.t === 'estacion'), bav = pos(NODOS03.find(n => n.t === 'bavaria'));
@@ -100,7 +100,7 @@ export function crearRes03({ T3, RELOJ }) {
     async poner(r) { R = r || null; if (!R || !(R.fase > 0)) { if (G) G.visible = false; viajes = []; return; } if (!armado) armado = armar(); await armado; aplicar(); },
     riesgo(on) { riesgoOn = !!on; aplicar(); return riesgoOn; },
     get riesgoOn() { return riesgoOn; },
-    quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('res03'); }
+    quitar() { R = null; if (G) G.visible = false; viajes = []; window.KEN_MOM = null; if (window.KEN_CHIPS) window.KEN_CHIPS.quitar('res03'); window.KEN_ESCENA = null; }
   };
   window.KEN_RES03 = api; return api;
 }

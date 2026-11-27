@@ -6,7 +6,7 @@
    · Dibujo LIVIANO (QA 2026-11-27: volver a dibujar la escena para el zoom dejaba el mapa en blanco o ahogaba la carga): justo después del render
      principal (T3.trasRender, index.html) se copia y se amplía ×3 el pedazo del lienzo alrededor del lugar a un lienzo 2D del recuadro, 5 veces por
      segundo. No se dibuja la escena otra vez ni se lee la tarjeta de video. Arranca cuando la interfaz de simulaciones está lista. */
-import { crearPanelMomento } from './momento_muerte.js?v=4';
+import { crearPanelMomento } from './momento_muerte.js?v=5';
 export function crearZoom({ T3 }) {
   if (window.KEN_ZOOM) return window.KEN_ZOOM;
   const THREE = T3.THREE, v = new THREE.Vector3();
@@ -25,7 +25,8 @@ export function crearZoom({ T3 }) {
   const enPantalla = (m) => { v.set(m.x, (T3.sueloY || 0.3) + 5, m.z).project(T3.camera); return v.z < 1 && Math.abs(v.x) < 0.92 && Math.abs(v.y) < 0.92 ? { x: (v.x + 1) / 2, y: (1 - v.y) / 2 } : null; };
   function pintar() { const L = lista(); box.querySelector('[data-z="t"]').textContent = actual.t; box.querySelector('[data-z="s"]').textContent = actual.s || ''; box.querySelector('[data-z="n"]').textContent = (k % Math.max(1, L.length) + 1) + ' / ' + L.length; }
   function siguiente() { const L = lista(); let j = -1; for (let i = 1; i <= L.length; i++) { const q = (k + i) % L.length; if (L[q].muerte || enPantalla(L[q])) { j = q; break; } } k = j >= 0 ? j : (k + 1) % L.length; actual = L[k]; pintar();
-    if (actual.muerte) { if (!PM) PM = crearPanelMomento(T3, vista); PM.mostrar(actual.muerte); vid.style.visibility = 'hidden'; } else if (PM) PM.ocultar(); }
+    const esc = !actual.muerte && window.KEN_ESCENA && window.KEN_ESCENA.escena ? window.KEN_ESCENA : null; actual.vivo = !actual.muerte && !esc; /* sin escena: el mapa en vivo */
+    if (actual.muerte || esc) { if (!PM) PM = crearPanelMomento(T3, vista); const sp = box.querySelector('[data-z="s"]'); PM.mostrar(actual.muerte || esc, (f) => { if (sp.textContent !== f) sp.textContent = f; }); vid.style.visibility = 'hidden'; } else if (PM) PM.ocultar(); }
   box.querySelector('[data-z="seguir"]').onclick = () => { if (!T3.camera || !T3.orbit) return; const P0 = T3.camera.position.clone(), C0 = T3.orbit.target.clone(), C1 = new THREE.Vector3(actual.x, 0, actual.z), P1 = actual.muerte ? new THREE.Vector3(actual.x + 45, (T3.sueloY || 0.3) + 110, actual.z + 150) : new THREE.Vector3(actual.x + 120, 380, actual.z + 430), t0 = performance.now(); tCambio = performance.now() + 25000; /* encuadra de cerca y se queda en este momento 30 s */
     T3.anim = null; (function paso() { const u = Math.min(1, (performance.now() - t0) / 1100), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; T3.camera.position.lerpVectors(P0, P1, e); T3.orbit.target.lerpVectors(C0, C1, e); T3.orbit.update(); if (u < 1) requestAnimationFrame(paso); })(); };
   siguiente();
@@ -34,7 +35,7 @@ export function crearZoom({ T3 }) {
     if (now - tDib < 200 || box.offsetParent === null) return; tDib = now;
     const src = T3.renderer && T3.renderer.domElement; if (!src) return; const R = vista.getBoundingClientRect(); if (R.width < 20) return;
     const w = Math.round(R.width), h = Math.round(R.height); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } ctx.clearRect(0, 0, w, h);
-    if (actual.muerte) { ctx.clearRect(0, 0, w, h); return; } /* la reconstrucción la dibuja su propio renderer */
+    if (!actual.vivo) { ctx.clearRect(0, 0, w, h); return; } /* la reconstrucción la dibuja su propio renderer */
     const p = enPantalla(actual); if (!p) { vid.style.visibility = 'hidden'; ctx.fillStyle = 'rgba(10,12,16,.85)'; ctx.fillRect(0, 0, w, h); return; } vid.style.visibility = 'visible';
     const Z = 3, VW = w * Z, VH = VW * (src.clientHeight / Math.max(1, src.clientWidth)); vid.style.width = VW + 'px'; vid.style.height = VH + 'px';
     const tx = Math.max(w - VW, Math.min(0, w / 2 - p.x * VW)), ty = Math.max(h - VH, Math.min(0, h / 2 - p.y * VH)); vid.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';

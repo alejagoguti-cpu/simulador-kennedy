@@ -189,6 +189,43 @@ function escenaAbandono(nombre, causa) {
     } };
 }
 
+
+/* ---------- ESCENAS DE LAS SIMULACIONES 02–06 para el «Zoom del momento» (2026-11-27, la autora: «crea escenas coherentes para el zoom») ----------
+   Ilustrativas, como las de arriba: muestran el mecanismo de cada simulación, no un instante registrado. o.prop = con propuesta. */
+function calle(g, z = 0, ancho = 7) { g.add(caja(120, 0.04, ancho, M(0x3a3d41), 0, 0, z)); const bl = M(0xe9ebe6, { roughness: 0.6 }); for (let x = -60; x < 60; x += 6) g.add(caja(2.6, 0.012, 0.14, bl, x, 0.04, z)); for (const s of [-1, 1]) g.add(caja(120, 0.16, 2.6, M(0x9b9c95), 0, 0, z + s * (ancho / 2 + 1.3))); }
+function suelo(g, c = 0x4a5c3e) { const p = new THREE.Mesh(new THREE.PlaneGeometry(140, 90).rotateX(-Math.PI / 2), M(c)); p.position.y = -0.02; g.add(p); return p; }
+function casas(g, z, n = 6, x0 = -24) { for (let i = 0; i < n; i++) { const h = 5 + (i * 7 % 4) * 1.6, c = [0xc9a98a, 0xb8846a, 0xd6c3a5, 0xa97c64][i % 4]; g.add(caja(6.5, h, 6, M(c), x0 + i * 8, 0, z)); g.add(caja(6.8, 0.4, 6.3, M(0x6b4a3a), x0 + i * 8, h, z)); } }
+function persona(color) { const p = new THREE.Group(), m = M(color); const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.25, 0.9, 3, 8), m); c.position.y = 0.75; p.add(c); const h = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), M(0xd9b38c)); h.position.y = 1.55; p.add(h); return p; }
+function escenaFila(o) { const g = new THREE.Group(); suelo(g); calle(g, 0); casas(g, -10); casas(g, 10, 6, -20);
+  const bar = new THREE.Group(); for (let k = 0; k < 6; k++) bar.add(caja(0.6, 0.25, 0.12, M(k % 2 ? 0xf3f3ee : 0xd4231e), -1.5 + k * 0.6, 0.9, 0)); bar.add(caja(0.12, 1.1, 0.12, M(0x3a3b3e), -1.7, 0, 0)); bar.add(caja(0.12, 1.1, 0.12, M(0x3a3b3e), 1.7, 0, 0)); bar.position.set(8, 0, -1.75); bar.rotation.y = Math.PI / 2; g.add(bar);
+  const conos = []; for (let k = 0; k < 5; k++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.75, 10), M(0xf26a1b)); c.position.set(6 + k * 0.1, 0.38, -3.2 + k * 0.7); g.add(c); conos.push(c); }
+  const cs = [0, 1, 2, 3, 4, 5].map(i => { const c = carroSimple(); c.rotation.y = Math.PI / 2; g.add(c); return c; });
+  return { g, dur: 8, tClave: 4, cam: { p: [-12, 6, 11], t: [0, 0.5, -1] }, paso(t) { const cerr = sm(0.4, 1.6, t); bar.scale.setScalar(Math.max(0.01, cerr)); conos.forEach(c => c.scale.setScalar(Math.max(0.01, cerr)));
+      cs.forEach((c, i) => { const meta = 5.5 - i * 5.6, x0 = -40 - i * 8, x = Math.min(meta, x0 + t * 14); c.position.set(t < 1.2 ? x0 + t * 14 : x, 0, -1.75); });
+      return t < 1.6 ? '1 · Se cierra la vía' : t < 4.5 ? '2 · Los carros frenan detrás del cierre' : '3 · La fila crece y se desvía a las calles vecinas'; } }; }
+function escenaBasura(o) { const g = new THREE.Group(); suelo(g, 0x5a5a52); calle(g, 0); casas(g, -9); g.add(caja(40, 0.18, 3, M(0x8f8d86), 0, 0, -5.2));
+  const PAL = [0x16181d, 0x23262d, 0x1f3a24, 0x8b5a2b, 0xe5e7eb], bolsas = []; for (let k = 0; k < 40; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.45 + (k % 3) * 0.12, 10, 8), M(PAL[k % PAL.length], { roughness: 0.6 })); b.scale.y = 0.7; const a = k * 2.39996, r = Math.sqrt(k) * 0.55; b.position.set(Math.cos(a) * r, 0.3 + Math.floor(k / 12) * 0.45, -5 + Math.sin(a) * r * 0.5); g.add(b); bolsas.push(b); }
+  const est = o && o.prop ? caja(5, 3, 3.5, M(0x0e7490), 14, 0, -6) : null; if (est) g.add(est);
+  const mancha = new THREE.Mesh(new THREE.CircleGeometry(1, 30).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x3b2412, transparent: true, opacity: 0.6, depthWrite: false })); mancha.position.set(0, 0.05, -4.5); g.add(mancha);
+  return { g, dur: 8, tClave: 5, cam: { p: [-6, 5, 8], t: [0, 0.8, -4.5] }, paso(t) { const prop = o && o.prop, n = prop ? Math.round(8 * (1 - sm(4, 7, t))) : Math.round(sm(0, 6.5, t) * bolsas.length); bolsas.forEach((b, i) => { b.visible = i < n; });
+      mancha.scale.setScalar(prop ? 0.01 : 0.5 + 3.5 * sm(2, 7, t)); return prop ? (t < 4 ? '1 · Sin camión distrital: los orgánicos van a la Estación' : '2 · La Estación los trata y salen como compost') : t < 2.5 ? '1 · Hora 0: nadie recoge' : t < 5 ? '2 · 24 h: la basura invade la acera' : '3 · 48 h: lixiviados y riesgo sanitario'; } }; }
+function escenaAves(o) { const g = new THREE.Group(); suelo(g); calle(g, 0, 9); const ag = new THREE.Mesh(new THREE.CircleGeometry(9, 32).rotateX(-Math.PI / 2), M(0x2f5f7a, { roughness: 0.2 })); ag.position.set(-6, 0.02, -16); g.add(ag); const ag2 = ag.clone(); ag2.position.set(6, 0.02, 16); g.add(ag2);
+  const prop = o && o.prop, puente = prop ? caja(10, 0.8, 22, M(0x3f7a35), 0, 6, 0) : null; if (puente) { g.add(puente); for (const s of [-1, 1]) g.add(caja(0.8, 6, 0.8, M(0x9ca3af), s * 4, 0, 0)); for (let k = 0; k < 5; k++) { const a = arbol(-3 + k * 1.5, -6 + k * 3, 3.5); a.position.y = 6.4; g.add(a); } }
+  const cs = [0, 1, 2, 3].map(i => { const c = carroSimple(); c.rotation.y = Math.PI / 2; g.add(c); return c; }), av = [0, 1, 2, 3, 4].map(() => { const A = animal('Tingua azul', 1.1); g.add(A.g); return A; });
+  return { g, dur: 7, tClave: 3.5, cam: { p: [-14, 8, 6], t: [0, 2, 0] }, paso(t) { cs.forEach((c, i) => c.position.set(((t * 16 + i * 30) % 120) - 60, 0, i % 2 ? 2.2 : -2.2));
+      av.forEach((A, i) => { const u = ((t / 6) + i * 0.08) % 1, y = prop ? 9 + Math.sin(u * Math.PI) * 3 : 1.2 + Math.sin(u * Math.PI) * 0.8; A.g.position.set(-3 + i * 1.2, y, -16 + u * 32); A.g.rotation.set(0, 0, 0); aletear(A, t + i); });
+      return prop ? '1 · Cruzan por el paso elevado de fauna, lejos de los carros' : t < 3 ? '1 · Vuelan a ras de la vía entre humedales' : '2 · Un carro las alcanza: choque'; } }; }
+function escenaTorres(o) { const g = new THREE.Group(); suelo(g); const prop = o && o.prop, ar = []; for (let i = 0; i < 18; i++) { const a = arbol(-14 + (i % 6) * 5.5, -6 + Math.floor(i / 6) * 5.5, 5 + (i % 3)); g.add(a); ar.push(a); }
+  const to = [0, 1, 2, 3].map(i => { const m = caja(5, 1, 5, M(prop ? 0xe2a55b : 0x94a3b8), -8 + i * 6.5, 0, prop ? 12 : 0); g.add(m); return m; });
+  return { g, dur: 8, tClave: 5, cam: { p: [-22, 16, 22], t: [0, 3, 2] }, paso(t) { const f = sm(0.5, 6, t); to.forEach((m, i) => { const h = prop ? 6 : 40; m.scale.y = Math.max(0.05, f * h * (0.7 + 0.1 * i)); m.position.y = 0; });
+      ar.forEach((a, i) => { const cae = !prop && i % 3 !== 0 && f > (i / 18); a.scale.setScalar(cae ? 0.01 : 1); }); return prop ? '1 · Vivienda baja en los bordes y el bosque intacto' : t < 3 ? '1 · Llegan las torres del plan parcial' : '2 · Se tala el bosque y el suelo se impermeabiliza'; } }; }
+function escenaFurgoneta(o) { const g = new THREE.Group(); suelo(g); calle(g, 0); casas(g, -10); const salon = caja(8, 4, 6, M(o && o.prop ? 0x0e7490 : 0x94a3b8), 6, 0, 8); g.add(salon);
+  const gente = [0, 1, 2, 3, 4, 5].map(i => { const p = persona([0xf59e0b, 0x38bdf8, 0xf472b6, 0xa3e635, 0xffffff, 0xfb923c][i]); p.position.set(2 + i * 1.3, 0, 4.6); g.add(p); return p; });
+  const van = carroSimple(); van.scale.set(1.1, 1.4, 1.1); van.rotation.y = Math.PI / 2; g.add(van); const prop = o && o.prop;
+  return { g, dur: 8, tClave: 4, cam: { p: [-10, 7, 14], t: [3, 1, 2] }, paso(t) { const lleg = prop ? 1.5 : 5.5, x = Math.min(4, -40 + t * (44 / lleg)); van.position.set(x, 0, 1.75); gente.forEach((p, i) => { p.position.y = t > lleg ? Math.abs(Math.sin(t * 4 + i)) * 0.15 : 0; });
+      return prop ? (t < lleg ? '1 · La Federación de Juntas decide' : '2 · Los recursos llegan en dos semanas') : t < lleg ? '1 · Se espera la ronda central (13 semanas)' : '2 · Llegan los recursos, tarde'; } }; }
+const ESCENAS_SIM = { fila: escenaFila, basura: escenaBasura, aves: escenaAves, torres: escenaTorres, furgoneta: escenaFurgoneta };
+
 /* ---------- DOM ---------- */
 function armarDom() {
   if (capa) return;
@@ -244,9 +281,9 @@ export function crearPanelMomento(T3p, cont) {
   const limpiar = () => { if (sc) sc.traverse(m => { if (m.isMesh) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } }); sc = null; d = null; };
   function cuadroP(now) { rf = requestAnimationFrame(cuadroP); if (!d || cont.offsetParent === null) return; if (now - tp < 40) return; const dt = Math.min(0.1, (now - tp) / 1000); tp = now;
     const w = Math.max(10, cont.clientWidth), h = Math.max(10, cont.clientHeight); if (c.width !== Math.round(w * r.getPixelRatio())) { r.setSize(w, h, false); cm.aspect = w / h; cm.updateProjectionMatrix(); }
-    t += dt; if (t > d.dur + 0.8) t = 0; d.paso(Math.min(t, d.dur), cm); cm.lookAt(cm.userData.t); r.render(sc, cm); }
-  return { mostrar(o) { THREE = T3p.THREE; limpiar(); const causa = o.causa || 'desaparicion', via = (String(o.detalle || '').match(/en la ([^,]+)/) || [])[1] || '';
-      d = causa === 'atropello' ? escenaAtropello(o.nombre, via) : causa === 'colision' ? escenaColision(o.nombre, o.detalle) : escenaAbandono(o.nombre, causa);
+    t += dt; if (t > d.dur + 0.8) t = 0; { const fz = d.paso(Math.min(t, d.dur), cm); if (alF && fz) alF(fz); } cm.lookAt(cm.userData.t); r.render(sc, cm); }
+  let alF = null; return { mostrar(o, alFase) { THREE = T3p.THREE; limpiar(); alF = alFase || null; const causa = o.causa || 'desaparicion', via = (String(o.detalle || '').match(/en la ([^,]+)/) || [])[1] || '';
+      d = o.escena && ESCENAS_SIM[o.escena] ? ESCENAS_SIM[o.escena](o) : causa === 'atropello' ? escenaAtropello(o.nombre, via) : causa === 'colision' ? escenaColision(o.nombre, o.detalle) : escenaAbandono(o.nombre, causa);
       sc = new THREE.Scene(); sc.background = new THREE.Color(0x232a2d); sc.fog = new THREE.Fog(0x232a2d, 34, 80); sc.add(new THREE.HemisphereLight(0xdfe8ef, 0x45473c, 1.25)); const so = new THREE.DirectionalLight(0xfff3e2, 2.1); so.position.set(8, 16, 9); sc.add(so); sc.add(d.g);
       cm.position.set(...d.cam.p); cm.userData.t = new THREE.Vector3(...d.cam.t); t = d.tClave * 0.4; c.style.display = 'block'; if (!rf) rf = requestAnimationFrame(cuadroP); },
     ocultar() { c.style.display = 'none'; limpiar(); } };
