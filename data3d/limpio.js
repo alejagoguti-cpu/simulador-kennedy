@@ -439,7 +439,7 @@ export function iniciarLimpio({ T3 }) {
     T3.camera.position.set(camT.p0.x + (VOBL.c[0] + VOBL.d[0] - camT.p0.x) * e, camT.p0.y + (VOBL.d[1] - camT.p0.y) * e, camT.p0.z + (VOBL.c[2] + VOBL.d[2] - camT.p0.z) * e); T3.orbit.update(); if (k >= 1) camT = null; });
   let yaOblicua = false;
   function alternar() {
-    if (!ESC.activo) return;
+    if (!ESC.activo) return; if (!RELOJ.arrancado) RELOJ.arrancar(true); /* el reloj arranca con el play aunque la portada se haya cerrado sin «Iniciar» (si no, el play no avanzaba) */
     /* la cámara no se mueve sola: la vista oblicua ya está puesta desde el inicio (VISTA) */
     if (RELOJ.pausaSem) { if (RELOJ.sem >= FIN_SEM) reiniciar(); RELOJ.detenerSemEn = FIN_SEM; RELOJ.ponerVelAños(VELS[vel]); RELOJ.pausarAños(false); RELOJ.presupuestoMs = 10; RELOJ.ponerVel(VEL_DIA[vel]); }
     else { RELOJ.pausarAños(true); RELOJ.presupuestoMs = 6; RELOJ.ponerVel(1); }
