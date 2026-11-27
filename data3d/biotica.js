@@ -319,10 +319,16 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const redondeo = (v) => Math.floor(v) + (rnd() < v % 1 ? 1 : 0); // reparto sin sesgo de fracciones
   const nPor = (k, h) => h.cnt ? redondeo((h.cnt[k] || 0) * (movil ? 0.5 : 1)) : h.tipo === 'huerta' ? redondeo((POR_HUERTA[k] || 0) * (movil ? 0.5 : 1)) : h.tipo === 'parque' ? redondeo((POR_PARQUE[k] || 0) * h.k * (movil ? 0.45 : 1))
     : Math.max(ESP[k].mov === 'rapaz' ? (h.k >= 1 ? 1 : 0) : 1, Math.round(ESP[k].cant * h.k * (movil ? 0.5 : 1)));
-  for (const h of HAB) for (const k of Object.keys(ESP)) {
+  /* REFUERZO DE LA 04 CON PROPUESTA (pedido de la autora 2026-11-27: «en la biodiversidad se debe ver que hay muchas interacciones, en todas partes aumenta la
+     cantidad de especies»): EXTRA04 × los animales de cada especie en cada hábitat (humedales, parques, huertas), marcados x04. Están escondidos salvo en la
+     simulación 04 con propuesta, donde aparecen de a poco: window.KEN_BIO_EXTRA (0…1, lo pone capas456.js con el avance de corredores y paso de fauna) frente a
+     un sorteo fijo por animal [escala visual declarada: refleja más especies y más encuentros, no es un conteo]. */
+  const EXTRA04 = movil ? 0.8 : 1.5;
+  for (const pase of [0, 1]) for (const h of HAB) for (const k of Object.keys(ESP)) {
     const e = ESP[k]; if (!POR[k]) POR[k] = []; if (!h.ag[k]) h.ag[k] = [];
     const parque = h.tipo !== 'humedal';
-    for (let i = 0; i < nPor(k, h); i++) {
+    if (pase === 1 && h.soloHoy) continue; const nK = pase ? redondeo(nPor(k, h) * EXTRA04) : nPor(k, h);
+    for (let i = 0; i < nK; i++) {
       let p, y = GY;
       if (e.mov === 'abeja') { p = h.tipo === 'humedal' ? puntoBorde(h, 12) : [h.cx + gauss() * 3, h.cz + gauss() * 3]; y = GY + 1; } // colmena
       else if (e.mov === 'lombriz') p = parque ? puntoEn(h) : puntoBorde(h, 4);
@@ -337,7 +343,8 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
         // así todos los agentes tienen la misma forma y el paso no paga accesos megamórficos (optimización del salto de 1 día; no cambia nada)
         x0: p[0], y0: y, z0: p[1], /* = posición inicial: el dibujo interpola entre x0 y x (iguales: mismo cuadro que con x0 sin definir) */ huye: undefined, f: undefined, arb: undefined, duerme: undefined, presa: undefined, cool: undefined, caza: undefined,
         salto: undefined, obj: undefined, flores: undefined, vuelta: undefined, cx: undefined, cz: undefined, rad: undefined, alt: undefined, w: undefined, colmena: undefined,
-        _fuera: undefined, _rp: undefined, _r: undefined, _sim: undefined, _kb: undefined };
+        _fuera: undefined, _rp: undefined, _r: undefined, _sim: undefined, _kb: undefined, x04: pase === 1, _x4: pase === 1 ? rnd() : 0, _f4: pase === 1 };
+      if (pase === 1) { a.vis = false; a.duerme = true; } /* refuerzo de la 04: empieza escondido */
       if (e.mov === 'rapaz') Object.assign(a, { st: 'planea', cx: a.x, cz: a.z, rad: 60 + rnd() * 60, alt: a.y - GY, w: (rnd() < 0.5 ? 1 : -1) * e.v / 90 });
       if (e.mov === 'vuela' || e.mov === 'colibri') a.st = 'posado';
       if (e.mov === 'abeja') Object.assign(a, { st: 'colmena', t: rnd() * 25, colmena: [p[0], p[1]], vis: false });
@@ -978,6 +985,8 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       h.abierta = ab; }
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
       a.x0 = a.x; a.y0 = a.y; a.z0 = a.z; // posición al empezar el paso (el dibujo interpola)
+      if (a.x04) { const sale = !(ESTADO.escenario !== 'hoy' && (window.KEN_BIO_EXTRA || 0) > a._x4); /* refuerzo de la 04 con propuesta */
+        if (sale) { if (!a._f4) { a._f4 = true; a.vis = false; a.duerme = true; } continue; } if (a._f4) { a._f4 = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
       if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
       if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a.h.humBav ? !(humAn() >= 3 + 4 * (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id)))) : (a.h.ord != null ? a.h.ord : (a._rp ?? (a._rp = RELOJ.azarDe('bio-pro', a.id)))) > (ESTADO.proFrac ?? 1))) { /* la fauna llega a cada huerta cuando esa huerta se abre (h.ord vs proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
       // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden (sorteo fijo por id)
