@@ -191,7 +191,36 @@ export function iniciarLimpio({ T3 }) {
     html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-sim .lp-ico{color:var(--ui-acc,#c9f27a)} html.limpio body #gs-izq #lp-seis .lp-lista .lp-acc{display:none!important}
     html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
   }
-  @media(max-width:1099px){#lp-zoom{display:none}}`; document.head.appendChild(st); }
+  /* CELULAR Y TABLETA (pedido de la autora 2026-11-27): tarjetas 1–6 en cuadrícula de 3 con ícono pequeño; alerta y avisos debajo de los botones;
+     «Vista principal» redondo a la derecha sobre la barra de años; zoom del momento arriba del panel de simulaciones cuando está abierto. */
+  @media(max-width:1099px){
+    #lp-zoom{display:none;position:fixed;z-index:53;left:8px;right:8px;top:152px;height:150px;box-sizing:border-box;padding:8px;flex-direction:column;gap:6px;
+      background:var(--ui-glass);border:1px solid var(--ui-glass-bd);box-shadow:var(--ui-glass-sh);-webkit-backdrop-filter:var(--ui-glass-fx);backdrop-filter:var(--ui-glass-fx);border-radius:14px;color:var(--ui-tx,#eef1f4)}
+    html.limpio.lp-izq-abierto #lp-zoom{display:flex}
+    #lp-zoom header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px}
+    #lp-zoom header small{display:block;font:600 9px/1.2 var(--ui-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-tx2,#c9cfc4)}
+    #lp-zoom header b{display:block;font:600 12.5px/1.2 var(--ui-sans,system-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
+    #lp-zoom header button{border:0;border-radius:9px;padding:6px 12px;background:var(--ui-acc,#c9f27a);color:#13160f;font:600 11.5px var(--ui-sans,system-ui)}
+    #lp-zoom .lz-vista{position:relative;flex:1;border-radius:10px;border:1px solid rgba(255,255,255,.14);overflow:hidden}
+    #lp-zoom .lz-vista span,#lp-zoom .lz-vista i{position:absolute;padding:2px 7px;border-radius:7px;background:rgba(10,12,16,.72);font:500 10px var(--ui-mono,monospace);font-style:normal}
+    #lp-zoom .lz-vista span{left:6px;bottom:6px} #lp-zoom .lz-vista i{right:6px;top:6px}
+    html.limpio body #gs-izq{top:310px!important;max-height:calc(100dvh - 310px - 112px)!important}
+    html.limpio body #lp-tablero{top:152px!important}
+    html.limpio body :is(#sp-alerta,#ab-alerta){top:104px!important;left:8px!important;right:8px!important;transform:none!important;max-width:none!important}
+    html.limpio body #su-feed{top:150px!important}
+    html.limpio.lp-izq-abierto body #su-feed,html.limpio.lp-tab-abierto body #su-feed{display:none!important}
+    #lp-home{left:auto!important;right:10px!important;transform:none!important;bottom:118px!important;width:44px;height:44px;padding:0!important;justify-content:center;border-radius:50%!important}
+    #lp-home span{display:none}
+    html.limpio body #gs-izq #lp-seis .lp-lista{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+    html.limpio body #gs-izq #lp-seis .lp-lista li{grid-template-columns:1fr!important;min-height:74px;border:1px solid var(--ui-glass-bd,rgba(255,255,255,.14))!important;background:rgba(255,255,255,.04)}
+    html.limpio body #gs-izq #lp-seis .lp-lista li .lp-ver,html.limpio body #gs-izq #lp-seis .lp-lista .lp-acc{display:none!important}
+    html.limpio body #gs-izq #lp-seis .lp-sim{flex-direction:column!important;justify-content:center!important;gap:3px!important;padding:8px 2px!important;text-align:center}
+    html.limpio body #gs-izq #lp-seis .lp-sim .lp-ico{width:24px!important;height:24px!important;flex:none;color:var(--ui-tx,#eef1f4)}
+    html.limpio body #gs-izq #lp-seis .lp-sim b{white-space:normal!important;font-size:11px!important;line-height:1.15!important;overflow:visible!important}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on{border-color:var(--ui-acc,#c9f27a)!important;box-shadow:0 0 0 1px var(--ui-acc,#c9f27a) inset}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on .lp-ico{color:var(--ui-acc,#c9f27a)}
+    html.limpio body #gs-izq #lp-seis .lp-lista li.on::before{display:none}
+  }`; document.head.appendChild(st); }
   import('./zoom_momento.js?v=4').then(m => { const ir = () => { if (T3.renderer && window.KEN_SIMUI) m.crearZoom({ T3, RELOJ }); else setTimeout(ir, 1500); }; ir(); }).catch(e => console.warn('zoom del momento:', e));
   const escB = document.createElement('div'); escB.id = 'lp-esc'; escB.setAttribute('role', 'group'); escB.setAttribute('aria-label', 'Escenario de Kennedy');
   escB.innerHTML = '<button type="button" data-e="hoy" class="on" aria-pressed="true">Kennedy sin propuesta</button><button type="button" data-e="con" class="con" aria-pressed="false">Kennedy con propuesta</button>'; document.body.appendChild(escB);
@@ -328,7 +357,7 @@ export function iniciarLimpio({ T3 }) {
     if (rl && rl.nextElementSibling !== seis) rl.after(seis); else if (!rl && seis.parentNode !== gz) gz.prepend(seis);
     /* Variables + informe: dentro del acordeón de la simulación activa (debajo de su fila); con la simulación base, plegadas después de la lista */
     const acc = seis.querySelector('li.on .lp-acc');
-    if (sd && acc && !matchMedia('(min-width:1100px)').matches) { if (sd.parentNode !== acc) acc.appendChild(sd); const dt = sd.querySelector('#lp-vars'); if (dt && !dt.open) dt.open = true; } else if (sd && seis.nextElementSibling !== sd) seis.after(sd); /* escritorio: tarjetas 1–6 en su orden y las variables de la activa debajo de la cuadrícula */
+    if (sd && acc && false) { if (sd.parentNode !== acc) acc.appendChild(sd); const dt = sd.querySelector('#lp-vars'); if (dt && !dt.open) dt.open = true; } else if (sd && seis.nextElementSibling !== sd) seis.after(sd); /* escritorio: tarjetas 1–6 en su orden y las variables de la activa debajo de la cuadrícula */
     const ref = sd && sd.parentNode === gz ? sd : seis; if (ref.nextElementSibling !== capas) ref.after(capas); if (capas.nextElementSibling !== conv) capas.after(conv);
     const db = capas.querySelector('.lp-db');
     for (const id of ['rc-btn', 'lp-bio']) { const b = document.getElementById(id); if (b && gz.contains(b) && b.parentNode !== db) db.appendChild(b); }
