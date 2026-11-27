@@ -10,7 +10,7 @@ import { crearPanelEvaluacion, CSS_EVALUACION } from './panel_evaluacion.js?v=6'
 import { RELOJ } from './reloj.js?v=5';
 import { florEco, datoEco, cintaEco, ESTILO_ECO } from './diagramas_eco.js?v=2';
 import * as AB01P from './ab01_panel.js?v=10'; /* simulación 01: alerta, diagrama demanda/llega/límite y capas (2026-11-26) */
-import * as SP from './sim_panel.js?v=13'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
+import * as SP from './sim_panel.js?v=14'; /* simulaciones 02–06: el mismo formato que la 01 (docs/todas_las_simulaciones.md, 2026-11-26) */
 
 /* SIN_CAPAS: el mapa queda limpio (solo carros y fauna); los datos van en el tablero. La autora: «quítale todas esas capas y redes verdes» */
 const SIN_CAPAS = true;
@@ -42,7 +42,7 @@ const derivar = (I) => { if (I.circular) I.circularIdx = I.circular.indice; if (
 
 export async function iniciarSimUI({ T3, SIMS_UI }) {
   let M = null; // módulo del modelo
-  try { M = await import('./simulaciones12.js?v=52'); if (M.cargarDatos) await M.cargarDatos(); }
+  try { M = await import('./simulaciones12.js?v=53'); if (M.cargarDatos) await M.cargarDatos(); }
   catch (e) { console.warn('simulaciones (modelo):', e); M = null; }
   if (M && M.SEMANAS_FIN) FIN = Math.min(780, M.SEMANAS_FIN); /* el simulador corre 15 años */
 
@@ -228,7 +228,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
     R.base = null; if (M) setTimeout(calcularBase, 300); // la otra mitad del par (sin propuesta), con los mismos valores, para comparar
   }
   function reiniciarModelo() {
-    R.hist = []; R.vistaH = R.vistaL = null; R.cora0 = null; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof tab !== 'undefined') tab.innerHTML = ''; if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); if (window.KEN_VERDE) { window.KEN_VERDE.limpiar(); window.KEN_VERDE.ver(false); } ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
+    R.hist = []; R.vistaH = R.vistaL = null; window.KEN_MOM_FEED = []; if (window.KEN_ZOOM) setTimeout(() => { try { window.KEN_ZOOM.siguiente(); } catch (e) { /* */ } }, 1500); /* el zoom no mezcla momentos de otro escenario */ R.cora0 = null; R.go = null; R.fin = false; R.previa = false; R.extinciones = []; R.eventos = []; if (typeof graf !== 'undefined' && graf) graf.classList.remove('on'); go.classList.remove('on'); cerrarInforme(); if (typeof tab !== 'undefined') tab.innerHTML = ''; if (typeof cerrarFicha === 'function') try { cerrarFicha(); } catch (e) { /* */ } limpiarAvisos(); if (window.KEN_HECHOS) window.KEN_HECHOS.limpiar(); if (window.KEN_VERDE) { window.KEN_VERDE.limpiar(); window.KEN_VERDE.ver(false); } ponerPredio(null); ponerBasura(null); ponerCierre(null); ponerDegrada(null); ponerCaminos(null); ponerCapaPar(null); window.KEN_TRAF_F = 1; if (window.KEN_FOCO) window.KEN_FOCO.off(); // el blanco y negro de un game over no queda puesto en la siguiente
     R.s = M && R.sim ? M.crear(R.sim, SEMILLA, R.valores) : null;
     refrescarPicos(); // año 1: los picos vuelven a como está hoy
     if (typeof grafAb01 === 'function') grafAb01(true);
@@ -593,7 +593,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
   /* VISTA INSTANTÁNEA (pedido de la autora: «que cada vez que deslice se vea»): mientras se arrastra un deslizador de la 02 o la 03, el mapa y los números
      se recalculan al momento con el mismo modelo (mov02_modelo.js / res03_modelo.js) sobre la semana que se está viendo; al soltar corre el modelo completo.
      En la 02 el abastecimiento por zona espera al modelo completo (depende de sim_vida.js). */
-  let QM = null; const qm = () => QM || (QM = Promise.all([import('./mov02_modelo.js?v=3'), import('./res03_modelo.js?v=1'), import('./sim_red_datos.js?v=2'), import('./sims456_modelo.js?v=2'), import('./plan_bavaria_datos.js?v=2')]).then(([a, b, c, m4, pb]) => ({ a, b, m4, pb: pb.PLAN_BAV, rod: a.rodeos(c.CIERRES, c.ZONAS), frac: b.repartoZonas(c.ZONAS) })));
+  let QM = null; const qm = () => QM || (QM = Promise.all([import('./mov02_modelo.js?v=3'), import('./res03_modelo.js?v=1'), import('./sim_red_datos.js?v=2'), import('./sims456_modelo.js?v=3'), import('./plan_bavaria_datos.js?v=2')]).then(([a, b, c, m4, pb]) => ({ a, b, m4, pb: pb.PLAN_BAV, rod: a.rodeos(c.CIERRES, c.ZONAS), frac: b.repartoZonas(c.ZONAS) })));
   function vistaRapida() { const par = R.def && R.def.par; if (!(par >= 2 && par <= 6)) return; const H0 = R.previa && R.vistaH ? R.vistaH : R.hist, L = R.previa && R.vistaL ? R.vistaL : H0[H0.length - 1]; if (!L) return;
     qm().then(Q => { const v = { ...R.valores }; der.querySelectorAll('[data-k]').forEach(i => { v[i.dataset.k] = +i.value; }); let I2 = null;
       if (par === 2 && L.mov02) { const o = L.mov02, via = Q.a.VIA_DE[Math.round(v.viaCierre)] || o.via, fase = o.fase || 1, c = fase * Math.max(0, Math.min(1, v.cierrePct / 100));
@@ -1032,7 +1032,7 @@ export async function iniciarSimUI({ T3, SIMS_UI }) {
      red de interacciones en bola y lo que pasó año por año. Si no carga, queda el informe anterior (abrirInformeViejo). */
   async function abrirInforme() {
     const H = R.hist, corrida=R.s; if (!H.length) return;
-    try { const { abrirInforme2 } = await import('./informe.js?v=25');
+    try { const { abrirInforme2 } = await import('./informe.js?v=26');
       if(corrida!==R.s || H!==R.hist)return;
       // cadena causa → efecto del par con los valores finales (frente al año 1)
       const I = H[H.length - 1], I1 = H[Math.min(H.length - 1, 51)];

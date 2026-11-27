@@ -28,10 +28,10 @@
      menos de 50 % de su necesidad cubierta [SUP]; semanas seguidas así; índice de sostenibilidad = índice ecológico del modelo.
    · GAME OVER (autora): un sector sin atender más de 4 semanas seguidas; índice de sostenibilidad < 40 %. */
 
-export const S04 = { F_BAJO: 0.25, T_CRUCE: 4, Q_BASE: 4264, CRUZA: 0.30, RECUP: 0.02, BARRERA: 0.3, TASA_MAX: 0.2, PERDIDA_MAX: 0.3, OLEADA: 8 };
+export const S04 = { F_BAJO: 0.12 /* × (1 + flujo): más aves, más vuelos forzados a ras [SUP] */, T_CRUCE: 4, Q_BASE: 4264, CRUZA: 0.15, RECUP: 0.02, BARRERA: 0.3, TASA_MAX: 0.2, PERDIDA_MAX: 0.3, OLEADA: 8 };
 export function aves04({ flujo = 0.6, impl = 0, barreras = false, prop = false, trafico = 1 }) {
   const Q = S04.Q_BASE * trafico / 3600, pCruce = 1 - Math.exp(-Q * S04.T_CRUCE);
-  const fuera = prop ? impl : 0, bajo = S04.F_BAJO * (prop && barreras ? 1 - S04.BARRERA : 1);
+  const fuera = prop ? impl : 0, bajo = S04.F_BAJO * (1 + flujo) * (prop && barreras ? 1 - S04.BARRERA : 1);
   const p = bajo * pCruce * (1 - fuera); // de cada cruce
   const cruza = Math.min(1, S04.CRUZA * (1 + flujo)), muerteSem = cruza * p;
   return { pCruce, p, cruza, muerteSem, fuera, bajo, Q: Q * 3600 };

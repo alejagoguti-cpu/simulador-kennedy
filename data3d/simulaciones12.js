@@ -76,7 +76,7 @@ import { EXPO } from './exposicion_trafico.js?v=1';
 import { PLAN_BAV } from './plan_bavaria_datos.js?v=2';
 import { red02, rodeos, VIA_DE, OPCIONES_VIA, REGLAS_MOV02, MOV02 } from './mov02_modelo.js?v=3';
 import { interrupcion, repartoZonas, REGLAS_RES03, RES03 } from './res03_modelo.js?v=1';
-import { aves04, suelo05, S04, S05, S06, REGLAS_456 } from './sims456_modelo.js?v=2'; /* sims. 04, 05 y 06 (2026-11-27) */ /* sim. 03: interrupción de la recolección por horas (2026-11-27) */
+import { aves04, suelo05, S04, S05, S06, REGLAS_456 } from './sims456_modelo.js?v=3'; /* sims. 04, 05 y 06 (2026-11-27) */ /* sim. 03: interrupción de la recolección por horas (2026-11-27) */
 const FRAC03 = repartoZonas(ZONAS); /* sim. 02: red vial con cierre (pedido de la autora, 2026-11-27) */
 const RODEO02 = rodeos(CIERRES, ZONAS); // la misma instancia que usa sim_vida.js
 
@@ -257,7 +257,7 @@ export const SUP_SIMS = {
   METRO_RADIO: 800,    // [SUP] «cerca del corredor» = 800 m o menos del eje (caminata típica a una estación; el de tools/escenarios_instalacion.mjs)
   SIN_CORA: 52,        // [SUP] e5: Corabastos deja de abastecer en la semana 52 (hipotético; no hay plan oficial de cierre)
   DESM_LIB: 1,         // [SUP] e6: la carga liberada de Corabastos tiende a 1 (el desmonte sigue el calendario de B y C)
-  CIERRE_VIA: 'americas', CIERRE_T0: 4, CIERRE_DUR: 260, // [SUP] e8, e9, sim. 02: cierre forzado de la Av. de las Américas desde la semana 4 y durante 5 años (pedido de la autora, 2026-11-26)
+  CIERRE_VIA: 'americas', CIERRE_T0: 105, CIERRE_DUR: 260, /* 2026-11-27 (la autora: «los game over no pueden estar todos en el año 1»): el cierre empieza en el año 3 */ // [SUP] e8, e9, sim. 02: cierre forzado de la Av. de las Américas desde la semana 4 y durante 5 años (pedido de la autora, 2026-11-26)
   TECHOS_M2: 49000,    // e12: 4,9 ha de techos y balcones (desglose de P1.sup = 9,8 ha en data3d/sim_modelos.js: parques y lotes ~2 ha, techos y balcones ~4,9 ha, Bavaria ~2,9 ha)
   TECHOS_SEM: 156,     // e12: las superficies se montan en 3 años (la misma regla [SUP] de sim_vida.js para supF)
   M2_HUERTA: 50,       // m² por huerta (documento, sim_modelos.js area0): para contar los techos como huertas equivalentes
@@ -352,7 +352,7 @@ const PAR_SL = {
     { k: 'blindaje', n: 'Blindaje ecológico del bosque', val: 0, opciones: [[0, 'No'], [1, 'Sí']], ayuda: 'Sin propuesta: si está, el plan no tala el bosque (solo los árboles sueltos). Con propuesta el bosque siempre queda intacto.' }],
   6: [{ k: 'participacion', soloCon: true, n: 'Participación y rotación policéntrica', min: 0, max: 100, paso: 5, val: 100, unidad: '%', ayuda: 'Solo con propuesta: 0 % = reparto central; 100 % = la Federación de Juntas reparte por la necesidad de hoy.' },
     { k: 'prioridadFondos', n: 'Asignación prioritaria de fondos', val: 0, opciones: [[0, 'Según la necesidad'], [1, 'Mercados de comida'], [2, 'Centros de compostaje'], [3, 'Conexiones ecológicas']], ayuda: 'Los sectores con más falta de ese frente reciben 50 % más peso.' },
-    { k: 'presupuesto', n: 'Recursos disponibles', min: 10, max: 100, paso: 5, val: 50, unidad: '% de la necesidad', ayuda: 'Recursos de cada ronda frente a lo que piden todos los sectores juntos [SUP: la prueba].' }] };
+    { k: 'presupuesto', n: 'Recursos disponibles', min: 10, max: 100, paso: 5, val: 70, unidad: '% de la necesidad', ayuda: 'Recursos de cada ronda frente a lo que piden todos los sectores juntos [SUP: la prueba].' }] };
 const SL_MERC = { k: 'mercados', n: 'Cantidad de mercados', min: 0, max: 50, paso: 1, val: 44, unidad: 'mercados', ayuda: 'Mercados de barrio de la propuesta: abren uno tras otro hasta el año 13,5. Capacidad de cada uno 28 t/día (215 puestos como la Plaza Distrital de Kennedy, Contraloría 2025); trabajan hasta 70 %. En parques, al sur de Corabastos y junto a torres con huertas.' };
 /* v3: huertas hidropónicas activas (solo con propuesta). Producción por huerta = 50 m² (SUP_SIMS.M2_HUERTA) × 6 kg/m²·año (P1.rend de sim_modelos.js)
    [SUP: no hay rendimiento verificado de hidroponía en el proyecto, docs/escenario01_estado.md]. Por defecto «auto» (se instalan solas con los años en las cubiertas aptas, primero las más altas); si se mueve, el número es la meta al año 10 (instalación progresiva). */
@@ -549,7 +549,7 @@ export function crear(id, semilla = 1, valores = {}) {
   const plan = !S.propuesta ? { esc: (val.planViv != null ? val.planViv : vivTot) / vivTot, autos: val.planAutos != null ? val.planAutos : PLAN_BAV.AUTOS_HOG, accesos: Math.max(1, Math.round(val.planAccesos || 2)) } : null;
   if (plan) plan.viv = PLAN_BAV.VIV_ETAPA.map(v => v * plan.esc);  const E = { id, semilla, val, PAR, s, mod, metro, plan, o: null, racha: Object.fromEntries(REGLAS.map(R => [R.k, 0])), go: null, ev: [], ind: null,
     prev: new Uint8Array(s.occ.length), ruido0: null, techos: mod.techos || null,
-    traf: { r: (val.trafCrece != null ? val.trafCrece : 100 * V.TRAFICO.carros) / 100, pob: (val.pobCrece || 0) / 100, mit: (val.mitiga || 0) / 100 },
+    traf: { r: (val.trafCrece != null ? val.trafCrece : 100 * V.TRAFICO.carros) / 100, pob: (val.pobCrece != null ? val.pobCrece : P === 6 ? 0.5 : 0) / 100 /* 06: la población crece 0,5 %/año (tendencia DANE 2017–2022) */, mit: (val.mitiga || 0) / 100 },
     occ0: Uint8Array.from(s.occ), emaO: Float32Array.from(s.occ),
     ref: { listo: false, pares: 0, red: 0, poli: 0, huertas: 0, occ: new Float32Array(s.occ.length), pred: new Float32Array(RED.NFA), predOcc: 0 }, emaP: null, pred: null, evs: { fired: new Set(), lvl: {}, cd: {}, pend: [], h0: null, short: false } };
   E.red0 = interLocal(s); E.poli0 = paresPoli(s);
@@ -1130,7 +1130,7 @@ function gobernanzaPaso(E, x) {
     G.need[b] = GOB_POB[b] / 1000 * (s.pob / V.POB_K) * (S.BASE + gap * 5 + (1 - so) * 0.5) * Math.max(0.3, 1 - S.EQUIPO * G.eqn[b]) + G.rez[b]; }
   G.hist.push(Float64Array.from(G.need)); if (G.hist.length > S.REZAGO_INFO + 1) G.hist.shift();
   if (t % G.rond !== 0) return;
-  const tot = G.need.reduce((a, v) => a + v, 0), R = G.pres * tot, w = new Float64Array(8);
+  const tot = G.need.reduce((a, v) => a + v, 0), R = G.pres * (G.tot0 || (G.tot0 = tot)) * Math.max(0.3, 1 - 0.08 * t / 52), w = new Float64Array(8); /* monto fijo que pierde 8 % por año (recortes y pérdida de valor) [SUP] */ /* 2026-11-27: el presupuesto es un monto fijo (el del año 1) y la necesidad crece con la población: la crisis llega con los años */
   if (!E.prop) { const H = G.hist[0], ht = H.reduce((a, v) => a + v, 0) || 1, pt = GOB_POB.reduce((a, v) => a + v, 0); for (let b = 0; b < 8; b++) w[b] = 0.5 * GOB_POB[b] / pt + 0.5 * H[b] / ht; } // central: fórmula por población + necesidad de hace medio año
   else { const wc = new Float64Array(8), part = E.par === 6 && E.val.participacion != null ? E.val.participacion / 100 : 1; { const H = G.hist[0], ht = H.reduce((a, v) => a + v, 0) || 1, pt = GOB_POB.reduce((a, v) => a + v, 0); for (let b = 0; b < 8; b++) wc[b] = 0.5 * GOB_POB[b] / pt + 0.5 * H[b] / ht; }
     const q = (1 - 0.3 * Math.min(1, E.PAR.P1.rotacion / 52)) * (s.prom >= 1 ? 1 : 0.7), pt = GOB_POB.reduce((a, v) => a + v, 0);
@@ -1488,7 +1488,7 @@ function shannonAves(E) { const NFA = RED.NFA, occ = E.s.occ; let tot = 0; const
   let h = 0; for (const n of c) { const p = n / tot; h -= p * Math.log(p); } return h; }
 function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.round(q * 10) / 10).toLocaleString('es-CO');
   if (E.par === 4) { const t0 = Math.round(v.oleadaT0 || 4), on = sem >= t0 && (sem - t0) % 52 < S04.OLEADA, S = E.s04; /* una oleada cada año (pico enero–febrero) */
-    const r = aves04({ flujo: (v.flujoAves != null ? v.flujoAves : 60) / 100, impl: E.prop ? (v.implFauna != null ? v.implFauna : 100) / 100 * (0.6 + 0.4 * Math.min(1, sem / 208)) : 0 /* el paso de fauna y los corredores se terminan en 4 años */, barreras: !!v.barrerasFauna, prop: !!E.prop, trafico: x.trafico || 1 });
+    const r = aves04({ flujo: (v.flujoAves != null ? v.flujoAves : 60) / 100 * Math.min(2, 0.25 * Math.max(1, sem / 52)) /* el flujo migratorio crece año a año [SUP] */, impl: E.prop ? (v.implFauna != null ? v.implFauna : 100) / 100 * (0.6 + 0.4 * Math.min(1, sem / 208)) : 0 /* el paso de fauna y los corredores se terminan en 4 años */, barreras: !!v.barrerasFauna, prop: !!E.prop, trafico: x.trafico || 1 });
     if (on) S.pob = S.pob * (1 - r.muerteSem) + S04.RECUP * (1 - S.pob); else S.pob += S04.RECUP * (1 - S.pob);
     S.racha = on && S.pob < 1 - S04.PERDIDA_MAX ? S.racha + 1 : 0;
     if (on && !E.go && r.p > S04.TASA_MAX) E.go = { regla: 'tasa04', enfoque: 'Ecocentrismo', sem, inicio: sem, motivo: `${nf1(r.p * 100)} % de los cruces de aves entre los humedales terminan en choque con los carros (más del 20 %)`, lugar: 'Av. Ciudad de Cali y Av. de las Américas', x: 1428, z: 525, valor: Math.round(r.p * 1000) / 10 };
@@ -1512,7 +1512,7 @@ function s456Paso(E, x) { const v = E.val, sem = E.s.t + 1, nf1 = (q) => (Math.r
 function res03Paso(E, x) {
   const Rs = E.res, sem = E.s.t + 1, orgDia = E.o && E.o.gen ? E.o.gen / 7000 : 486;
   const kAno = sem - Rs.t0, esAno = kAno >= 0 && kAno % 52 === 0; /* 2026-11-27: la interrupción se repite cada año (la autora: «que cambie con los años») */
-  if (esAno) Rs.r = interrupcion({ orgDia, frac: FRAC03, horas: Rs.horas, prop: !!E.prop, cap: E.prop ? Rs.cap : 0, cierreCora: Rs.cierre });
+  if (esAno) Rs.r = interrupcion({ orgDia, frac: FRAC03, horas: Math.min(Rs.horas, 24 + 12 * Math.floor(kAno / 52)) /* la crisis crece: 24 h el año 1, 36 h el 2, 48 h el 3… hasta lo del deslizador [SUP] */, prop: !!E.prop, cap: E.prop ? Rs.cap : 0, cierreCora: Rs.cierre });
   const r = Rs.r, fase = kAno >= 0 && kAno % 52 === 0 ? 1 : kAno >= 0 && kAno % 52 === 1 ? 0.5 : 0;
   /* con propuesta la red trata todo el año: compost acumulado para las huertas = mín(generado, capacidad) × 7 días × 40 % (RES03.COMPOST) */
   if (E.prop) { const gen = orgDia + RES03.CORA_T_DIA, capD = (5 * RES03.EST_T_DIA + RES03.BAV_T_DIA) * Rs.cap; Rs.compAcum = (Rs.compAcum || 0) + Math.min(gen, capD) * 7 * RES03.COMPOST; }
