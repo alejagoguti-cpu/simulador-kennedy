@@ -54,7 +54,7 @@ export function crearZoom({ T3 }) {
     const now = performance.now(); if (now - tCambio > 8000) { tCambio = now; siguiente(); }
     else if (now - (T3._zChk || 0) > 800) { T3._zChk = now; const L = lista(), cl = (m) => m.t + '|' + Math.round(m.x) + '|' + Math.round(m.z), i = L.findIndex(m => cl(m) === cl(actual));
       const sigue = i < 0 && actual.muerte && actual.prop === !!window.KEN_ESC_PROP && (actual.par == null || actual.par === window.KEN_PAR); /* un choque en pantalla termina sus 8 s aunque lleguen avisos nuevos */
-      if (i < 0 && !sigue) { tCambio = now; k = -1; siguiente(); } else if (L[i] !== actual) { actual = L[i]; k = i; pintar(); } } /* el escenario cambió: fuera lo que ya no corresponde. Las listas se rehacen cada semana con objetos nuevos: se compara por título y lugar (antes saltaba de momento sin razón) y se toma el texto nuevo (p. ej. el avance de la obra) */
+      if (i < 0 && !sigue) { tCambio = now; k = -1; siguiente(); } else if (i >= 0 && L[i] !== actual) { actual = L[i]; k = i; pintar(); } } /* el escenario cambió: fuera lo que ya no corresponde. Las listas se rehacen cada semana con objetos nuevos: se compara por título y lugar (antes saltaba de momento sin razón) y se toma el texto nuevo (p. ej. el avance de la obra) */
     if (CH.activo) CH.paso(cam); /* el animal que se estrella se mueve cada cuadro (también se ve en la vista principal) */
     /* RENDIMIENTO (2026-11-27): la imagen del recuadro se lee de la GPU sin bloquear (WebGL2: buffer de píxeles + fence); se copia cuando la GPU avisa que terminó.
        Antes readRenderTargetPixels esperaba a la GPU en cada dibujo (13 % del tiempo de JavaScript en el perfil). */
