@@ -31,8 +31,12 @@ export const VIAS02 = {
 export const ALTERNAS = { americas: ['boyaca', 'mayo', 'locales'], boyaca: ['americas', 'mayo', 'calle38', 'locales'], calle38: ['americas', 'boyaca', 'mayo', 'locales'] };
 export const OPCIONES_VIA = [[1, 'Av. de las Américas'], [2, 'Av. Boyacá'], [3, 'Calle 38 Sur']];
 export const VIA_DE = { 1: 'americas', 2: 'boyaca', 3: 'calle38' };
-export const MOV02 = { BPR_A: 0.15, BPR_B: 4, SAT_ART: 1.4, N_ART: 2, TT_MAX: 2.0, ABASTO_MIN: 0.8, SEMANAS: 4, BAJA_PROP: 0.45, LIBRE_MIN: 0.1, CAIDA_MAX: 15, BOSQUE_DB: 46 };
+export const MOV02 = { T_PICO: 3, J: { art: 0.4, loc: 0.8 }, CORA_VEH_DIA: 11465, K_HORA: 0.1, BPR_A: 0.15, BPR_B: 4, SAT_ART: 1.4, N_ART: 2, TT_MAX: 2.0, ABASTO_MIN: 0.8, SEMANAS: 4, BAJA_PROP: 0.45, LIBRE_MIN: 0.1, CAIDA_MAX: 15, BOSQUE_DB: 46 };
 const bpr = (x) => 1 + MOV02.BPR_A * Math.pow(Math.max(0, x), MOV02.BPR_B);
+/* 2026-11-27 (decisión de la autora: «el tráfico que no cabe hace fila»): demora de Akçelik (1991, «Travel time functions for transport planning
+   purposes», Australian Road Research 21(3)), que sigue creciendo cuando el flujo pasa la capacidad: h/km de más = 0,25·T·[(x−1) + √((x−1)² + 8·J·x/(Q·T))].
+   T = 3 h: horario de pico y placa de la mañana en Bogotá (6:00–9:00). J = 0,4 arterias con semáforos, 0,8 calles locales (valores de Akçelik). */
+const akc = (x, Q, J) => { const T = MOV02.T_PICO, d = x - 1; return 0.25 * T * (d + Math.sqrt(d * d + 8 * J * x / (Math.max(1, Q) * T))); };
 
 /* rodeo medio de las rutas a Corabastos (fuente 0) al cerrar cada vía: Σ pob·(1/f) / Σ pob sobre las zonas que la usan */
 export function rodeos(CIERRES, ZONAS) {
@@ -44,7 +48,10 @@ export function rodeos(CIERRES, ZONAS) {
 /* una semana: via ('americas'|'boyaca'|'calle38'), c (0–1), dem (tráfico frente a hoy), prop, perm (0–1), rodeo (factor), Z (partes de sim_vida.js) */
 export function red02({ via, c = 0, dem = 1, prop = false, perm = 0, rodeo = 1, Z = null }) {
   const ids = Object.keys(VIAS02), alt = ALTERNAS[via] || [], out = {};
-  for (const k of ids) { const R = VIAS02[k], x0 = R.x0 != null ? R.x0 : R.jf / 10, V0 = R.C * x0; out[k] = { k, n: R.n, art: R.art, C: R.C, V0, x0, Vh: V0 * dem, vLibre: R.v * bpr(x0), cerrada: 0 }; }
+  for (const k of ids) { const R = VIAS02[k], x0 = R.x0 != null ? R.x0 : R.jf / 10, V0 = R.C * x0, J = R.art ? MOV02.J.art : MOV02.J.loc; out[k] = { k, n: R.n, art: R.art, C: R.C, V0, x0, J, Vh: V0 * dem, tLibre: Math.max(0.2 / R.v, 1 / R.v - akc(x0, R.C, J)), cerrada: 0 }; }
+  /* con propuesta: los viajes a Corabastos (≈ 11.465 veh/día, Corabastos-Covial 2016; hora pico = 10 % del día [SUP]) bajan 45 % × permeabilidad (dato de la autora) */
+  const sCora = MOV02.CORA_VEH_DIA * MOV02.K_HORA / ids.filter(k => VIAS02[k].art).reduce((a, k) => a + out[k].V0, 0), fProp = prop ? 1 - sCora * MOV02.BAJA_PROP * perm : 1;
+  for (const k of ids) out[k].Vh *= fProp;
   const cv = out[via]; let D = 0;
   if (cv) { cv.cerrada = c; D = cv.Vh * c; cv.Cab = cv.C * (1 - c); cv.V = cv.Vh * (1 - c); }
   for (const k of ids) { const o = out[k]; if (k !== via) { o.Cab = o.C; o.V = o.Vh; } }
@@ -54,14 +61,14 @@ export function red02({ via, c = 0, dem = 1, prop = false, perm = 0, rodeo = 1, 
   // tiempo, velocidad, ruido
   let T0 = 0, T1 = 0, Vt = 0, Ct = 0, tAlt = 0, wAlt = 0, kmT0 = 0, kmT1 = 0, eRes = 0;
   for (const k of ids) { const o = out[k], R = VIAS02[k];
-    o.x = o.Cab > 0.5 ? o.V / o.Cab : (o.V > 0.5 ? 9 : 0); o.v = o.vLibre / bpr(o.x); o.vBase = R.v;
-    const tau0 = 1 / R.v * (bpr(o.x0 * dem) / bpr(o.x0)), tau1 = 1 / o.v; // horas por km (base = mismo tráfico sin cierre)
+    o.x = o.Cab > 0.5 ? o.V / o.Cab : (o.V > 0.5 ? 9 : 0); o.v = o.Cab > 0.5 ? 1 / (o.tLibre + akc(o.x, o.Cab, o.J)) : 0; o.vBase = R.v;
+    const tau0 = o.tLibre + akc(o.x0 * dem, o.C, o.J), tau1 = o.v > 0 ? 1 / o.v : 0; // horas por km (base = mismo tráfico sin cierre)
     T0 += o.Vh * tau0; T1 += o.V * tau1; Vt += o.V; Ct += o.Cab;
     if (o.extra) { tAlt += o.extra * tau1; wAlt += o.extra; }
     kmT0 += o.Vh * tau0; kmT1 += o.V * tau1;
     o.db = R.db + Math.max(-MOV02.CAIDA_MAX, 10 * Math.log10(Math.max(1e-6, o.V) / o.V0)); o.dDb = o.db - R.db;
     eRes += Math.pow(10, o.db / 10);
-    o.sat = o.x; o.tl = R.tl != null ? R.tl * (bpr(o.x) / bpr(o.x0)) : null; /* time loss de la autora escalado por BPR (s/día) */ }
+    o.sat = o.x; o.tl = R.tl != null && o.v > 0 ? R.tl * ((1 / o.v - o.tLibre) / Math.max(1e-6, 1 / R.v - o.tLibre)) : null; /* time loss de la autora escalado por la demora (s/día) */ }
   if (wAlt) T1 += (tAlt / wAlt) * D * (rodeo - 1); // km de más de los desviados, a la velocidad media de sus alternas
   const tt = T0 > 0 ? T1 / T0 : 1, rKm = kmT0 > 0 ? (kmT1 / Math.max(1e-6, Vt)) / (kmT0 / Math.max(1e-6, ids.reduce((a, k) => a + out[k].Vh, 0))) : 1;
   const sat = Ct > 0 ? Vt / Ct : 0, dbRes = 10 * Math.log10(eRes / ids.length);
@@ -74,7 +81,7 @@ export function red02({ via, c = 0, dem = 1, prop = false, perm = 0, rodeo = 1, 
       if (Z.need && !(Z.need[i] > 0)) continue; sum += v; nn++; if (v < min) { min = v; iMin = i; } }
     ab = { min, iMin, media: nn ? sum / nn : 1, zona, g };
   } else ab = { min: g, iMin: -1, media: g, zona: null, g };
-  return { via, c, dem, prop, perm, rodeo, vias: out, D, tt, rKm, sat, dbRes, sobre, nArt: arts.length, kProp, ab, bosqueDb: prop ? MOV02.BOSQUE_DB : null };
+  return { via, c, dem, prop, perm, rodeo, sCora, fProp, vias: out, D, tt, rKm, sat, dbRes, sobre, nArt: arts.length, kProp, ab, bosqueDb: prop ? MOV02.BOSQUE_DB : null };
 }
 
 /* reglas de game over de la 02 (además de las 7 de REGLAS): el panel y el informe las leen */
@@ -82,7 +89,7 @@ export const REGLAS_MOV02 = [
   { k: 'arterias', n: 'Arterias saturadas', txt: 'más de 2 arterias pasan el 140 % de su capacidad a la vez', umbral: 140, unidad: '% de capacidad', semanas: 1,
     fuente: 'Pedido de la autora (2026-11-27). Capacidad de cada arteria: datos SUMO/Waze de la autora. Flujo: el de la vía cerrada se reparte por capacidad libre [SUP].' },
   { k: 'tiempo', n: 'Tiempo de viaje', txt: 'el tiempo medio de viaje pasa el doble del normal', umbral: 2, unidad: 'veces el normal', semanas: 1,
-    fuente: 'Pedido de la autora (2026-11-27). Tiempo por vía con la función BPR (Bureau of Public Roads 1964) y el rodeo de las rutas por la red vial (sim_red_datos.js).' },
+    fuente: 'Pedido de la autora (2026-11-27). Tiempo por vía con la demora de Akçelik (1991), que crece con la fila cuando el flujo pasa la capacidad, y el rodeo de las rutas por la red vial (sim_red_datos.js).' },
   { k: 'abastoMov', n: 'Abastecimiento de un sector', txt: 'una zona recibe menos del 80 % de su abastecimiento cuatro semanas seguidas', umbral: 80, unidad: '% de lo que necesita', semanas: 4,
     fuente: 'Pedido de la autora (2026-11-27). Lo que llega de Corabastos se reduce con el tiempo de viaje de los camiones (1/r viajes por turno [SUP]); zonas y partes de sim_vida.js.' }
 ];

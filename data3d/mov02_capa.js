@@ -10,7 +10,7 @@
    · RUIDO (botón «Mapa de ruido»): halo de 160 m a cada lado de cada vía, color por dB(A) del modelo: > 75 rojo, 65–75 naranja, 50–65 amarillo,
      < 50 verde.
    · CON PROPUESTA: los 4 pasajes de data3d/mov02_pasajes.json (tools/mov02_pasajes.mjs: sin tocar copas; esmeralda con borde ámbar), opacidad =
-     permeabilidad, peatones que los cruzan (cuántos ∝ permeabilidad) y el halo verde del bosque (árboles con marca 1 de bavaria_arboles.json). */
+     permeabilidad, personas 3D que los cruzan (cuántas ∝ permeabilidad) y un manto verde bajo cada copa del bosque (árboles con marca 1 de bavaria_arboles.json). Sin nubes de puntos. */
 import { VIAS } from './cierre_gradual.js?v=8';
 const ART = ['americas', 'boyaca', 'mayo', 'calle38'];
 const BARRIOS = [[3063.8, 275.2], [4620.7, 742.9], [2936.6, 1098.1], [1148.3, 266]]; // Castilla, Marsella, Mandalay, María Paz (mundo; asambleas.json)
@@ -64,14 +64,16 @@ export function crearMov02({ T3, RELOJ }) {
       const mp = new THREE.Mesh(cinta(L, 9, Yv() + 1.3), mat('pasaje')); mp.renderOrder = 9; mp.frustumCulled = false; G.add(mp); mallas.pasajes = mp;
       // peatones: puntos que recorren los pasajes (ida y vuelta)
       peat.L = L.map(c => { let s = 0; const cum = [0]; for (let i = 1; i < c.p.length; i++) { s += Math.hypot(c.p[i][0] - c.p[i - 1][0], c.p[i][1] - c.p[i - 1][1]); cum.push(s); } return { p: c.p, cum, len: s }; });
-      const NMAX = 240; peat.P = new Float32Array(NMAX * 3); const gp = new THREE.BufferGeometry(); gp.setAttribute('position', new THREE.BufferAttribute(peat.P, 3)); gp.setDrawRange(0, 0);
-      peat.pts = new THREE.Points(gp, new THREE.PointsMaterial({ color: 0xfef3c7, size: 5, sizeAttenuation: true, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false }));
-      peat.pts.renderOrder = 10; peat.pts.frustumCulled = false; peat.NMAX = NMAX; peat.sem = Array.from({ length: NMAX }, (_, i) => [i % L.length, ((i * 0.6180339) % 1), i % 2 ? 1 : -1, 0.9 + (i * 0.37 % 0.6)]); G.add(peat.pts);
-      // halo del bosque: un disco suave por árbol del bosque (Points con textura radial)
-      const B = AR.arboles.filter(t => t[4] === 1), PB = new Float32Array(B.length * 3); B.forEach((t, i) => { const w = lw(t[0], t[1]); PB[i * 3] = w[0]; PB[i * 3 + 1] = Yv() + 0.7; PB[i * 3 + 2] = w[1]; });
-      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
-      const gb = new THREE.BufferGeometry(); gb.setAttribute('position', new THREE.BufferAttribute(PB, 3));
-      const mb = new THREE.Points(gb, new THREE.PointsMaterial({ color: 0x4ade80, size: 60, sizeAttenuation: true, map: new THREE.CanvasTexture(cv), transparent: true, opacity: 0.18, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }));
+      // peatones: personas 3D (cápsula de 1,7 m) que recorren los pasajes de ida y vuelta; cuántas ∝ permeabilidad
+      const NMAX = 240, gPer = new THREE.CapsuleGeometry(0.28, 1.15, 3, 8).translate(0, 0.86, 0);
+      peat.im = new THREE.InstancedMesh(gPer, new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0 }), NMAX); peat.im.count = 0; peat.im.frustumCulled = false; peat.im.renderOrder = 10;
+      const PAL = ['#f8fafc', '#fbbf24', '#38bdf8', '#f472b6', '#a3e635', '#fb923c'].map(c => new THREE.Color(c)); for (let i = 0; i < NMAX; i++) peat.im.setColorAt(i, PAL[i % PAL.length]);
+      peat.NMAX = NMAX; peat.m4 = new THREE.Matrix4(); peat.q = new THREE.Quaternion(); peat.up = new THREE.Vector3(0, 1, 0); peat.one = new THREE.Vector3(1, 1, 1); peat.pos = new THREE.Vector3();
+      peat.sem = Array.from({ length: NMAX }, (_, i) => [i % L.length, ((i * 0.6180339) % 1), i % 2 ? 1 : -1, 0.85 + (i * 0.37 % 0.4), ((i * 7) % 5 - 2) * 0.7]); G.add(peat.im);
+      // bosque protegido: manto verde translúcido bajo cada copa del bosque (copa + 6 m), una malla instanciada sobre el suelo
+      const B = AR.arboles.filter(t => t[4] === 1), gc = new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2);
+      const mb = new THREE.InstancedMesh(gc, new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.2, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), B.length);
+      { const m4 = new THREE.Matrix4(); B.forEach((t, i) => { const w = lw(t[0], t[1]), r = t[3] + 6; m4.makeScale(r, 1, r).setPosition(w[0], Yv() + 0.5, w[1]); mb.setMatrixAt(i, m4); }); mb.instanceMatrix.needsUpdate = true; }
       mb.renderOrder = 2; mb.frustumCulled = false; G.add(mb); mallas.bosque = mb;
     } catch (e) { console.warn('mov02 pasajes/bosque:', e); }
     RELOJ.alDibujar(cuadro);
@@ -82,11 +84,13 @@ export function crearMov02({ T3, RELOJ }) {
   let tPrev = 0;
   function cuadro() { if (!G || !G.visible) return; const t = (RELOJ.tVis != null ? RELOJ.tVis : performance.now() / 1000); U.uT.value = t % 10000;
     // peatones
-    if (peat.pts && M && M.prop && peat.L.length) { const n = Math.round(peat.NMAX * (M.perm || 0)); peat.pts.geometry.setDrawRange(0, n); const now = performance.now() / 1000, dt = Math.min(0.1, now - (tPrev || now)); tPrev = now;
-      for (let i = 0; i < n; i++) { const s = peat.sem[i], c = peat.L[s[0]]; s[1] += s[2] * s[3] * 1.4 * dt * 30 / c.len; if (s[1] > 1) { s[1] = 1; s[2] = -1; } if (s[1] < 0) { s[1] = 0; s[2] = 1; }
+    if (peat.im && M && M.prop && peat.L.length) { const n = Math.round(peat.NMAX * (M.perm || 0)); peat.im.count = n; const now = performance.now() / 1000, dt = Math.min(0.1, now - (tPrev || now)); tPrev = now;
+      for (let i = 0; i < n; i++) { const s = peat.sem[i], c = peat.L[s[0]]; s[1] += s[2] * s[3] * 1.4 * 4 * dt / c.len; /* 1,4 m/s × 4 (acelerado para que se vea) */ if (s[1] > 1) { s[1] = 1; s[2] = -1; } if (s[1] < 0) { s[1] = 0; s[2] = 1; }
         const d = s[1] * c.len; let k = 1; while (k < c.cum.length - 1 && c.cum[k] < d) k++; const a = c.p[k - 1], b = c.p[k], f = (d - c.cum[k - 1]) / Math.max(1e-6, c.cum[k] - c.cum[k - 1]);
-        peat.P[i * 3] = a[0] + (b[0] - a[0]) * f + ((i % 3) - 1) * 1.6; peat.P[i * 3 + 1] = Yv() + 2.2; peat.P[i * 3 + 2] = a[1] + (b[1] - a[1]) * f + (((i >> 2) % 3) - 1) * 1.6; }
-      peat.pts.geometry.attributes.position.needsUpdate = true; } }
+        const dx = (b[0] - a[0]) * s[2], dz = (b[1] - a[1]) * s[2], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l;
+        peat.pos.set(a[0] + (b[0] - a[0]) * f + nx * s[4], Yv() + 1.3, a[1] + (b[1] - a[1]) * f + nz * s[4]); peat.q.setFromAxisAngle(peat.up, Math.atan2(dx, dz));
+        peat.m4.compose(peat.pos, peat.q, peat.one); peat.im.setMatrixAt(i, peat.m4); }
+      peat.im.instanceMatrix.needsUpdate = true; } }
 
   function aplicar() { const m = M; if (!G || !m) return; G.visible = true;
     for (const k of [...ART, 'locales']) { const ms = mallas[k], v = m.vias[k]; if (!ms || !v) continue; const u = ms.v.material.uniforms, ur = ms.r.material.uniforms;
@@ -96,8 +100,8 @@ export function crearMov02({ T3, RELOJ }) {
       colorDb(v.db, ur.uC.value); ur.uA.value = Math.max(0.15, Math.min(1, (v.db - 45) / 35)); ms.r.visible = ruidoOn; }
     const prop = !!m.prop, pm = m.perm || 0;
     if (mallas.pasajes) { mallas.pasajes.visible = prop && pm > 0.001; mallas.pasajes.material.uniforms.uA.value = 0.15 + 0.85 * pm; }
-    if (peat.pts) peat.pts.visible = prop && pm > 0.001;
-    if (mallas.bosque) { mallas.bosque.visible = prop; mallas.bosque.material.opacity = 0.1 + 0.12 * pm + (ruidoOn ? 0.08 : 0); }
+    if (peat.im) peat.im.visible = prop && pm > 0.001;
+    if (mallas.bosque) { mallas.bosque.visible = prop; mallas.bosque.material.opacity = 0.14 + 0.14 * pm + (ruidoOn ? 0.08 : 0); }
   }
   const api = {
     async poner(m) { M = m || null; if (!M) { if (G) G.visible = false; return; } if (!armado) armado = armar(); await armado; aplicar(); },
