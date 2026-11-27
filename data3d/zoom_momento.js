@@ -17,7 +17,8 @@ export function crearZoom({ T3 }) {
   const W = 448, H = 240; cv.width = W; cv.height = H; const rt = new THREE.WebGLRenderTarget(W, H, { depthBuffer: true }); rt.texture.colorSpace = THREE.SRGBColorSpace;
   const buf = new Uint8Array(W * H * 4), img = ctx.createImageData(W, H);
   let k = -1, actual = FIJOS[0], tCambio = performance.now(), tDib = 0, espera = 350, ang = 0;
-  const lista = () => { const F = (window.KEN_MOM_FEED || []).slice(0, 4), C = Array.isArray(window.KEN_MOM) ? window.KEN_MOM : [], P = Array.isArray(window.KEN_MOM_PROP) ? window.KEN_MOM_PROP : [];
+  /* solo momentos del escenario activo (window.KEN_ESC_PROP: con propuesta o actual); cada momento lleva su marca prop (o KEN_MOM_TAG para la lista de la capa) */
+  const lista = () => { const E = !!window.KEN_ESC_PROP, tagC = (q) => (q.prop != null ? q.prop : !!window.KEN_MOM_TAG) === E; const F = (window.KEN_MOM_FEED || []).filter(q => q.prop === E).slice(0, 4), C = Array.isArray(window.KEN_MOM) ? window.KEN_MOM.filter(tagC) : [], P = E && Array.isArray(window.KEN_MOM_PROP) ? window.KEN_MOM_PROP : [];
     const L = [...F, ...C, ...P].filter(m => m && isFinite(m.x) && isFinite(m.z)); return L.length ? L : FIJOS; };
   function pintar() { const L = lista(); box.querySelector('[data-z="t"]').textContent = actual.t; box.querySelector('[data-z="s"]').textContent = actual.s || ''; box.querySelector('[data-z="n"]').textContent = (k % Math.max(1, L.length) + 1) + ' / ' + L.length; }
   function siguiente() { const L = lista(); k = (k + 1) % L.length; actual = L[k]; ang = (k * 1.7) % (Math.PI * 2); pintar(); tDib = 0; }
@@ -27,6 +28,7 @@ export function crearZoom({ T3 }) {
   siguiente();
   T3.trasRender = () => {
     const now = performance.now(); if (now - tCambio > 8000) { tCambio = now; siguiente(); }
+    else if (now - (T3._zChk || 0) > 800) { T3._zChk = now; if (!lista().includes(actual)) { tCambio = now; k = -1; siguiente(); } } /* el escenario cambió: fuera lo que ya no corresponde */
     if (now - tDib < espera || !box.getClientRects().length || document.getElementById('urbia-intro')) return; tDib = now; /* (offsetParent es null en elementos fijos: no sirve para saber si se ve) */
     const r = T3.renderer; if (!r) return; ang += 0.04;
     const Y = (T3.sueloY || 0.3), d = actual.d || 230; cam.position.set(actual.x + Math.cos(ang) * d, Y + d * 0.62, actual.z + Math.sin(ang) * d); cam.lookAt(actual.x, Y + 6, actual.z); cam.updateMatrixWorld(); cam.layers.mask = T3.camera.layers.mask;
